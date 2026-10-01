@@ -19,6 +19,15 @@ function getSecret() {
 }
 
 export async function getSession(): Promise<Session | null> {
+  if (process.env.NODE_ENV === "development") {
+    return {
+      sub: "mock-user-123",
+      email: "dev@example.com",
+      name: "Developer",
+      role: "user",
+    };
+  }
+
   const token = (await cookies()).get(SESSION_COOKIE)?.value;
   if (!token) return null;
 

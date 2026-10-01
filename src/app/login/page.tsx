@@ -14,41 +14,15 @@ export default function LoginPage() {
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
-    // If javascript is active, provide silky smooth client-side submission with feedback
     e.preventDefault();
     setIsLoading(true);
     setErrorMessage(null);
     setStatusMessage(null);
 
-    const form = e.currentTarget;
-    const formData = new FormData(form);
-
-    try {
-      const response = await fetch("/api/auth/login", {
-        method: "POST",
-        body: formData,
-      });
-
-      const data = await response.json().catch(() => ({}));
-
-      if (!response.ok) {
-        if (response.status === 501) {
-          // Graceful handling of backend service in-development
-          setStatusMessage(
-            "Account system is currently being connected to the secure registry. Welcome to the preview!"
-          );
-        } else {
-          setErrorMessage(data.message || "Invalid credentials format. Please try again.");
-        }
-      } else {
-        // If successful, navigate to dashboard
-        window.location.href = "/app";
-      }
-    } catch {
-      setErrorMessage("Unable to connect to the authentication service. Please check your network.");
-    } finally {
-      setIsLoading(false);
-    }
+    // Development bypass - no backend needed
+    setTimeout(() => {
+      window.location.href = "/app";
+    }, 600);
   };
 
   return (

@@ -1,7 +1,10 @@
+"use client";
+
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { Bell, Heart, Home, MessageCircle, Search, Settings, UserRound } from "lucide-react";
 import { Logo } from "./logo";
-
+import { cn } from "@/lib/cn";
 const nav = [
   { href: "/app", label: "Home", icon: Home },
   { href: "/app/discover", label: "Discover", icon: Search },
@@ -11,6 +14,8 @@ const nav = [
 ];
 
 export function AppShell({ children }: { children: React.ReactNode }) {
+  const pathname = usePathname();
+
   return (
     <div className="min-h-screen">
       <header className="sticky top-0 z-40 border-b border-[var(--border)]/80 bg-white/85 backdrop-blur-xl">
@@ -31,14 +36,23 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
       <div className="mx-auto flex max-w-7xl gap-6 px-4 py-6 sm:px-6">
         <aside className="hidden w-56 shrink-0 md:block">
-          <nav className="sticky top-24 space-y-1" aria-label="Application navigation">
-            {nav.map(({ href, label, icon: Icon }) => (
-              <Link key={href} href={href} className="focus-ring flex items-center gap-3 rounded-xl px-3 py-3 text-sm font-medium text-[var(--muted-strong)] hover:bg-[var(--primary-lighter)] hover:text-[var(--primary)]">
-                <Icon className="h-5 w-5" aria-hidden />
-                {label}
-              </Link>
-            ))}
-            <Link href="/app/settings" className="focus-ring flex items-center gap-3 rounded-xl px-3 py-3 text-sm font-medium text-[var(--muted-strong)] hover:bg-[var(--primary-lighter)]">
+          <nav className="sticky top-24 space-y-1 rounded-2xl border border-emerald-500/20 bg-emerald-500/10 backdrop-blur-2xl p-3 shadow-[0_8px_32px_rgba(16,185,129,0.12)]" aria-label="Application navigation">
+            {nav.map(({ href, label, icon: Icon }) => {
+              const isActive = pathname === href;
+              return (
+                <Link key={href} href={href} className={cn(
+                  "focus-ring flex items-center gap-3 rounded-xl px-3 py-3 text-sm font-medium transition-all duration-200 hover:bg-emerald-500/15 hover:text-emerald-800",
+                  isActive ? "bg-emerald-500/20 text-emerald-900 shadow-sm font-semibold" : "text-[var(--muted-strong)]"
+                )}>
+                  <Icon className="h-5 w-5" aria-hidden />
+                  {label}
+                </Link>
+              );
+            })}
+            <Link href="/app/settings" className={cn(
+              "focus-ring flex items-center gap-3 rounded-xl px-3 py-3 text-sm font-medium transition-all duration-200 hover:bg-emerald-500/15 hover:text-emerald-800",
+              pathname === "/app/settings" ? "bg-emerald-500/20 text-emerald-900 shadow-sm font-semibold" : "text-[var(--muted-strong)]"
+            )}>
               <Settings className="h-5 w-5" aria-hidden />
               Settings
             </Link>
@@ -50,12 +64,18 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
       <nav className="fixed inset-x-0 bottom-0 z-40 border-t border-[var(--border)] bg-white/95 px-2 py-2 backdrop-blur-xl md:hidden" aria-label="Mobile navigation">
         <div className="mx-auto grid max-w-md grid-cols-5">
-          {nav.map(({ href, label, icon: Icon }) => (
-            <Link key={href} href={href} className="focus-ring flex flex-col items-center gap-1 rounded-xl py-2 text-[11px] font-medium text-[var(--muted-strong)]">
-              <Icon className="h-5 w-5" aria-hidden />
-              {label}
-            </Link>
-          ))}
+          {nav.map(({ href, label, icon: Icon }) => {
+            const isActive = pathname === href;
+            return (
+              <Link key={href} href={href} className={cn(
+                "focus-ring flex flex-col items-center gap-1 rounded-xl py-2 text-[11px] font-medium transition-colors",
+                isActive ? "text-[var(--primary)]" : "text-[var(--muted-strong)] hover:text-[var(--primary)]"
+              )}>
+                <Icon className="h-5 w-5" aria-hidden />
+                {label}
+              </Link>
+            );
+          })}
         </div>
       </nav>
     </div>
