@@ -1,0 +1,25 @@
+'use client';
+import { useState } from 'react';
+import { ArrowLeft, CheckCircle2, Heart, Lock, MapPin, MessageCircle, ShieldCheck, Star, UserRound, X } from 'lucide-react';
+import Link from 'next/link';
+import { profiles } from '@/lib/demo-data';
+import { Avatar } from '@/components/ui/avatar';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Card } from '@/components/ui/card';
+
+export function ProfileDetail({ id }: { id?: string }) {
+  const [sent, setSent] = useState(false);
+  const profile = profiles.find(p => p.id === id) ?? profiles[0];
+  return <div className="space-y-5">
+    <Link href="/app/discover" className="focus-ring inline-flex items-center gap-2 text-sm font-semibold text-muted hover:text-foreground"><ArrowLeft className="h-4 w-4" /> Back to discover</Link>
+    <div className="grid gap-5 lg:grid-cols-[1.05fr_.95fr]">
+      <Card className="overflow-hidden p-0"><div className="relative h-[460px] bg-primary-light sm:h-[560px]"><img src={profile.image} alt={profile.name} className="h-full w-full object-cover" /><div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent p-6 pt-24 text-white"><div className="flex flex-wrap items-center gap-2"><h1 className="text-3xl font-bold">{profile.name}, {profile.age}</h1>{profile.verified && <CheckCircle2 className="h-5 w-5" />}</div><p className="mt-2 flex items-center gap-1.5 text-sm text-white/90"><MapPin className="h-4 w-4" />{profile.city}, {profile.state}</p></div></div><div className="grid grid-cols-3 divide-x border-t border-border"><div className="p-4 text-center"><p className="text-lg font-bold text-primary">{profile.compatibility}%</p><p className="text-xs text-muted">Compatibility</p></div><div className="p-4 text-center"><p className="text-lg font-bold">{profile.height}</p><p className="text-xs text-muted">Height</p></div><div className="p-4 text-center"><p className="text-lg font-bold">{profile.maritalStatus.split(' ')[0]}</p><p className="text-xs text-muted">Status</p></div></div></Card>
+      <div className="space-y-5">
+        <Card className="p-5 sm:p-6"><div className="flex items-start justify-between gap-4"><div><Badge tone="success">{profile.compatibility}% match</Badge><h2 className="mt-3 text-2xl font-bold">A little about {profile.name.split(' ')[0]}</h2></div><button className="grid h-10 w-10 place-items-center rounded-full border border-border text-muted hover:text-danger" aria-label="Shortlist"><Heart className="h-4 w-4" /></button></div><p className="mt-4 leading-7 text-muted">{profile.about}</p><div className="mt-5 flex flex-wrap gap-2">{profile.interests.map(i=><Badge key={i}>{i}</Badge>)}</div></Card>
+        <Card className="p-5 sm:p-6"><h2 className="font-bold">About & preferences</h2><div className="mt-4 grid gap-4 sm:grid-cols-2">{[['Education',profile.education],['Profession',profile.profession],['Mother tongue',profile.motherTongue],['Family',profile.family]].map(([k,v])=><div key={k}><p className="text-xs font-semibold uppercase tracking-wide text-subtle-foreground">{k}</p><p className="mt-1 text-sm font-medium">{v}</p></div>)}</div><div className="mt-5 rounded-2xl bg-primary-light p-4"><p className="text-sm font-semibold text-primary">Looking for</p><p className="mt-1 text-sm leading-6 text-secondary-foreground">{profile.lookingFor}</p></div></Card>
+        <Card className="p-5 sm:p-6"><div className="flex items-start gap-3"><div className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-surface-muted text-primary"><ShieldCheck className="h-5 w-5" /></div><div><h2 className="font-bold">Connect with confidence</h2><p className="mt-1 text-sm leading-6 text-muted">Keep conversations respectful. You can block or report a profile at any time.</p></div></div><div className="mt-5 grid gap-2 sm:grid-cols-2"><Button onClick={()=>setSent(true)} disabled={sent}>{sent ? 'Interest sent' : 'Send interest'} <Heart className="ml-1 h-4 w-4" /></Button><Button variant="secondary"><MessageCircle className="mr-1 h-4 w-4" /> Message</Button></div>{sent && <p className="mt-3 text-xs font-semibold text-success">Your interest was sent. You’ll be notified if {profile.name.split(' ')[0]} responds.</p>}</Card>
+      </div>
+    </div>
+  </div>;
+}
