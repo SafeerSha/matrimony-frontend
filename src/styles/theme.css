@@ -41,9 +41,21 @@
   --hero-shadow: rgba(13, 43, 31, .14);
   --glass-background: rgba(255, 255, 255, .82);
   --glass-border: rgba(255, 255, 255, .70);
+
+  --botanical-primary: #15825d;
+  --botanical-deep: #0a4d36;
+  --botanical-rich: #1b9068;
+  --botanical-sage: #27795a;
+  --botanical-soft: #3d9272;
+  --botanical-glow: rgba(18, 128, 92, .09);
 }
 
 @theme inline {
+  --color-botanical-primary: var(--botanical-primary);
+  --color-botanical-deep: var(--botanical-deep);
+  --color-botanical-rich: var(--botanical-rich);
+  --color-botanical-sage: var(--botanical-sage);
+  --color-botanical-soft: var(--botanical-soft);
   --color-primary: var(--primary);
   --color-primary-deep: var(--primary-deep);
   --color-primary-light: var(--primary-light);

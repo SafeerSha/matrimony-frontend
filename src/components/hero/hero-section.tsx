@@ -1,10 +1,14 @@
-import Image from "next/image";
-import { ArrowRight, Heart } from "lucide-react";
+"use client";
+
+import { ArrowRight, Heart, MessageSquare } from "lucide-react";
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { TrustBadge } from "./trust-badge";
 import { TrustFeature } from "./trust-feature";
 import { HeroProfileCard, type HeroProfile } from "./hero-profile-card";
 import { ConnectionBadge } from "./connection-badge";
+import { CinematicHeroImage, type HeroImageData } from "./cinematic-hero-image";
+import { BotanicalLayer } from "./botanical-layer";
 import { cn } from "@/lib/cn";
 
 export interface HeroSectionProps {
@@ -32,15 +36,48 @@ const sampleProfiles: [HeroProfile, HeroProfile] = [
   },
 ];
 
+const HERO_IMAGES: HeroImageData[] = [
+  {
+    id: "hero-1",
+    src: "/images/hero-1.jpg",
+    alt: "A smiling Indian couple in tasteful contemporary attire celebrating their connection",
+  },
+  {
+    id: "hero-2",
+    src: "/images/hero-2.jpg",
+    alt: "Ananya in elegant traditional ivory and champagne gold silk saree in heritage courtyard",
+  },
+  {
+    id: "hero-3",
+    src: "/images/hero-3.jpg",
+    alt: "Rohan in dignified forest green Nehru jacket and cream kurta on palace veranda",
+  },
+  {
+    id: "hero-4",
+    src: "/images/hero-4.jpg",
+    alt: "Joyful Indian couple candidly laughing together in warm sunset golden hour",
+  },
+];
+
 export function HeroSection({ className = "" }: HeroSectionProps) {
+  const [hoveredProfile, setHoveredProfile] = useState<string | null>(null);
+
   return (
     <section
       aria-labelledby="hero-heading"
       className={cn(
-        "relative overflow-hidden bg-[var(--background)] pt-4 pb-20 sm:pt-8 sm:pb-28 lg:pt-12 lg:pb-36",
+        "relative overflow-hidden bg-transparent pt-4 pb-20 sm:pt-8 sm:pb-28 lg:pt-12 lg:pb-36 z-[1]",
         className
       )}
     >
+      {/* Enhanced Botanical Layer with lower corner accents & atmospheric glows */}
+      <BotanicalLayer
+        showTopLeft={false}
+        showTopRight={false}
+        showBottomLeft={true}
+        showBottomRight={true}
+      />
+
       {/* Soft ambient green & warm gold background glows */}
       <div
         className="pointer-events-none absolute -top-24 right-0 h-[32rem] w-[32rem] rounded-full bg-[var(--primary)]/6 blur-3xl lg:h-[40rem] lg:w-[40rem]"
@@ -51,7 +88,7 @@ export function HeroSection({ className = "" }: HeroSectionProps) {
         aria-hidden="true"
       />
 
-      <div className="relative mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+      <div className="relative z-10 mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div className="grid gap-12 lg:grid-cols-[1.08fr_0.92fr] lg:items-center lg:gap-16">
           {/* Left Content Column */}
           <div className="animate-hero-fade">
@@ -63,10 +100,10 @@ export function HeroSection({ className = "" }: HeroSectionProps) {
 
             <h1
               id="hero-heading"
-              className="text-balance text-4xl sm:text-5xl lg:text-[3.5rem] xl:text-[4rem] font-serif font-normal leading-[1.12] tracking-[-0.025em] text-[var(--foreground)]"
+              className="text-balance text-4xl sm:text-5xl lg:text-[3.6rem] xl:text-[4.2rem] font-editorial-title font-normal leading-[1.14] tracking-[-0.03em] text-[var(--foreground)]"
             >
               Find someone{" "}
-              <span className="font-serif italic font-medium text-[var(--primary)]">
+              <span className="font-editorial-highlight font-medium text-[var(--primary)] text-[1.08em] tracking-normal inline-block">
                 to build a life with.
               </span>
             </h1>
@@ -89,9 +126,18 @@ export function HeroSection({ className = "" }: HeroSectionProps) {
               <Button
                 href="#how-it-works"
                 variant="secondary"
-                className="min-h-12 px-6 text-sm sm:text-base font-semibold"
+                className="min-h-12 px-5 text-sm sm:text-base font-semibold"
               >
                 How it works
+              </Button>
+
+              <Button
+                href="#contact"
+                variant="secondary"
+                className="min-h-12 px-5 text-sm sm:text-base font-semibold"
+              >
+                <MessageSquare className="h-4 w-4 text-[var(--primary)]" aria-hidden="true" />
+                Contact us
               </Button>
             </div>
 
@@ -112,25 +158,18 @@ export function HeroSection({ className = "" }: HeroSectionProps) {
             />
 
             {/* Main Couple Photo Container */}
-            <div className="relative mx-auto aspect-[3/4] w-full max-w-[420px] sm:max-w-[460px] lg:max-w-[480px] overflow-hidden rounded-[2rem] sm:rounded-[2.5rem] border border-[var(--border)] bg-[var(--surface-muted)] shadow-[0_24px_70px_var(--hero-shadow)]">
-              <Image
-                src="/images/hero-couple.jpg"
-                alt="A smiling Indian couple in tasteful contemporary attire celebrating their connection"
-                fill
-                priority
-                sizes="(max-width: 640px) 92vw, (max-width: 1024px) 460px, 480px"
-                className="object-cover object-center transition duration-700 ease-out hover:scale-[1.02]"
-              />
-
-              {/* Natural bottom vignette for gentle depth */}
-              <div
-                className="pointer-events-none absolute inset-x-0 bottom-0 h-28 bg-gradient-to-t from-black/25 via-black/5 to-transparent"
-                aria-hidden="true"
-              />
-            </div>
+            <CinematicHeroImage
+              images={HERO_IMAGES}
+              hoveredProfile={hoveredProfile}
+              className="origin-center"
+            />
 
             {/* Floating Profile Card 1 - Top Left/Side */}
-            <div className="absolute -top-4 -left-3 sm:-top-6 sm:-left-6 lg:-left-10 z-10 w-60 sm:w-68">
+            <div
+              className="absolute -top-4 -left-3 sm:-top-6 sm:-left-6 lg:-left-10 z-10 w-60 sm:w-68 cursor-pointer transition-transform duration-300 hover:scale-[1.02]"
+              onMouseEnter={() => setHoveredProfile("ananya")}
+              onMouseLeave={() => setHoveredProfile(null)}
+            >
               <HeroProfileCard
                 profile={sampleProfiles[0]}
                 animationVariant="float-1"
@@ -139,7 +178,11 @@ export function HeroSection({ className = "" }: HeroSectionProps) {
             </div>
 
             {/* Floating Profile Card 2 - Bottom Right/Side */}
-            <div className="absolute -bottom-4 -right-3 sm:-bottom-6 sm:-right-6 lg:-right-8 z-10 w-60 sm:w-68">
+            <div
+              className="absolute -bottom-4 -right-3 sm:-bottom-6 sm:-right-6 lg:-right-8 z-10 w-60 sm:w-68 cursor-pointer transition-transform duration-300 hover:scale-[1.02]"
+              onMouseEnter={() => setHoveredProfile("rohan")}
+              onMouseLeave={() => setHoveredProfile(null)}
+            >
               <HeroProfileCard
                 profile={sampleProfiles[1]}
                 animationVariant="float-2"

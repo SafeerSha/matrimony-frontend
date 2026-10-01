@@ -20,6 +20,15 @@ button, input, textarea, select { font: inherit; }
 }
 .text-balance { text-wrap: balance; }
 
+.font-editorial-title {
+  font-family: var(--font-playfair), "Playfair Display", "Cormorant Garamond", Georgia, serif;
+}
+
+.font-editorial-highlight {
+  font-family: var(--font-cormorant), var(--font-playfair), "Cormorant Garamond", "Playfair Display", "Didot", Georgia, serif;
+  font-style: italic;
+}
+
 @keyframes float-subtle-1 {
   0%, 100% { transform: translateY(0px); }
   50% { transform: translateY(-7px); }
@@ -51,6 +60,45 @@ button, input, textarea, select { font: inherit; }
 
 .animate-hero-fade {
   animation: hero-fade-in 0.7s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+@keyframes botanical-sway-1 {
+  0%, 100% {
+    transform: translate(0px, 0px) rotate(0deg);
+  }
+  50% {
+    transform: translate(3px, -4px) rotate(1.2deg);
+  }
+}
+
+@keyframes botanical-sway-2 {
+  0%, 100% {
+    transform: translate(0px, 0px) rotate(0deg);
+  }
+  50% {
+    transform: translate(-3px, 3px) rotate(-1deg);
+  }
+}
+
+@keyframes botanical-sway-3 {
+  0%, 100% {
+    transform: translate(0px, 0px) rotate(0deg);
+  }
+  50% {
+    transform: translate(2px, 4px) rotate(0.8deg);
+  }
+}
+
+.animate-botanical-sway-1 {
+  animation: botanical-sway-1 11s ease-in-out infinite;
+}
+
+.animate-botanical-sway-2 {
+  animation: botanical-sway-2 14s ease-in-out infinite 1.5s;
+}
+
+.animate-botanical-sway-3 {
+  animation: botanical-sway-3 9s ease-in-out infinite 0.7s;
 }
 
 @media (prefers-reduced-motion: reduce) {

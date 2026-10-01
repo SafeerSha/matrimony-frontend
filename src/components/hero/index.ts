@@ -3,3 +3,9 @@ export { HeroProfileCard, type HeroProfileCardProps, type HeroProfile } from "./
 export { TrustBadge, type TrustBadgeProps } from "./trust-badge";
 export { TrustFeature, type TrustFeatureProps } from "./trust-feature";
 export { ConnectionBadge, type ConnectionBadgeProps } from "./connection-badge";
+export { CinematicHeroImage, type CinematicHeroImageProps, type HeroImageData } from "./cinematic-hero-image";
+export { BotanicalLayer, type BotanicalLayerProps } from "./botanical-layer";
+export { BotanicalDecoration, type BotanicalDecorationProps } from "./botanical-decoration";
+export { BotanicalBranch, type BotanicalBranchProps } from "./botanical-branch";
+export { BotanicalLeaf, type BotanicalLeafProps } from "./botanical-leaf";
+export { BotanicalCornerDecorations, type BotanicalCornerDecorationsProps } from "./botanical-corner-decorations";
