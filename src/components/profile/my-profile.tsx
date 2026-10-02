@@ -1,25 +1,69 @@
 'use client';
-import { useState } from 'react';
-import { Camera, CheckCircle2, ChevronRight, Edit3, Eye, Heart, Lock, Plus, Save, ShieldCheck, Sparkles, Image as ImageIcon } from 'lucide-react';
+import { useState, useEffect, useRef } from 'react';
+import { Camera, CheckCircle2, ChevronRight, Edit3, Eye, Lock, Plus, Save, ShieldCheck, Sparkles, Image as ImageIcon, Loader2, Trash2 } from 'lucide-react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Avatar } from '@/components/ui/avatar';
-import { profiles } from '@/lib/demo-data';
-
-const me = { 
-  id: 'SAF12345', 
-  name: 'Safeer', 
-  age: 26, 
-  city: 'Kochi', 
-  profession: 'Software Engineer', 
-  education: 'BSc Computer Science', 
-  image: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=900&q=85' 
-};
+import { profileService, mediaService } from '@/services';
+import type { UserProfile } from '@/services/profile.service';
 
 export function MyProfile() {
   const [saved, setSaved] = useState(false);
   const [tab, setTab] = useState<'overview' | 'about' | 'preferences' | 'album'>('overview');
+  
+  const [profile, setProfile] = useState<UserProfile | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isUploading, setIsUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const fetchProfile = async () => {
+    try {
+      const res = await profileService.getProfile("me");
+      setProfile(res as UserProfile);
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchProfile();
+  }, []);
+
+  const handlePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      setIsUploading(true);
+      try {
+        await mediaService.uploadPhoto(e.target.files[0]);
+        await fetchProfile(); // Refetch to show new photo
+      } catch (e) {
+        console.error(e);
+      } finally {
+        setIsUploading(false);
+      }
+    }
+  };
+
+  const handleDeletePhoto = async (photoId: string) => {
+    try {
+      await mediaService.deletePhoto(photoId);
+      await fetchProfile();
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
+  if (isLoading) {
+    return <div className="py-20 flex justify-center"><Loader2 className="h-8 w-8 animate-spin text-[var(--primary)]" /></div>;
+  }
+
+  if (!profile) return null;
+
+  const displayName = profile.firstName ? `${profile.firstName} ${profile.lastName || ''}`.trim() : 'User';
+  const age = profile.dateOfBirth ? Math.floor((new Date().getTime() - new Date(profile.dateOfBirth).getTime()) / 31557600000) : '--';
+  const displayImage = profile.photos && profile.photos.length > 0 ? profile.photos[0].url : 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=900&q=85';
 
   const sections = [
     ['Basic details', 'Name, age, location and profession', '82% complete'],
@@ -46,7 +90,7 @@ export function MyProfile() {
       <Card className="overflow-hidden p-0 border border-[var(--border)] shadow-sm">
         <div className="relative h-48 bg-gradient-to-r from-[var(--primary-deep)] to-[var(--primary)]">
           <div className="absolute -bottom-12 left-6 rounded-full border-4 border-[var(--background)] bg-[var(--background)]">
-            <Avatar src={me.image} name={me.name} size="xl" className="h-24 w-24 sm:h-28 sm:w-28" />
+            <Avatar src={displayImage} name={displayName} size="xl" className="h-24 w-24 sm:h-28 sm:w-28" />
           </div>
           <button className="absolute bottom-4 right-4 inline-flex items-center gap-2 rounded-xl bg-black/30 px-4 py-2 text-xs font-semibold text-white backdrop-blur hover:bg-black/40 transition-colors">
             <Camera className="h-4 w-4" /> Change cover
@@ -57,15 +101,14 @@ export function MyProfile() {
           <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
             <div>
               <div className="flex items-center gap-3">
-                <h2 className="text-2xl font-bold text-[var(--foreground)]">{me.name}, {me.age}</h2>
-                <Badge tone="success" className="h-6">Verified</Badge>
+                <h2 className="text-2xl font-bold text-[var(--foreground)]">{displayName}, {age}</h2>
+                {profile.isVerified && <Badge tone="success" className="h-6">Verified</Badge>}
               </div>
-              <p className="mt-1.5 text-sm font-medium text-[var(--muted-strong)]">{me.profession} · {me.city}</p>
+              <p className="mt-1.5 text-sm font-medium text-[var(--muted-strong)]">{profile.occupation || 'Profession not set'} · {profile.city || 'City not set'}</p>
               
-              {/* Prominent Unique ID Display */}
               <div className="mt-4 inline-flex items-center gap-2 rounded-lg border border-[var(--primary)]/20 bg-[var(--primary)]/5 px-3 py-1.5">
                 <span className="text-xs font-semibold uppercase tracking-wider text-[var(--muted)]">Matrimony ID</span>
-                <span className="text-sm font-bold tracking-widest text-[var(--primary-deep)]">{me.id}</span>
+                <span className="text-sm font-bold tracking-widest text-[var(--primary-deep)]">{profile.id.substring(0, 8).toUpperCase()}</span>
               </div>
             </div>
             
@@ -154,58 +197,32 @@ export function MyProfile() {
           </div>
           <div className="mt-6 rounded-2xl bg-[var(--surface-muted)] p-6 border border-[var(--border)]/50">
             <p className="leading-relaxed text-[var(--muted-strong)]">
-              I'm a software engineer based in Kochi who values family, meaningful conversations and continuous learning. 
-              I enjoy discovering new places, listening to music and spending time with people who matter.
+              {profile.bio || "No bio added yet."}
             </p>
-          </div>
-          
-          <div className="mt-8 border-t border-[var(--border)] pt-8">
-            <div className="flex items-center justify-between mb-6">
-              <h2 className="text-lg font-bold text-[var(--foreground)]">Lifestyle & Interests</h2>
-              <Button variant="ghost" size="sm"><Plus className="mr-2 h-4 w-4" /> Add Interest</Button>
-            </div>
-            <div className="flex flex-wrap gap-2">
-              {profiles[0].interests.map(i => <Badge key={i} tone="default" className="text-xs px-3 py-1.5">{i}</Badge>)}
-            </div>
           </div>
         </Card>
       )}
 
       {tab === 'preferences' && (
-        <div className="grid gap-6 sm:grid-cols-2">
-          <Card className="p-6 sm:p-8 shadow-sm border border-[var(--border)]">
-            <h2 className="text-lg font-bold text-[var(--foreground)]">Partner Characteristics</h2>
-            <p className="mt-1 text-sm text-[var(--muted)] mb-6">What traits matter most to you.</p>
-            <div className="space-y-4 text-sm">
-              {['Kind and emotionally mature', 'Values family and friendship', 'Comfortable with honest communication', 'Supportive of personal growth'].map(x => (
-                <div key={x} className="flex gap-3 items-start bg-[var(--surface-muted)] p-3 rounded-lg border border-[var(--border)]/50">
-                  <CheckCircle2 className="h-4 w-4 shrink-0 text-green-500 mt-0.5" />
-                  <span className="text-[var(--muted-strong)] font-medium">{x}</span>
-                </div>
-              ))}
+        <Card className="p-6 sm:p-8 shadow-sm border border-[var(--border)]">
+          <div className="flex items-center justify-between border-b border-[var(--border)] pb-6">
+            <div>
+              <h2 className="text-xl font-bold text-[var(--foreground)]">Preferences</h2>
             </div>
-            <Button variant="outline" className="mt-6 w-full"><Edit3 className="mr-2 h-4 w-4" /> Edit Characteristics</Button>
-          </Card>
-
-          <Card className="p-6 sm:p-8 shadow-sm border border-[var(--border)]">
-            <h2 className="text-lg font-bold text-[var(--foreground)]">Discovery Preferences</h2>
-            <p className="mt-1 text-sm text-[var(--muted)] mb-6">Filters applied to your matches.</p>
-            <div className="grid gap-5 sm:grid-cols-2">
-              {[
-                ['Age Range', '24 – 32 years'],
-                ['Location', 'Kerala + nearby'],
-                ['Education', 'Bachelors or above'],
-                ['Profession', 'Open to any']
-              ].map(([k, v]) => (
-                <div key={k} className="bg-[var(--surface-muted)] p-3 rounded-lg border border-[var(--border)]/50">
-                  <p className="text-xs font-semibold text-[var(--muted)] uppercase tracking-wider">{k}</p>
-                  <p className="mt-1 text-sm font-bold text-[var(--foreground)]">{v}</p>
-                </div>
-              ))}
-            </div>
-            <Button variant="outline" className="mt-6 w-full"><Edit3 className="mr-2 h-4 w-4" /> Update Filters</Button>
-          </Card>
-        </div>
+            <Button variant="outline"><Edit3 className="mr-2 h-4 w-4" /> Update Filters</Button>
+          </div>
+          <div className="mt-6 grid gap-5 sm:grid-cols-2">
+            {[
+              ['Location', profile.preferences?.city || 'Any'],
+              ['Education', profile.preferences?.education || 'Any']
+            ].map(([k, v]) => (
+              <div key={k} className="bg-[var(--surface-muted)] p-3 rounded-lg border border-[var(--border)]/50">
+                <p className="text-xs font-semibold text-[var(--muted)] uppercase tracking-wider">{k}</p>
+                <p className="mt-1 text-sm font-bold text-[var(--foreground)]">{v}</p>
+              </div>
+            ))}
+          </div>
+        </Card>
       )}
 
       {tab === 'album' && (
@@ -215,22 +232,35 @@ export function MyProfile() {
               <h2 className="text-xl font-bold text-[var(--foreground)]">Photo Gallery</h2>
               <p className="mt-1 text-sm text-[var(--muted)]">Manage your supplementary photos (Max 5).</p>
             </div>
-            <Button variant="primary"><Plus className="mr-2 h-4 w-4" /> Add Photo</Button>
+            <Button variant="primary" onClick={() => fileInputRef.current?.click()} disabled={isUploading}>
+              {isUploading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Plus className="mr-2 h-4 w-4" />} 
+              {isUploading ? 'Uploading...' : 'Add Photo'}
+            </Button>
+            <input 
+              type="file" 
+              accept="image/*"
+              className="hidden" 
+              ref={fileInputRef}
+              onChange={handlePhotoUpload}
+            />
           </div>
           
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
-            {/* Primary Profile Picture */}
-            <div className="relative aspect-[4/5] rounded-xl overflow-hidden border-2 border-[var(--primary)] group">
-              <img src={me.image} alt="Profile" className="w-full h-full object-cover" />
-              <div className="absolute top-2 left-2 bg-[var(--primary)] text-white text-[10px] font-bold px-2 py-1 rounded uppercase tracking-wider">Display Pic</div>
-              <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
-                <Button variant="secondary" size="sm" className="h-8">Change</Button>
+            {profile.photos && profile.photos.length > 0 ? profile.photos.map((photo: any, index: number) => (
+              <div key={photo.id || index} className="relative aspect-[4/5] rounded-xl overflow-hidden border-2 border-[var(--border)] group">
+                <img src={photo.url} alt="Profile Album" className="w-full h-full object-cover" />
+                {index === 0 && <div className="absolute top-2 left-2 bg-[var(--primary)] text-white text-[10px] font-bold px-2 py-1 rounded uppercase tracking-wider">Display Pic</div>}
+                <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
+                  <Button variant="destructive" size="icon" className="h-8 w-8" onClick={() => handleDeletePhoto(photo.id)}>
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                </div>
               </div>
-            </div>
+            )) : null}
             
-            {/* Empty Slots */}
-            {[1, 2].map(i => (
-              <div key={i} className="aspect-[4/5] rounded-xl border-2 border-dashed border-[var(--border)] bg-[var(--surface-muted)] flex flex-col items-center justify-center hover:bg-[var(--primary)]/5 hover:border-[var(--primary)]/30 transition-colors cursor-pointer text-[var(--muted)]">
+            {/* Empty Slots Filler */}
+            {Array.from({ length: Math.max(0, 5 - (profile.photos?.length || 0)) }).map((_, i) => (
+              <div key={i} onClick={() => fileInputRef.current?.click()} className="aspect-[4/5] rounded-xl border-2 border-dashed border-[var(--border)] bg-[var(--surface-muted)] flex flex-col items-center justify-center hover:bg-[var(--primary)]/5 hover:border-[var(--primary)]/30 transition-colors cursor-pointer text-[var(--muted)]">
                 <ImageIcon className="h-8 w-8 mb-2 opacity-50" />
                 <span className="text-xs font-semibold">Upload Photo</span>
               </div>
