@@ -22,7 +22,28 @@ export function ProfileCard({ profile, compact=false }: { profile: Profile; comp
       <div><p className="text-sm font-semibold">{profile.profession}</p><p className="mt-1 text-xs text-muted">{profile.education} · {profile.maritalStatus}</p></div>
       {!compact && <p className="line-clamp-2 text-sm leading-6 text-muted">{profile.about}</p>}
       {!compact && <div className="flex flex-wrap gap-2"><Badge>{profile.height}</Badge><Badge>{profile.motherTongue}</Badge><Badge>{profile.lifestyle[0]}</Badge></div>}
-      <div className="grid grid-cols-[1fr_auto] gap-2"><Link href={`/app/profile?user=${profile.id}`} className="focus-ring"><Button variant="secondary" className="w-full">View profile</Button></Link><Button aria-label={`Shortlist ${profile.name}`} variant="ghost" className="px-3"><Heart className="h-4 w-4" /></Button></div>
+      <div className="grid grid-cols-[1fr_auto] gap-2">
+        <Link href={`/app/profile?user=${profile.id}`} className="focus-ring">
+          <Button variant="secondary" className="w-full">View profile</Button>
+        </Link>
+        <Button 
+          aria-label={`Shortlist ${profile.name}`} 
+          variant="ghost" 
+          className="px-3"
+          onClick={async (e) => {
+            e.preventDefault();
+            try {
+              const { matchesService } = await import('@/services');
+              await matchesService.shortlistProfile(profile.id);
+              // Could show a toast here
+            } catch (error) {
+              console.error(error);
+            }
+          }}
+        >
+          <Heart className="h-4 w-4" />
+        </Button>
+      </div>
     </div>
   </Card>;
 }
