@@ -130,6 +130,14 @@ export function HeroSection({ className = "" }: HeroSectionProps) {
               >
                 Login
               </Button>
+
+              <Button
+                href="#contact"
+                variant="secondary"
+                className="min-h-12 px-7 text-sm sm:text-base font-bold text-[var(--muted-strong)] hover:text-[var(--primary)]"
+              >
+                Contact Us
+              </Button>
             </div>
 
             {/* Trust Features */}
