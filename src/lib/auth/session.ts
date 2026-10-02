@@ -13,21 +13,12 @@ export type Session = JWTPayload & {
 };
 
 function getSecret() {
-  const value = process.env.AUTH_SECRET;
-  if (!value) throw new Error("AUTH_SECRET is not configured.");
+  const value = process.env.AUTH_SECRET || process.env.JWT_ACCESS_SECRET;
+  if (!value) throw new Error("AUTH_SECRET or JWT_ACCESS_SECRET is not configured.");
   return new TextEncoder().encode(value);
 }
 
 export async function getSession(): Promise<Session | null> {
-  if (process.env.NODE_ENV === "development") {
-    return {
-      sub: "mock-user-123",
-      email: "dev@example.com",
-      name: "Developer",
-      role: "user",
-    };
-  }
-
   const token = (await cookies()).get(SESSION_COOKIE)?.value;
   if (!token) return null;
 
