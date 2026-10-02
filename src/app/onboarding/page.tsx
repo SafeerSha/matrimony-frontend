@@ -1,19 +1,55 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { ArrowRight, ArrowLeft, Loader2, UploadCloud, CheckCircle2, Heart } from "lucide-react";
 import { Logo } from "@/components/layout/logo";
 import { cn } from "@/lib/cn";
+import { profileService, mediaService } from "@/services";
 
 export default function OnboardingPage() {
   const [step, setStep] = useState<1 | 2 | 3 | 4 | 5>(1);
   const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  // Form State
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
+  const [profileData, setProfileData] = useState<any>({});
+  const [preferencesData, setPreferencesData] = useState<any>({});
+  const [primaryPhoto, setPrimaryPhoto] = useState<File | null>(null);
+
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleNext = (e: React.FormEvent) => {
     e.preventDefault();
+    const formData = new FormData(e.target as HTMLFormElement);
+    
+    if (step === 1) {
+      setProfileData({
+        ...profileData,
+        gender: formData.get("gender"),
+        dateOfBirth: formData.get("dob") ? new Date(formData.get("dob") as string).toISOString() : undefined,
+        education: formData.get("education"),
+        occupation: formData.get("profession"),
+        bio: formData.get("family"), // Using bio for family details
+      });
+    } else if (step === 2) {
+      setPreferencesData({
+        ...preferencesData,
+        minAge: Number(formData.get("minAge")),
+        maxAge: Number(formData.get("maxAge")),
+        religions: formData.get("religion"),
+        education: formData.get("prefEducation"),
+        location: formData.get("location"),
+      });
+    } else if (step === 3) {
+      setPreferencesData({
+        ...preferencesData,
+        categories: selectedCategories,
+      });
+    }
+
     if (step < 5) {
       setStep((prev) => (prev + 1) as 1 | 2 | 3 | 4 | 5);
     }
@@ -25,13 +61,35 @@ export default function OnboardingPage() {
     }
   };
 
-  const handleComplete = (e: React.FormEvent) => {
+  const handlePhotoSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      setPrimaryPhoto(e.target.files[0]);
+    }
+  };
+
+  const handleComplete = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
-    // Mock save and redirect
-    setTimeout(() => {
+    setError(null);
+    
+    try {
+      // 1. Save Profile
+      await profileService.updateProfile("me", profileData);
+      
+      // 2. Save Preferences
+      await profileService.updatePreferences("me", preferencesData);
+      
+      // 3. Upload primary photo if selected
+      if (primaryPhoto) {
+        await mediaService.uploadPhoto(primaryPhoto);
+      }
+
       window.location.href = "/app";
-    }, 1500);
+    } catch (err: any) {
+      console.error("Onboarding error:", err);
+      setError(err.message || "Something went wrong saving your profile.");
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -59,6 +117,12 @@ export default function OnboardingPage() {
           
           <div className="p-6 sm:p-10 lg:p-12">
             
+            {error && (
+              <div role="alert" className="mb-5 rounded-xl border border-red-200 bg-red-50/80 p-3.5 text-sm text-red-700">
+                {error}
+              </div>
+            )}
+
             {/* Step 1: Profile Setup */}
             {step === 1 && (
               <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
@@ -71,7 +135,7 @@ export default function OnboardingPage() {
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
                     <div>
                       <label className="block text-xs font-semibold uppercase tracking-wider text-[var(--muted-strong)] mb-1.5">Gender</label>
-                      <select required className="h-12 w-full rounded-xl border border-[var(--border)] bg-white px-4 text-sm text-[var(--foreground)] outline-none focus:border-[var(--primary)] focus:ring-4 focus:ring-[var(--primary)]/10">
+                      <select name="gender" required className="h-12 w-full rounded-xl border border-[var(--border)] bg-white px-4 text-sm text-[var(--foreground)] outline-none focus:border-[var(--primary)] focus:ring-4 focus:ring-[var(--primary)]/10">
                         <option value="">Select Gender</option>
                         <option value="male">Male</option>
                         <option value="female">Female</option>
@@ -79,19 +143,19 @@ export default function OnboardingPage() {
                     </div>
                     <div>
                       <label className="block text-xs font-semibold uppercase tracking-wider text-[var(--muted-strong)] mb-1.5">Date of Birth</label>
-                      <input type="date" required className="h-12 w-full rounded-xl border border-[var(--border)] bg-white px-4 text-sm text-[var(--foreground)] outline-none focus:border-[var(--primary)] focus:ring-4 focus:ring-[var(--primary)]/10" />
+                      <input name="dob" type="date" required className="h-12 w-full rounded-xl border border-[var(--border)] bg-white px-4 text-sm text-[var(--foreground)] outline-none focus:border-[var(--primary)] focus:ring-4 focus:ring-[var(--primary)]/10" />
                     </div>
                     <div>
                       <label className="block text-xs font-semibold uppercase tracking-wider text-[var(--muted-strong)] mb-1.5">Education</label>
-                      <input type="text" required placeholder="e.g. Master's in Computer Science" className="h-12 w-full rounded-xl border border-[var(--border)] bg-white px-4 text-sm text-[var(--foreground)] outline-none focus:border-[var(--primary)] focus:ring-4 focus:ring-[var(--primary)]/10" />
+                      <input name="education" type="text" required placeholder="e.g. Master's in Computer Science" className="h-12 w-full rounded-xl border border-[var(--border)] bg-white px-4 text-sm text-[var(--foreground)] outline-none focus:border-[var(--primary)] focus:ring-4 focus:ring-[var(--primary)]/10" />
                     </div>
                     <div>
                       <label className="block text-xs font-semibold uppercase tracking-wider text-[var(--muted-strong)] mb-1.5">Profession</label>
-                      <input type="text" required placeholder="e.g. Software Engineer" className="h-12 w-full rounded-xl border border-[var(--border)] bg-white px-4 text-sm text-[var(--foreground)] outline-none focus:border-[var(--primary)] focus:ring-4 focus:ring-[var(--primary)]/10" />
+                      <input name="profession" type="text" required placeholder="e.g. Software Engineer" className="h-12 w-full rounded-xl border border-[var(--border)] bg-white px-4 text-sm text-[var(--foreground)] outline-none focus:border-[var(--primary)] focus:ring-4 focus:ring-[var(--primary)]/10" />
                     </div>
                     <div className="sm:col-span-2">
                       <label className="block text-xs font-semibold uppercase tracking-wider text-[var(--muted-strong)] mb-1.5">Family Details</label>
-                      <textarea required rows={3} placeholder="Tell us a bit about your family background..." className="w-full rounded-xl border border-[var(--border)] bg-white p-4 text-sm text-[var(--foreground)] outline-none focus:border-[var(--primary)] focus:ring-4 focus:ring-[var(--primary)]/10" />
+                      <textarea name="family" required rows={3} placeholder="Tell us a bit about your family background..." className="w-full rounded-xl border border-[var(--border)] bg-white p-4 text-sm text-[var(--foreground)] outline-none focus:border-[var(--primary)] focus:ring-4 focus:ring-[var(--primary)]/10" />
                     </div>
                   </div>
 
@@ -117,22 +181,22 @@ export default function OnboardingPage() {
                     <div>
                       <label className="block text-xs font-semibold uppercase tracking-wider text-[var(--muted-strong)] mb-1.5">Age Range</label>
                       <div className="flex items-center gap-2">
-                        <input type="number" placeholder="Min" required className="h-12 w-full rounded-xl border border-[var(--border)] bg-white px-4 text-sm text-[var(--foreground)] outline-none focus:border-[var(--primary)] focus:ring-4 focus:ring-[var(--primary)]/10" />
+                        <input name="minAge" type="number" placeholder="Min" required className="h-12 w-full rounded-xl border border-[var(--border)] bg-white px-4 text-sm text-[var(--foreground)] outline-none focus:border-[var(--primary)] focus:ring-4 focus:ring-[var(--primary)]/10" />
                         <span className="text-[var(--muted)]">to</span>
-                        <input type="number" placeholder="Max" required className="h-12 w-full rounded-xl border border-[var(--border)] bg-white px-4 text-sm text-[var(--foreground)] outline-none focus:border-[var(--primary)] focus:ring-4 focus:ring-[var(--primary)]/10" />
+                        <input name="maxAge" type="number" placeholder="Max" required className="h-12 w-full rounded-xl border border-[var(--border)] bg-white px-4 text-sm text-[var(--foreground)] outline-none focus:border-[var(--primary)] focus:ring-4 focus:ring-[var(--primary)]/10" />
                       </div>
                     </div>
                     <div>
                       <label className="block text-xs font-semibold uppercase tracking-wider text-[var(--muted-strong)] mb-1.5">Religion / Community</label>
-                      <input type="text" required placeholder="e.g. Hindu, Any" className="h-12 w-full rounded-xl border border-[var(--border)] bg-white px-4 text-sm text-[var(--foreground)] outline-none focus:border-[var(--primary)] focus:ring-4 focus:ring-[var(--primary)]/10" />
+                      <input name="religion" type="text" required placeholder="e.g. Hindu, Any" className="h-12 w-full rounded-xl border border-[var(--border)] bg-white px-4 text-sm text-[var(--foreground)] outline-none focus:border-[var(--primary)] focus:ring-4 focus:ring-[var(--primary)]/10" />
                     </div>
                     <div>
                       <label className="block text-xs font-semibold uppercase tracking-wider text-[var(--muted-strong)] mb-1.5">Preferred Education</label>
-                      <input type="text" required placeholder="e.g. Bachelors or above" className="h-12 w-full rounded-xl border border-[var(--border)] bg-white px-4 text-sm text-[var(--foreground)] outline-none focus:border-[var(--primary)] focus:ring-4 focus:ring-[var(--primary)]/10" />
+                      <input name="prefEducation" type="text" required placeholder="e.g. Bachelors or above" className="h-12 w-full rounded-xl border border-[var(--border)] bg-white px-4 text-sm text-[var(--foreground)] outline-none focus:border-[var(--primary)] focus:ring-4 focus:ring-[var(--primary)]/10" />
                     </div>
                     <div>
                       <label className="block text-xs font-semibold uppercase tracking-wider text-[var(--muted-strong)] mb-1.5">Preferred Location</label>
-                      <input type="text" required placeholder="e.g. Bangalore, Mumbai" className="h-12 w-full rounded-xl border border-[var(--border)] bg-white px-4 text-sm text-[var(--foreground)] outline-none focus:border-[var(--primary)] focus:ring-4 focus:ring-[var(--primary)]/10" />
+                      <input name="location" type="text" required placeholder="e.g. Bangalore, Mumbai" className="h-12 w-full rounded-xl border border-[var(--border)] bg-white px-4 text-sm text-[var(--foreground)] outline-none focus:border-[var(--primary)] focus:ring-4 focus:ring-[var(--primary)]/10" />
                     </div>
                   </div>
 
@@ -212,12 +276,24 @@ export default function OnboardingPage() {
                 </div>
                 
                 <form onSubmit={handleNext} className="space-y-8">
-                  <div className="flex flex-col items-center justify-center border-2 border-dashed border-[var(--border)] rounded-2xl bg-[var(--surface-muted)] p-12 text-center hover:bg-[var(--primary)]/5 hover:border-[var(--primary)]/30 transition-colors cursor-pointer">
+                  <div 
+                    onClick={() => fileInputRef.current?.click()}
+                    className="flex flex-col items-center justify-center border-2 border-dashed border-[var(--border)] rounded-2xl bg-[var(--surface-muted)] p-12 text-center hover:bg-[var(--primary)]/5 hover:border-[var(--primary)]/30 transition-colors cursor-pointer"
+                  >
                     <div className="h-16 w-16 rounded-full bg-white shadow-sm flex items-center justify-center mb-4 text-[var(--primary)]">
                       <UploadCloud className="h-8 w-8" />
                     </div>
-                    <h3 className="text-sm font-semibold text-[var(--foreground)]">Click to upload your display picture</h3>
+                    <h3 className="text-sm font-semibold text-[var(--foreground)]">
+                      {primaryPhoto ? primaryPhoto.name : "Click to upload your display picture"}
+                    </h3>
                     <p className="text-xs text-[var(--muted)] mt-2">JPEG, PNG, JPG up to 5MB.</p>
+                    <input 
+                      type="file" 
+                      accept="image/*"
+                      ref={fileInputRef} 
+                      className="hidden" 
+                      onChange={handlePhotoSelect} 
+                    />
                     <button type="button" className="mt-6 text-xs font-semibold text-[var(--primary)] bg-white px-4 py-2 rounded-lg shadow-sm border border-[var(--border)]">Browse Files</button>
                   </div>
 
@@ -257,7 +333,7 @@ export default function OnboardingPage() {
                     <CheckCircle2 className="h-5 w-5 text-[var(--primary)] shrink-0 mt-0.5" />
                     <div>
                       <h4 className="text-sm font-semibold text-[var(--primary-deep)]">System Check Ready</h4>
-                      <p className="text-xs text-[var(--primary)] mt-1 opacity-90">Completing this step will instantly generate your Unique Matrimony ID and unlock all application features.</p>
+                      <p className="text-xs text-[var(--primary)] mt-1 opacity-90">Completing this step will instantly generate your Unique Matrimony ID, save your preferences, upload your photo, and unlock all application features.</p>
                     </div>
                   </div>
 
