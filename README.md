@@ -1,4 +1,4 @@
-# Matrimony Web Foundation — Level 2
+# Matrimony Web Foundation
 
 A client-ready, production-oriented frontend prototype for a modern matrimonial platform.
 
