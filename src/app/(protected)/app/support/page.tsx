@@ -12,7 +12,8 @@ import {
   Lightbulb, 
   Star,
   CheckCircle2,
-  Send
+  Send,
+  Heart
 } from 'lucide-react';
 
 export default function SupportPage() {
@@ -74,7 +75,7 @@ export default function SupportPage() {
                 </div>
                 <h3 className="text-lg font-bold text-[var(--foreground)]">Message Sent!</h3>
                 <p className="text-[var(--muted)] mt-2">Our support team will get back to you within 24 hours.</p>
-                <Button variant="outline" className="mt-6" onClick={() => setIsSuccess(false)}>Send another message</Button>
+                <Button variant="secondary" className="mt-6" onClick={() => setIsSuccess(false)}>Send another message</Button>
               </div>
             ) : (
               <form onSubmit={handleSubmit} className="space-y-5">
@@ -162,7 +163,7 @@ export default function SupportPage() {
                </div>
                <h3 className="text-xl font-bold text-[var(--foreground)]">Thank You!</h3>
                <p className="text-[var(--muted)] mt-2 max-w-sm">Your feedback has been successfully submitted. We deeply appreciate your time.</p>
-               <Button variant="outline" className="mt-8" onClick={() => setIsSuccess(false)}>Submit another response</Button>
+               <Button variant="secondary" className="mt-8" onClick={() => setIsSuccess(false)}>Submit another response</Button>
              </div>
           ) : (
             <form onSubmit={handleSubmit} className="space-y-8">

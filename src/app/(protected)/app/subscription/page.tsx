@@ -23,34 +23,34 @@ export default function SubscriptionPage() {
   const plans = [
     {
       name: '1 Month Permit',
+      badge: 'Starter',
       price: '₹500',
       period: 'per month',
-      icon: <Star className="h-6 w-6 text-slate-400" />,
-      description: 'Perfect for trying out the platform and making initial connections.',
+      icon: <Star className="h-5 w-5 text-slate-500" />,
+      description: 'Ideal for trying out the platform and exploring matches.',
       features: [
         'Active Chat Permit for 30 days',
         'Send & accept chat requests',
         'Unlimited messaging with matches',
-        'Priority profile visibility'
+        'Standard profile visibility'
       ],
-      disabled: [],
       buttonText: 'Buy 1 Month Permit',
       isCurrent: false,
       color: 'slate'
     },
     {
       name: '3 Months Permit',
+      badge: 'Save ₹200',
       price: '₹1,300',
       period: 'for 90 days',
-      icon: <Sparkles className="h-6 w-6 text-amber-500" />,
-      description: 'Our most popular plan. Save ₹200 compared to monthly billing.',
+      icon: <Sparkles className="h-5 w-5 text-amber-600" />,
+      description: 'Our most popular plan. Best value for active matchmaking.',
       features: [
         'Active Chat Permit for 90 days',
         'Send & accept chat requests',
         'Unlimited messaging with matches',
         'Priority profile visibility'
       ],
-      disabled: [],
       buttonText: 'Buy 3 Months Permit',
       isCurrent: false,
       popular: true,
@@ -58,34 +58,34 @@ export default function SubscriptionPage() {
     },
     {
       name: '6 Months Permit',
+      badge: 'Save ₹500',
       price: '₹2,500',
       period: 'for 180 days',
-      icon: <Crown className="h-6 w-6 text-[var(--primary)]" />,
-      description: 'Serious about finding a match? Save ₹500 with this plan.',
+      icon: <Crown className="h-5 w-5 text-emerald-700" />,
+      description: 'Serious about finding a match with extended connection time.',
       features: [
         'Active Chat Permit for 180 days',
         'Send & accept chat requests',
         'Unlimited messaging with matches',
         'Priority profile visibility'
       ],
-      disabled: [],
       buttonText: 'Buy 6 Months Permit',
       isCurrent: false,
       color: 'primary'
     },
     {
       name: '1 Year Permit',
+      badge: 'Save ₹1,000',
       price: '₹5,000',
       period: 'for 365 days',
-      icon: <Crown className="h-6 w-6 text-[var(--primary)]" />,
-      description: 'Complete peace of mind. Save ₹1,000 with annual billing.',
+      icon: <Crown className="h-5 w-5 text-emerald-700" />,
+      description: 'Complete peace of mind with 365 days of full unlimited access.',
       features: [
         'Active Chat Permit for 365 days',
         'Send & accept chat requests',
         'Unlimited messaging with matches',
-        'Priority profile visibility'
+        'Highest priority profile visibility'
       ],
-      disabled: [],
       buttonText: 'Buy 1 Year Permit',
       isCurrent: false,
       color: 'primary'
@@ -100,69 +100,85 @@ export default function SubscriptionPage() {
         description="An active Chat Permit is required to send chat requests and converse with other members." 
       />
 
-      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4 max-w-7xl mx-auto">
+      <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-4 max-w-7xl mx-auto">
         {plans.map((plan) => (
           <Card 
             key={plan.name} 
             className={cn(
-              "relative p-6 sm:p-8 flex flex-col transition-all duration-300",
-              plan.popular ? "border-amber-400 shadow-[0_16px_40px_-15px_rgba(245,158,11,0.2)] scale-[1.02] lg:scale-105 z-10 bg-white" : "border-[var(--border)] shadow-sm hover:shadow-md"
+              "relative p-6 flex flex-col justify-between rounded-2xl transition-all duration-300",
+              plan.popular 
+                ? "border-amber-400 bg-gradient-to-b from-amber-50/50 via-white to-white shadow-[0_16px_40px_-15px_rgba(245,158,11,0.25)] ring-1 ring-amber-400/70" 
+                : "border-[var(--border)] bg-white shadow-sm hover:shadow-md hover:border-emerald-500/30"
             )}
           >
             {plan.popular && (
-              <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-gradient-to-r from-amber-400 to-amber-500 text-white text-[10px] font-bold uppercase tracking-wider px-3 py-1 rounded-full shadow-sm">
+              <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-gradient-to-r from-amber-500 to-amber-600 text-white text-[10px] font-bold uppercase tracking-wider px-3.5 py-1 rounded-full shadow-sm">
                 Most Popular
               </div>
             )}
             
-            <div className="mb-6 flex items-center gap-3">
-              <div className={cn(
-                "h-12 w-12 rounded-xl flex items-center justify-center bg-opacity-10",
-                plan.color === 'slate' ? 'bg-slate-100' : 
-                plan.color === 'amber' ? 'bg-amber-100' : 'bg-[var(--primary-light)]'
-              )}>
-                {plan.icon}
-              </div>
-              <div>
-                <h3 className="text-xl font-bold text-[var(--foreground)]">{plan.name}</h3>
-                <p className="text-xs text-[var(--muted)]">{plan.description}</p>
-              </div>
-            </div>
-
-            <div className="mb-6 pb-6 border-b border-[var(--border)]">
-              <div className="flex items-end gap-1.5">
-                <span className="text-4xl font-editorial-title text-[var(--foreground)] tracking-tight">{plan.price}</span>
-                <span className="text-sm font-medium text-[var(--muted)] mb-1.5">/{plan.period}</span>
-              </div>
-            </div>
-
-            <div className="flex-1 space-y-4 mb-8">
-              {plan.features.map((feature, i) => (
-                <div key={i} className="flex items-start gap-3">
-                  <Check className={cn(
-                    "h-5 w-5 shrink-0",
-                    plan.color === 'slate' ? "text-slate-400" :
-                    plan.color === 'amber' ? "text-amber-500" : "text-[var(--primary)]"
-                  )} />
-                  <span className="text-sm font-medium text-[var(--foreground)]">{feature}</span>
+            <div>
+              {/* Header: Icon & Savings Badge */}
+              <div className="flex items-center justify-between mb-4">
+                <div className={cn(
+                  "h-11 w-11 rounded-xl flex items-center justify-center",
+                  plan.color === 'slate' ? 'bg-slate-100' : 
+                  plan.color === 'amber' ? 'bg-amber-100' : 'bg-emerald-100/80'
+                )}>
+                  {plan.icon}
                 </div>
-              ))}
-              {plan.disabled.map((feature, i) => (
-                <div key={i} className="flex items-start gap-3 opacity-40">
-                  <Check className="h-5 w-5 shrink-0 text-[var(--muted-light)]" />
-                  <span className="text-sm font-medium text-[var(--muted-strong)] line-through">{feature}</span>
+                {plan.badge && (
+                  <span className={cn(
+                    "text-[11px] font-bold px-2.5 py-0.5 rounded-full border",
+                    plan.popular
+                      ? "bg-amber-100/80 text-amber-800 border-amber-300/80"
+                      : "bg-slate-100/80 text-slate-700 border-slate-200"
+                  )}>
+                    {plan.badge}
+                  </span>
+                )}
+              </div>
+
+              {/* Title & Description */}
+              <h3 className="text-xl font-bold text-[var(--foreground)] tracking-tight">{plan.name}</h3>
+              <p className="mt-1 text-xs text-[var(--muted)] leading-relaxed min-h-[34px]">{plan.description}</p>
+
+              {/* Price */}
+              <div className="my-5 pb-5 border-b border-[var(--border)]">
+                <div className="flex items-baseline gap-1.5 flex-wrap">
+                  <span className="text-3xl sm:text-4xl font-editorial-title font-bold text-[var(--foreground)] tracking-tight">
+                    {plan.price}
+                  </span>
+                  <span className="text-xs sm:text-sm font-medium text-[var(--muted)] whitespace-nowrap">
+                    /{plan.period}
+                  </span>
                 </div>
-              ))}
+              </div>
+
+              {/* Features List */}
+              <div className="space-y-3.5 mb-8">
+                {plan.features.map((feature, i) => (
+                  <div key={i} className="flex items-start gap-2.5">
+                    <Check className={cn(
+                      "h-4 w-4 shrink-0 mt-0.5",
+                      plan.color === 'slate' ? "text-slate-400" :
+                      plan.color === 'amber' ? "text-amber-500" : "text-emerald-600"
+                    )} />
+                    <span className="text-xs sm:text-sm font-medium text-[var(--foreground)] leading-snug">{feature}</span>
+                  </div>
+                ))}
+              </div>
             </div>
 
+            {/* CTA Button */}
             <Button 
               disabled={plan.isCurrent || processing !== null}
               onClick={() => handleUpgrade(plan.name)}
               className={cn(
-                "w-full h-12 text-sm font-bold shadow-sm transition-all",
+                "w-full h-11 text-xs sm:text-sm font-bold shadow-sm transition-all mt-auto",
                 plan.isCurrent ? "bg-[var(--surface-muted)] text-[var(--muted-strong)] border border-[var(--border)]" :
-                plan.color === 'amber' ? "bg-gradient-to-r from-amber-500 to-amber-600 text-white hover:from-amber-600 hover:to-amber-700 hover:shadow-md" :
-                "bg-[var(--primary)] text-white hover:bg-[var(--primary-deep)] hover:shadow-md"
+                plan.color === 'amber' ? "bg-gradient-to-r from-amber-500 to-amber-600 text-white hover:from-amber-600 hover:to-amber-700 shadow-amber-500/20" :
+                "bg-[var(--primary)] text-white hover:bg-[var(--primary-deep)] shadow-emerald-700/20"
               )}
             >
               {processing === plan.name ? (

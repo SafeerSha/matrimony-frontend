@@ -1,6 +1,6 @@
 'use client';
 import { useState, useEffect, useRef } from 'react';
-import { Check, Lock, MoreHorizontal, Paperclip, Search, Send, Smile, Info, Crown, ArrowRight, Loader2 } from 'lucide-react';
+import { Check, Lock, MoreHorizontal, Paperclip, Search, Send, Smile, Info, Crown, ArrowRight, Loader2, MessageCircle } from 'lucide-react';
 import { Avatar } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
