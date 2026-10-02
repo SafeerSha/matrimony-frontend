@@ -18,8 +18,9 @@ export default function DashboardPage() {
 
   useEffect(() => {
     matchesService.getRecommendations()
-      .then((res) => {
-        const mapped = (res.data || []).slice(0, 3).map((u: any) => ({
+      .then((res: any) => {
+        const list = Array.isArray(res) ? res : (res?.data || []);
+        const mapped = list.slice(0, 3).map((u: any) => ({
           id: u.id,
           name: u.name || `${u.firstName || ''} ${u.lastName || ''}`.trim() || 'User',
           age: u.dateOfBirth ? Math.floor((new Date().getTime() - new Date(u.dateOfBirth).getTime()) / 31557600000) : 25,

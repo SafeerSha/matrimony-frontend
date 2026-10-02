@@ -2,9 +2,11 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Bell, Heart, Home, MessageCircle, Search, Settings, UserRound } from "lucide-react";
+import { Bell, Heart, Home, MessageCircle, Search, Settings, UserRound, LogOut } from "lucide-react";
 import { Logo } from "./logo";
 import { cn } from "@/lib/cn";
+import { authService } from "@/services";
+import { toast } from "@/lib/toast";
 const nav = [
   { href: "/app", label: "Home", icon: Home },
   { href: "/app/discover", label: "Discover", icon: Search },
@@ -70,6 +72,22 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-5 w-5 transition-transform duration-200" aria-hidden><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" x2="12.01" y1="17" y2="17"/></svg>
               Help & Support
             </Link>
+            <div className="pt-2">
+              <button
+                type="button"
+                onClick={async () => {
+                  toast.info("Signing Out", "You have been signed out. Redirecting to login...");
+                  await authService.logout();
+                  setTimeout(() => {
+                    window.location.href = "/login";
+                  }, 800);
+                }}
+                className="focus-ring flex w-full items-center gap-3 rounded-xl px-3 py-3 text-sm font-medium text-red-600 transition-all duration-200 hover:bg-red-50 hover:text-red-700"
+              >
+                <LogOut className="h-5 w-5 transition-transform duration-200" aria-hidden />
+                Sign Out
+              </button>
+            </div>
           </nav>
         </aside>
 

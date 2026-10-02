@@ -27,11 +27,19 @@ export default function LoginPage() {
 
     try {
       await authService.login({ email, password });
-      toast.flash("success", "Signed in successfully!", "Welcome back. Redirecting to your dashboard...");
-      toast.success("Signed in successfully!", "Welcome back. Redirecting to your dashboard...");
+      toast.flash("success", "Signed in successfully!", "Welcome back. Redirecting...");
+      toast.success("Signed in successfully!", "Welcome back. Redirecting...");
 
       setTimeout(() => {
-        window.location.href = "/app";
+        let destination = "/app";
+        if (typeof window !== "undefined") {
+          const searchParams = new URLSearchParams(window.location.search);
+          const next = searchParams.get("next");
+          if (next && next.startsWith("/") && !next.startsWith("//")) {
+            destination = next;
+          }
+        }
+        window.location.href = destination;
       }, 500);
     } catch (error: any) {
       const msg = error.message || "Failed to sign in. Please check your credentials.";

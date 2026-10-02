@@ -59,10 +59,10 @@ export default function InterestsPage() {
       return;
     }
 
-    matchesService.getConnections(type)
-      .then(res => {
-        const data = Array.isArray(res) ? res : (res.data || []);
-        const mapped = data.map(mapProfile);
+      matchesService.getConnections(type)
+        .then((res: any) => {
+          const data = Array.isArray(res) ? res : (res?.data || []);
+          const mapped = data.map(mapProfile);
         if (tab === 'pending') setPendingItems(mapped);
         else if (tab === 'sent') setSentItems(mapped);
         else if (tab === 'accepted') setAcceptedItems(mapped);
