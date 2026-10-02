@@ -18,7 +18,27 @@ export function ProfileDetail({ id }: { id?: string }) {
       <div className="space-y-5">
         <Card className="p-5 sm:p-6"><div className="flex items-start justify-between gap-4"><div><Badge tone="success">{profile.compatibility}% match</Badge><h2 className="mt-3 text-2xl font-bold">A little about {profile.name.split(' ')[0]}</h2></div><button className="grid h-10 w-10 place-items-center rounded-full border border-border text-muted hover:text-danger" aria-label="Shortlist"><Heart className="h-4 w-4" /></button></div><p className="mt-4 leading-7 text-muted">{profile.about}</p><div className="mt-5 flex flex-wrap gap-2">{profile.interests.map(i=><Badge key={i}>{i}</Badge>)}</div></Card>
         <Card className="p-5 sm:p-6"><h2 className="font-bold">About & preferences</h2><div className="mt-4 grid gap-4 sm:grid-cols-2">{[['Education',profile.education],['Profession',profile.profession],['Mother tongue',profile.motherTongue],['Family',profile.family]].map(([k,v])=><div key={k}><p className="text-xs font-semibold uppercase tracking-wide text-subtle-foreground">{k}</p><p className="mt-1 text-sm font-medium">{v}</p></div>)}</div><div className="mt-5 rounded-2xl bg-primary-light p-4"><p className="text-sm font-semibold text-primary">Looking for</p><p className="mt-1 text-sm leading-6 text-secondary-foreground">{profile.lookingFor}</p></div></Card>
-        <Card className="p-5 sm:p-6"><div className="flex items-start gap-3"><div className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-surface-muted text-primary"><ShieldCheck className="h-5 w-5" /></div><div><h2 className="font-bold">Connect with confidence</h2><p className="mt-1 text-sm leading-6 text-muted">Keep conversations respectful. You can block or report a profile at any time.</p></div></div><div className="mt-5 grid gap-2 sm:grid-cols-2"><Button onClick={()=>setSent(true)} disabled={sent}>{sent ? 'Interest sent' : 'Send interest'} <Heart className="ml-1 h-4 w-4" /></Button><Button variant="secondary"><MessageCircle className="mr-1 h-4 w-4" /> Message</Button></div>{sent && <p className="mt-3 text-xs font-semibold text-success">Your interest was sent. You’ll be notified if {profile.name.split(' ')[0]} responds.</p>}</Card>
+        <Card className="p-5 sm:p-6">
+          <div className="flex items-start gap-3">
+            <div className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-[var(--surface-muted)] text-[var(--primary)]">
+              <ShieldCheck className="h-5 w-5" />
+            </div>
+            <div>
+              <h2 className="font-bold">Connect with confidence</h2>
+              <p className="mt-1 text-sm leading-6 text-[var(--muted)]">Keep conversations respectful. You can block or report a profile at any time.</p>
+            </div>
+          </div>
+          
+          <div className="mt-6 border-t border-[var(--border)] pt-5">
+            {/* Mocked Unsubscribed State Enforcing Rule 5 & 13 */}
+            <Link href="/app/subscription" className="focus-ring block w-full">
+              <Button variant="secondary" className="w-full h-12 bg-gradient-to-r from-amber-50 to-orange-50 text-amber-700 hover:from-amber-100 hover:to-orange-100 border border-amber-200 shadow-sm transition-all whitespace-normal h-auto py-3">
+                <Lock className="mr-2 h-5 w-5 shrink-0" /> 
+                <span className="text-left leading-tight">An active Chat Permit is required to send chat requests. <strong>Upgrade Now</strong></span>
+              </Button>
+            </Link>
+          </div>
+        </Card>
       </div>
     </div>
   </div>;

@@ -94,7 +94,7 @@ export function HeroSection({ className = "" }: HeroSectionProps) {
           <div className="animate-hero-fade">
             <TrustBadge
               icon={<Heart className="h-3.5 w-3.5 text-[var(--primary)]" aria-hidden="true" fill="currentColor" />}
-              label="Curated for intentional matrimony"
+              label="Welcome to Let's CHAT .Com"
               className="mb-5 sm:mb-6"
             />
 
@@ -102,42 +102,33 @@ export function HeroSection({ className = "" }: HeroSectionProps) {
               id="hero-heading"
               className="text-balance text-4xl sm:text-5xl lg:text-[3.6rem] xl:text-[4.2rem] font-editorial-title font-normal leading-[1.14] tracking-[-0.03em] text-[var(--foreground)]"
             >
-              Find someone{" "}
+              Discover meaningful{" "}
               <span className="font-editorial-highlight font-medium text-[var(--primary)] text-[1.08em] tracking-normal inline-block">
-                to build a life with.
+                connections today.
               </span>
             </h1>
 
             <p className="mt-5 sm:mt-6 max-w-xl text-base sm:text-lg leading-relaxed text-[var(--muted)]">
-              Discover compatible people who share your values, aspirations and vision for the future.
+              <strong>Register Free</strong> — Create your profile and discover meaningful connections. Explore categories for Friendship, Marriage, Living Together, Malayalam Matrimony, and Telugu Matrimony.
             </p>
 
             {/* CTAs */}
             <div className="mt-8 flex flex-wrap items-center gap-3.5 sm:mt-10">
               <Button
-                href="/login"
+                href="/register"
                 variant="primary"
-                className="min-h-12 px-6 text-sm sm:text-base font-semibold shadow-[0_14px_30px_var(--primary-shadow-strong)]"
+                className="min-h-12 px-8 text-sm sm:text-base font-bold shadow-[0_14px_30px_var(--primary-shadow-strong)]"
               >
-                Get started
+                Register Free
                 <ArrowRight className="h-4 w-4" aria-hidden="true" />
               </Button>
 
               <Button
-                href="#how-it-works"
+                href="/login"
                 variant="secondary"
-                className="min-h-12 px-5 text-sm sm:text-base font-semibold"
+                className="min-h-12 px-8 text-sm sm:text-base font-bold"
               >
-                How it works
-              </Button>
-
-              <Button
-                href="#contact"
-                variant="secondary"
-                className="min-h-12 px-5 text-sm sm:text-base font-semibold"
-              >
-                <MessageSquare className="h-4 w-4 text-[var(--primary)]" aria-hidden="true" />
-                Contact us
+                Login
               </Button>
             </div>
 

@@ -301,7 +301,7 @@ export default function LoginPage() {
             <div className="mt-8 pt-6 border-t border-[var(--border)] text-center text-sm text-[var(--muted)]">
               <span>New to LetsChat? </span>
               <Link
-                href="/#how-it-works"
+                href="/register"
                 className="font-semibold text-[var(--primary)] hover:text-[var(--primary-deep)] hover:underline focus-ring rounded"
               >
                 Create an account
