@@ -18,9 +18,10 @@ export async function apiFetch<T>(
   options: RequestInit & { schema?: z.ZodType<T> } = {}
 ): Promise<T> {
   const { schema, ...init } = options;
+  
   const response = await fetch(`${API_URL}${path}`, {
     ...init,
-    credentials: "include",
+    credentials: "include", // Relies on HttpOnly cookies sent automatically by the browser
     headers: {
       Accept: "application/json",
       ...(init.body ? { "Content-Type": "application/json" } : {}),

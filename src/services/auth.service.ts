@@ -22,24 +22,29 @@ export interface AuthResponse {
 }
 
 export const authService = {
-  login: (data: LoginDto) => {
-    return apiFetch<AuthResponse>("/auth/login", {
+  login: async (data: LoginDto) => {
+    return await apiFetch<AuthResponse>("/auth/login", {
       method: "POST",
       body: JSON.stringify(data),
     });
   },
 
-  register: (data: RegisterDto) => {
-    return apiFetch<AuthResponse>("/auth/register", {
+  register: async (data: RegisterDto) => {
+    return await apiFetch<AuthResponse>("/auth/register", {
       method: "POST",
       body: JSON.stringify(data),
     });
   },
 
-  logout: () => {
-    return apiFetch("/auth/logout", {
-      method: "POST",
-    });
+  logout: async () => {
+    // The backend should clear the HttpOnly cookie when this is called
+    try {
+      await apiFetch("/auth/logout", {
+        method: "POST",
+      });
+    } catch (e) {
+      // Ignore if it fails
+    }
   },
 
   getCurrentUser: () => {

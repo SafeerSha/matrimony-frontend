@@ -6,6 +6,7 @@ import Link from "next/link";
 import { ArrowRight, Eye, EyeOff, Loader2, Sparkles, Heart } from "lucide-react";
 import { Logo } from "@/components/layout/logo";
 import { cn } from "@/lib/cn";
+import { authService } from "@/services";
 
 export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false);
@@ -19,10 +20,17 @@ export default function LoginPage() {
     setErrorMessage(null);
     setStatusMessage(null);
 
-    // Development bypass - no backend needed
-    setTimeout(() => {
+    const formData = new FormData(e.currentTarget);
+    const email = formData.get("email") as string;
+    const password = formData.get("password") as string;
+
+    try {
+      await authService.login({ email, password });
       window.location.href = "/app";
-    }, 600);
+    } catch (error: any) {
+      setErrorMessage(error.message || "Failed to sign in. Please check your credentials.");
+      setIsLoading(false);
+    }
   };
 
   return (

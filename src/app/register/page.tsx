@@ -6,6 +6,7 @@ import Link from "next/link";
 import { ArrowRight, Eye, EyeOff, Loader2, Heart, CheckCircle2 } from "lucide-react";
 import { Logo } from "@/components/layout/logo";
 import { cn } from "@/lib/cn";
+import { authService } from "@/services";
 
 export default function RegisterPage() {
   const [step, setStep] = useState<1 | 2>(1);
@@ -45,10 +46,21 @@ export default function RegisterPage() {
       return;
     }
 
-    // Mock success and redirect to onboarding wizard
-    setTimeout(() => {
-      window.location.href = "/onboarding";
-    }, 800);
+    try {
+      const [firstName, ...rest] = name.split(" ");
+      const lastName = rest.join(" ");
+      
+      await authService.register({
+        email,
+        password,
+        firstName: firstName || "",
+        lastName: lastName || ""
+      });
+      window.location.href = "/app";
+    } catch (error: any) {
+      setErrorMessage(error.message || "Failed to create account. Email might already exist.");
+      setIsLoading(false);
+    }
   };
 
   return (
