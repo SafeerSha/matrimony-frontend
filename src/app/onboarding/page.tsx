@@ -7,6 +7,7 @@ import { ArrowRight, ArrowLeft, Loader2, UploadCloud, CheckCircle2, Heart } from
 import { Logo } from "@/components/layout/logo";
 import { cn } from "@/lib/cn";
 import { profileService, mediaService } from "@/services";
+import { toast } from "@/lib/toast";
 
 export default function OnboardingPage() {
   const [step, setStep] = useState<1 | 2 | 3 | 4 | 5>(1);
@@ -84,10 +85,17 @@ export default function OnboardingPage() {
         await mediaService.uploadPhoto(primaryPhoto);
       }
 
-      window.location.href = "/app";
+      toast.flash("success", "Profile setup complete!", "Your preferences and profile have been saved.");
+      toast.success("Profile setup complete!", "Your preferences and profile have been saved.");
+
+      setTimeout(() => {
+        window.location.href = "/app";
+      }, 500);
     } catch (err: any) {
       console.error("Onboarding error:", err);
-      setError(err.message || "Something went wrong saving your profile.");
+      const msg = err.message || "Something went wrong saving your profile.";
+      setError(msg);
+      toast.error("Profile setup failed", msg);
       setIsLoading(false);
     }
   };

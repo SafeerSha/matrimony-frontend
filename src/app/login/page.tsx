@@ -7,6 +7,7 @@ import { ArrowRight, Eye, EyeOff, Loader2, Sparkles, Heart } from "lucide-react"
 import { Logo } from "@/components/layout/logo";
 import { cn } from "@/lib/cn";
 import { authService } from "@/services";
+import { toast } from "@/lib/toast";
 
 export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false);
@@ -26,9 +27,16 @@ export default function LoginPage() {
 
     try {
       await authService.login({ email, password });
-      window.location.href = "/app";
+      toast.flash("success", "Signed in successfully!", "Welcome back. Redirecting to your dashboard...");
+      toast.success("Signed in successfully!", "Welcome back. Redirecting to your dashboard...");
+
+      setTimeout(() => {
+        window.location.href = "/app";
+      }, 500);
     } catch (error: any) {
-      setErrorMessage(error.message || "Failed to sign in. Please check your credentials.");
+      const msg = error.message || "Failed to sign in. Please check your credentials.";
+      setErrorMessage(msg);
+      toast.error("Sign in failed", msg);
       setIsLoading(false);
     }
   };

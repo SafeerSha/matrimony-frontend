@@ -7,6 +7,7 @@ import { ArrowRight, Eye, EyeOff, Loader2, Heart, CheckCircle2 } from "lucide-re
 import { Logo } from "@/components/layout/logo";
 import { cn } from "@/lib/cn";
 import { authService } from "@/services";
+import { toast } from "@/lib/toast";
 
 export default function RegisterPage() {
   const [step, setStep] = useState<1 | 2>(1);
@@ -30,6 +31,7 @@ export default function RegisterPage() {
     setTimeout(() => {
       setIsLoading(false);
       setStep(2); // Move to OTP verification
+      toast.info("Verification code sent", `We've sent a 6-digit code to ${email}`);
     }, 800);
   };
 
@@ -41,7 +43,9 @@ export default function RegisterPage() {
     if (otp !== "123456") { // Mock OTP check
       setTimeout(() => {
         setIsLoading(false);
-        setErrorMessage("Invalid OTP. For this mock, please use 123456.");
+        const msg = "Invalid OTP. For this mock, please use 123456.";
+        setErrorMessage(msg);
+        toast.error("Verification failed", msg);
       }, 600);
       return;
     }
@@ -56,9 +60,17 @@ export default function RegisterPage() {
         firstName: firstName || "",
         lastName: lastName || ""
       });
-      window.location.href = "/app";
+
+      toast.flash("success", "Account created successfully!", "Welcome to Matrimony. Redirecting to your dashboard...");
+      toast.success("Account created successfully!", "Welcome to Matrimony. Redirecting to your dashboard...");
+
+      setTimeout(() => {
+        window.location.href = "/app";
+      }, 600);
     } catch (error: any) {
-      setErrorMessage(error.message || "Failed to create account. Email might already exist.");
+      const msg = error.message || "Failed to create account. Email might already exist.";
+      setErrorMessage(msg);
+      toast.error("Registration failed", msg);
       setIsLoading(false);
     }
   };

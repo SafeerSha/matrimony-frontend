@@ -17,9 +17,9 @@ const securityHeaders = [
       "object-src 'none'",
       `script-src 'self' ${process.env.NODE_ENV === 'development' ? "'unsafe-inline' 'unsafe-eval'" : ""}`,
       "style-src 'self' 'unsafe-inline'",
-      "img-src 'self' data: blob:",
+      "img-src 'self' data: blob: http://localhost:4000",
       "font-src 'self' data:",
-      "connect-src 'self'",
+      "connect-src 'self' http://localhost:4000 ws://localhost:4000",
       "worker-src 'self' blob:",
       "manifest-src 'self'"
     ].join("; ")

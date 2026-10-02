@@ -34,9 +34,12 @@ export function ProfileCard({ profile, compact=false }: { profile: Profile; comp
             e.preventDefault();
             try {
               const { matchesService } = await import('@/services');
+              const { toast } = await import('@/lib/toast');
               await matchesService.shortlistProfile(profile.id);
-              // Could show a toast here
+              toast.success("Profile Shortlisted", `Added ${profile.name} to your shortlists.`);
             } catch (error) {
+              const { toast } = await import('@/lib/toast');
+              toast.error("Action failed", "Could not shortlist profile at this time.");
               console.error(error);
             }
           }}
