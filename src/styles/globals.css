@@ -62,6 +62,34 @@ button, input, textarea, select { font: inherit; }
   animation: hero-fade-in 0.7s cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 
+@keyframes botanical-float-left {
+  0%, 100% {
+    transform: translateY(0px) rotate(0deg);
+  }
+  50% {
+    transform: translateY(-12px) rotate(1.8deg);
+  }
+}
+
+@keyframes botanical-float-right {
+  0%, 100% {
+    transform: translateY(0px) rotate(0deg);
+  }
+  50% {
+    transform: translateY(11px) rotate(-2deg);
+  }
+}
+
+.animate-botanical-float-left {
+  animation: botanical-float-left 6.5s ease-in-out infinite;
+  will-change: transform;
+}
+
+.animate-botanical-float-right {
+  animation: botanical-float-right 7.5s ease-in-out infinite 0.7s;
+  will-change: transform;
+}
+
 @keyframes botanical-sway-1 {
   0%, 100% {
     transform: translate(0px, 0px) rotate(0deg);

@@ -49,7 +49,7 @@ export default function LoginPage() {
         className="pointer-events-none absolute top-0 left-0 z-0 origin-top-left -translate-x-[6%] -translate-y-[8%] opacity-60 sm:opacity-75 lg:opacity-85"
         aria-hidden="true"
       >
-        <div className="relative aspect-[3/2] w-28 sm:w-44 md:w-56 lg:w-72 drop-shadow-[0_12px_24px_rgba(10,50,30,0.12)]">
+        <div className="relative aspect-[3/2] w-28 sm:w-44 md:w-56 lg:w-72 drop-shadow-[0_12px_24px_rgba(10,50,30,0.12)] animate-botanical-float-left">
           <Image
             src="/images/green-leaves.png"
             alt=""
@@ -67,21 +67,23 @@ export default function LoginPage() {
         className="pointer-events-none absolute bottom-0 right-0 z-0 origin-bottom-right translate-x-[6%] translate-y-[8%] opacity-60 sm:opacity-75 lg:opacity-85"
         aria-hidden="true"
       >
-        <div
-          className="relative aspect-square w-28 sm:w-44 md:w-56 lg:w-72 drop-shadow-[0_12px_24px_rgba(200,60,90,0.12)]"
-          style={{
-            transform: "scaleX(-1) rotate(-15deg)",
-            transformOrigin: "center center",
-          }}
-        >
-          <Image
-            src="/images/pink-cherry.png"
-            alt=""
-            width={576}
-            height={576}
-            quality={85}
-            className="h-full w-full object-contain"
-          />
+        <div className="animate-botanical-float-right">
+          <div
+            className="relative aspect-square w-28 sm:w-44 md:w-56 lg:w-72 drop-shadow-[0_12px_24px_rgba(200,60,90,0.12)]"
+            style={{
+              transform: "scaleX(-1) rotate(-15deg)",
+              transformOrigin: "center center",
+            }}
+          >
+            <Image
+              src="/images/pink-cherry.png"
+              alt=""
+              width={576}
+              height={576}
+              quality={85}
+              className="h-full w-full object-contain"
+            />
+          </div>
         </div>
       </div>
 

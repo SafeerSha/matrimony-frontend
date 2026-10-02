@@ -59,12 +59,12 @@ export function BotanicalCornerDecorations({
             "pointer-events-none absolute top-0 left-0 z-[2]",
             "-translate-x-[20%] -translate-y-[20%]",
             "w-20 sm:w-28 md:w-32 lg:w-40 xl:w-48 2xl:w-56",
-            "origin-top-left animate-botanical-sway-1",
+            "origin-top-left",
             "opacity-75 sm:opacity-80 xl:opacity-85",
             "transition-opacity duration-700"
           )}
         >
-          <div className="relative aspect-[3/2] w-full drop-shadow-[0_14px_28px_rgba(10,50,30,0.16)]">
+          <div className="relative aspect-[3/2] w-full drop-shadow-[0_14px_28px_rgba(10,50,30,0.16)] animate-botanical-float-left">
             <Image
               src="/images/green-leaves.png"
               alt=""
@@ -88,28 +88,30 @@ export function BotanicalCornerDecorations({
             "pointer-events-none absolute top-0 right-0",
             "translate-x-[20%] -translate-y-[20%]",
             "w-16 sm:w-20 md:w-24 lg:w-32 xl:w-40 2xl:w-48",
-            "origin-top-right animate-botanical-sway-2",
+            "origin-top-right",
             "opacity-75 sm:opacity-80 xl:opacity-85",
             "transition-opacity duration-700"
           )}
         >
-          <div
-            className="relative aspect-square w-full drop-shadow-[0_12px_24px_rgba(200,60,90,0.15)]"
-            style={{
-              transform: "rotate(155deg)",
-              transformOrigin: "center center",
-            }}
-          >
-            <Image
-              src="/images/pink-cherry.png"
-              alt=""
-              width={800}
-              height={800}
-              priority
-              quality={90}
-              sizes="(max-width: 640px) 144px, (max-width: 1024px) 272px, 432px"
-              className="h-full w-full object-contain object-top-right"
-            />
+          <div className="animate-botanical-float-right">
+            <div
+              className="relative aspect-square w-full drop-shadow-[0_12px_24px_rgba(200,60,90,0.15)]"
+              style={{
+                transform: "rotate(155deg)",
+                transformOrigin: "center center",
+              }}
+            >
+              <Image
+                src="/images/pink-cherry.png"
+                alt=""
+                width={800}
+                height={800}
+                priority
+                quality={90}
+                sizes="(max-width: 640px) 144px, (max-width: 1024px) 272px, 432px"
+                className="h-full w-full object-contain object-top-right"
+              />
+            </div>
           </div>
         </div>
       )}
