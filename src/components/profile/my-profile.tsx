@@ -5,7 +5,7 @@ import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Avatar } from '@/components/ui/avatar';
-import { profileService, mediaService } from '@/services';
+import { profileService, mediaService, authService } from '@/services';
 import type { UserProfile } from '@/services/profile.service';
 
 export function MyProfile() {
@@ -19,8 +19,18 @@ export function MyProfile() {
 
   const fetchProfile = async () => {
     try {
-      const res = await profileService.getProfile("me");
-      setProfile(res as UserProfile);
+      const [profileResult, userResult] = await Promise.allSettled([
+        profileService.getProfile("me"),
+        authService.getCurrentUser(),
+      ]);
+
+      const profileData = profileResult.status === "fulfilled" && profileResult.value ? profileResult.value : {};
+      const userData = userResult.status === "fulfilled" && userResult.value ? userResult.value : {};
+
+      setProfile({
+        ...userData,
+        ...profileData,
+      } as UserProfile);
     } catch (e) {
       console.error(e);
     } finally {
@@ -61,9 +71,18 @@ export function MyProfile() {
 
   if (!profile) return null;
 
-  const displayName = profile.firstName ? `${profile.firstName} ${profile.lastName || ''}`.trim() : 'User';
-  const age = profile.dateOfBirth ? Math.floor((new Date().getTime() - new Date(profile.dateOfBirth).getTime()) / 31557600000) : '--';
+  const displayName = profile.firstName
+    ? `${profile.firstName} ${profile.lastName || ''}`.trim()
+    : profile.name || (profile as any)?.user?.firstName
+    ? `${(profile as any).user.firstName} ${(profile as any).user.lastName || ''}`.trim()
+    : 'User';
+
+  const dob = profile.dateOfBirth || (profile as any)?.user?.dateOfBirth;
+  const age = dob ? Math.floor((new Date().getTime() - new Date(dob).getTime()) / 31557600000) : '--';
   const displayImage = profile.photos && profile.photos.length > 0 ? profile.photos[0].url : 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=900&q=85';
+
+  const rawId = profile.profileId || profile.user?.profileId || profile.id || profile.userId || 'LT-A00001';
+  const matrimonyId = profile.profileId || profile.user?.profileId || (profile.id ? String(profile.id).replace(/[^a-zA-Z0-9]/g, '').substring(0, 8).toUpperCase() : 'LT-A00001');
 
   const sections = [
     ['Basic details', 'Name, age, location and profession', '82% complete'],
@@ -108,7 +127,7 @@ export function MyProfile() {
               
               <div className="mt-4 inline-flex items-center gap-2 rounded-lg border border-[var(--primary)]/20 bg-[var(--primary)]/5 px-3 py-1.5">
                 <span className="text-xs font-semibold uppercase tracking-wider text-[var(--muted)]">Matrimony ID</span>
-                <span className="text-sm font-bold tracking-widest text-[var(--primary-deep)]">{profile.id.substring(0, 8).toUpperCase()}</span>
+                <span className="text-sm font-bold tracking-widest text-[var(--primary-deep)]">{matrimonyId}</span>
               </div>
             </div>
             
@@ -193,7 +212,7 @@ export function MyProfile() {
               <h2 className="text-xl font-bold text-[var(--foreground)]">About You (Bio)</h2>
               <p className="mt-1 text-sm text-[var(--muted)]">Keep your introduction natural and specific.</p>
             </div>
-            <Button variant="outline"><Edit3 className="mr-2 h-4 w-4" /> Edit Bio</Button>
+            <Button variant="secondary"><Edit3 className="mr-2 h-4 w-4" /> Edit Bio</Button>
           </div>
           <div className="mt-6 rounded-2xl bg-[var(--surface-muted)] p-6 border border-[var(--border)]/50">
             <p className="leading-relaxed text-[var(--muted-strong)]">
@@ -209,7 +228,7 @@ export function MyProfile() {
             <div>
               <h2 className="text-xl font-bold text-[var(--foreground)]">Preferences</h2>
             </div>
-            <Button variant="outline"><Edit3 className="mr-2 h-4 w-4" /> Update Filters</Button>
+            <Button variant="secondary"><Edit3 className="mr-2 h-4 w-4" /> Update Filters</Button>
           </div>
           <div className="mt-6 grid gap-5 sm:grid-cols-2">
             {[
@@ -251,7 +270,7 @@ export function MyProfile() {
                 <img src={photo.url} alt="Profile Album" className="w-full h-full object-cover" />
                 {index === 0 && <div className="absolute top-2 left-2 bg-[var(--primary)] text-white text-[10px] font-bold px-2 py-1 rounded uppercase tracking-wider">Display Pic</div>}
                 <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
-                  <Button variant="destructive" size="icon" className="h-8 w-8" onClick={() => handleDeletePhoto(photo.id)}>
+                  <Button variant="danger" className="h-8 w-8 p-0" onClick={() => handleDeletePhoto(photo.id)}>
                     <Trash2 className="h-4 w-4" />
                   </Button>
                 </div>

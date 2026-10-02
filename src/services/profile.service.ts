@@ -1,8 +1,21 @@
 import { apiFetch } from "@/lib/http/api-client";
 
 export interface UserProfile {
-  id: string;
-  userId: string;
+  id?: string;
+  userId?: string;
+  profileId?: string;
+  firstName?: string;
+  lastName?: string;
+  name?: string;
+  isVerified?: boolean;
+  user?: {
+    id?: string;
+    profileId?: string;
+    email?: string;
+    firstName?: string;
+    lastName?: string;
+    role?: string;
+  };
   bio?: string;
   dateOfBirth?: string;
   gender?: string;

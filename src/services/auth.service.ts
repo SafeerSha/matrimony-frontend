@@ -16,6 +16,7 @@ export interface AuthResponse {
   accessToken: string;
   user: {
     id: string;
+    profileId?: string;
     email: string;
     role: string;
   };
