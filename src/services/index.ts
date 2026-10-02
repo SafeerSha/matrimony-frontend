@@ -3,3 +3,4 @@ export * from "./profile.service";
 export * from "./matches.service";
 export * from "./media.service";
 export * from "./admin.service";
+export * from "./chat.service";
