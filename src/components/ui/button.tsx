@@ -3,7 +3,7 @@ import Link from "next/link";
 import { Loader2 } from "lucide-react";
 
 type Props = ButtonHTMLAttributes<HTMLButtonElement> & {
-  variant?: "primary" | "secondary" | "ghost" | "danger";
+  variant?: "primary" | "secondary" | "ghost" | "danger" | "outline";
   size?: "sm" | "md" | "lg" | string;
   loading?: boolean;
   href?: string;
@@ -12,6 +12,7 @@ type Props = ButtonHTMLAttributes<HTMLButtonElement> & {
 const variants = {
   primary: "bg-[var(--primary)] text-white hover:bg-[var(--primary-deep)] shadow-[0_10px_25px_var(--primary-shadow)]",
   secondary: "bg-white text-[var(--secondary-foreground)] border border-[var(--border)] hover:bg-[var(--surface-muted)]",
+  outline: "bg-transparent text-[var(--secondary-foreground)] border border-[var(--border)] hover:bg-[var(--surface-muted)] hover:border-[var(--border-strong)]",
   ghost: "text-[var(--muted-strong)] hover:bg-[var(--primary-lighter)]",
   danger: "bg-[var(--danger)] text-white hover:bg-[var(--danger-deep)]"
 };

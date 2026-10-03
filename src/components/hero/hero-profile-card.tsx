@@ -53,11 +53,11 @@ export function HeroProfileCard({
         </div>
         {profile.verified && (
           <span
-            className="absolute -bottom-0.5 -right-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-[var(--surface)] text-[var(--primary)] ring-1 ring-[var(--border)]"
+            className="absolute -bottom-0.5 -right-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-[var(--surface)] text-[var(--accent)] ring-1 ring-[var(--border)]"
             title="Verified Profile"
             aria-label="Verified Profile"
           >
-            <CheckCircle2 className="h-3.5 w-3.5 fill-[var(--primary-light)]" aria-hidden="true" />
+            <CheckCircle2 className="h-3.5 w-3.5 text-[var(--accent)]" fill="currentColor" stroke="white" aria-hidden="true" />
           </span>
         )}
       </div>
@@ -68,7 +68,7 @@ export function HeroProfileCard({
             {profile.name}, {profile.age}
           </p>
           {profile.matchScore && (
-            <Badge tone="success" className="shrink-0 text-[10px] font-semibold px-2 py-0.5">
+            <Badge tone="accent" className="shrink-0 text-[10px] font-semibold px-2 py-0.5">
               <Heart className="mr-1 h-2.5 w-2.5 fill-current inline" aria-hidden="true" />
               {profile.matchScore}
             </Badge>

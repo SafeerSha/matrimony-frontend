@@ -182,7 +182,7 @@ export default function NotificationsPage() {
               </>
             ) : unreadCount === 0 ? (
               <>
-                <CheckCheck className="h-4 w-4 text-emerald-600" />
+                <CheckCheck className="h-4 w-4 text-primary" />
                 <span>All read</span>
               </>
             ) : (

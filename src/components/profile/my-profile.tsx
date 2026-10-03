@@ -181,7 +181,7 @@ export function MyProfile() {
                       <p className="text-sm font-semibold text-[var(--foreground)]">{title}</p>
                       <p className="mt-0.5 text-xs text-[var(--muted)]">{desc}</p>
                     </div>
-                    <span className="text-xs font-semibold text-green-600">{status}</span>
+                    <span className="text-xs font-semibold text-[var(--primary)]">{status}</span>
                     <ChevronRight className="h-4 w-4 text-[var(--muted-light)]" />
                   </button>
                 ))}

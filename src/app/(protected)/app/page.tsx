@@ -52,7 +52,18 @@ export default function DashboardPage() {
   }, []);
 
   return <div className="space-y-7">
- <section className="relative overflow-hidden rounded-[28px] bg-primary-deep p-6 text-white shadow-xl sm:p-8"><div className="absolute -right-20 -top-24 h-64 w-64 rounded-full bg-primary-light/10 blur-3xl"/><div className="relative max-w-2xl"><Badge>Private by design</Badge><h1 className="mt-5 text-3xl font-bold tracking-tight sm:text-4xl">A thoughtful start to something meaningful.</h1><p className="mt-3 max-w-xl leading-7 text-white/75">Your recommendations are ready. Take a moment to explore profiles, review interests and continue conversations that feel right.</p><div className="mt-6 flex flex-wrap gap-3"><Link href="/app/discover"><Button>Explore matches <ArrowRight className="ml-1 h-4 w-4"/></Button></Link><Link href="/app/profile"><Button variant="secondary">Complete your profile</Button></Link></div></div></section>
+ <section className="relative overflow-hidden rounded-[28px] bg-[var(--primary-deep)] p-6 text-white shadow-[0_16px_40px_var(--primary-shadow-strong)] sm:p-8">
+   <div className="absolute -right-20 -top-24 h-64 w-64 rounded-full bg-white/10 blur-3xl" />
+   <div className="relative max-w-2xl">
+     <Badge tone="neutral" className="bg-white/15 text-white border-white/25 backdrop-blur-sm">Private by design</Badge>
+     <h1 className="mt-5 text-3xl font-bold tracking-tight sm:text-4xl text-white">A thoughtful start to something meaningful.</h1>
+     <p className="mt-3 max-w-xl leading-7 text-white/80">Your recommendations are ready. Take a moment to explore profiles, review interests and continue conversations that feel right.</p>
+     <div className="mt-6 flex flex-wrap gap-3">
+       <Link href="/app/discover"><Button className="bg-white text-[var(--primary-deep)] hover:bg-[#FFF9F6] shadow-md border-transparent font-bold">Explore matches <ArrowRight className="ml-1 h-4 w-4"/></Button></Link>
+       <Link href="/app/profile"><Button variant="secondary" className="bg-white/10 text-white border-white/30 hover:bg-white/20 hover:border-white/50 backdrop-blur-sm">Complete your profile</Button></Link>
+     </div>
+   </div>
+ </section>
  <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">{[{label:'Profile strength',value:'82%',detail:'2 sections to complete',icon:CheckCircle2,href:'/app/profile'},{label:'New interests',value:'4',detail:'2 need your response',icon:Heart,href:'/app/interests'},{label:'New messages',value:'2',detail:'Across 3 conversations',icon:MessageCircle,href:'/app/messages'},{label:'New suggestions',value:'12',detail:'Updated today',icon:Sparkles,href:'/app/discover'}].map(({label,value,detail,icon:Icon,href})=><Link key={label} href={href}><Card className="h-full p-5 transition hover:-translate-y-0.5 hover:shadow-md"><div className="flex items-center justify-between"><div className="grid h-10 w-10 place-items-center rounded-xl bg-primary-light text-primary"><Icon className="h-5 w-5"/></div><ArrowRight className="h-4 w-4 text-subtle-foreground"/></div><p className="mt-5 text-sm font-semibold text-muted">{label}</p><p className="mt-1 text-2xl font-bold">{value}</p><p className="mt-1 text-xs text-muted">{detail}</p></Card></Link>)}</div>
  <section className="space-y-4">
    <SectionHeader eyebrow="For you" title="Recommended profiles" description="A few people who align with the preferences in your profile." action={<Link href="/app/discover" className="text-sm font-semibold text-primary">View all</Link>}/>

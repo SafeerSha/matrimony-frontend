@@ -218,11 +218,11 @@ export default function MessagesPage() {
                     <div>
                       <p className="font-bold text-sm text-[var(--foreground)]">{selected.participant?.firstName || selected.participant?.name || 'User'}</p>
                       <p className="text-[11px] font-medium text-[var(--muted)]">
-                        <span className="text-green-600">Online now</span>
+                        <span className="text-[var(--primary)] font-medium">Online now</span>
                       </p>
                     </div>
                   </div>
-                  <button aria-label="Options" className="grid h-9 w-9 place-items-center rounded-full hover:bg-[var(--surface-muted)] text-[var(--muted)]">
+                  <button aria-label="Options" className="grid h-9 w-9 place-items-center rounded-full hover:bg-[var(--surface-muted)] text-[var(--muted)] transition">
                     <MoreHorizontal className="h-4 w-4" />
                   </button>
                 </header>
@@ -230,14 +230,14 @@ export default function MessagesPage() {
                 {!isSubscribed ? (
                   /* LOCKED STATE FOR FREE USERS */
                   <div className="flex-1 flex flex-col items-center justify-center bg-[var(--surface-muted)]/50 p-6 text-center">
-                    <div className="h-20 w-20 bg-gradient-to-br from-amber-100 to-amber-200 rounded-full flex items-center justify-center mb-6 shadow-sm border border-amber-300/50">
-                      <Crown className="h-10 w-10 text-amber-600" />
+                    <div className="h-20 w-20 bg-gradient-to-br from-[#FAF3EC] to-[#F5EADE] rounded-full flex items-center justify-center mb-6 shadow-sm border border-[#EAD7C5]">
+                      <Crown className="h-10 w-10 text-[var(--accent)]" />
                     </div>
-                    <h2 className="text-2xl font-editorial-title text-[var(--foreground)] mb-3">Unlock Private Messaging</h2>
+                    <h2 className="text-2xl font-editorial-title font-bold text-[var(--foreground)] mb-3">Unlock Private Messaging</h2>
                     <p className="text-sm text-[var(--muted)] max-w-md leading-relaxed mb-8">
                       You have a connection! Upgrade to a Premium Subscription to read their messages, reply instantly, and take the next step.
                     </p>
-                    <Link href="/app/subscription" className="focus-ring inline-flex h-12 items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 px-8 text-sm font-semibold text-white shadow-lg hover:from-amber-600 hover:to-amber-700 transition-all">
+                    <Link href="/app/subscription" className="focus-ring inline-flex h-12 items-center justify-center gap-2 rounded-xl bg-[var(--primary)] px-8 text-sm font-semibold text-white shadow-[0_4px_16px_var(--primary-shadow)] hover:bg-[var(--primary-deep)] transition-all">
                       View Subscription Plans <ArrowRight className="h-4 w-4" />
                     </Link>
                   </div>
@@ -245,9 +245,9 @@ export default function MessagesPage() {
                   /* UNLOCKED STATE FOR SUBSCRIBED USERS */
                   <>
                     <div className="flex-1 space-y-6 overflow-y-auto bg-[var(--surface-muted)]/30 p-6">
-                      <div className="mx-auto flex max-w-sm items-start gap-3 rounded-2xl border border-[var(--border)] bg-amber-50/50 p-4 text-left shadow-sm">
-                        <Info className="h-5 w-5 shrink-0 text-amber-600 mt-0.5" />
-                        <p className="text-xs leading-relaxed text-amber-800/80 font-medium">
+                      <div className="mx-auto flex max-w-sm items-start gap-3 rounded-2xl border border-[#EAD7C5] bg-[#FAF3EC]/80 p-4 text-left shadow-sm">
+                        <Info className="h-5 w-5 shrink-0 text-[#8C5D30] mt-0.5" />
+                        <p className="text-xs leading-relaxed text-[#5C3A1A] font-medium">
                           This is a premium private chat. Be respectful and never share sensitive financial or login information.
                         </p>
                       </div>

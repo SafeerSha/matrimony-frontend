@@ -38,38 +38,46 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
       <div className="mx-auto flex max-w-7xl gap-6 px-4 py-6 sm:px-6">
         <aside className="hidden w-56 shrink-0 md:block">
-          <nav className="sticky top-24 space-y-1 rounded-2xl border border-emerald-500/20 bg-white p-3 shadow-[inset_0_2px_12px_rgba(16,185,129,0.12),0_8px_28px_rgba(16,185,129,0.06)]" aria-label="Application navigation">
+          <nav className="sticky top-24 space-y-1.5 rounded-2xl border border-[var(--border)] bg-white p-3 shadow-[0_8px_30px_var(--card-shadow)]" aria-label="Application navigation">
             {nav.map(({ href, label, icon: Icon }) => {
               const isActive = href === "/app" ? pathname === "/app" : pathname.startsWith(href);
               return (
                 <Link key={href} href={href} className={cn(
-                  "focus-ring flex items-center gap-3 rounded-xl px-3 py-3 text-sm font-medium transition-all duration-200 hover:bg-emerald-500/10 hover:text-emerald-800",
-                  isActive ? "bg-emerald-500/12 shadow-[inset_0_2px_4px_rgba(16,185,129,0.2),inset_0_0_0_1px_rgba(16,185,129,0.25)] text-emerald-900 font-semibold" : "text-[var(--muted-strong)]"
+                  "focus-ring flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all duration-200",
+                  isActive 
+                    ? "bg-[var(--primary)] text-white font-semibold shadow-[0_4px_14px_var(--primary-shadow)]" 
+                    : "text-[var(--muted-strong)] hover:bg-[var(--primary-light)]/50 hover:text-[var(--primary)]"
                 )}>
-                  <Icon className="h-5 w-5 transition-transform duration-200" aria-hidden />
+                  <Icon className={cn("h-5 w-5 transition-transform duration-200", isActive ? "text-white" : "text-[var(--muted)]")} aria-hidden />
                   {label}
                 </Link>
               );
             })}
             <Link href="/app/settings" className={cn(
-              "focus-ring flex items-center gap-3 rounded-xl px-3 py-3 text-sm font-medium transition-all duration-200 hover:bg-emerald-500/10 hover:text-emerald-800",
-              pathname.startsWith("/app/settings") ? "bg-emerald-500/12 shadow-[inset_0_2px_4px_rgba(16,185,129,0.2),inset_0_0_0_1px_rgba(16,185,129,0.25)] text-emerald-900 font-semibold" : "text-[var(--muted-strong)]"
+              "focus-ring flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all duration-200",
+              pathname.startsWith("/app/settings") 
+                ? "bg-[var(--primary)] text-white font-semibold shadow-[0_4px_14px_var(--primary-shadow)]" 
+                : "text-[var(--muted-strong)] hover:bg-[var(--primary-light)]/50 hover:text-[var(--primary)]"
             )}>
-              <Settings className="h-5 w-5 transition-transform duration-200" aria-hidden />
+              <Settings className={cn("h-5 w-5 transition-transform duration-200", pathname.startsWith("/app/settings") ? "text-white" : "text-[var(--muted)]")} aria-hidden />
               Settings
             </Link>
             <Link href="/app/subscription" className={cn(
-              "focus-ring flex items-center gap-3 rounded-xl px-3 py-3 text-sm font-medium transition-all duration-200 hover:bg-emerald-500/10 hover:text-emerald-800",
-              pathname.startsWith("/app/subscription") ? "bg-emerald-500/12 shadow-[inset_0_2px_4px_rgba(16,185,129,0.2),inset_0_0_0_1px_rgba(16,185,129,0.25)] text-emerald-900 font-semibold" : "text-[var(--muted-strong)]"
+              "focus-ring flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all duration-200",
+              pathname.startsWith("/app/subscription") 
+                ? "bg-[var(--primary)] text-white font-semibold shadow-[0_4px_14px_var(--primary-shadow)]" 
+                : "text-[var(--muted-strong)] hover:bg-[var(--primary-light)]/50 hover:text-[var(--primary)]"
             )}>
-              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-5 w-5 transition-transform duration-200" aria-hidden><rect width="20" height="14" x="2" y="5" rx="2"/><line x1="2" x2="22" y1="10" y2="10"/></svg>
+              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={cn("h-5 w-5 transition-transform duration-200", pathname.startsWith("/app/subscription") ? "text-white" : "text-[var(--muted)]")} aria-hidden><rect width="20" height="14" x="2" y="5" rx="2"/><line x1="2" x2="22" y1="10" y2="10"/></svg>
               Subscription
             </Link>
             <Link href="/app/support" className={cn(
-              "focus-ring flex items-center gap-3 rounded-xl px-3 py-3 text-sm font-medium transition-all duration-200 hover:bg-emerald-500/10 hover:text-emerald-800",
-              pathname.startsWith("/app/support") ? "bg-emerald-500/12 shadow-[inset_0_2px_4px_rgba(16,185,129,0.2),inset_0_0_0_1px_rgba(16,185,129,0.25)] text-emerald-900 font-semibold" : "text-[var(--muted-strong)]"
+              "focus-ring flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all duration-200",
+              pathname.startsWith("/app/support") 
+                ? "bg-[var(--primary)] text-white font-semibold shadow-[0_4px_14px_var(--primary-shadow)]" 
+                : "text-[var(--muted-strong)] hover:bg-[var(--primary-light)]/50 hover:text-[var(--primary)]"
             )}>
-              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-5 w-5 transition-transform duration-200" aria-hidden><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" x2="12.01" y1="17" y2="17"/></svg>
+              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={cn("h-5 w-5 transition-transform duration-200", pathname.startsWith("/app/support") ? "text-white" : "text-[var(--muted)]")} aria-hidden><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" x2="12.01" y1="17" y2="17"/></svg>
               Help & Support
             </Link>
             <div className="pt-2">
@@ -82,7 +90,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                     window.location.href = "/login";
                   }, 800);
                 }}
-                className="focus-ring flex w-full items-center gap-3 rounded-xl px-3 py-3 text-sm font-medium text-red-600 transition-all duration-200 hover:bg-red-50 hover:text-red-700"
+                className="focus-ring flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-[var(--muted)] transition-all duration-200 hover:bg-[var(--primary-light)]/40 hover:text-[var(--primary-deep)]"
               >
                 <LogOut className="h-5 w-5 transition-transform duration-200" aria-hidden />
                 Sign Out
@@ -103,7 +111,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                 "focus-ring flex flex-col items-center gap-1 rounded-xl py-2 text-[11px] font-medium transition-colors",
                 isActive ? "text-[var(--primary)] font-semibold" : "text-[var(--muted-strong)] hover:text-[var(--primary)]"
               )}>
-                <Icon className="h-5 w-5 transition-transform duration-200" aria-hidden />
+                <Icon className={cn("h-5 w-5 transition-transform duration-200", isActive && "text-[var(--primary)]")} aria-hidden />
                 {label}
               </Link>
             );

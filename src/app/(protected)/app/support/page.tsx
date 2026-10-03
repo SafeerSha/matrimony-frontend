@@ -70,8 +70,8 @@ export default function SupportPage() {
             <h2 className="text-xl font-bold text-[var(--foreground)] mb-6">Send us a message</h2>
             {isSuccess ? (
               <div className="flex flex-col items-center justify-center py-12 text-center h-[350px]">
-                <div className="h-16 w-16 bg-green-100 rounded-full flex items-center justify-center mb-4">
-                  <CheckCircle2 className="h-8 w-8 text-green-600" />
+                <div className="h-16 w-16 bg-[var(--primary-light)] rounded-full flex items-center justify-center mb-4">
+                  <CheckCircle2 className="h-8 w-8 text-[var(--primary)]" />
                 </div>
                 <h3 className="text-lg font-bold text-[var(--foreground)]">Message Sent!</h3>
                 <p className="text-[var(--muted)] mt-2">Our support team will get back to you within 24 hours.</p>
