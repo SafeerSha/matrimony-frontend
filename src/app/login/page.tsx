@@ -1,9 +1,9 @@
 "use client";
 
 import { useState } from "react";
-import Image from "next/image";
+import IconPhoto from "next/image";
 import Link from "next/link";
-import { ArrowRight, Eye, EyeOff, Loader2, Sparkles, Heart } from "lucide-react";
+import { IconArrowRight, IconEye, IconEyeOff, IconLoader2, IconHeart } from '@tabler/icons-react';
 import { Logo } from "@/components/layout/logo";
 import { cn } from "@/lib/cn";
 import { authService } from "@/services";
@@ -27,11 +27,10 @@ export default function LoginPage() {
 
     try {
       await authService.login({ email, password });
-      toast.flash("success", "Signed in successfully!", "Welcome back. Redirecting...");
-      toast.success("Signed in successfully!", "Welcome back. Redirecting...");
+      toast.flash("success", "Signed in successfully!", "Welcome back");
 
       setTimeout(() => {
-        let destination = "/app";
+        let destination = "/app/discover";
         if (typeof window !== "undefined") {
           const searchParams = new URLSearchParams(window.location.search);
           const next = searchParams.get("next");
@@ -50,7 +49,7 @@ export default function LoginPage() {
   };
 
   return (
-    <main className="relative min-h-screen overflow-x-hidden bg-[var(--background)] px-4 py-6 sm:px-6 sm:py-10 lg:px-8 lg:py-12 flex items-center justify-center">
+    <main className="relative min-h-screen overflow-x-hidden bg-[var(--background)] px-4 py-6 sm:px-6 sm:py-8 lg:px-8 lg:py-10 flex items-center justify-center">
       {/* 1. Subtle Botanical Leaf Corner Accents (pointer-events-none, never blocks form) */}
       {/* Top-Left Corner: Gentle Green Botanical Leaf Branch */}
       <div
@@ -58,7 +57,7 @@ export default function LoginPage() {
         aria-hidden="true"
       >
         <div className="relative aspect-[3/2] w-28 sm:w-44 md:w-56 lg:w-72 drop-shadow-[0_12px_24px_rgba(10,50,30,0.12)] animate-botanical-float-left">
-          <Image
+          <IconPhoto
             src="/images/green-leaves.png"
             alt=""
             width={576}
@@ -83,7 +82,7 @@ export default function LoginPage() {
               transformOrigin: "center center",
             }}
           >
-            <Image
+            <IconPhoto
               src="/images/pink-cherry.png"
               alt=""
               width={576}
@@ -112,10 +111,10 @@ export default function LoginPage() {
           {/* ======================================================== */}
           {/* LEFT SIDE: Warm, Elegant Matrimonial Couple Photography */}
           {/* ======================================================== */}
-          <div className="relative flex flex-col justify-between overflow-hidden bg-[var(--surface-muted)] p-6 sm:p-8 lg:p-10 order-2 lg:order-1 min-h-[260px] sm:min-h-[320px] lg:min-h-full">
+          <div className="relative flex flex-col justify-between overflow-hidden bg-[var(--surface-muted)] p-6 sm:p-8 order-2 lg:order-1 min-h-[260px] sm:min-h-[320px] lg:min-h-full">
             {/* Background Couple Photograph */}
             <div className="absolute inset-0 z-0">
-              <Image
+              <IconPhoto
                 src="/images/hero-1.jpg"
                 alt="Smiling couple in traditional Indian attire celebrating their connection"
                 fill
@@ -138,19 +137,19 @@ export default function LoginPage() {
             {/* Top Brand Pill on Photo */}
             <div className="relative z-10 flex items-center justify-between">
               <span className="inline-flex items-center gap-1.5 rounded-full border border-white/20 bg-white/15 backdrop-blur-md px-3.5 py-1.5 text-xs font-semibold text-white tracking-wide shadow-sm">
-                <Heart className="h-3.5 w-3.5" aria-hidden="true" fill="currentColor" />                Curated Matrimony
+                <IconHeart className="h-3.5 w-3.5" aria-hidden="true" fill="currentColor" />                Curated Matrimony
               </span>
             </div>
 
-            {/* Bottom Brand Quote */}
+            {/* Bottom Brand IconQuote */}
             <div className="relative z-10 mt-auto pt-12">
               <div className="mb-3 inline-flex items-center gap-2 text-xs font-medium uppercase tracking-wider text-amber-200/90">
-                <Heart className="h-3.5 w-3.5 fill-current" aria-hidden="true" />
+                <IconHeart className="h-3.5 w-3.5 fill-current" aria-hidden="true" />
                 Values-Aligned Introductions
               </div>
-              <h2 className="font-editorial-title text-2xl sm:text-3xl font-normal leading-tight text-white tracking-tight">
+              <h2 className="text-2xl sm:text-3xl font-bold leading-tight text-white tracking-tight">
                 Meaningful connections <br />
-                <span className="font-editorial-highlight font-medium text-amber-100">
+                <span className="font-semibold text-amber-100">
                   start with a hello.
                 </span>
               </h2>
@@ -163,7 +162,7 @@ export default function LoginPage() {
           {/* ======================================================== */}
           {/* RIGHT SIDE: Clean, Premium Authentication Experience     */}
           {/* ======================================================== */}
-          <div className="flex flex-col justify-between p-6 sm:p-10 lg:p-12 xl:p-14 order-1 lg:order-2 bg-white">
+          <div className="flex flex-col justify-between p-6 sm:p-8 lg:p-10 order-1 lg:order-2 bg-white">
             <div>
               {/* Logo & Navigation */}
               <div className="flex items-center justify-between">
@@ -177,8 +176,8 @@ export default function LoginPage() {
               </div>
 
               {/* Header Title */}
-              <div className="mt-8 sm:mt-10 mb-6 sm:mb-8">
-                <h1 className="font-editorial-title text-3xl sm:text-4xl font-normal tracking-tight text-[var(--foreground)]">
+              <div className="mt-8 mb-6">
+                <h1 className="text-3xl sm:text-4xl font-bold tracking-tight text-[var(--foreground)]">
                   Welcome back
                 </h1>
                 <p className="mt-2 text-sm sm:text-base text-[var(--muted)] leading-relaxed">
@@ -285,9 +284,9 @@ export default function LoginPage() {
                       className="absolute right-3.5 top-1/2 -translate-y-1/2 text-[var(--muted)] hover:text-[var(--foreground)] p-1.5 rounded-lg focus-ring transition-colors"
                     >
                       {showPassword ? (
-                        <EyeOff className="h-5 w-5" aria-hidden="true" />
+                        <IconEyeOff className="h-5 w-5" aria-hidden="true" />
                       ) : (
-                        <Eye className="h-5 w-5" aria-hidden="true" />
+                        <IconEye className="h-5 w-5" aria-hidden="true" />
                       )}
                     </button>
                   </div>
@@ -309,13 +308,13 @@ export default function LoginPage() {
                   >
                     {isLoading ? (
                       <>
-                        <Loader2 className="h-5 w-5 animate-spin" aria-hidden="true" />
+                        <IconLoader2 className="h-5 w-5 animate-spin" aria-hidden="true" />
                         <span>Signing in...</span>
                       </>
                     ) : (
                       <>
                         <span>Sign in</span>
-                        <ArrowRight className="h-4 w-4" aria-hidden="true" />
+                        <IconArrowRight className="h-4 w-4" aria-hidden="true" />
                       </>
                     )}
                   </button>

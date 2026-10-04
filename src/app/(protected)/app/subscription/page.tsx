@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { Check, Crown, Loader2, Sparkles, Star } from 'lucide-react';
+import { IconCheck, IconCrown, IconLoader2, IconStar } from '@tabler/icons-react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { SectionHeader } from '@/components/ui/section-header';
@@ -26,10 +26,10 @@ export default function SubscriptionPage() {
       badge: 'Starter',
       price: '₹500',
       period: 'per month',
-      icon: <Star className="h-5 w-5 text-slate-500" />,
+      icon: <IconStar className="h-5 w-5 text-slate-500" />,
       description: 'Ideal for trying out the platform and exploring matches.',
       features: [
-        'Active Chat Permit for 30 days',
+        'Active Premium for 30 days',
         'Send & accept chat requests',
         'Unlimited messaging with matches',
         'Standard profile visibility'
@@ -40,13 +40,13 @@ export default function SubscriptionPage() {
     },
     {
       name: '3 Months Permit',
-      badge: 'Save ₹200',
+      badge: 'IconDeviceFloppy ₹200',
       price: '₹1,300',
       period: 'for 90 days',
-      icon: <Sparkles className="h-5 w-5 text-amber-600" />,
+      icon: <IconStar className="h-5 w-5 text-amber-600" />,
       description: 'Our most popular plan. Best value for active matchmaking.',
       features: [
-        'Active Chat Permit for 90 days',
+        'Active Premium for 90 days',
         'Send & accept chat requests',
         'Unlimited messaging with matches',
         'Priority profile visibility'
@@ -58,13 +58,13 @@ export default function SubscriptionPage() {
     },
     {
       name: '6 Months Permit',
-      badge: 'Save ₹500',
+      badge: 'IconDeviceFloppy ₹500',
       price: '₹2,500',
       period: 'for 180 days',
-      icon: <Crown className="h-5 w-5 text-[var(--primary)]" />,
+      icon: <IconCrown className="h-5 w-5 text-[var(--primary)]" />,
       description: 'Serious about finding a match with extended connection time.',
       features: [
-        'Active Chat Permit for 180 days',
+        'Active Premium for 180 days',
         'Send & accept chat requests',
         'Unlimited messaging with matches',
         'Priority profile visibility'
@@ -75,13 +75,13 @@ export default function SubscriptionPage() {
     },
     {
       name: '1 Year Permit',
-      badge: 'Save ₹1,000',
+      badge: 'IconDeviceFloppy ₹1,000',
       price: '₹5,000',
       period: 'for 365 days',
-      icon: <Crown className="h-5 w-5 text-[var(--accent)]" />,
+      icon: <IconCrown className="h-5 w-5 text-[var(--accent)]" />,
       description: 'Complete peace of mind with 365 days of full unlimited access.',
       features: [
-        'Active Chat Permit for 365 days',
+        'Active Premium for 365 days',
         'Send & accept chat requests',
         'Unlimited messaging with matches',
         'Highest priority profile visibility'
@@ -94,20 +94,20 @@ export default function SubscriptionPage() {
 
   return (
     <div className="space-y-8 pb-10">
-      <SectionHeader 
-        eyebrow="Chat Permits" 
-        title="Unlock Member Interactions" 
-        description="An active Chat Permit is required to send chat requests and converse with other members." 
+      <SectionHeader
+        eyebrow="Chat Permits"
+        title="Unlock Member Interactions"
+        description="An active Premium is required to send chat requests and converse with other members."
       />
 
       <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-4 max-w-7xl mx-auto">
         {plans.map((plan) => (
-          <Card 
-            key={plan.name} 
+          <Card
+            key={plan.name}
             className={cn(
               "relative p-6 flex flex-col justify-between rounded-2xl transition-all duration-300",
-              plan.popular 
-                ? "border-[var(--accent)] bg-gradient-to-b from-[#FFF9F6] via-white to-white shadow-[0_16px_40px_-15px_rgba(216,178,140,0.25)] ring-1 ring-[var(--accent)]/70" 
+              plan.popular
+                ? "border-[var(--accent)] bg-gradient-to-b from-[#FFF9F6] via-white to-white shadow-[0_16px_40px_-15px_rgba(216,178,140,0.25)] ring-1 ring-[var(--accent)]/70"
                 : "border-[var(--border)] bg-white shadow-sm hover:shadow-md hover:border-[var(--primary)]/30"
             )}
           >
@@ -116,15 +116,15 @@ export default function SubscriptionPage() {
                 Most Popular
               </div>
             )}
-            
+
             <div>
               {/* Header: Icon & Savings Badge */}
               <div className="flex items-center justify-between mb-4">
                 <div className={cn(
                   "h-11 w-11 rounded-xl flex items-center justify-center",
-                  plan.color === 'slate' ? 'bg-slate-100' : 
-                  plan.color === 'amber' ? 'bg-[#FAF3EC]' : 
-                  plan.color === 'champagne' ? 'bg-[#FAF3EC]' : 'bg-[var(--primary-light)]'
+                  plan.color === 'slate' ? 'bg-slate-100' :
+                    plan.color === 'amber' ? 'bg-[#FAF3EC]' :
+                      plan.color === 'champagne' ? 'bg-[#FAF3EC]' : 'bg-[var(--primary-light)]'
                 )}>
                   {plan.icon}
                 </div>
@@ -160,10 +160,10 @@ export default function SubscriptionPage() {
               <div className="space-y-3.5 mb-8">
                 {plan.features.map((feature, i) => (
                   <div key={i} className="flex items-start gap-2.5">
-                    <Check className={cn(
+                    <IconCheck className={cn(
                       "h-4 w-4 shrink-0 mt-0.5",
                       plan.color === 'slate' ? "text-stone-400" :
-                      plan.color === 'amber' || plan.color === 'champagne' ? "text-[var(--accent)]" : "text-[var(--primary)]"
+                        plan.color === 'amber' || plan.color === 'champagne' ? "text-[var(--accent)]" : "text-[var(--primary)]"
                     )} />
                     <span className="text-xs sm:text-sm font-medium text-[var(--foreground)] leading-snug">{feature}</span>
                   </div>
@@ -172,18 +172,18 @@ export default function SubscriptionPage() {
             </div>
 
             {/* CTA Button */}
-            <Button 
+            <Button
               disabled={plan.isCurrent || processing !== null}
               onClick={() => handleUpgrade(plan.name)}
               className={cn(
                 "w-full h-11 text-xs sm:text-sm font-bold shadow-sm transition-all mt-auto",
                 plan.isCurrent ? "bg-[var(--surface-muted)] text-[var(--muted-strong)] border border-[var(--border)]" :
-                plan.popular ? "bg-[var(--primary)] text-white hover:bg-[var(--primary-deep)] shadow-[0_4px_16px_var(--primary-shadow)]" :
-                "bg-[var(--primary)] text-white hover:bg-[var(--primary-deep)] shadow-[0_4px_14px_var(--primary-shadow)]"
+                  plan.popular ? "bg-[var(--primary)] text-white hover:bg-[var(--primary-deep)] shadow-[0_4px_16px_var(--primary-shadow)]" :
+                    "bg-[var(--primary)] text-white hover:bg-[var(--primary-deep)] shadow-[0_4px_14px_var(--primary-shadow)]"
               )}
             >
               {processing === plan.name ? (
-                <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Processing...</>
+                <><IconLoader2 className="mr-2 h-4 w-4 animate-spin" /> Processing...</>
               ) : (
                 plan.buttonText
               )}
@@ -191,7 +191,7 @@ export default function SubscriptionPage() {
           </Card>
         ))}
       </div>
-      
+
       <div className="text-center mt-12 max-w-md mx-auto">
         <p className="text-xs text-[var(--muted)]">
           Mock Payment Gateway Integration: Clicking "Upgrade" will simulate a secure checkout process and instantly provision the selected tier to your account.

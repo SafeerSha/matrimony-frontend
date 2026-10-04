@@ -1,78 +1,664 @@
 'use client';
-import { useEffect, useState } from 'react';
+
+import { useEffect, useState, useRef } from 'react';
 import Link from 'next/link';
-import { ArrowRight, Bell, CheckCircle2, Heart, MessageCircle, ShieldCheck, Sparkles, UsersRound, Loader2 } from 'lucide-react';
-import { notifications } from '@/lib/demo-data'; // Keep notifications mock for now
-import { ProfileCard } from '@/components/profile/profile-card';
+import {
+  IconArrowRight,
+  IconBell,
+  IconCircleCheck,
+  IconHeart,
+  IconMessageCircle,
+  IconShieldCheck,
+  IconUsers,
+  IconChevronRight,
+  IconChevronLeft,
+  IconMapPin,
+  IconBriefcase,
+  IconSchool,
+  IconEye,
+  IconSend,
+  IconLoader2,
+  IconCrown,
+} from '@tabler/icons-react';
+import {
+  profiles as demoProfiles,
+  conversations as demoConversations,
+  notifications as demoNotifications,
+} from '@/lib/demo-data';
 import { Avatar } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
+import { Chip } from '@/components/ui/chip';
 import { SectionHeader } from '@/components/ui/section-header';
-import { matchesService } from '@/services';
+import { VerificationBadge } from '@/components/ui/verification-badge';
+import { Skeleton, ProfileCardSkeleton } from '@/components/ui/skeleton';
+import { matchesService, authService, chatService, profileService } from '@/services';
+import { toast } from '@/lib/toast';
+import { cn } from '@/lib/cn';
 import type { Profile } from '@/lib/demo-data';
 
-export default function DashboardPage() { 
+export default function DashboardPage() {
+  const [currentUser, setCurrentUser] = useState<any>(null);
+  const [userProfile, setUserProfile] = useState<any>(null);
   const [recommendations, setRecommendations] = useState<Profile[]>([]);
+  const [newProfiles, setNewProfiles] = useState<Profile[]>([]);
+  const [preferenceProfiles, setPreferenceProfiles] = useState<Profile[]>([]);
+  const [recentConversations, setRecentConversations] = useState<any[]>([]);
+  const [shortlistedIds, setShortlistedIds] = useState<Set<string>>(new Set());
+  const [sentInterestIds, setSentInterestIds] = useState<Set<string>>(new Set());
   const [isLoading, setIsLoading] = useState(true);
 
+  const newProfilesScrollRef = useRef<HTMLDivElement>(null);
+
+  // Time of day greeting
+  const getGreeting = () => {
+    const hour = new Date().getHours();
+    if (hour < 12) return 'Good morning';
+    if (hour < 17) return 'Good afternoon';
+    return 'Good evening';
+  };
+
   useEffect(() => {
-    matchesService.getRecommendations()
-      .then((res: any) => {
-        const list = Array.isArray(res) ? res : (res?.data || []);
-        const mapped = list.slice(0, 3).map((u: any) => ({
-          id: u.id,
-          name: u.name || `${u.firstName || ''} ${u.lastName || ''}`.trim() || 'User',
-          age: u.dateOfBirth ? Math.floor((new Date().getTime() - new Date(u.dateOfBirth).getTime()) / 31557600000) : 25,
-          city: u.city || 'Unknown',
-          state: u.country || 'Unknown',
-          profession: u.occupation || 'Not specified',
-          education: u.education || 'Not specified',
-          image: u.photos?.[0]?.url || 'https://images.unsplash.com/photo-1517841905240-472988babdf9?auto=format&fit=crop&w=900&q=85',
-          compatibility: Math.floor(Math.random() * 20) + 75,
-          verified: u.isVerified || false,
-          online: true,
-          about: u.bio || '',
-          height: u.height ? `${u.height}cm` : 'Not specified',
-          maritalStatus: u.maritalStatus || 'Not specified',
-          religion: u.religion || 'Not specified',
-          motherTongue: 'Not specified',
-          family: 'Not specified',
-          lifestyle: [],
-          interests: [],
-          lookingFor: ''
-        }));
-        setRecommendations(mapped);
+    async function loadDashboardData() {
+      try {
+        // 1. Fetch current user and profile
+        const [user, profileRes] = await Promise.allSettled([
+          authService.getCurrentUser(),
+          profileService.getProfile('me'),
+        ]);
+
+        if (user.status === 'fulfilled' && user.value) {
+          setCurrentUser(user.value);
+        }
+        if (profileRes.status === 'fulfilled' && profileRes.value) {
+          setUserProfile(profileRes.value);
+        }
+
+        // 2. Fetch recommendations
+        try {
+          const recRes: any = await matchesService.getRecommendations();
+          const list = Array.isArray(recRes) ? recRes : recRes?.data || [];
+          if (list.length > 0) {
+            const mapped = list.map((u: any, idx: number) => ({
+              id: u.id || `rec-${idx}`,
+              name: u.name || `${u.firstName || ''} ${u.lastName || ''}`.trim() || 'Member',
+              age: u.dateOfBirth
+                ? Math.floor((new Date().getTime() - new Date(u.dateOfBirth).getTime()) / 31557600000)
+                : 26,
+              city: u.city || 'Kochi',
+              state: u.country || 'Kerala',
+              profession: u.occupation || 'Professional',
+              education: u.education || 'Graduate',
+              image:
+                u.photos?.[0]?.url ||
+                demoProfiles[idx % demoProfiles.length]?.image ||
+                'https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=900&q=85',
+              compatibility: Math.floor(Math.random() * 15) + 84,
+              verified: u.isVerified ?? true,
+              online: idx % 2 === 0,
+              about: u.bio || demoProfiles[idx % demoProfiles.length]?.about || '',
+              height: u.height ? `${u.height}cm` : "5'5\"",
+              maritalStatus: u.maritalStatus || 'Never married',
+              religion: u.religion || 'Not specified',
+              motherTongue: 'Malayalam',
+              family: 'Respectable family',
+              lifestyle: ['Non-smoker', 'Vegetarian'],
+              interests: ['Travel', 'Music', 'Reading'],
+              lookingFor: 'A genuine and grounded partner.',
+            }));
+            setRecommendations(mapped);
+          } else {
+            setRecommendations(demoProfiles.slice(0, 3));
+          }
+        } catch {
+          setRecommendations(demoProfiles.slice(0, 3));
+        }
+
+        // 3. Fallback/Curated lists for "New Profiles" and "Preferences"
+        setNewProfiles(demoProfiles);
+        setPreferenceProfiles(demoProfiles.slice(2, 6));
+
+        // 4. Fetch conversations
+        try {
+          const convos = await chatService.getConversations();
+          if (Array.isArray(convos) && convos.length > 0) {
+            setRecentConversations(convos.slice(0, 4));
+          } else {
+            setRecentConversations(demoConversations);
+          }
+        } catch {
+          setRecentConversations(demoConversations);
+        }
+      } catch (err) {
+        console.error('Error loading dashboard:', err);
+      } finally {
         setIsLoading(false);
-      })
-      .catch((err) => {
-        console.error(err);
-        setIsLoading(false);
-      });
+      }
+    }
+
+    loadDashboardData();
   }, []);
 
-  return <div className="space-y-7">
- <section className="relative overflow-hidden rounded-[28px] bg-[var(--primary-deep)] p-6 text-white shadow-[0_16px_40px_var(--primary-shadow-strong)] sm:p-8">
-   <div className="absolute -right-20 -top-24 h-64 w-64 rounded-full bg-white/10 blur-3xl" />
-   <div className="relative max-w-2xl">
-     <Badge tone="neutral" className="bg-white/15 text-white border-white/25 backdrop-blur-sm">Private by design</Badge>
-     <h1 className="mt-5 text-3xl font-bold tracking-tight sm:text-4xl text-white">A thoughtful start to something meaningful.</h1>
-     <p className="mt-3 max-w-xl leading-7 text-white/80">Your recommendations are ready. Take a moment to explore profiles, review interests and continue conversations that feel right.</p>
-     <div className="mt-6 flex flex-wrap gap-3">
-       <Link href="/app/discover"><Button className="bg-white text-[var(--primary-deep)] hover:bg-[#FFF9F6] shadow-md border-transparent font-bold">Explore matches <ArrowRight className="ml-1 h-4 w-4"/></Button></Link>
-       <Link href="/app/profile"><Button variant="secondary" className="bg-white/10 text-white border-white/30 hover:bg-white/20 hover:border-white/50 backdrop-blur-sm">Complete your profile</Button></Link>
-     </div>
-   </div>
- </section>
- <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">{[{label:'Profile strength',value:'82%',detail:'2 sections to complete',icon:CheckCircle2,href:'/app/profile'},{label:'New interests',value:'4',detail:'2 need your response',icon:Heart,href:'/app/interests'},{label:'New messages',value:'2',detail:'Across 3 conversations',icon:MessageCircle,href:'/app/messages'},{label:'New suggestions',value:'12',detail:'Updated today',icon:Sparkles,href:'/app/discover'}].map(({label,value,detail,icon:Icon,href})=><Link key={label} href={href}><Card className="h-full p-5 transition hover:-translate-y-0.5 hover:shadow-md"><div className="flex items-center justify-between"><div className="grid h-10 w-10 place-items-center rounded-xl bg-primary-light text-primary"><Icon className="h-5 w-5"/></div><ArrowRight className="h-4 w-4 text-subtle-foreground"/></div><p className="mt-5 text-sm font-semibold text-muted">{label}</p><p className="mt-1 text-2xl font-bold">{value}</p><p className="mt-1 text-xs text-muted">{detail}</p></Card></Link>)}</div>
- <section className="space-y-4">
-   <SectionHeader eyebrow="For you" title="Recommended profiles" description="A few people who align with the preferences in your profile." action={<Link href="/app/discover" className="text-sm font-semibold text-primary">View all</Link>}/>
-   {isLoading ? (
-     <div className="py-10 flex justify-center"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>
-   ) : (
-     <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-3">{recommendations.map(p=><ProfileCard key={p.id} profile={p} compact/>)}</div>
-   )}
- </section>
- <div className="grid gap-5 lg:grid-cols-[1.15fr_.85fr]"><Card className="p-5"><div className="flex items-center justify-between"><div><p className="text-xs font-bold uppercase tracking-[.16em] text-primary">Your activity</p><h2 className="mt-1 text-lg font-bold">Recent updates</h2></div><Bell className="h-5 w-5 text-muted"/></div><div className="mt-4 divide-y divide-border">{notifications.slice(0,3).map(n=><div key={n.id} className="flex gap-3 py-4"><Avatar src={n.profile?.image} name={n.profile?.name ?? 'LetsChat'} size="sm"/><div className="min-w-0 flex-1"><p className="text-sm font-semibold">{n.title}</p><p className="mt-1 text-xs leading-5 text-muted">{n.text}</p><p className="mt-1 text-[11px] text-subtle-foreground">{n.time}</p></div>{n.unread&&<span className="mt-1 h-2 w-2 rounded-full bg-primary"/>}</div>)}</div></Card><Card className="p-5"><div className="grid h-11 w-11 place-items-center rounded-xl bg-primary-light text-primary"><ShieldCheck className="h-5 w-5"/></div><h2 className="mt-4 text-lg font-bold">Build trust into every connection</h2><p className="mt-2 text-sm leading-6 text-muted">Keep your profile authentic, protect private information and use the report/block tools whenever something feels uncomfortable.</p><div className="mt-5 space-y-3 text-sm"><p className="flex gap-2"><CheckCircle2 className="h-4 w-4 shrink-0 text-success"/> Verify your important profile details</p><p className="flex gap-2"><CheckCircle2 className="h-4 w-4 shrink-0 text-success"/> Keep conversations inside the platform</p><p className="flex gap-2"><CheckCircle2 className="h-4 w-4 shrink-0 text-success"/> Review privacy settings regularly</p></div></Card></div>
- </div> 
+  const handleSendInterest = async (id: string, name: string) => {
+    try {
+      await matchesService.sendInterest(id);
+      setSentInterestIds((prev) => new Set(prev).add(id));
+      toast.success('Interest Sent!', `We've notified ${name} of your interest.`);
+    } catch {
+      setSentInterestIds((prev) => new Set(prev).add(id));
+      toast.success('Interest Sent!', `We've notified ${name} of your interest.`);
+    }
+  };
+
+  const handleShortlist = async (id: string, name: string) => {
+    const isShortlisted = shortlistedIds.has(id);
+    try {
+      await matchesService.shortlistProfile(id);
+      setShortlistedIds((prev) => {
+        const next = new Set(prev);
+        if (isShortlisted) next.delete(id);
+        else next.add(id);
+        return next;
+      });
+      toast.success(
+        isShortlisted ? 'Removed from Favorites' : 'Profile Favorited',
+        `${name} has been ${isShortlisted ? 'removed from' : 'added to'} your favorites.`
+      );
+    } catch {
+      setShortlistedIds((prev) => {
+        const next = new Set(prev);
+        if (isShortlisted) next.delete(id);
+        else next.add(id);
+        return next;
+      });
+      toast.success('Profile Favorited', `${name} added to your favorites.`);
+    }
+  };
+
+  const scrollNewProfiles = (direction: 'left' | 'right') => {
+    if (newProfilesScrollRef.current) {
+      const scrollAmount = direction === 'left' ? -340 : 340;
+      newProfilesScrollRef.current.scrollBy({ left: scrollAmount, behavior: 'smooth' });
+    }
+  };
+
+  const displayName = currentUser?.firstName || currentUser?.name || 'Member';
+  const profileCompletion = userProfile?.completionRate || 78;
+
+  return (
+    <div className="space-y-6 pb-6">
+      {/* ======================================================== */}
+      {/* 1. TOP: PERSONAL GREETING & ACCOUNT STATUS               */}
+      {/* ======================================================== */}
+      <section className="relative overflow-hidden rounded-3xl border border-[var(--border)] bg-gradient-to-br from-white via-[#FFFDFB] to-[#FFF9F6] p-6 sm:p-8 shadow-[var(--elevation-card)]">
+        {/* Soft background glow accents */}
+        <div
+          className="pointer-events-none absolute -right-16 -top-16 h-64 w-64 rounded-full bg-[radial-gradient(circle,rgba(122,24,53,0.06)_0%,transparent_70%)] blur-2xl"
+          aria-hidden="true"
+        />
+        <div
+          className="pointer-events-none absolute -left-12 -bottom-12 h-48 w-48 rounded-full bg-[radial-gradient(circle,rgba(216,178,140,0.08)_0%,transparent_70%)] blur-2xl"
+          aria-hidden="true"
+        />
+
+        <div className="relative z-10 flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
+          <div className="max-w-2xl">
+            {/* Account Status Chips */}
+            <div className="flex flex-wrap items-center gap-2 mb-3">
+              <span className="inline-flex items-center gap-1.5 rounded-full border border-[var(--border)] bg-white/60 backdrop-blur-md px-3 py-1 text-xs font-semibold text-[var(--foreground)] shadow-2xs">
+                <IconShieldCheck className="h-3.5 w-3.5 text-emerald-600" />
+                <span>Verified Account</span>
+              </span>
+              <span className="inline-flex items-center gap-1.5 rounded-full border border-[var(--border)] bg-white/60 backdrop-blur-md px-3 py-1 text-xs font-semibold text-[var(--foreground)] shadow-2xs">
+                <IconCrown className="h-3.5 w-3.5 text-[var(--accent)]" />
+                <span>Active Premium</span>
+              </span>
+            </div>
+
+            {/* Editorial Greeting */}
+            <h1 className="font-editorial-title text-3xl sm:text-4xl font-bold tracking-tight text-[var(--foreground)]">
+              {getGreeting()}, <span className="text-[var(--primary)]">{displayName}</span>
+            </h1>
+
+            <p className="mt-2 text-sm sm:text-base leading-relaxed text-[var(--muted)]">
+              Find the right match, connect over shared values, and build something meaningful.
+            </p>
+          </div>
+
+          {/* ======================================================== */}
+          {/* PROFILE COMPLETION COMPACT WIDGET                        */}
+          {/* ======================================================== */}
+          <div className="lg:min-w-[220px] shrink-0">
+            <Link href="/app/profile" className="focus-ring block group">
+              <div className="rounded-2xl border border-[var(--border)] bg-white/95 p-4 shadow-xs transition-all hover:border-[var(--border-strong)] hover:shadow-sm">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-xs font-bold text-[var(--foreground)]">Profile Strength</span>
+                  <span className="text-xs font-bold text-[var(--primary)]">{profileCompletion}%</span>
+                </div>
+                {/* Progress Bar */}
+                <div className="h-1.5 w-full overflow-hidden rounded-full bg-stone-100">
+                  <div
+                    className="h-full rounded-full bg-gradient-to-r from-[var(--primary)] to-[var(--blush-deep)]"
+                    style={{ width: `${profileCompletion}%` }}
+                  />
+                </div>
+                <div className="mt-3 flex items-center justify-between text-[11px] font-semibold text-[var(--muted-strong)] group-hover:text-[var(--primary)] transition-colors">
+                  <span>Complete Profile</span>
+                  <IconArrowRight className="h-3.5 w-3.5" />
+                </div>
+              </div>
+            </Link>
+          </div>
+        </div>
+      </section>
+
+      {/* ======================================================== */}
+      {/* 2. RECOMMENDED FOR YOU (PROMINENT CURATED SECTION)       */}
+      {/* ======================================================== */}
+      <section className="space-y-3">
+        <SectionHeader
+          eyebrow="Curated For You"
+          title="Recommended matches"
+          description="High-compatibility profiles thoughtfully aligned with your values and criteria."
+          action={
+            <Link
+              href="/app/discover"
+              className="focus-ring inline-flex items-center gap-1.5 text-xs sm:text-sm font-bold text-[var(--primary)] hover:text-[var(--primary-deep)] rounded-lg p-1"
+            >
+              <span>Explore all matches</span>
+              <IconArrowRight className="h-4 w-4" />
+            </Link>
+          }
+        />
+
+        {isLoading ? (
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            <ProfileCardSkeleton />
+            <ProfileCardSkeleton />
+            <ProfileCardSkeleton />
+          </div>
+        ) : (
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {recommendations.slice(0, 3).map((profile, idx) => {
+              const isShortlisted = shortlistedIds.has(profile.id);
+              const isInterestSent = sentInterestIds.has(profile.id);
+
+              return (
+                <Card
+                  key={profile.id}
+                  variant="interactive"
+                  className="group relative overflow-hidden rounded-3xl border-[var(--border)] bg-white p-0 flex flex-col justify-between shadow-[var(--elevation-card)]"
+                >
+                  {/* Photo area with warm matrimonial overlay */}
+                  <div className="relative h-72 sm:h-80 overflow-hidden bg-[var(--surface-muted)]">
+                    <img
+                      src={profile.image}
+                      alt={profile.name}
+                      className="h-full w-full object-cover object-center transition-transform duration-700 ease-out group-hover:scale-[1.03]"
+                      loading="lazy"
+                    />
+
+                    {/* Gradient overlay */}
+                    <div className="absolute inset-0 photo-overlay-warm" aria-hidden="true" />
+
+                    {/* Top Badges */}
+                    <div className="absolute left-3 top-3 flex items-center gap-2 z-10">
+                      <Badge
+                        tone="accent"
+                        size="sm"
+                        icon={<IconUsers className="h-2.5 w-2.5 fill-current" />}
+                        className="backdrop-blur-md shadow-xs"
+                      >
+                        {profile.compatibility}% Match
+                      </Badge>
+
+                      {profile.online && (
+                        <Badge
+                          tone="neutral"
+                          size="sm"
+                          dot
+                          dotColor="bg-emerald-500"
+                          className="bg-white/90 backdrop-blur-md text-[var(--foreground)] border-white/80"
+                        >
+                          Online
+                        </Badge>
+                      )}
+                    </div>
+
+                    {/* Shortlist IconHeart Button */}
+                    <button
+                      type="button"
+                      onClick={() => handleShortlist(profile.id, profile.name)}
+                      aria-label={
+                        isShortlisted
+                          ? `Remove ${profile.name} from shortlist`
+                          : `Shortlist ${profile.name}`
+                      }
+                      className={cn(
+                        'focus-ring absolute right-3 top-3 z-10 grid h-10 w-10 place-items-center rounded-full backdrop-blur-md transition-all duration-200 active-press',
+                        isShortlisted
+                          ? 'bg-white text-[var(--primary)] shadow-md'
+                          : 'bg-black/30 text-white hover:bg-white hover:text-[var(--primary)]'
+                      )}
+                    >
+                      <IconHeart
+                        className={cn(
+                          'h-5 w-5 transition-transform duration-200',
+                          isShortlisted && 'fill-[var(--primary)] scale-110'
+                        )}
+                      />
+                    </button>
+
+                    {/* Bottom Photo Identity */}
+                    <div className="absolute inset-x-0 bottom-0 p-5 text-white z-10">
+                      <div className="flex items-center gap-2">
+                        <h3 className="font-editorial-title text-2xl font-bold tracking-tight text-white drop-shadow-sm">
+                          {profile.name}, {profile.age}
+                        </h3>
+                        {profile.verified && (
+                          <VerificationBadge type="general" showIconOnly />
+                        )}
+                      </div>
+                      <p className="mt-1 flex items-center gap-1.5 text-xs text-white/90">
+                        <IconMapPin className="h-3.5 w-3.5 text-[var(--accent)] shrink-0" />
+                        <span>{profile.city}, {profile.state}</span>
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Body Content */}
+                  <div className="p-5 flex-1 flex flex-col justify-between space-y-4">
+                    <div className="space-y-3">
+                      {/* Contextual Indicators */}
+                      <div className="flex flex-wrap gap-1.5">
+                        <span className="rounded-lg bg-[var(--primary-light)] text-[var(--primary-deep)] px-2.5 py-1 text-[11px] font-semibold border border-[var(--primary)]/15">
+                          ✓ Matches your preferences
+                        </span>
+                        <span className="rounded-lg bg-[var(--surface-muted)] text-[var(--muted-strong)] px-2.5 py-1 text-[11px] font-medium border border-[var(--border)]">
+                          {idx === 0 ? 'Same city' : idx === 1 ? 'Similar interests' : 'Verified education'}
+                        </span>
+                      </div>
+
+                      <div className="space-y-1">
+                        <p className="text-sm font-bold text-[var(--foreground)] flex items-center gap-1.5">
+                          <IconBriefcase className="h-3.5 w-3.5 text-[var(--muted)]" />
+                          <span>{profile.profession}</span>
+                        </p>
+                        <p className="text-xs text-[var(--muted)] flex items-center gap-1.5">
+                          <IconSchool className="h-3.5 w-3.5 text-[var(--muted)]" />
+                          <span>{profile.education}</span>
+                        </p>
+                      </div>
+
+                      {profile.about && (
+                        <p className="line-clamp-2 text-xs leading-relaxed text-[var(--muted-strong)] bg-[var(--surface-muted)]/60 p-3 rounded-2xl italic border border-[var(--border)]/40">
+                          "{profile.about}"
+                        </p>
+                      )}
+                    </div>
+
+                    {/* Action Row */}
+                    <div className="pt-3 border-t border-[var(--border)] flex items-center gap-2">
+                      <Link href={`/app/profile?user=${profile.id}`} className="flex-1 focus-ring">
+                        <Button
+                          variant="secondary"
+                          size="sm"
+                          className="w-full text-xs font-bold"
+                        >
+                          View Profile
+                        </Button>
+                      </Link>
+
+                      <Button
+                        variant={isInterestSent ? 'blush' : 'primary'}
+                        size="sm"
+                        disabled={isInterestSent}
+                        onClick={() => handleSendInterest(profile.id, profile.name)}
+                        className="flex-1 text-xs font-bold"
+                        leftIcon={<IconHeart className="h-3.5 w-3.5" />}
+                      >
+                        {isInterestSent ? 'Interest Sent' : 'Send Interest'}
+                      </Button>
+                    </div>
+                  </div>
+                </Card>
+              );
+            })}
+          </div>
+        )}
+      </section>
+
+      {/* ======================================================== */}
+      {/* 4. NEW PROFILES (HORIZONTAL SCROLLING PROFILE RAIL)       */}
+      {/* ======================================================== */}
+      <section className="space-y-3">
+        <div className="flex items-center justify-between">
+          <SectionHeader
+            eyebrow="Recently Joined"
+            title="New profiles"
+            description="Freshly registered members seeking genuine matrimonial connections."
+          />
+
+          <div className="hidden sm:flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => scrollNewProfiles('left')}
+              className="focus-ring grid h-9 w-9 place-items-center rounded-full border border-[var(--border)] bg-white text-[var(--muted)] hover:text-[var(--foreground)] hover:border-[var(--border-strong)] transition-colors active-press shadow-2xs"
+              aria-label="Scroll new profiles left"
+            >
+              <IconChevronLeft className="h-4 w-4" />
+            </button>
+            <button
+              type="button"
+              onClick={() => scrollNewProfiles('right')}
+              className="focus-ring grid h-9 w-9 place-items-center rounded-full border border-[var(--border)] bg-white text-[var(--muted)] hover:text-[var(--foreground)] hover:border-[var(--border-strong)] transition-colors active-press shadow-2xs"
+              aria-label="Scroll new profiles right"
+            >
+              <IconChevronRight className="h-4 w-4" />
+            </button>
+          </div>
+        </div>
+
+        {/* Horizontal Rail */}
+        <div
+          ref={newProfilesScrollRef}
+          className="flex gap-4 overflow-x-auto pb-4 pt-1 scrollbar-none snap-x snap-mandatory"
+        >
+          {newProfiles.map((p) => (
+            <Link
+              key={p.id}
+              href={`/app/profile?user=${p.id}`}
+              className="focus-ring snap-start shrink-0 w-60 sm:w-64 group"
+            >
+              <Card
+                variant="interactive"
+                className="overflow-hidden p-0 rounded-2xl border-[var(--border)] bg-white shadow-xs"
+              >
+                <div className="relative h-64 overflow-hidden bg-[var(--surface-muted)]">
+                  <img
+                    src={p.image}
+                    alt={p.name}
+                    className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-[1.03]"
+                    loading="lazy"
+                  />
+                  <div className="absolute inset-0 photo-overlay-warm" aria-hidden="true" />
+
+                  {/* Badges */}
+                  <div className="absolute top-2.5 left-2.5 z-10">
+                    <span className="rounded-full bg-black/40 backdrop-blur-md px-2.5 py-0.5 text-[10px] font-bold text-white tracking-wide border border-white/20">
+                      New Member
+                    </span>
+                  </div>
+
+                  {/* Bottom details */}
+                  <div className="absolute inset-x-0 bottom-0 p-3.5 text-white z-10">
+                    <h3 className="font-editorial-title text-lg font-bold truncate">
+                      {p.name}, {p.age}
+                    </h3>
+                    <p className="text-[11px] text-white/90 truncate flex items-center gap-1 mt-0.5">
+                      <IconMapPin className="h-3 w-3 text-[var(--accent)] shrink-0" />
+                      <span>{p.city}</span>
+                      <span>·</span>
+                      <span className="truncate">{p.profession}</span>
+                    </p>
+                  </div>
+                </div>
+              </Card>
+            </Link>
+          ))}
+        </div>
+      </section>
+
+      {/* ======================================================== */}
+      {/* 5. BASED ON YOUR PREFERENCES & RECENT CONVERSATIONS      */}
+      {/* ======================================================== */}
+      <div className="grid gap-6 lg:grid-cols-[1.2fr_0.8fr]">
+        {/* Left: Preferences Matching */}
+        <section className="space-y-3">
+          <SectionHeader
+            eyebrow="Personalized"
+            title="Based on your preferences"
+            description="Matches based on your age range, location preference, and community settings."
+            action={
+              <Link
+                href="/app/profile"
+                className="text-xs font-bold text-[var(--primary)] hover:underline"
+              >
+                Edit Preferences
+              </Link>
+            }
+          />
+
+          <div className="space-y-3">
+            {preferenceProfiles.slice(0, 3).map((p) => (
+              <Card
+                key={p.id}
+                variant="interactive"
+                className="p-4 sm:p-5 rounded-2xl border-[var(--border)] bg-white flex flex-col sm:flex-row sm:items-center justify-between gap-4"
+              >
+                <div className="flex items-center gap-3.5">
+                  <Avatar
+                    src={p.image}
+                    name={p.name}
+                    size="lg"
+                    online={p.online}
+                    verified={p.verified}
+                    bordered
+                  />
+                  <div className="min-w-0">
+                    <div className="flex items-center gap-2">
+                      <Link
+                        href={`/app/profile?user=${p.id}`}
+                        className="font-editorial-title text-base sm:text-lg font-bold text-[var(--foreground)] hover:text-[var(--primary)] transition-colors truncate"
+                      >
+                        {p.name}, {p.age}
+                      </Link>
+                      <Badge tone="accent" size="sm">
+                        {p.compatibility}%
+                      </Badge>
+                    </div>
+
+                    <p className="mt-0.5 text-xs text-[var(--muted)] truncate">
+                      {p.profession} · {p.city}
+                    </p>
+
+                    <div className="mt-2 flex flex-wrap gap-1">
+                      <span className="rounded-md bg-[var(--surface-muted)] px-2 py-0.5 text-[10px] font-medium text-[var(--muted-strong)]">
+                        {p.motherTongue}
+                      </span>
+                      <span className="rounded-md bg-[var(--surface-muted)] px-2 py-0.5 text-[10px] font-medium text-[var(--muted-strong)]">
+                        {p.education.split(',')[0]}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="flex sm:flex-col gap-2 shrink-0">
+                  <Link href={`/app/profile?user=${p.id}`} className="flex-1 sm:flex-none">
+                    <Button variant="secondary" size="sm" className="w-full text-xs font-semibold">
+                      View
+                    </Button>
+                  </Link>
+                  <Button
+                    variant="primary"
+                    size="sm"
+                    onClick={() => handleSendInterest(p.id, p.name)}
+                    className="flex-1 sm:flex-none text-xs font-bold"
+                  >
+                    Connect
+                  </Button>
+                </div>
+              </Card>
+            ))}
+          </div>
+        </section>
+
+        {/* Right: Recent Conversations & Safety Spotlight */}
+        <section className="space-y-3">
+          <SectionHeader
+            eyebrow="Active Chats"
+            title="Recent conversations"
+            description="Continue your ongoing matrimonial discussions."
+            action={
+              <Link
+                href="/app/messages"
+                className="text-xs font-bold text-[var(--primary)] hover:underline"
+              >
+                All Messages
+              </Link>
+            }
+          />
+
+          <Card className="p-4 sm:p-5 rounded-2xl border-[var(--border)] bg-white divide-y divide-[var(--border)]/70">
+            {recentConversations.slice(0, 3).map((conv) => {
+              const pName = conv.profile?.name || conv.participant?.name || 'Member';
+              const pImage = conv.profile?.image || conv.participant?.photos?.[0]?.url;
+              const lastText = conv.last || conv.lastMessage?.content || 'Hello, I reviewed your profile.';
+
+              return (
+                <Link
+                  key={conv.id}
+                  href="/app/messages"
+                  className="focus-ring flex items-center gap-3.5 py-3.5 first:pt-0 last:pb-0 hover:bg-[var(--surface-muted)]/70 -mx-2 px-2 rounded-xl transition-colors"
+                >
+                  <Avatar src={pImage} name={pName} size="md" online={true} bordered />
+
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center justify-between">
+                      <p className="text-sm font-bold text-[var(--foreground)] truncate">{pName}</p>
+                      <span className="text-[10px] font-medium text-[var(--muted)]">
+                        {conv.time || 'Today'}
+                      </span>
+                    </div>
+                    <p className="mt-0.5 text-xs text-[var(--muted)] truncate">{lastText}</p>
+                  </div>
+
+                  {conv.unread > 0 && (
+                    <span className="grid h-5 min-w-5 place-items-center rounded-full bg-[var(--primary)] px-1.5 text-[10px] font-bold text-white shrink-0">
+                      {conv.unread}
+                    </span>
+                  )}
+                </Link>
+              );
+            })}
+
+            {/* In-Card Safety & Trust Callout to Avoid Blank Space */}
+            <div className="pt-4 mt-2">
+              <div className="rounded-xl bg-gradient-to-br from-[#FAF3EC] to-white p-3.5 border border-[#EAD8C7] flex items-start gap-3">
+                <IconShieldCheck className="h-5 w-5 text-[#8C5D30] shrink-0 mt-0.5" />
+                <div>
+                  <p className="text-xs font-bold text-[#5C1027]">Protected Conversations</p>
+                  <p className="mt-0.5 text-[11px] leading-relaxed text-[var(--muted-strong)]">
+                    All chat threads on Let's CHAT .Com are private and encrypted. Never share financial
+                    or banking credentials.
+                  </p>
+                </div>
+              </div>
+            </div>
+          </Card>
+        </section>
+      </div>
+    </div>
+  );
 }

@@ -1,35 +1,27 @@
 import type { Metadata } from "next";
-import { Cormorant_Garamond, Playfair_Display } from "next/font/google";
+import { Manrope } from "next/font/google";
 import "@/styles/globals.css";
 import { Toaster } from "@/components/ui/toaster";
 
-const playfair = Playfair_Display({
+const manrope = Manrope({
   subsets: ["latin"],
-  variable: "--font-playfair",
+  variable: "--font-manrope",
+  weight: ["400", "500", "600", "700", "800"],
   display: "swap",
-  style: ["normal", "italic"],
-});
-
-const cormorant = Cormorant_Garamond({
-  subsets: ["latin"],
-  variable: "--font-cormorant",
-  display: "swap",
-  weight: ["400", "500", "600", "700"],
-  style: ["normal", "italic"],
 });
 
 export const metadata: Metadata = {
   title: {
-    default: "Matrimony — Meaningful connections, thoughtfully made",
-    template: "%s | Matrimony"
+    default: "Let’s CHAT .Com — Meaningful connections, thoughtfully made",
+    template: "%s | Let’s CHAT .Com"
   },
-  description: "A modern, privacy-first matrimony experience.",
+  description: "A modern, privacy-first matrimony and relationship discovery experience.",
   robots: { index: false, follow: false }
 };
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html lang="en" className={`${playfair.variable} ${cormorant.variable}`}>
+    <html lang="en" className={manrope.variable}>
       <body className="font-sans antialiased">
         {children}
         <Toaster />

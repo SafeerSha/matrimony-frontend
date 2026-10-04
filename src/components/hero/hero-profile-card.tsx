@@ -1,5 +1,5 @@
-import Image from "next/image";
-import { CheckCircle2, Heart } from "lucide-react";
+import IconPhoto from "next/image";
+import { IconCircleCheck, IconHeart } from '@tabler/icons-react';
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/cn";
@@ -43,7 +43,7 @@ export function HeroProfileCard({
     >
       <div className="relative shrink-0">
         <div className="relative h-12 w-12 sm:h-13 sm:w-13 overflow-hidden rounded-full ring-2 ring-[var(--primary-light)]">
-          <Image
+          <IconPhoto
             src={profile.image}
             alt={`${profile.name}, ${profile.age} years old, ${profile.profession}`}
             width={56}
@@ -57,7 +57,7 @@ export function HeroProfileCard({
             title="Verified Profile"
             aria-label="Verified Profile"
           >
-            <CheckCircle2 className="h-3.5 w-3.5 text-[var(--accent)]" fill="currentColor" stroke="white" aria-hidden="true" />
+            <IconCircleCheck className="h-3.5 w-3.5 text-[var(--accent)]" fill="currentColor" stroke="white" aria-hidden="true" />
           </span>
         )}
       </div>
@@ -69,7 +69,7 @@ export function HeroProfileCard({
           </p>
           {profile.matchScore && (
             <Badge tone="accent" className="shrink-0 text-[10px] font-semibold px-2 py-0.5">
-              <Heart className="mr-1 h-2.5 w-2.5 fill-current inline" aria-hidden="true" />
+              <IconHeart className="mr-1 h-2.5 w-2.5 fill-current inline" aria-hidden="true" />
               {profile.matchScore}
             </Badge>
           )}

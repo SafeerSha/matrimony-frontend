@@ -1,5 +1,5 @@
 import type { ReactNode } from "react";
-import { Heart } from "lucide-react";
+import { IconHeart } from '@tabler/icons-react';
 import { cn } from "@/lib/cn";
 
 export interface TrustBadgeProps {
@@ -10,7 +10,7 @@ export interface TrustBadgeProps {
 
 export function TrustBadge({
   label = "Thoughtfully designed for lifelong partnerships",
-  icon = <Heart className="h-3.5 w-3.5" aria-hidden="true" />,
+  icon = <IconHeart className="h-3.5 w-3.5" aria-hidden="true" />,
   className = "",
 }: TrustBadgeProps) {
   return (

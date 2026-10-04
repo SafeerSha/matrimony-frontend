@@ -1,15 +1,24 @@
 'use client';
 import { useState } from 'react';
-import { 
-  Users, Heart, Calendar, Search, Phone, Mail, 
-  MessageCircle, MoreHorizontal, CheckCircle2, ChevronRight,
-  Clock, Shield
-} from 'lucide-react';
+import {
+  IconUsers,
+  IconHeart,
+  IconCalendar,
+  IconSearch,
+  IconPhone,
+  IconMail,
+  IconMessageCircle,
+  IconDots as IconMoreHorizontal,
+  IconCircleCheck,
+  IconChevronRight,
+  IconClock,
+  IconShield,
+} from '@tabler/icons-react';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Avatar } from '@/components/ui/avatar';
-import { profiles } from '@/lib/demo-data';
+import { profiles, getProfileUniqueId } from '@/lib/demo-data';
 
 export default function RMDashboard() {
   const [tab, setTab] = useState<'clients' | 'followups' | 'shortlists'>('clients');
@@ -20,7 +29,7 @@ export default function RMDashboard() {
       <aside className="w-64 border-r border-[var(--border)] bg-[var(--surface)] flex flex-col">
         <div className="p-6 border-b border-[var(--border)] flex items-center gap-3">
           <div className="h-10 w-10 rounded-full bg-amber-100 flex items-center justify-center text-amber-600">
-            <Shield className="h-5 w-5" />
+            <IconShield className="h-5 w-5" />
           </div>
           <div>
             <h2 className="text-sm font-bold text-[var(--foreground)] tracking-tight">RM Portal</h2>
@@ -29,20 +38,20 @@ export default function RMDashboard() {
         </div>
         <nav className="flex-1 p-4 space-y-2">
           <button onClick={() => setTab('clients')} className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-colors ${tab === 'clients' ? 'bg-[var(--primary)] text-white shadow-sm' : 'text-[var(--muted-strong)] hover:bg-[var(--surface-muted)]'}`}>
-            <Users className="h-5 w-5" /> Assigned Clients
+            <IconUsers className="h-5 w-5" /> Assigned Clients
           </button>
           <button onClick={() => setTab('shortlists')} className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-colors ${tab === 'shortlists' ? 'bg-[var(--primary)] text-white shadow-sm' : 'text-[var(--muted-strong)] hover:bg-[var(--surface-muted)]'}`}>
-            <Heart className="h-5 w-5" /> Manage Shortlists
+            <IconHeart className="h-5 w-5" /> Manage Shortlists
           </button>
           <button onClick={() => setTab('followups')} className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-colors ${tab === 'followups' ? 'bg-[var(--primary)] text-white shadow-sm' : 'text-[var(--muted-strong)] hover:bg-[var(--surface-muted)]'}`}>
-            <Calendar className="h-5 w-5" /> Follow-ups & Calls
+            <IconCalendar className="h-5 w-5" /> Follow-ups & Calls
           </button>
         </nav>
       </aside>
 
       {/* Main Content */}
       <main className="flex-1 overflow-y-auto p-8">
-        
+
         {tab === 'clients' && (
           <div className="space-y-6">
             <header className="mb-8 flex items-center justify-between">
@@ -51,7 +60,7 @@ export default function RMDashboard() {
                 <p className="text-[var(--muted)] mt-1">Manage your 24 assigned high-tier clients.</p>
               </div>
               <div className="relative w-72">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-[var(--muted)]" />
+                <IconSearch className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-[var(--muted)]" />
                 <input placeholder="Search clients by name or ID" className="w-full h-10 pl-9 pr-4 rounded-xl border border-[var(--border)] bg-[var(--surface)] text-sm outline-none focus:border-[var(--primary)]" />
               </div>
             </header>
@@ -64,7 +73,7 @@ export default function RMDashboard() {
                       <Avatar src={client.image} name={client.name} size="lg" />
                       <div>
                         <h3 className="font-bold text-[var(--foreground)]">{client.name}, {client.age}</h3>
-                        <p className="text-sm font-medium text-[var(--primary)]">ID: {client.id.toUpperCase()}</p>
+                        <p className="text-sm font-medium text-[var(--primary)]">ID: {getProfileUniqueId(client)}</p>
                         <p className="text-xs text-[var(--muted)] mt-1">{client.profession} · {client.city}</p>
                       </div>
                     </div>
@@ -88,8 +97,8 @@ export default function RMDashboard() {
 
                   <div className="mt-6 flex gap-2">
                     <Button className="flex-1 bg-[var(--primary)] hover:bg-[var(--primary-deep)] text-white">Find Matches</Button>
-                    <Button variant="secondary" className="px-3"><Phone className="h-4 w-4" /></Button>
-                    <Button variant="secondary" className="px-3"><MessageCircle className="h-4 w-4" /></Button>
+                    <Button variant="secondary" className="px-3"><IconPhone className="h-4 w-4" /></Button>
+                    <Button variant="secondary" className="px-3"><IconMessageCircle className="h-4 w-4" /></Button>
                   </div>
                 </Card>
               ))}
@@ -118,7 +127,7 @@ export default function RMDashboard() {
                         <p className="text-sm font-bold">{profiles[0].name}</p>
                         <p className="text-xs text-[var(--primary)]">Looking for: IT Prof, Bangalore</p>
                       </div>
-                      <ChevronRight className="h-4 w-4 text-[var(--primary)]" />
+                      <IconChevronRight className="h-4 w-4 text-[var(--primary)]" />
                     </button>
                     <button className="w-full flex items-center gap-3 p-3 rounded-lg hover:bg-[var(--surface-muted)] text-left transition-colors">
                       <Avatar src={profiles[1].image} name={profiles[1].name} size="sm" />
@@ -152,7 +161,7 @@ export default function RMDashboard() {
                       </div>
                     </div>
                     <div className="flex flex-col gap-2">
-                      <Button size="sm"><Heart className="mr-2 h-3.5 w-3.5" /> Shortlist for Client</Button>
+                      <Button size="sm"><IconHeart className="mr-2 h-3.5 w-3.5" /> Shortlist for Client</Button>
                       <Button size="sm" variant="ghost">View Full Profile</Button>
                     </div>
                   </Card>
@@ -183,7 +192,7 @@ export default function RMDashboard() {
                 <tbody className="divide-y divide-[var(--border)]">
                   <tr className="bg-amber-50/50">
                     <td className="p-4 font-bold flex items-center gap-2 text-amber-600">
-                      <Clock className="h-4 w-4" /> 10:30 AM
+                      <IconClock className="h-4 w-4" /> 10:30 AM
                     </td>
                     <td className="p-4 font-bold">{profiles[0].name}</td>
                     <td className="p-4 text-[var(--muted-strong)]">Review shortlisted profiles via phone call</td>
@@ -193,7 +202,7 @@ export default function RMDashboard() {
                   <tr>
                     <td className="p-4 font-medium text-[var(--muted)]">02:15 PM</td>
                     <td className="p-4 font-bold">{profiles[1].name}</td>
-                    <td className="p-4 text-[var(--muted-strong)]">Check interest response from Matches</td>
+                    <td className="p-4 text-[var(--muted-strong)]">IconCheck interest response from Matches</td>
                     <td className="p-4"><Badge tone="default">Scheduled</Badge></td>
                     <td className="p-4"><Button size="sm" variant="secondary">View Details</Button></td>
                   </tr>

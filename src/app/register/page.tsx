@@ -1,9 +1,9 @@
 "use client";
 
-import { useState } from "react";
-import Image from "next/image";
+import { useState, useEffect } from "react";
+import IconPhoto from "next/image";
 import Link from "next/link";
-import { ArrowRight, Eye, EyeOff, Loader2, Heart, CheckCircle2 } from "lucide-react";
+import { IconArrowRight, IconEye, IconEyeOff, IconLoader2, IconHeart, IconCircleCheck } from '@tabler/icons-react';
 import { Logo } from "@/components/layout/logo";
 import { cn } from "@/lib/cn";
 import { authService } from "@/services";
@@ -21,6 +21,16 @@ export default function RegisterPage() {
   const [phone, setPhone] = useState("");
   const [password, setPassword] = useState("");
   const [otp, setOtp] = useState("");
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const params = new URLSearchParams(window.location.search);
+      const qName = params.get("name");
+      const qPhone = params.get("phone");
+      if (qName) setName(qName);
+      if (qPhone) setPhone(qPhone);
+    }
+  }, []);
 
   const handleStep1Submit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -62,10 +72,9 @@ export default function RegisterPage() {
       });
 
       toast.flash("success", "Account created successfully!", "Welcome to Matrimony. Redirecting to your dashboard...");
-      toast.success("Account created successfully!", "Welcome to Matrimony. Redirecting to your dashboard...");
 
       setTimeout(() => {
-        window.location.href = "/app";
+        window.location.href = "/app/discover";
       }, 600);
     } catch (error: any) {
       const msg = error.message || "Failed to create account. Email might already exist.";
@@ -76,14 +85,14 @@ export default function RegisterPage() {
   };
 
   return (
-    <main className="relative min-h-screen overflow-x-hidden bg-[var(--background)] px-4 py-6 sm:px-6 sm:py-10 lg:px-8 lg:py-12 flex items-center justify-center">
+    <main className="relative min-h-screen overflow-x-hidden bg-[var(--background)] px-4 py-6 sm:px-6 sm:py-8 lg:px-8 lg:py-10 flex items-center justify-center">
       {/* 1. Subtle Botanical Leaf Corner Accents */}
       <div
         className="pointer-events-none absolute top-0 left-0 z-0 origin-top-left -translate-x-[6%] -translate-y-[8%] opacity-60 sm:opacity-75 lg:opacity-85"
         aria-hidden="true"
       >
         <div className="relative aspect-[3/2] w-28 sm:w-44 md:w-56 lg:w-72 drop-shadow-[0_12px_24px_rgba(10,50,30,0.12)] animate-botanical-float-left">
-          <Image
+          <IconPhoto
             src="/images/green-leaves.png"
             alt=""
             width={576}
@@ -103,7 +112,7 @@ export default function RegisterPage() {
             className="relative aspect-square w-28 sm:w-44 md:w-56 lg:w-72 drop-shadow-[0_12px_24px_rgba(200,60,90,0.12)]"
             style={{ transform: "scaleX(-1) rotate(-15deg)", transformOrigin: "center center" }}
           >
-            <Image
+            <IconPhoto
               src="/images/pink-cherry.png"
               alt=""
               width={576}
@@ -122,10 +131,10 @@ export default function RegisterPage() {
       {/* 3. Main Two-Column Container */}
       <div className="relative z-10 mx-auto w-full max-w-5xl rounded-[2rem] sm:rounded-[2.5rem] border border-[var(--border)] bg-white/95 backdrop-blur-sm shadow-[0_24px_70px_var(--hero-shadow)] overflow-hidden">
         <div className="grid lg:grid-cols-[0.45fr_0.55fr] min-h-[580px] lg:min-h-[640px]">
-          {/* LEFT SIDE: Hero Image */}
-          <div className="relative flex flex-col justify-between overflow-hidden bg-[var(--surface-muted)] p-6 sm:p-8 lg:p-10 order-2 lg:order-1 min-h-[260px] sm:min-h-[320px] lg:min-h-full">
+          {/* LEFT SIDE: Hero IconPhoto */}
+          <div className="relative flex flex-col justify-between overflow-hidden bg-[var(--surface-muted)] p-6 sm:p-8 order-2 lg:order-1 min-h-[260px] sm:min-h-[320px] lg:min-h-full">
             <div className="absolute inset-0 z-0">
-              <Image
+              <IconPhoto
                 src="/images/hero-2.jpg"
                 alt="Happy couple"
                 fill
@@ -139,16 +148,16 @@ export default function RegisterPage() {
             </div>
             <div className="relative z-10 flex items-center justify-between">
               <span className="inline-flex items-center gap-1.5 rounded-full border border-white/20 bg-white/15 backdrop-blur-md px-3.5 py-1.5 text-xs font-semibold text-white tracking-wide shadow-sm">
-                <Heart className="h-3.5 w-3.5" aria-hidden="true" fill="currentColor" /> Premium Matchmaking
+                <IconHeart className="h-3.5 w-3.5" aria-hidden="true" fill="currentColor" /> Premium Matchmaking
               </span>
             </div>
             <div className="relative z-10 mt-auto pt-12">
               <div className="mb-3 inline-flex items-center gap-2 text-xs font-medium uppercase tracking-wider text-amber-200/90">
-                <Heart className="h-3.5 w-3.5 fill-current" aria-hidden="true" /> Start Your Journey
+                <IconHeart className="h-3.5 w-3.5 fill-current" aria-hidden="true" /> Start Your Journey
               </div>
-              <h2 className="font-editorial-title text-2xl sm:text-3xl font-normal leading-tight text-white tracking-tight">
+              <h2 className="text-2xl sm:text-3xl font-bold leading-tight text-white tracking-tight">
                 Find someone <br />
-                <span className="font-editorial-highlight font-medium text-amber-100">to build a life with.</span>
+                <span className="font-semibold text-amber-100">to build a life with.</span>
               </h2>
               <p className="mt-2.5 max-w-sm text-xs sm:text-sm leading-relaxed text-white/80">
                 Join thousands of verified profiles looking for meaningful, lifelong partnerships.
@@ -157,7 +166,7 @@ export default function RegisterPage() {
           </div>
 
           {/* RIGHT SIDE: Registration Form */}
-          <div className="flex flex-col justify-between p-6 sm:p-10 lg:p-12 xl:p-14 order-1 lg:order-2 bg-white">
+          <div className="flex flex-col justify-between p-6 sm:p-8 lg:p-10 order-1 lg:order-2 bg-white">
             <div>
               <div className="flex items-center justify-between">
                 <Logo />
@@ -166,8 +175,8 @@ export default function RegisterPage() {
                 </Link>
               </div>
 
-              <div className="mt-8 sm:mt-10 mb-6 sm:mb-8">
-                <h1 className="font-editorial-title text-3xl sm:text-4xl font-normal tracking-tight text-[var(--foreground)]">
+              <div className="mt-8 mb-6">
+                <h1 className="text-3xl sm:text-4xl font-bold tracking-tight text-[var(--foreground)]">
                   {step === 1 ? "Create an account" : "Verify your email"}
                 </h1>
                 <p className="mt-2 text-sm sm:text-base text-[var(--muted)] leading-relaxed">
@@ -223,7 +232,7 @@ export default function RegisterPage() {
                         type="button" onClick={() => setShowPassword(!showPassword)}
                         className="absolute right-3.5 top-1/2 -translate-y-1/2 text-[var(--muted)] hover:text-[var(--foreground)] p-1.5 rounded-lg focus-ring transition-colors"
                       >
-                        {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+                        {showPassword ? <IconEyeOff className="h-5 w-5" /> : <IconEye className="h-5 w-5" />}
                       </button>
                     </div>
                   </div>
@@ -239,9 +248,9 @@ export default function RegisterPage() {
                       )}
                     >
                       {isLoading ? (
-                        <><Loader2 className="h-5 w-5 animate-spin" /><span>Processing...</span></>
+                        <><IconLoader2 className="h-5 w-5 animate-spin" /><span>Processing...</span></>
                       ) : (
-                        <><ArrowRight className="h-4 w-4" /><span>Continue</span></>
+                        <><IconArrowRight className="h-4 w-4" /><span>Continue</span></>
                       )}
                     </button>
                   </div>
@@ -270,9 +279,9 @@ export default function RegisterPage() {
                       )}
                     >
                       {isLoading ? (
-                        <><Loader2 className="h-5 w-5 animate-spin" /><span>Verifying...</span></>
+                        <><IconLoader2 className="h-5 w-5 animate-spin" /><span>Verifying...</span></>
                       ) : (
-                        <><CheckCircle2 className="h-5 w-5" /><span>Verify & Create Account</span></>
+                        <><IconCircleCheck className="h-5 w-5" /><span>Verify & Create Account</span></>
                       )}
                     </button>
                   </div>

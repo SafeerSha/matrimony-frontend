@@ -17,7 +17,7 @@ const securityHeaders = [
       "object-src 'none'",
       `script-src 'self' ${process.env.NODE_ENV === 'development' ? "'unsafe-inline' 'unsafe-eval'" : ""}`,
       "style-src 'self' 'unsafe-inline'",
-      "img-src 'self' data: blob: http://localhost:4000",
+      "img-src 'self' data: blob: http://localhost:4000 https://i.pravatar.cc https://images.unsplash.com",
       "font-src 'self' data:",
       "connect-src 'self' http://localhost:4000 ws://localhost:4000",
       "worker-src 'self' blob:",

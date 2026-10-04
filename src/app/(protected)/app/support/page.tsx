@@ -4,21 +4,21 @@ import { SectionHeader } from '@/components/ui/section-header';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/cn';
-import { 
-  Phone, 
-  Mail, 
-  MessageSquare, 
-  Bug, 
-  Lightbulb, 
-  Star,
-  CheckCircle2,
-  Send,
-  Heart
-} from 'lucide-react';
+import {
+  IconPhone,
+  IconMail,
+  IconMessage,
+  IconBug,
+  IconBulb,
+  IconStar,
+  IconCircleCheck,
+  IconSend,
+  IconHeart,
+} from '@tabler/icons-react';
 
 export default function SupportPage() {
   const [tab, setTab] = useState<'contact' | 'feedback'>('contact');
-  
+
   // Form states
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
@@ -38,75 +38,81 @@ export default function SupportPage() {
 
   return (
     <div className="space-y-6 pb-10">
-      <SectionHeader 
-        eyebrow="Help & Support" 
-        title="How can we help you?" 
+      <SectionHeader
+        eyebrow="Help & Support"
+        title="How can we help you?"
         description="Get in touch with our team or share your thoughts to help us improve."
       />
 
-      <div className="flex gap-2 overflow-x-auto rounded-xl bg-[var(--surface-muted)] p-1.5 scrollbar-hide max-w-sm">
-        {(['contact', 'feedback'] as const).map(t => (
-          <button 
-            key={t} 
-            onClick={() => {
-              setTab(t);
-              setIsSuccess(false);
-            }} 
-            className={cn(
-              "flex-1 rounded-lg px-5 py-2.5 text-sm font-semibold capitalize whitespace-nowrap transition-all duration-200",
-              tab === t 
-                ? "bg-[var(--surface)] text-[var(--foreground)] shadow-sm border border-[var(--border)]/50" 
-                : "text-[var(--muted-strong)] hover:text-[var(--foreground)] hover:bg-[var(--surface)]/50"
-            )}
-          >
-            {t === 'contact' ? 'Contact Us' : 'Feedback'}
-          </button>
-        ))}
+      {/* Category Tabs */}
+      <div className="flex items-center gap-2 border-b border-[#E9DDE0] pb-3 overflow-x-auto scrollbar-none -mx-4 px-4 sm:mx-0 sm:px-0 sm:flex-wrap">
+        {(['contact', 'feedback'] as const).map((t) => {
+          const isActive = tab === t;
+          return (
+            <button
+              key={t}
+              onClick={() => {
+                setTab(t);
+                setIsSuccess(false);
+              }}
+              className={cn(
+                'inline-flex items-center gap-2 rounded-2xl px-5 py-2 text-xs font-bold transition-all shrink-0 whitespace-nowrap capitalize select-none active-press',
+                isActive
+                  ? 'bg-[#7A1835] text-white shadow-xs'
+                  : 'bg-white text-[#766B6F] border border-[#E9DDE0] hover:bg-[#FAF3EC] hover:text-[#211B1E]'
+              )}
+            >
+              <span>{t === 'contact' ? 'Contact Us' : 'Feedback & Ratings'}</span>
+            </button>
+          );
+        })}
       </div>
 
       {tab === 'contact' && (
         <div className="grid gap-6 lg:grid-cols-[1fr_380px]">
-          <Card className="p-6 sm:p-8 shadow-sm border-[var(--border)]">
-            <h2 className="text-xl font-bold text-[var(--foreground)] mb-6">Send us a message</h2>
+          <Card className="p-6 sm:p-8 rounded-3xl border border-[#E9DDE0] bg-white shadow-[var(--elevation-card)]">
+            <h2 className="font-editorial-title text-xl sm:text-2xl font-bold text-[var(--foreground)] mb-6">Send us a message</h2>
             {isSuccess ? (
               <div className="flex flex-col items-center justify-center py-12 text-center h-[350px]">
-                <div className="h-16 w-16 bg-[var(--primary-light)] rounded-full flex items-center justify-center mb-4">
-                  <CheckCircle2 className="h-8 w-8 text-[var(--primary)]" />
+                <div className="h-16 w-16 bg-[#FAF3EC] rounded-2xl flex items-center justify-center mb-4 text-[#7A1835] border border-[#EAD8C7]">
+                  <IconCircleCheck className="h-8 w-8 text-[#7A1835]" />
                 </div>
-                <h3 className="text-lg font-bold text-[var(--foreground)]">Message Sent!</h3>
-                <p className="text-[var(--muted)] mt-2">Our support team will get back to you within 24 hours.</p>
-                <Button variant="secondary" className="mt-6" onClick={() => setIsSuccess(false)}>Send another message</Button>
+                <h3 className="font-editorial-title text-lg font-bold text-[var(--foreground)]">Message Sent!</h3>
+                <p className="text-xs text-[var(--muted)] mt-2">Our matrimonial support team will get back to you within 24 hours.</p>
+                <Button variant="secondary" size="sm" className="mt-6 rounded-2xl text-xs font-bold" onClick={() => setIsSuccess(false)}>
+                  Send another message
+                </Button>
               </div>
             ) : (
               <form onSubmit={handleSubmit} className="space-y-5">
-                <div className="grid grid-cols-2 gap-5">
+                <div className="grid grid-cols-2 gap-4">
                   <div className="col-span-2 sm:col-span-1">
-                    <label className="block text-xs font-semibold uppercase tracking-wider text-[var(--muted-strong)] mb-1.5">First Name</label>
-                    <input required className="focus-ring h-12 w-full rounded-xl border border-[var(--border)] bg-[var(--surface)] px-4 text-sm outline-none" />
+                    <label className="block text-[11px] font-bold uppercase tracking-wider text-[var(--muted-strong)] mb-1.5">First Name</label>
+                    <input required className="focus-ring h-11 w-full rounded-2xl border border-[var(--border)] bg-[#FFFDFB] px-4 text-xs sm:text-sm outline-none font-medium" />
                   </div>
                   <div className="col-span-2 sm:col-span-1">
-                    <label className="block text-xs font-semibold uppercase tracking-wider text-[var(--muted-strong)] mb-1.5">Last Name</label>
-                    <input required className="focus-ring h-12 w-full rounded-xl border border-[var(--border)] bg-[var(--surface)] px-4 text-sm outline-none" />
+                    <label className="block text-[11px] font-bold uppercase tracking-wider text-[var(--muted-strong)] mb-1.5">Last Name</label>
+                    <input required className="focus-ring h-11 w-full rounded-2xl border border-[var(--border)] bg-[#FFFDFB] px-4 text-xs sm:text-sm outline-none font-medium" />
                   </div>
                 </div>
                 <div>
-                  <label className="block text-xs font-semibold uppercase tracking-wider text-[var(--muted-strong)] mb-1.5">Email Address</label>
-                  <input type="email" required className="focus-ring h-12 w-full rounded-xl border border-[var(--border)] bg-[var(--surface)] px-4 text-sm outline-none" />
+                  <label className="block text-[11px] font-bold uppercase tracking-wider text-[var(--muted-strong)] mb-1.5">Email Address</label>
+                  <input type="email" required className="focus-ring h-11 w-full rounded-2xl border border-[var(--border)] bg-[#FFFDFB] px-4 text-xs sm:text-sm outline-none font-medium" />
                 </div>
                 <div>
-                  <label className="block text-xs font-semibold uppercase tracking-wider text-[var(--muted-strong)] mb-1.5">Topic</label>
-                  <select className="focus-ring h-12 w-full rounded-xl border border-[var(--border)] bg-[var(--surface)] px-4 text-sm outline-none">
+                  <label className="block text-[11px] font-bold uppercase tracking-wider text-[var(--muted-strong)] mb-1.5">Topic</label>
+                  <select className="focus-ring h-11 w-full rounded-2xl border border-[var(--border)] bg-[#FFFDFB] px-4 text-xs sm:text-sm outline-none font-medium text-[var(--foreground)]">
                     <option>General Inquiry</option>
-                    <option>Billing Support</option>
+                    <option>Billing & Premium</option>
                     <option>Technical Issue</option>
-                    <option>Report a User</option>
+                    <option>Report Profile or Concern</option>
                   </select>
                 </div>
                 <div>
-                  <label className="block text-xs font-semibold uppercase tracking-wider text-[var(--muted-strong)] mb-1.5">Message</label>
-                  <textarea required rows={4} className="focus-ring w-full rounded-xl border border-[var(--border)] bg-[var(--surface)] p-4 text-sm outline-none resize-none" placeholder="How can we help?" />
+                  <label className="block text-[11px] font-bold uppercase tracking-wider text-[var(--muted-strong)] mb-1.5">Message</label>
+                  <textarea required rows={4} className="focus-ring w-full rounded-2xl border border-[var(--border)] bg-[#FFFDFB] p-4 text-xs sm:text-sm outline-none resize-none font-medium" placeholder="How can our trust & support team assist you?" />
                 </div>
-                <Button type="submit" disabled={isSubmitting} className="w-full h-12 text-sm font-bold bg-[var(--primary)] text-white hover:bg-[var(--primary-deep)]">
+                <Button type="submit" disabled={isSubmitting} variant="primary" size="md" className="w-full rounded-2xl text-xs font-bold shadow-md active-press">
                   {isSubmitting ? 'Sending...' : 'Send Message'}
                 </Button>
               </form>
@@ -114,27 +120,27 @@ export default function SupportPage() {
           </Card>
 
           <div className="space-y-6">
-            <Card className="p-6 shadow-sm border-[var(--border)] bg-[var(--primary)]/5">
-              <h2 className="font-bold text-[var(--foreground)] mb-4">Contact Information</h2>
-              <div className="space-y-6">
-                <div className="flex gap-4">
-                  <div className="h-10 w-10 shrink-0 bg-white rounded-full flex items-center justify-center shadow-sm text-[var(--primary)]">
-                    <Phone className="h-5 w-5" />
+            <Card className="p-6 sm:p-7 rounded-3xl border border-[#EAD8C7] bg-gradient-to-br from-[#FAF3EC] to-[#FFF9F6] shadow-xs">
+              <h2 className="font-editorial-title text-base font-bold text-[#5C1027] mb-4">Contact Information</h2>
+              <div className="space-y-5">
+                <div className="flex gap-3.5">
+                  <div className="h-10 w-10 shrink-0 bg-white border border-[#EAD8C7] rounded-2xl flex items-center justify-center shadow-2xs text-[#7A1835]">
+                    <IconPhone className="h-5 w-5" />
                   </div>
                   <div>
-                    <p className="text-sm font-semibold text-[var(--foreground)]">Helpline</p>
-                    <p className="text-sm font-medium text-[var(--primary-deep)] mt-0.5">1800-MATRIMONY</p>
-                    <p className="text-xs text-[var(--muted)] mt-1">Mon-Sat from 9am to 6pm.</p>
+                    <p className="text-xs font-bold text-[var(--foreground)]">Helpline</p>
+                    <p className="text-sm font-bold text-[#5C1027] mt-0.5">1800-MATRIMONY</p>
+                    <p className="text-[11px] text-[var(--muted)] mt-0.5">Mon–Sat from 9am to 6pm IST</p>
                   </div>
                 </div>
-                <div className="flex gap-4">
-                  <div className="h-10 w-10 shrink-0 bg-white rounded-full flex items-center justify-center shadow-sm text-[var(--primary)]">
-                    <Mail className="h-5 w-5" />
+                <div className="flex gap-3.5">
+                  <div className="h-10 w-10 shrink-0 bg-white border border-[#EAD8C7] rounded-2xl flex items-center justify-center shadow-2xs text-[#7A1835]">
+                    <IconMail className="h-5 w-5" />
                   </div>
                   <div>
-                    <p className="text-sm font-semibold text-[var(--foreground)]">Email Support</p>
-                    <p className="text-sm font-medium text-[var(--primary-deep)] mt-0.5">care@matrimony.com</p>
-                    <p className="text-xs text-[var(--muted)] mt-1">Expect a reply within 24hrs.</p>
+                    <p className="text-xs font-bold text-[var(--foreground)]">Email Support</p>
+                    <p className="text-sm font-bold text-[#5C1027] mt-0.5">care@letschat.com</p>
+                    <p className="text-[11px] text-[var(--muted)] mt-0.5">Replies typically within 24 hours</p>
                   </div>
                 </div>
               </div>
@@ -142,7 +148,7 @@ export default function SupportPage() {
 
             <Card className="p-6 shadow-sm border-[var(--border)]">
               <h2 className="font-bold text-[var(--foreground)] mb-2">Need a quicker answer?</h2>
-              <p className="text-sm text-[var(--muted)] mb-4">Check out our frequently asked questions.</p>
+              <p className="text-sm text-[var(--muted)] mb-4">IconCheck out our frequently asked questions.</p>
               <Button variant="outline" className="w-full">Browse Help Center</Button>
             </Card>
           </div>
@@ -157,26 +163,26 @@ export default function SupportPage() {
           </div>
 
           {isSuccess ? (
-             <div className="flex flex-col items-center justify-center py-10 text-center h-[350px]">
-               <div className="h-16 w-16 bg-[var(--primary)]/10 rounded-full flex items-center justify-center mb-4">
-                 <Heart className="h-8 w-8 text-[var(--primary)] fill-[var(--primary)]" />
-               </div>
-               <h3 className="text-xl font-bold text-[var(--foreground)]">Thank You!</h3>
-               <p className="text-[var(--muted)] mt-2 max-w-sm">Your feedback has been successfully submitted. We deeply appreciate your time.</p>
-               <Button variant="secondary" className="mt-8" onClick={() => setIsSuccess(false)}>Submit another response</Button>
-             </div>
+            <div className="flex flex-col items-center justify-center py-10 text-center h-[350px]">
+              <div className="h-16 w-16 bg-[var(--primary)]/10 rounded-full flex items-center justify-center mb-4">
+                <IconHeart className="h-8 w-8 text-[var(--primary)] fill-[var(--primary)]" />
+              </div>
+              <h3 className="text-xl font-bold text-[var(--foreground)]">Thank You!</h3>
+              <p className="text-[var(--muted)] mt-2 max-w-sm">Your feedback has been successfully submitted. We deeply appreciate your time.</p>
+              <Button variant="secondary" className="mt-8" onClick={() => setIsSuccess(false)}>Submit another response</Button>
+            </div>
           ) : (
             <form onSubmit={handleSubmit} className="space-y-8">
-              
+
               <div className="flex justify-center gap-2">
                 {[1, 2, 3, 4, 5].map((star) => (
-                  <button 
-                    key={star} 
-                    type="button" 
+                  <button
+                    key={star}
+                    type="button"
                     onClick={() => setRating(star)}
                     className="focus-ring p-1 transition-transform hover:scale-110"
                   >
-                    <Star className={cn("h-10 w-10", rating >= star ? "text-amber-400 fill-amber-400" : "text-[var(--border)]")} />
+                    <IconStar className={cn("h-10 w-10", rating >= star ? "text-amber-400 fill-amber-400" : "text-[var(--border)]")} />
                   </button>
                 ))}
               </div>
@@ -185,9 +191,9 @@ export default function SupportPage() {
                 <label className="block text-sm font-semibold text-[var(--foreground)] mb-3">What kind of feedback is this?</label>
                 <div className="grid grid-cols-3 gap-3">
                   {[
-                    { id: 'general', label: 'General', icon: MessageSquare },
-                    { id: 'feature', label: 'Feature Idea', icon: Lightbulb },
-                    { id: 'bug', label: 'Report a Bug', icon: Bug }
+                    { id: 'general', label: 'General', icon: IconMessage },
+                    { id: 'feature', label: 'Feature Idea', icon: IconBulb },
+                    { id: 'bug', label: 'Report a Bug', icon: IconBug }
                   ].map((type) => (
                     <button
                       key={type.id}
@@ -195,8 +201,8 @@ export default function SupportPage() {
                       onClick={() => setFeedbackType(type.id as any)}
                       className={cn(
                         "flex flex-col items-center justify-center gap-2 rounded-xl border p-4 text-sm font-medium transition-all",
-                        feedbackType === type.id 
-                          ? "border-[var(--primary)] bg-[var(--primary)]/5 text-[var(--primary-deep)] shadow-sm" 
+                        feedbackType === type.id
+                          ? "border-[var(--primary)] bg-[var(--primary)]/5 text-[var(--primary-deep)] shadow-sm"
                           : "border-[var(--border)] bg-[var(--surface)] text-[var(--muted)] hover:bg-[var(--surface-muted)]"
                       )}
                     >
@@ -209,20 +215,20 @@ export default function SupportPage() {
 
               <div>
                 <label className="block text-sm font-semibold text-[var(--foreground)] mb-2">Tell us more</label>
-                <textarea 
-                  required 
-                  rows={5} 
-                  className="focus-ring w-full rounded-xl border border-[var(--border)] bg-[var(--surface)] p-4 text-sm outline-none resize-none" 
+                <textarea
+                  required
+                  rows={5}
+                  className="focus-ring w-full rounded-xl border border-[var(--border)] bg-[var(--surface)] p-4 text-sm outline-none resize-none"
                   placeholder={
                     feedbackType === 'bug' ? "What went wrong? Please be as detailed as possible." :
-                    feedbackType === 'feature' ? "What feature would make your experience better?" :
-                    "What do you like or dislike about your experience?"
+                      feedbackType === 'feature' ? "What feature would make your experience better?" :
+                        "What do you like or dislike about your experience?"
                   }
                 />
               </div>
 
               <Button type="submit" disabled={isSubmitting || rating === 0} className="w-full h-12 text-sm font-bold bg-[var(--primary)] text-white hover:bg-[var(--primary-deep)]">
-                {isSubmitting ? 'Submitting...' : 'Submit Feedback'} <Send className="ml-2 h-4 w-4" />
+                {isSubmitting ? 'Submitting...' : 'Submit Feedback'} <IconSend className="ml-2 h-4 w-4" />
               </Button>
             </form>
           )}

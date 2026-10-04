@@ -1,15 +1,26 @@
 'use client';
 import { useState } from 'react';
-import { 
-  Users, DollarSign, Activity, Image as ImageIcon, 
-  UserCheck, UserX, UserPlus, Settings, ShieldAlert,
-  Search, Filter, ChevronDown, CheckCircle2, XCircle
-} from 'lucide-react';
+import {
+  IconUsers,
+  IconCurrencyDollar,
+  IconActivity,
+  IconPhoto,
+  IconUserCheck,
+  IconUserX,
+  IconUserPlus,
+  IconSettings,
+  IconShield,
+  IconSearch,
+  IconFilter,
+  IconChevronDown,
+  IconCircleCheck,
+  IconCircleX,
+} from '@tabler/icons-react';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Avatar } from '@/components/ui/avatar';
-import { profiles } from '@/lib/demo-data';
+import { profiles, getProfileUniqueId } from '@/lib/demo-data';
 
 export default function AdminDashboard() {
   const [tab, setTab] = useState<'analytics' | 'moderation' | 'rm-management'>('analytics');
@@ -24,17 +35,17 @@ export default function AdminDashboard() {
         </div>
         <nav className="flex-1 p-4 space-y-2">
           <button onClick={() => setTab('analytics')} className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-colors ${tab === 'analytics' ? 'bg-emerald-500/20 text-emerald-400' : 'hover:bg-slate-800'}`}>
-            <Activity className="h-5 w-5" /> Dashboard & Analytics
+            <IconActivity className="h-5 w-5" /> Dashboard & Analytics
           </button>
           <button onClick={() => setTab('moderation')} className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-colors ${tab === 'moderation' ? 'bg-emerald-500/20 text-emerald-400' : 'hover:bg-slate-800'}`}>
-            <ShieldAlert className="h-5 w-5" /> Profile Moderation
+            <IconShield className="h-5 w-5" /> Profile Moderation
           </button>
           <button onClick={() => setTab('rm-management')} className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-colors ${tab === 'rm-management' ? 'bg-emerald-500/20 text-emerald-400' : 'hover:bg-slate-800'}`}>
-            <Users className="h-5 w-5" /> RM Management
+            <IconUsers className="h-5 w-5" /> RM Management
           </button>
           <div className="pt-6 mt-6 border-t border-slate-800">
             <button className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium hover:bg-slate-800">
-              <Settings className="h-5 w-5" /> System Settings
+              <IconSettings className="h-5 w-5" /> System Settings
             </button>
           </div>
         </nav>
@@ -42,7 +53,7 @@ export default function AdminDashboard() {
 
       {/* Main Content */}
       <main className="flex-1 overflow-y-auto p-8">
-        
+
         {tab === 'analytics' && (
           <div className="space-y-6">
             <header className="mb-8">
@@ -53,17 +64,17 @@ export default function AdminDashboard() {
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               <Card className="p-6 border-[var(--border)] shadow-sm flex items-center gap-4">
                 <div className="h-12 w-12 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center shrink-0">
-                  <Users className="h-6 w-6" />
+                  <IconUsers className="h-6 w-6" />
                 </div>
                 <div>
-                  <p className="text-sm font-medium text-[var(--muted)]">Total Active Users</p>
+                  <p className="text-sm font-medium text-[var(--muted)]">Total Active IconUsers</p>
                   <p className="text-2xl font-bold text-[var(--foreground)]">24,592</p>
                   <p className="text-xs text-emerald-600 font-medium mt-1">+1,204 this month</p>
                 </div>
               </Card>
               <Card className="p-6 border-[var(--border)] shadow-sm flex items-center gap-4">
                 <div className="h-12 w-12 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center shrink-0">
-                  <DollarSign className="h-6 w-6" />
+                  <IconCurrencyDollar className="h-6 w-6" />
                 </div>
                 <div>
                   <p className="text-sm font-medium text-[var(--muted)]">Monthly Revenue</p>
@@ -73,7 +84,7 @@ export default function AdminDashboard() {
               </Card>
               <Card className="p-6 border-[var(--border)] shadow-sm flex items-center gap-4">
                 <div className="h-12 w-12 rounded-full bg-amber-100 text-amber-600 flex items-center justify-center shrink-0">
-                  <Activity className="h-6 w-6" />
+                  <IconActivity className="h-6 w-6" />
                 </div>
                 <div>
                   <p className="text-sm font-medium text-[var(--muted)]">Premium Conversion</p>
@@ -92,7 +103,7 @@ export default function AdminDashboard() {
                       <Avatar src={profiles[i].image} name={profiles[i].name} />
                       <div>
                         <p className="text-sm font-bold">{profiles[i].name}</p>
-                        <p className="text-xs text-[var(--muted)]">ID: {profiles[i].id.toUpperCase()}</p>
+                        <p className="text-xs text-[var(--muted)]">ID: {getProfileUniqueId(profiles[i])}</p>
                       </div>
                     </div>
                     <Badge tone={i % 2 === 0 ? "accent" : "default"}>{i % 2 === 0 ? "Gold Plan" : "Platinum Plan"}</Badge>
@@ -112,7 +123,7 @@ export default function AdminDashboard() {
                 <p className="text-[var(--muted)] mt-1">Review new registrations and image uploads.</p>
               </div>
               <div className="flex gap-2">
-                <Button variant="outline"><Filter className="mr-2 h-4 w-4" /> Filter</Button>
+                <Button variant="outline"><IconFilter className="mr-2 h-4 w-4" /> Filter</Button>
               </div>
             </header>
 
@@ -133,8 +144,8 @@ export default function AdminDashboard() {
                         <p className="text-sm mt-3 line-clamp-2 text-[var(--muted-strong)]">{p.about}</p>
                       </div>
                       <div className="flex gap-2 mt-4">
-                        <Button size="sm" className="flex-1 bg-green-600 hover:bg-green-700 text-white"><CheckCircle2 className="mr-2 h-4 w-4" /> Approve</Button>
-                        <Button size="sm" variant="outline" className="text-red-600 hover:text-red-700 hover:bg-red-50"><XCircle className="mr-2 h-4 w-4" /> Reject</Button>
+                        <Button size="sm" className="flex-1 bg-green-600 hover:bg-green-700 text-white"><IconCircleCheck className="mr-2 h-4 w-4" /> Approve</Button>
+                        <Button size="sm" variant="outline" className="text-red-600 hover:text-red-700 hover:bg-red-50"><IconCircleX className="mr-2 h-4 w-4" /> Reject</Button>
                       </div>
                     </div>
                   </div>
@@ -151,7 +162,7 @@ export default function AdminDashboard() {
                 <h1 className="text-2xl font-bold text-[var(--foreground)]">Relationship Managers</h1>
                 <p className="text-[var(--muted)] mt-1">Manage staff, assign VIP clients, and track performance.</p>
               </div>
-              <Button className="bg-[var(--primary)] text-white"><UserPlus className="mr-2 h-4 w-4" /> Add RM</Button>
+              <Button className="bg-[var(--primary)] text-white"><IconUserPlus className="mr-2 h-4 w-4" /> Add RM</Button>
             </header>
 
             <div className="bg-white rounded-xl border border-[var(--border)] shadow-sm overflow-hidden">
