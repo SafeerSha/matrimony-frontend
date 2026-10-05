@@ -116,7 +116,7 @@ export function PartnerPreferencesEditor({
       setPreferences(defaultPreferences);
       setHasChanges(true);
       toast.info('Preferences Reset', {
-        description: 'Default preferences restored. Click IconDeviceFloppy to confirm.',
+        description: 'Default preferences restored. Click Save to confirm.',
       });
     }
   };
@@ -166,7 +166,7 @@ export function PartnerPreferencesEditor({
               <div>
                 <span className="text-xs font-bold text-[#211B1E] block">Match Criteria</span>
                 <span className="text-[10px] font-medium text-[#766B6F]">
-                  {hasChanges ? 'Changes staged — tap IconDeviceFloppy' : 'Tap any card below to edit'}
+                  {hasChanges ? 'Changes staged — tap Save' : 'Tap any card below to edit'}
                 </span>
               </div>
             </div>
@@ -181,7 +181,7 @@ export function PartnerPreferencesEditor({
                   : 'bg-[#FAF3EC] text-[#7A1835] border border-[#EAD8C7]'
               )}
             >
-              {isSaving ? <IconLoader2 className="h-3.5 w-3.5 animate-spin" /> : 'IconDeviceFloppy'}
+              {isSaving ? <IconLoader2 className="h-3.5 w-3.5 animate-spin" /> : 'Save'}
             </Button>
           </div>
 

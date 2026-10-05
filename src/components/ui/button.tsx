@@ -95,7 +95,7 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(function Button
         leftIcon && <span className="shrink-0 leading-none">{leftIcon}</span>
       )}
       {children && (
-        <span className="leading-none whitespace-nowrap has-[.md\:hidden]:contents has-[.sm\:hidden]:contents">
+        <span className="inline-flex items-center gap-1.5 leading-none whitespace-nowrap has-[.md\:hidden]:contents has-[.sm\:hidden]:contents">
           {children}
         </span>
       )}

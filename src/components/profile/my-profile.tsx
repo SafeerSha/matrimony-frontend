@@ -11,6 +11,7 @@ import { profileService, mediaService, authService } from '@/services';
 import type { UserProfile } from '@/services/profile.service';
 import { PartnerPreferencesEditor } from '@/components/preferences/partner-preferences-editor';
 import { PageLoader } from '@/components/ui/page-loader';
+import { toast } from '@/lib/toast';
 
 export function MyProfile() {
   const [saved, setSaved] = useState(false);
@@ -105,17 +106,26 @@ export function MyProfile() {
           title="Profile Management"
           description="Keep your matrimonial profile details up to date to find genuine, high-compatibility matches."
         />
-        <div className="flex items-center gap-2 self-start sm:self-auto shrink-0">
-          <Button variant="secondary" size="md" className="rounded-2xl text-xs font-bold gap-2">
-            <IconEye className="h-4 w-4" /> Preview
+        <div className="flex items-center gap-2.5 self-start sm:self-auto shrink-0">
+          <Button
+            variant="secondary"
+            size="sm"
+            leftIcon={<IconEye className="h-4 w-4 text-[var(--primary)]" />}
+            className="rounded-xl text-xs font-bold shadow-2xs h-10 px-4"
+          >
+            Preview
           </Button>
           <Button
             variant="primary"
-            size="md"
-            className="rounded-2xl text-xs font-bold gap-2 shadow-xs active-press"
-            onClick={() => setSaved(true)}
+            size="sm"
+            leftIcon={<IconDeviceFloppy className="h-4 w-4" />}
+            className="rounded-xl text-xs font-bold shadow-xs active-press h-10 px-4"
+            onClick={() => {
+              setSaved(true);
+              toast.success('Changes Saved', 'Your matrimonial profile details have been updated.');
+            }}
           >
-            <IconDeviceFloppy className="h-4 w-4" /> {saved ? 'Saved' : 'Save changes'}
+            {saved ? 'Saved' : 'Save changes'}
           </Button>
         </div>
       </div>

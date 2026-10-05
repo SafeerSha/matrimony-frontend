@@ -187,11 +187,11 @@ export default function DashboardPage() {
   const profileCompletion = userProfile?.completionRate || 78;
 
   return (
-    <div className="space-y-6 pb-6">
+    <div className="w-full max-w-full min-w-0 space-y-6 pb-6 overflow-x-hidden">
       {/* ======================================================== */}
       {/* 1. TOP: PERSONAL GREETING & ACCOUNT STATUS               */}
       {/* ======================================================== */}
-      <section className="relative overflow-hidden rounded-3xl border border-[var(--border)] bg-gradient-to-br from-white via-[#FFFDFB] to-[#FFF9F6] p-6 sm:p-8 shadow-[var(--elevation-card)]">
+      <section className="relative overflow-hidden rounded-2xl sm:rounded-3xl border border-[var(--border)] bg-gradient-to-br from-white via-[#FFFDFB] to-[#FFF9F6] p-4 sm:p-6 lg:p-8 shadow-[var(--elevation-card)]">
         {/* Soft background glow accents */}
         <div
           className="pointer-events-none absolute -right-16 -top-16 h-64 w-64 rounded-full bg-[radial-gradient(circle,rgba(122,24,53,0.06)_0%,transparent_70%)] blur-2xl"
@@ -461,61 +461,63 @@ export default function DashboardPage() {
         </div>
 
         {/* Horizontal Rail */}
-        <div
-          ref={newProfilesScrollRef}
-          className="flex gap-4 overflow-x-auto pb-4 pt-1 scrollbar-none snap-x snap-mandatory"
-        >
-          {newProfiles.map((p) => (
-            <Link
-              key={p.id}
-              href={`/app/profile?user=${p.id}`}
-              className="focus-ring snap-start shrink-0 w-60 sm:w-64 group"
-            >
-              <Card
-                variant="interactive"
-                className="overflow-hidden p-0 rounded-2xl border-[var(--border)] bg-white shadow-xs"
+        <div className="w-full max-w-full min-w-0 overflow-hidden">
+          <div
+            ref={newProfilesScrollRef}
+            className="flex gap-3 sm:gap-4 overflow-x-auto pb-4 pt-1 scrollbar-none snap-x snap-mandatory min-w-0 max-w-full overscroll-x-contain"
+          >
+            {newProfiles.map((p) => (
+              <Link
+                key={p.id}
+                href={`/app/profile?user=${p.id}`}
+                className="focus-ring snap-start shrink-0 w-52 sm:w-64 group"
               >
-                <div className="relative h-64 overflow-hidden bg-[var(--surface-muted)]">
-                  <img
-                    src={p.image}
-                    alt={p.name}
-                    className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-[1.03]"
-                    loading="lazy"
-                  />
-                  <div className="absolute inset-0 photo-overlay-warm" aria-hidden="true" />
+                <Card
+                  variant="interactive"
+                  className="overflow-hidden p-0 rounded-2xl border-[var(--border)] bg-white shadow-xs"
+                >
+                  <div className="relative h-60 sm:h-64 overflow-hidden bg-[var(--surface-muted)]">
+                    <img
+                      src={p.image}
+                      alt={p.name}
+                      className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-[1.03]"
+                      loading="lazy"
+                    />
+                    <div className="absolute inset-0 photo-overlay-warm" aria-hidden="true" />
 
-                  {/* Badges */}
-                  <div className="absolute top-2.5 left-2.5 z-10">
-                    <span className="rounded-full bg-black/40 backdrop-blur-md px-2.5 py-0.5 text-[10px] font-bold text-white tracking-wide border border-white/20">
-                      New Member
-                    </span>
-                  </div>
+                    {/* Badges */}
+                    <div className="absolute top-2.5 left-2.5 z-10">
+                      <span className="rounded-full bg-black/40 backdrop-blur-md px-2.5 py-0.5 text-[10px] font-bold text-white tracking-wide border border-white/20">
+                        New Member
+                      </span>
+                    </div>
 
-                  {/* Bottom details */}
-                  <div className="absolute inset-x-0 bottom-0 p-3.5 text-white z-10">
-                    <h3 className="font-editorial-title text-lg font-bold truncate">
-                      {p.name}, {p.age}
-                    </h3>
-                    <p className="text-[11px] text-white/90 truncate flex items-center gap-1 mt-0.5">
-                      <IconMapPin className="h-3 w-3 text-[var(--accent)] shrink-0" />
-                      <span>{p.city}</span>
-                      <span>·</span>
-                      <span className="truncate">{p.profession}</span>
-                    </p>
+                    {/* Bottom details */}
+                    <div className="absolute inset-x-0 bottom-0 p-3.5 text-white z-10">
+                      <h3 className="font-editorial-title text-base sm:text-lg font-bold truncate">
+                        {p.name}, {p.age}
+                      </h3>
+                      <p className="text-[11px] text-white/90 truncate flex items-center gap-1 mt-0.5">
+                        <IconMapPin className="h-3 w-3 text-[var(--accent)] shrink-0" />
+                        <span>{p.city}</span>
+                        <span>·</span>
+                        <span className="truncate">{p.profession}</span>
+                      </p>
+                    </div>
                   </div>
-                </div>
-              </Card>
-            </Link>
-          ))}
+                </Card>
+              </Link>
+            ))}
+          </div>
         </div>
       </section>
 
       {/* ======================================================== */}
       {/* 5. BASED ON YOUR PREFERENCES & RECENT CONVERSATIONS      */}
       {/* ======================================================== */}
-      <div className="grid gap-6 lg:grid-cols-[1.2fr_0.8fr]">
+      <div className="grid gap-6 lg:grid-cols-[1.2fr_0.8fr] min-w-0 w-full max-w-full">
         {/* Left: Preferences Matching */}
-        <section className="space-y-3">
+        <section className="space-y-3 min-w-0">
           <SectionHeader
             eyebrow="Personalized"
             title="Based on your preferences"
@@ -535,9 +537,9 @@ export default function DashboardPage() {
               <Card
                 key={p.id}
                 variant="interactive"
-                className="p-4 sm:p-5 rounded-2xl border-[var(--border)] bg-white flex flex-col sm:flex-row sm:items-center justify-between gap-4"
+                className="p-4 sm:p-5 rounded-2xl border-[var(--border)] bg-white flex flex-col sm:flex-row sm:items-center justify-between gap-4 min-w-0 w-full overflow-hidden"
               >
-                <div className="flex items-center gap-3.5">
+                <div className="flex items-center gap-3.5 min-w-0 flex-1">
                   <Avatar
                     src={p.image}
                     name={p.name}
@@ -546,7 +548,7 @@ export default function DashboardPage() {
                     verified={p.verified}
                     bordered
                   />
-                  <div className="min-w-0">
+                  <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-2">
                       <Link
                         href={`/app/profile?user=${p.id}`}
@@ -595,7 +597,7 @@ export default function DashboardPage() {
         </section>
 
         {/* Right: Recent Conversations & Safety Spotlight */}
-        <section className="space-y-3">
+        <section className="space-y-3 min-w-0">
           <SectionHeader
             eyebrow="Active Chats"
             title="Recent conversations"
@@ -610,7 +612,7 @@ export default function DashboardPage() {
             }
           />
 
-          <Card className="p-4 sm:p-5 rounded-2xl border-[var(--border)] bg-white divide-y divide-[var(--border)]/70">
+          <Card className="p-4 sm:p-5 rounded-2xl border-[var(--border)] bg-white divide-y divide-[var(--border)]/70 min-w-0 overflow-hidden">
             {recentConversations.slice(0, 3).map((conv) => {
               const pName = conv.profile?.name || conv.participant?.name || 'Member';
               const pImage = conv.profile?.image || conv.participant?.photos?.[0]?.url;

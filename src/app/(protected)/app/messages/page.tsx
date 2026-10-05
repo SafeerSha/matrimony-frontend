@@ -356,14 +356,51 @@ export default function MessagesPage() {
   }, [selected]);
 
   return (
-    <div className="space-y-4 sm:space-y-6 pb-6">
+    <div className={cn(
+      "transition-all",
+      mobileView === 'chat' 
+        ? "fixed inset-0 z-[100] bg-[#FFFDFB] m-0 p-0 flex flex-col h-[100dvh] w-screen lg:relative lg:inset-auto lg:z-auto lg:h-auto lg:w-auto lg:space-y-6 lg:pb-6 lg:bg-transparent" 
+        : "space-y-4 sm:space-y-6 pb-6"
+    )}>
+      {/* Global overrides for immersive mobile chat */}
+      {mobileView === 'chat' && (
+        <style dangerouslySetInnerHTML={{ __html: `
+          @media (max-width: 1023px) {
+            [aria-label="Mobile navigation"] { 
+              display: none !important; 
+            }
+            header.sticky { 
+              display: none !important; 
+            }
+            #main-content { 
+              transform: none !important; 
+              animation: none !important; 
+              filter: none !important;
+              perspective: none !important;
+              contain: none !important;
+              padding: 0 !important; 
+              margin: 0 !important; 
+            }
+            div:has(> #main-content) {
+              padding: 0 !important;
+              margin: 0 !important;
+              gap: 0 !important;
+              max-width: 100% !important;
+            }
+          }
+        `}} />
+      )}
+
       {/* Top Section Header */}
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between animate-content-appear stagger-1">
+      <div className={cn(
+        "flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between animate-content-appear stagger-1",
+        mobileView === 'chat' && "hidden lg:flex"
+      )}>
         <div>
           <SectionHeader
             eyebrow="Connections & Chat"
             title="Messages"
-            description="Private, verified matrimonial conversations with mutual matches."
+            // description="Private, verified matrimonial conversations with mutual matches."
           />
         </div>
 
@@ -389,7 +426,12 @@ export default function MessagesPage() {
       </div>
 
       {/* TWO-COLUMN DESKTOP / FULL-SCREEN MOBILE CONTAINER */}
-      <div className="relative rounded-2xl sm:rounded-3xl border border-[#E9DDE0] bg-[#FFFDFB] shadow-xs overflow-hidden h-[calc(100dvh-135px)] md:h-[calc(100vh-185px)] min-h-[460px] md:min-h-[620px] max-h-[820px] flex animate-content-appear stagger-2">
+      <div className={cn(
+        "relative bg-[#FFFDFB] overflow-hidden flex transition-all",
+        mobileView === 'chat'
+          ? "h-full w-full rounded-none border-0 shadow-none lg:rounded-3xl lg:border lg:border-[#E9DDE0] lg:h-[calc(100vh-185px)] lg:min-h-[620px] lg:max-h-[820px] lg:shadow-xs"
+          : "border border-[#E9DDE0] rounded-2xl sm:rounded-3xl shadow-xs h-[calc(100dvh-135px)] md:h-[calc(100vh-185px)] min-h-[460px] md:min-h-[620px] max-h-[820px] animate-content-appear stagger-2"
+      )}>
         
         {/* COLUMN 1: LEFT CONVERSATION LIST */}
         <aside

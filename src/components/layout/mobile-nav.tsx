@@ -9,13 +9,13 @@ import {
   IconHeart,
   IconUsers,
   IconStar,
-  IconBookmark,
   IconMessageCircle,
   IconBell,
   IconUser,
   IconAdjustments,
   IconSettings,
-  IconDots
+  IconDots,
+  IconCrown,
 } from '@tabler/icons-react';
 import { cn } from "@/lib/cn";
 
@@ -77,7 +77,7 @@ export function MobileNav({
     {
       label: "Discover",
       href: "/app/discover",
-      icon:   IconSearch,
+      icon: IconSearch,
       isActive: pathname.startsWith("/app/discover"),
     },
     {
@@ -128,6 +128,12 @@ export function MobileNav({
       isActive: pathname.startsWith("/app/preferences"),
     },
     {
+      label: "Subscription",
+      href: "/app/subscription",
+      icon: IconCrown,
+      isActive: pathname.startsWith("/app/subscription"),
+    },
+    {
       label: "Settings",
       href: "/app/settings",
       icon: IconSettings,
@@ -156,8 +162,8 @@ export function MobileNav({
         {/* POPUP MENU */}
         <div
           className={cn(
-            "absolute bottom-full mb-3 w-56 rounded-[1.5rem] border border-white/50 bg-white/75 backdrop-blur-3xl shadow-[0_12px_40px_rgba(33,27,30,0.15)] p-2 transition-all duration-300 origin-bottom-right z-50",
-            isMoreMenuOpen ? "opacity-100 scale-100 translate-y-0" : "opacity-0 scale-95 translate-y-4 pointer-events-none"
+            "absolute bottom-full mb-3 right-0 w-60 rounded-2xl border border-[var(--border)]/80 bg-white/95 backdrop-blur-2xl shadow-[0_16px_40px_rgba(20,10,15,0.18)] p-2 transition-all duration-200 origin-bottom-right z-50",
+            isMoreMenuOpen ? "opacity-100 scale-100 translate-y-0" : "opacity-0 scale-95 translate-y-3 pointer-events-none"
           )}
         >
           <div className="flex flex-col gap-1">
@@ -166,21 +172,21 @@ export function MobileNav({
                 key={label}
                 href={href}
                 className={cn(
-                  "flex items-center gap-3 px-3 py-2.5 rounded-xl transition-colors",
+                  "flex items-center gap-3 px-3 py-2.5 rounded-xl transition-colors text-sm",
                   isActive
                     ? "bg-[var(--primary)]/15 text-[var(--primary)] font-semibold"
-                    : "text-[var(--foreground)] hover:bg-white/60"
+                    : "text-[var(--foreground)] hover:bg-[var(--surface-muted)]"
                 )}
               >
                 <div className="relative">
-                  <Icon className={cn("h-[22px] w-[22px]", isActive ? "stroke-[2.5]" : "stroke-2 text-[var(--muted-strong)]")} />
+                  <Icon className={cn("h-5 w-5", isActive ? "stroke-[2.5]" : "stroke-2 text-[var(--muted-strong)]")} />
                   {badge !== undefined && badge > 0 && (
                     <span className="absolute -top-1 -right-1 grid h-4 min-w-[16px] place-items-center rounded-full bg-[var(--primary)] text-white text-[9px] font-bold ring-2 ring-white">
                       {badge > 9 ? "9+" : badge}
                     </span>
                   )}
                 </div>
-                <span className="text-sm flex-1">{label}</span>
+                <span className="flex-1 font-medium">{label}</span>
               </Link>
             ))}
           </div>
@@ -199,17 +205,18 @@ export function MobileNav({
             <Link
               key={label}
               href={href}
+              aria-label={label}
               className={cn(
-                "focus-ring group relative flex items-center justify-center rounded-2xl w-[44px] h-[44px] sm:w-[48px] sm:h-[48px] transition-all duration-300 select-none active-press shrink-0",
+                "focus-ring group relative flex items-center justify-center rounded-xl w-[44px] h-[44px] transition-all duration-200 select-none active-press shrink-0",
                 isActive
-                  ? "bg-[var(--primary)]/15 text-[var(--primary)] border border-[var(--primary)]/20 shadow-sm scale-105"
-                  : "text-[var(--muted-strong)] hover:bg-white/60 hover:text-[var(--foreground)] border border-transparent"
+                  ? "bg-[var(--primary)]/15 text-[var(--primary)] border border-[var(--primary)]/20 shadow-xs"
+                  : "text-[var(--muted-strong)] hover:bg-black/5 hover:text-[var(--foreground)] border border-transparent"
               )}
             >
               <div className="relative grid place-items-center">
                 <Icon
                   className={cn(
-                    "h-[22px] w-[22px] transition-transform duration-300",
+                    "h-5 w-5 transition-transform duration-200",
                     isActive ? "stroke-[2.5]" : "stroke-2 group-hover:-translate-y-0.5"
                   )}
                   aria-hidden="true"
@@ -222,10 +229,10 @@ export function MobileNav({
           <button
             onClick={() => setIsMoreMenuOpen(!isMoreMenuOpen)}
             className={cn(
-              "focus-ring group relative flex items-center justify-center rounded-2xl w-[44px] h-[44px] sm:w-[48px] sm:h-[48px] transition-all duration-300 select-none active-press shrink-0",
+              "focus-ring group relative flex items-center justify-center rounded-xl w-[44px] h-[44px] transition-all duration-200 select-none active-press shrink-0",
               isMoreMenuOpen
-                ? "bg-[var(--foreground)]/5 text-[var(--foreground)] border border-[var(--foreground)]/10 shadow-sm scale-105"
-                : "text-[var(--muted-strong)] hover:bg-white/60 hover:text-[var(--foreground)] border border-transparent"
+                ? "bg-[var(--foreground)]/10 text-[var(--foreground)] border border-[var(--foreground)]/15 shadow-xs"
+                : "text-[var(--muted-strong)] hover:bg-black/5 hover:text-[var(--foreground)] border border-transparent"
             )}
             aria-label="More options"
             aria-expanded={isMoreMenuOpen}
@@ -233,19 +240,17 @@ export function MobileNav({
             <div className="relative grid place-items-center">
               <IconDots
                 className={cn(
-                  "h-[22px] w-[22px] transition-transform duration-300",
+                  "h-5 w-5 transition-transform duration-200",
                   isMoreMenuOpen ? "stroke-[2.5]" : "stroke-2 group-hover:-translate-y-0.5"
                 )}
                 aria-hidden="true"
               />
-              {/* Unread dot indicator if anything in 'more' has a badge */}
-              {!isMoreMenuOpen && moreItems.some(i => i.badge && i.badge > 0) && (
-                <span className="absolute -top-1 -right-1 h-3 w-3 rounded-full bg-[var(--primary)] ring-2 ring-white" />
+              {!isMoreMenuOpen && moreItems.some((i) => i.badge && i.badge > 0) && (
+                <span className="absolute -top-1 -right-1 h-2.5 w-2.5 rounded-full bg-[var(--primary)] ring-2 ring-white" />
               )}
             </div>
           </button>
         </nav>
-
       </div>
     </div>
   );

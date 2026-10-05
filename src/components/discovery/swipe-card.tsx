@@ -30,25 +30,51 @@ export function SwipeCard({
   const lastClickRef = React.useRef(0);
   const [showHint, setShowHint] = useState(false);
 
+  // Check both localStorage and sessionStorage
+  const checkHintSeen = React.useCallback(() => {
+    try {
+      if (typeof window === 'undefined') return true;
+      return (
+        localStorage.getItem('matrimony_swipe_hint_seen') === 'true' ||
+        sessionStorage.getItem('matrimony_swipe_hint_seen') === 'true'
+      );
+    } catch {
+      return false;
+    }
+  }, []);
+
+  const markHintSeen = React.useCallback(() => {
+    setShowHint(false);
+    try {
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('matrimony_swipe_hint_seen', 'true');
+        sessionStorage.setItem('matrimony_swipe_hint_seen', 'true');
+      }
+    } catch {}
+  }, []);
+
   // Show swipe hint only if this is designated as the first card (showOnboardingHint)
+  // and the user has not already seen or dismissed it
   useEffect(() => {
     if (isNext || !showOnboardingHint) return;
+    if (checkHintSeen()) return;
+
     setShowHint(true);
     const timer = setTimeout(() => {
-      setShowHint(false);
+      markHintSeen();
     }, 4500);
     return () => clearTimeout(timer);
-  }, [isNext, showOnboardingHint]);
+  }, [isNext, showOnboardingHint, checkHintSeen, markHintSeen]);
 
   const handleCardClick = React.useCallback(() => {
     if (isNext) return;
     const now = performance.now();
     if (now - lastClickRef.current < 400) return;
     lastClickRef.current = now;
-    // Dismiss hint on interaction
-    if (showHint) setShowHint(false);
+    // Dismiss hint on interaction and persist seen flag
+    if (showHint) markHintSeen();
     onCardClick?.();
-  }, [isNext, onCardClick, showHint]);
+  }, [isNext, onCardClick, showHint, markHintSeen]);
 
   const {
     handlers,
@@ -59,11 +85,11 @@ export function SwipeCard({
     triggerSwipe,
   } = useSwipeGesture({
     onSwipeRight: () => {
-      if (showHint) setShowHint(false);
+      if (showHint) markHintSeen();
       onSwipeRight();
     },
     onSwipeLeft: () => {
-      if (showHint) setShowHint(false);
+      if (showHint) markHintSeen();
       onSwipeLeft();
     },
     onTap: handleCardClick,
@@ -71,6 +97,13 @@ export function SwipeCard({
     velocityThreshold: 0.5,
     enabled: !isNext,
   });
+
+  // If user starts dragging, immediately dismiss and mark hint as seen
+  useEffect(() => {
+    if (isDragging && showHint) {
+      markHintSeen();
+    }
+  }, [isDragging, showHint, markHintSeen]);
 
   const isSwipingRight = dragOffset.x > 0;
   const isSwipingLeft = dragOffset.x < 0;
@@ -146,6 +179,24 @@ export function SwipeCard({
           {/* ===== SWIPE ACTION OVERLAYS ===== */}
           {!isNext && (
             <>
+              {/* Hint Seen "Got it" Button */}
+              {showHint && (
+                <div className="absolute top-4 right-4 z-40 animate-in fade-in zoom-in duration-200">
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      markHintSeen();
+                    }}
+                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-black/75 hover:bg-black/90 text-white text-xs font-bold backdrop-blur-md border border-white/20 shadow-md active:scale-95 transition-all select-none"
+                    aria-label="Dismiss hint"
+                    title="Got it, don't show again"
+                  >
+                    <span>Got it</span>
+                    <span className="text-emerald-400 font-extrabold">✓</span>
+                  </button>
+                </div>
+              )}
               {/* INTEREST / LIKE — Green wash overlay */}
               <div
                 className={cn(

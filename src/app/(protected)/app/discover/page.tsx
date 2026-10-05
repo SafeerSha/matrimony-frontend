@@ -86,6 +86,18 @@ export default function DiscoverPage() {
   // Profiles data & loading
   const [profiles, setProfiles] = useState<Profile[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [hasSeenSwipeHint, setHasSeenSwipeHint] = useState(true);
+
+  useEffect(() => {
+    try {
+      const seen =
+        localStorage.getItem('matrimony_swipe_hint_seen') === 'true' ||
+        sessionStorage.getItem('matrimony_swipe_hint_seen') === 'true';
+      setHasSeenSwipeHint(seen);
+    } catch {
+      setHasSeenSwipeHint(false);
+    }
+  }, []);
 
   // Fetch profiles based on filters
   useEffect(() => {
@@ -252,14 +264,23 @@ export default function DiscoverPage() {
     toast.info('Filters Reset', 'Showing all available matrimonial recommendations.');
   };
 
-  const handleSendInterest = async (id: string, name: string) => {
+  const handleSendInterest = async (
+    id: string,
+    name: string,
+    options?: { silentToast?: boolean }
+  ) => {
+    const isMobileSwipe = viewMode === 'swipe' || options?.silentToast;
     try {
       await matchesService.sendInterest(id);
       setSentInterestIds((prev) => new Set(prev).add(id));
-      toast.success('Interest Sent!', `We have notified ${name} of your interest.`);
+      if (!isMobileSwipe) {
+        toast.success('Interest Sent!', `We have notified ${name} of your interest.`);
+      }
     } catch {
       setSentInterestIds((prev) => new Set(prev).add(id));
-      toast.success('Interest Sent!', `We have notified ${name} of your interest.`);
+      if (!isMobileSwipe) {
+        toast.success('Interest Sent!', `We have notified ${name} of your interest.`);
+      }
     }
   };
 
@@ -422,7 +443,7 @@ export default function DiscoverPage() {
               if (triggerSwipe) {
                 triggerSwipe('right');
               } else {
-                handleSendInterest(profile.id, profile.name);
+                handleSendInterest(profile.id, profile.name, { silentToast: true });
                 setFeaturedIndex((prev) =>
                   prev < filteredProfiles.length - 1 ? prev + 1 : 0
                 );
@@ -457,7 +478,7 @@ export default function DiscoverPage() {
                onClick={() => setViewMode('swipe')}
                aria-pressed={viewMode === 'swipe'}
                className={cn(
-                 'focus-ring flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all active-press select-none',
+                 'focus-ring flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all active-press select-none sm:hidden',
                  viewMode === 'swipe'
                   ? 'bg-white text-[var(--primary)] shadow-xs'
                   : 'text-[var(--muted)] hover:text-[var(--foreground)]'
@@ -472,7 +493,7 @@ export default function DiscoverPage() {
               onClick={() => setViewMode('grid')}
               aria-pressed={viewMode === 'grid'}
               className={cn(
-                'focus-ring flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all active-press select-none',
+                'focus-ring flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all active-press select-none sm:hidden',
                 viewMode === 'grid'
                   ? 'bg-white text-[var(--primary)] shadow-xs'
                   : 'text-[var(--muted)] hover:text-[var(--foreground)]'
@@ -627,7 +648,7 @@ export default function DiscoverPage() {
                       key={p.id}
                       profile={p}
                       isNext={isNext}
-                      showOnboardingHint={featuredIndex === 0}
+                      showOnboardingHint={featuredIndex === 0 && !hasSeenSwipeHint}
                       onCardClick={() => {
                         if (!isNext) {
                           router.push(`/app/profile?user=${p.id}`);
@@ -642,7 +663,7 @@ export default function DiscoverPage() {
                       }}
                       onSwipeRight={() => {
                         if (!isNext) {
-                          handleSendInterest(p.id, p.name);
+                          handleSendInterest(p.id, p.name, { silentToast: true });
                           setFeaturedIndex((prev) =>
                             prev < filteredProfiles.length - 1 ? prev + 1 : 0
                           );

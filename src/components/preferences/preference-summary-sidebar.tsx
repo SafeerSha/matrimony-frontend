@@ -147,7 +147,7 @@ export function PreferenceSummarySidebar({
             ) : (
               <>
                 <IconDeviceFloppy className="h-4 w-4 text-[#D8B28C]" />
-                <span>IconDeviceFloppy Preferences</span>
+                <span>Save Preferences</span>
               </>
             )}
           </Button>

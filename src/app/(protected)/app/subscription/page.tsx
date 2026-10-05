@@ -23,7 +23,7 @@ export default function SubscriptionPage() {
   const plans = [
     {
       name: '1 Month Permit',
-      badge: 'Starter',
+      badge: 'Basic',
       price: '₹500',
       period: 'per month',
       icon: <IconStar className="h-5 w-5 text-slate-500" />,
@@ -40,7 +40,7 @@ export default function SubscriptionPage() {
     },
     {
       name: '3 Months Permit',
-      badge: 'IconDeviceFloppy ₹200',
+      badge: 'Standard',
       price: '₹1,300',
       period: 'for 90 days',
       icon: <IconStar className="h-5 w-5 text-amber-600" />,
@@ -58,7 +58,7 @@ export default function SubscriptionPage() {
     },
     {
       name: '6 Months Permit',
-      badge: 'IconDeviceFloppy ₹500',
+      badge: 'Plus',
       price: '₹2,500',
       period: 'for 180 days',
       icon: <IconCrown className="h-5 w-5 text-[var(--primary)]" />,
@@ -75,7 +75,7 @@ export default function SubscriptionPage() {
     },
     {
       name: '1 Year Permit',
-      badge: 'IconDeviceFloppy ₹1,000',
+      badge: 'Elite',
       price: '₹5,000',
       period: 'for 365 days',
       icon: <IconCrown className="h-5 w-5 text-[var(--accent)]" />,
@@ -93,14 +93,14 @@ export default function SubscriptionPage() {
   ];
 
   return (
-    <div className="space-y-8 pb-10">
+    <div className="w-full max-w-full min-w-0 space-y-8 pb-10">
       <SectionHeader
         eyebrow="Chat Permits"
         title="Unlock Member Interactions"
         description="An active Premium is required to send chat requests and converse with other members."
       />
 
-      <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-4 max-w-7xl mx-auto">
+      <div className="w-full max-w-full min-w-0 grid gap-6 md:grid-cols-2 xl:grid-cols-4 max-w-7xl mx-auto">
         {plans.map((plan) => (
           <Card
             key={plan.name}
