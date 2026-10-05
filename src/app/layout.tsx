@@ -2,11 +2,11 @@ import type { Metadata } from "next";
 import { Manrope } from "next/font/google";
 import "@/styles/globals.css";
 import { Toaster } from "@/components/ui/toaster";
+import NextTopLoader from "nextjs-toploader";
 
 const manrope = Manrope({
   subsets: ["latin"],
   variable: "--font-manrope",
-  weight: ["400", "500", "600", "700", "800"],
   display: "swap",
 });
 
@@ -23,6 +23,7 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
   return (
     <html lang="en" className={manrope.variable}>
       <body className="font-sans antialiased">
+        <NextTopLoader color="var(--primary)" showSpinner={false} />
         {children}
         <Toaster />
       </body>

@@ -15,6 +15,7 @@ import {
 } from "@tabler/icons-react";
 import { toast } from "@/lib/toast";
 import { cn } from "@/lib/cn";
+import { ScrollReveal } from "@/components/ui/scroll-reveal";
 
 const countryCodes = [
   { code: "+91", label: "India (+91)" },
@@ -36,7 +37,7 @@ const profileForOptions = [
 ];
 
 const createdByOptions = [
-  { value: "By Me", label: "By Me" },
+  { value: "Myself", label: "Myself" },
   { value: "By Parent", label: "By Parent" },
   { value: "By Sibling", label: "By Sibling" },
   { value: "By Cousin", label: "By Cousin" },
@@ -215,7 +216,7 @@ function ModernCountrySelect({
 export function QuickRegisterSection() {
   const router = useRouter();
   const [profileFor, setProfileFor] = useState("Marriage");
-  const [createdBy, setCreatedBy] = useState("By Me");
+  const [createdBy, setCreatedBy] = useState("Myself");
   const [gender, setGender] = useState("Female");
   const [name, setName] = useState("");
   const [countryCode, setCountryCode] = useState("+91");
@@ -227,7 +228,7 @@ export function QuickRegisterSection() {
   const handleProfileForChange = (value: string) => {
     setProfileFor(value);
     if (value === "Friendship" || value === "Living Together") {
-      setCreatedBy("By Me");
+      setCreatedBy("Myself");
     }
   };
 
@@ -254,7 +255,7 @@ export function QuickRegisterSection() {
       profileFor,
       category: profileFor,
       gender,
-      createdBy: isByLocked ? "By Me" : createdBy,
+      createdBy: isByLocked ? "Myself" : createdBy,
     };
 
     const params = new URLSearchParams(paramsObj);
@@ -266,7 +267,7 @@ export function QuickRegisterSection() {
   return (
     <section
       id="quick-register"
-      className="scroll-mt-8 sm:scroll-mt-16 relative py-12 sm:py-16 lg:py-20 border-y border-[var(--border)] overflow-hidden bg-transparent"
+      className="scroll-mt-8 sm:scroll-mt-16 relative py-12 sm:py-16 lg:py-20 border-y border-[var(--border)] bg-transparent"
     >
       {/* Background Romantic Photo Collage with repeated/tiled pattern and luxury atmospheric overlay */}
       <div className="pointer-events-none absolute inset-0 z-0 overflow-hidden">
@@ -282,36 +283,38 @@ export function QuickRegisterSection() {
       </div>
 
       {/* Decorative ambient background glows */}
-      <div
-        className="pointer-events-none absolute -top-24 left-1/3 h-[28rem] w-[28rem] rounded-full bg-[var(--primary)]/5 blur-3xl z-[1]"
-        aria-hidden="true"
-      />
-      <div
-        className="pointer-events-none absolute -bottom-24 right-1/3 h-[28rem] w-[28rem] rounded-full bg-[var(--accent)]/10 blur-3xl z-[1]"
-        aria-hidden="true"
-      />
+      <div className="pointer-events-none absolute inset-0 z-0 overflow-hidden">
+        <div
+          className="absolute -top-24 left-1/3 h-[28rem] w-[28rem] rounded-full bg-[var(--primary)]/5 blur-3xl"
+          aria-hidden="true"
+        />
+        <div
+          className="absolute -bottom-24 right-1/3 h-[28rem] w-[28rem] rounded-full bg-[var(--accent)]/10 blur-3xl"
+          aria-hidden="true"
+        />
+      </div>
 
       <div className="relative z-10 mx-auto max-w-[1400px] px-4 sm:px-6 lg:px-8">
         {/* Section Header */}
         <div className="text-center max-w-3xl mx-auto mb-8 sm:mb-10 space-y-3">
-          <div>
+          <ScrollReveal staggerClass="stagger-1">
             <div className="inline-flex items-center gap-2 rounded-full border border-[var(--primary)]/20 bg-white/95 backdrop-blur-md px-4 py-1.5 text-xs font-bold text-[var(--primary)] shadow-sm">
               <IconHeart className="h-3.5 w-3.5 fill-current" />
               <span>The Biggest & Most Trusted Matrimony Service</span>
             </div>
-          </div>
+          </ScrollReveal>
 
-          <div>
+          <ScrollReveal staggerClass="stagger-2">
             <div className="inline-block rounded-2xl bg-white/90 backdrop-blur-md border border-white/60 px-5 py-2 shadow-sm">
               <p className="text-sm sm:text-base font-semibold text-[var(--foreground)]">
                 Now find verified matches based on your hobbies, values, and shared interests.
               </p>
             </div>
-          </div>
+          </ScrollReveal>
         </div>
 
         {/* Horizontal Registration Card */}
-        <div className="mx-auto max-w-[1380px]">
+        <ScrollReveal className="mx-auto max-w-[1380px]" staggerClass="stagger-3">
           <div className="relative rounded-3xl border border-[var(--border)] bg-white/95 backdrop-blur-md shadow-[0_20px_50px_rgba(122,20,40,0.10)]">
             {/* Top Micro-Header Banner */}
             <div className="rounded-t-3xl bg-gradient-to-r from-[#7A1428] via-[#8C1D33] to-[#7A1428] px-6 sm:px-8 py-3.5 text-white flex items-center justify-between">
@@ -360,10 +363,10 @@ export function QuickRegisterSection() {
                     )}
                   </div>
                   <ModernSelect
-                    value={isByLocked ? "By Me" : createdBy}
+                    value={isByLocked ? "Myself" : createdBy}
                     disabled={isByLocked}
                     onChange={setCreatedBy}
-                    options={isByLocked ? [{ value: "By Me", label: "By Me" }] : createdByOptions}
+                    options={isByLocked ? [{ value: "Myself", label: "Myself" }] : createdByOptions}
                   />
                 </div>
 
@@ -462,7 +465,7 @@ export function QuickRegisterSection() {
               </div>
             </form>
           </div>
-        </div>
+        </ScrollReveal>
       </div>
     </section>
   );

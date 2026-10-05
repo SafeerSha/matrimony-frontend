@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { Logo } from "@/components/layout/logo";
 import { HeroSection, BotanicalCornerDecorations, QuickRegisterSection } from "@/components/hero";
+import { ScrollReveal } from "@/components/ui/scroll-reveal";
 
 const features = [
   ["Thoughtful discovery", "Profiles are designed around compatibility, not endless swiping."],
@@ -24,13 +25,13 @@ export default function LandingPage() {
         <div className="flex items-center gap-3">
           <a
             href="#contact"
-            className="focus-ring hidden sm:inline-flex rounded-xl px-3.5 py-2 text-sm font-semibold text-[var(--muted-strong)] hover:text-[var(--primary)] hover:bg-[var(--primary-lighter)] transition"
+            className="focus-ring hidden sm:inline-flex rounded-xl bg-white/70 backdrop-blur-md border border-[var(--border)] px-4 py-2 text-sm font-semibold text-[var(--foreground)] hover:text-[var(--primary)] hover:bg-white/95 shadow-sm transition"
           >
             Contact
           </a>
           <Link
             href="/login"
-            className="focus-ring rounded-xl px-4 py-2.5 text-sm font-semibold text-[var(--primary)] hover:bg-[var(--primary-lighter)] transition"
+            className="focus-ring rounded-xl bg-[var(--primary)] px-5 py-2 text-sm font-semibold text-white shadow-[0_8px_16px_var(--primary-shadow)] hover:bg-[var(--primary-deep)] hover:-translate-y-0.5 transition-all duration-200"
           >
             Sign in
           </Link>
@@ -44,11 +45,15 @@ export default function LandingPage() {
       <section id="how-it-works" className="border-y border-[var(--border)] bg-white">
         <div className="mx-auto grid max-w-[1600px] gap-4 px-4 py-12 sm:px-6 xl:px-10 md:grid-cols-3">
           {features.map(([title, description], index) => (
-            <div key={title} className="rounded-2xl p-6 hover:bg-[var(--background)]">
+            <ScrollReveal
+              key={title}
+              staggerClass={`stagger-${index + 1}`}
+              className="rounded-2xl p-6 hover:bg-[var(--background)]"
+            >
               <div className="mb-5 grid h-11 w-11 place-items-center rounded-xl bg-[var(--primary-light)] font-bold text-[var(--primary)]">0{index + 1}</div>
               <h2 className="text-lg font-bold">{title}</h2>
               <p className="mt-2 text-sm leading-6 text-[var(--muted)]">{description}</p>
-            </div>
+            </ScrollReveal>
           ))}
         </div>
       </section>
@@ -56,7 +61,7 @@ export default function LandingPage() {
       {/* Contact Us Section */}
       <section id="contact" className="border-b border-[var(--border)] bg-[var(--surface)] py-12 sm:py-16">
         <div className="mx-auto max-w-[1600px] px-4 sm:px-6 lg:px-8 xl:px-10">
-          <div className="rounded-3xl border border-[var(--border)] bg-gradient-to-br from-[var(--surface-muted)] via-[var(--background)] to-[var(--surface-muted)] p-6 sm:p-10 lg:p-12 shadow-[0_16px_40px_var(--card-shadow)]">
+          <ScrollReveal className="rounded-3xl border border-[var(--border)] bg-gradient-to-br from-[var(--surface-muted)] via-[var(--background)] to-[var(--surface-muted)] p-6 sm:p-10 lg:p-12 shadow-[0_16px_40px_var(--card-shadow)]">
             <div className="mx-auto max-w-2xl text-center">
               <span className="inline-flex items-center gap-2 rounded-full border border-[var(--primary-light)] bg-white px-3.5 py-1.5 text-xs font-semibold text-[var(--primary)]">
                 We are here to help
@@ -82,7 +87,7 @@ export default function LandingPage() {
                 </a>
               </div>
             </div>
-          </div>
+          </ScrollReveal>
         </div>
       </section>
 

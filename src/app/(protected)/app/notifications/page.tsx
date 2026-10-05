@@ -17,6 +17,7 @@ import {
   IconExternalLink,
   IconUsers,
 } from '@tabler/icons-react';
+import { PageLoader } from '@/components/ui/page-loader';
 import { Avatar } from '@/components/ui/avatar';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -369,10 +370,7 @@ export default function NotificationsPage() {
       </div>
 
       {loading ? (
-        <div className="py-20 flex flex-col items-center justify-center text-[#766B6F] gap-2">
-          <IconLoader2 className="h-8 w-8 animate-spin text-[#7A1835]" />
-          <span className="text-xs font-semibold">Loading notifications...</span>
-        </div>
+        <PageLoader text="Loading notifications..." />
       ) : filteredItems.length === 0 ? (
         <Card className="rounded-3xl border border-[#E9DDE0] bg-white p-12 text-center shadow-xs">
           <div className="h-14 w-14 rounded-2xl bg-[#FAF3EC] border border-[#EAD8C7] flex items-center justify-center mx-auto text-[#7A1835] mb-3">

@@ -10,6 +10,7 @@ import { cn } from '@/lib/cn';
 import { profileService, mediaService, authService } from '@/services';
 import type { UserProfile } from '@/services/profile.service';
 import { PartnerPreferencesEditor } from '@/components/preferences/partner-preferences-editor';
+import { PageLoader } from '@/components/ui/page-loader';
 
 export function MyProfile() {
   const [saved, setSaved] = useState(false);
@@ -69,7 +70,7 @@ export function MyProfile() {
   };
 
   if (isLoading) {
-    return <div className="py-20 flex justify-center"><IconLoader2 className="h-8 w-8 animate-spin text-[var(--primary)]" /></div>;
+    return <PageLoader text="Loading your profile..." />;
   }
 
   if (!profile) return null;

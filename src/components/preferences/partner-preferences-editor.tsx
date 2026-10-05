@@ -21,6 +21,7 @@ import {
   IconUsers,
   IconCoins,
 } from '@tabler/icons-react';
+import { PageLoader } from '@/components/ui/page-loader';
 import { SectionHeader } from '@/components/ui/section-header';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -121,12 +122,7 @@ export function PartnerPreferencesEditor({
   };
 
   if (isLoading) {
-    return (
-      <div className="py-24 flex flex-col items-center justify-center text-[#766B6F] gap-3">
-        <IconLoader2 className="h-8 w-8 animate-spin text-[#7A1835]" />
-        <span className="text-xs font-semibold">Loading partner preferences...</span>
-      </div>
-    );
+    return <PageLoader text="Loading partner preferences..." />;
   }
 
   return (
