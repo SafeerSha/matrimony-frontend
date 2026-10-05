@@ -35,7 +35,7 @@ import { BottomSheet } from '@/components/ui/bottom-sheet';
 import { EmptyState } from '@/components/ui/empty-state';
 import { SectionHeader } from '@/components/ui/section-header';
 import { VerificationBadge } from '@/components/ui/verification-badge';
-import { ProfileCardSkeleton } from '@/components/ui/skeleton';
+import { ProfileCardSkeleton, SwipeCardSkeleton } from '@/components/ui/skeleton';
 import { matchesService } from '@/services';
 import { profiles as demoProfiles } from '@/lib/demo-data';
 import { toast } from '@/lib/toast';
@@ -443,15 +443,15 @@ export default function DiscoverPage() {
       {/* ======================================================== */}
       {/* 1. TOP HEADER & VIEW MODE CONTROLS                       */}
       {/* ======================================================== */}
-      <div className="flex flex-col gap-2.5 sm:gap-4 sm:flex-row sm:items-end sm:justify-between animate-content-appear stagger-1">
+      <div className="flex flex-col gap-3 sm:gap-4 animate-content-appear stagger-1">
         <SectionHeader
           eyebrow="Discovery"
           title="Explore verified profiles"
         />
 
-        <div className="flex flex-wrap items-center gap-2 self-start sm:self-auto shrink-0">
-          {/* View Switcher: Mobile only (Desktop defaults to grid, no featured layout) */}
-          <div className="md:hidden flex items-center bg-[var(--surface-muted)] p-1 rounded-2xl border border-[var(--border)]">
+        <div className="flex items-center justify-between w-full gap-2 shrink-0">
+          {/* View Switcher: Mobile & Desktop */}
+          <div className="flex items-center bg-[var(--surface-muted)] p-1 rounded-2xl border border-[var(--border)]">
             <button
               type="button"
                onClick={() => setViewMode('swipe')}
@@ -550,11 +550,19 @@ export default function DiscoverPage() {
       {/* ======================================================== */}
 
       {isLoading ? (
-        <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 animate-content-appear stagger-2">
-          {Array.from({ length: 8 }).map((_, i) => (
-            <ProfileCardSkeleton key={i} />
-          ))}
-        </div>
+        viewMode === 'swipe' ? (
+          <div className="relative max-w-2xl mx-auto space-y-4 animate-content-appear stagger-2">
+            <SwipeCardSkeleton />
+            {/* Peek of next card underneath */}
+            <div className="absolute top-8 inset-x-4 -z-10 h-[600px] rounded-[2.5rem] bg-stone-200/50 scale-[0.95]" />
+          </div>
+        ) : (
+          <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 animate-content-appear stagger-2">
+            {Array.from({ length: 8 }).map((_, i) => (
+              <ProfileCardSkeleton key={i} />
+            ))}
+          </div>
+        )
       ) : filteredProfiles.length === 0 ? (
         /* Empty State */
         <EmptyState
@@ -619,6 +627,7 @@ export default function DiscoverPage() {
                       key={p.id}
                       profile={p}
                       isNext={isNext}
+                      showOnboardingHint={featuredIndex === 0}
                       onCardClick={() => {
                         if (!isNext) {
                           router.push(`/app/profile?user=${p.id}`);

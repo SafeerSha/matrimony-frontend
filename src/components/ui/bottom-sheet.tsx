@@ -1,6 +1,7 @@
 "use client";
 
-import React, { useEffect, useCallback } from "react";
+import React, { useEffect, useCallback, useState } from "react";
+import { createPortal } from "react-dom";
 import { IconX } from '@tabler/icons-react';
 import { cn } from "@/lib/cn";
 
@@ -47,9 +48,14 @@ export function BottomSheet({
     };
   }, [isOpen, handleKeyDown]);
 
-  if (!isOpen) return null;
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
-  return (
+  if (!isOpen || !mounted) return null;
+
+  return createPortal(
     <div
       role="dialog"
       aria-modal="true"
@@ -111,6 +117,7 @@ export function BottomSheet({
           </div>
         )}
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }

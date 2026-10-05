@@ -55,40 +55,29 @@ export function MutualMatchCard({
           <span className="grid h-6 w-6 place-items-center rounded-full bg-[var(--primary)] text-white">
             <IconUsers className="h-3.5 w-3.5" />
           </span>
-          <span className="text-xs font-bold uppercase tracking-wider text-[#5C1027]">
+          <span className="text-[10px] font-bold uppercase tracking-wider text-[#5C1027]">
             Mutual Match
           </span>
         </div>
 
         <div className="flex items-center gap-2">
           {match.compatibility && (
-            <Badge tone="accent" size="sm" className="font-bold text-[11px]">
+            <Badge tone="accent" size="sm" className="font-bold text-[10px]">
               {match.compatibility}% Compatibility
-            </Badge>
-          )}
-          {match.online && (
-            <Badge
-              tone="neutral"
-              size="sm"
-              dot
-              dotColor="bg-emerald-500"
-              className="bg-white/90 text-[var(--foreground)] border-stone-200 text-[11px]"
-            >
-              Online
             </Badge>
           )}
         </div>
       </div>
 
-      <div className="p-6 sm:p-7 space-y-6">
+      <div className="p-4 sm:p-5 space-y-5">
         {/* ======================================================== */}
         {/* DUAL PROFILES PRESENTATION (Profile A + Profile B)       */}
         {/* ======================================================== */}
-        <div className="flex items-center justify-center gap-3 sm:gap-6 py-2">
+        <div className="flex items-center justify-center gap-1 sm:gap-2 py-2">
           {/* Profile A: Current User */}
           <div className="flex flex-col items-center text-center">
             <div className="relative">
-              <div className="h-20 w-20 sm:h-24 sm:w-24 overflow-hidden rounded-full ring-4 ring-[#FAF3EC] border-2 border-[#D8B28C] shadow-sm bg-[var(--surface-muted)]">
+              <div className="h-14 w-14 sm:h-16 sm:w-16 overflow-hidden rounded-full ring-4 ring-[#FAF3EC] border-2 border-[#D8B28C] shadow-sm bg-[var(--surface-muted)]">
                 <img
                   src={currentUser.image || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=600&q=80'}
                   alt={currentUser.name || 'You'}
@@ -101,20 +90,20 @@ export function MutualMatchCard({
                 </div>
               )}
             </div>
-            <p className="mt-2 text-xs font-bold text-[var(--foreground)] truncate max-w-[90px]">
+            <p className="mt-2 text-xs font-bold text-[var(--foreground)] truncate max-w-[75px]">
               {currentUser.name || 'You'}
             </p>
             <span className="text-[10px] font-semibold text-[var(--muted)]">Your Profile</span>
           </div>
 
           {/* Center Connection Knot & Crest */}
-          <div className="flex flex-col items-center justify-center px-1 sm:px-3">
+          <div className="flex flex-col items-center justify-center px-0">
             <div className="relative flex items-center justify-center">
               {/* Subtle connecting horizontal line */}
-              <div className="absolute w-20 sm:w-28 h-0.5 bg-gradient-to-r from-transparent via-[#D8B28C] to-transparent" />
+              <div className="absolute w-10 sm:w-14 h-0.5 bg-gradient-to-r from-transparent via-[#D8B28C] to-transparent" />
               
               {/* Central Refined Emblem */}
-              <div className="relative z-10 grid h-11 w-11 sm:h-12 sm:w-12 place-items-center rounded-full bg-gradient-to-br from-[#7A1835] to-[#5C1027] text-white shadow-md ring-4 ring-white">
+              <div className="relative z-10 grid h-9 w-9 sm:h-10 sm:w-10 place-items-center rounded-full bg-gradient-to-br from-[#7A1835] to-[#5C1027] text-white shadow-md ring-4 ring-white">
                 <IconUsers className="h-5 w-5" />
               </div>
             </div>
@@ -129,7 +118,7 @@ export function MutualMatchCard({
               href={`/app/profile?user=${match.id}`}
               className="focus-ring relative rounded-full block group/avatar"
             >
-              <div className="h-20 w-20 sm:h-24 sm:w-24 overflow-hidden rounded-full ring-4 ring-[#FAF3EC] border-2 border-[var(--primary)] shadow-sm bg-[var(--surface-muted)] transition-transform duration-300 group-hover/avatar:scale-105">
+              <div className="h-14 w-14 sm:h-16 sm:w-16 overflow-hidden rounded-full ring-4 ring-[#FAF3EC] border-2 border-[var(--primary)] shadow-sm bg-[var(--surface-muted)] transition-transform duration-300 group-hover/avatar:scale-105">
                 <img
                   src={match.image}
                   alt={match.name}
@@ -141,10 +130,16 @@ export function MutualMatchCard({
                   <VerificationBadge type="general" showIconOnly size="sm" />
                 </div>
               )}
+              {match.online && (
+                <div 
+                  className="absolute top-0 right-0 h-3.5 w-3.5 rounded-full bg-emerald-500 border-2 border-white shadow-sm z-10" 
+                  title="Online"
+                />
+              )}
             </Link>
             <Link
               href={`/app/profile?user=${match.id}`}
-              className="mt-2 text-xs font-bold text-[var(--foreground)] hover:text-[var(--primary)] transition-colors truncate max-w-[110px]"
+              className="mt-2 text-[11px] font-bold text-[var(--foreground)] hover:text-[var(--primary)] transition-colors truncate max-w-[80px]"
             >
               {match.name}, {match.age}
             </Link>
@@ -158,26 +153,21 @@ export function MutualMatchCard({
         {/* CONNECTION STATUS & SUMMARY STATEMENT                    */}
         {/* ======================================================== */}
         <div className="text-center space-y-1.5 pt-1">
-          <h3 className="font-editorial-title text-xl sm:text-2xl font-bold text-[var(--foreground)]">
+          <h3 className="font-editorial-title text-base sm:text-lg font-bold text-[var(--foreground)] leading-tight">
             Both of you are interested in connecting.
           </h3>
-          <p className="text-xs sm:text-sm text-[var(--muted-strong)] max-w-md mx-auto">
+          <p className="text-[11px] sm:text-xs text-[var(--muted-strong)] max-w-md mx-auto">
             {match.profession} · {match.education} · Based in {match.city}, {match.state}
           </p>
         </div>
 
-        {/* Short Personal IconQuote */}
-        {match.about && (
-          <p className="text-xs leading-relaxed text-[var(--muted-strong)] italic bg-[#FFFDFB] p-3.5 rounded-2xl border border-[var(--border)]/70 text-center line-clamp-2">
-            "{match.about}"
-          </p>
-        )}
+
 
         {/* ======================================================== */}
         {/* ACTIONS: START CHAT & VIEW PROFILE                       */}
         {/* ======================================================== */}
-        <div className="pt-2 border-t border-[var(--border)] flex flex-col sm:flex-row items-center gap-3">
-          <Link href={`/app/profile?user=${match.id}`} className="w-full sm:w-auto flex-1 focus-ring">
+        <div className="pt-2 border-t border-[var(--border)] flex flex-col gap-2.5">
+          <Link href={`/app/profile?user=${match.id}`} className="w-full focus-ring">
             <Button
               variant="secondary"
               size="md"
@@ -187,7 +177,7 @@ export function MutualMatchCard({
             </Button>
           </Link>
 
-          <Link href={`/app/messages?user=${match.id}`} className="w-full sm:w-auto flex-1 focus-ring">
+          <Link href={`/app/messages?user=${match.id}`} className="w-full focus-ring">
             <Button
               variant="primary"
               size="md"

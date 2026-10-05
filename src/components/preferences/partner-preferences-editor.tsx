@@ -87,7 +87,7 @@ export function PartnerPreferencesEditor({
     }));
     setHasChanges(true);
     toast.success('Section Updated', {
-      description: 'Your changes are staged. Click IconDeviceFloppy Preferences to publish them.',
+      description: 'Your changes are staged. Click DeviceFloppy Preferences to publish them.',
     });
   };
 

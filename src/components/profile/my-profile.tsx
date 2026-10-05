@@ -114,28 +114,25 @@ export function MyProfile() {
             className="rounded-2xl text-xs font-bold gap-2 shadow-xs active-press"
             onClick={() => setSaved(true)}
           >
-            <IconDeviceFloppy className="h-4 w-4" /> {saved ? 'Saved' : 'IconDeviceFloppy changes'}
+            <IconDeviceFloppy className="h-4 w-4" /> {saved ? 'Saved' : 'Save changes'}
           </Button>
         </div>
       </div>
 
       {/* Main Profile Cover & Hero Card */}
       <Card className="overflow-hidden p-0 rounded-3xl">
-        <div className="relative h-44 sm:h-52 bg-gradient-to-r from-[#5C1027] via-[#7A1835] to-[#8C1D3D]">
+        <div className="relative h-32 sm:h-40 bg-gradient-to-r from-[#5C1027] via-[#7A1835] to-[#8C1D3D]">
           {/* Subtle Ambient Radial Highlight */}
           <div
             className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_70%_30%,rgba(216,178,140,0.2)_0%,transparent_60%)]"
             aria-hidden="true"
           />
-          <div className="absolute -bottom-12 left-6 rounded-full border-4 border-white bg-white shadow-md">
-            <Avatar src={displayImage} name={displayName} size="xl" className="h-24 w-24 sm:h-28 sm:w-28" />
+          <div className="absolute -bottom-10 left-6 rounded-full border-4 border-white bg-white shadow-md">
+            <Avatar src={displayImage} name={displayName} size="xl" />
           </div>
-          <button className="focus-ring absolute bottom-3.5 right-4 inline-flex items-center gap-2 rounded-2xl bg-black/40 px-3.5 py-1.5 text-xs font-bold text-white backdrop-blur-md hover:bg-black/50 transition-colors active-press shadow-xs">
-            <IconCamera className="h-3.5 w-3.5" /> Change cover
-          </button>
         </div>
 
-        <div className="px-6 pb-6 pt-16">
+        <div className="px-6 pb-6 pt-12">
           <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
             <div>
               <div className="flex items-center gap-3">
@@ -277,11 +274,11 @@ export function MyProfile() {
             <Button
               variant="primary"
               size="sm"
-              className="rounded-2xl text-xs font-bold shadow-xs active-press self-start sm:self-auto"
+              className="rounded-2xl text-xs font-bold shadow-xs active-press self-start sm:self-auto shrink-0"
               onClick={() => fileInputRef.current?.click()}
               disabled={isUploading}
+              leftIcon={isUploading ? <IconLoader2 className="h-4 w-4 animate-spin shrink-0" /> : <IconPlus className="h-4 w-4 shrink-0" />}
             >
-              {isUploading ? <IconLoader2 className="mr-2 h-4 w-4 animate-spin" /> : <IconPlus className="mr-2 h-4 w-4" />}
               {isUploading ? 'Uploading...' : 'Add Photo'}
             </Button>
             <input

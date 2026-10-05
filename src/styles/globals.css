@@ -320,3 +320,66 @@ button, input, textarea, select {
   background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.4), transparent);
   animation: shimmer 2.5s infinite ease-in-out;
 }
+
+/* ===== SWIPE HINT ONBOARDING ANIMATIONS ===== */
+@keyframes swipe-hint-lifecycle {
+  0% { opacity: 0; }
+  12% { opacity: 1; }
+  75% { opacity: 1; }
+  100% { opacity: 0; }
+}
+.animate-swipe-hint {
+  animation: swipe-hint-lifecycle 3.2s ease-in-out forwards;
+}
+
+@keyframes bounce-left {
+  0%, 100% { transform: translateX(0); }
+  25% { transform: translateX(-10px); }
+  50% { transform: translateX(0); }
+  75% { transform: translateX(-6px); }
+}
+.animate-bounce-left {
+  animation: bounce-left 1.4s ease-in-out infinite;
+}
+
+@keyframes bounce-right {
+  0%, 100% { transform: translateX(0); }
+  25% { transform: translateX(10px); }
+  50% { transform: translateX(0); }
+  75% { transform: translateX(6px); }
+}
+.animate-bounce-right {
+  animation: bounce-right 1.4s ease-in-out infinite;
+}
+
+@keyframes swipe-card-wiggle {
+  0% { transform: rotate(0deg) translateX(0px); }
+  8% { transform: rotate(0deg) translateX(0px); } /* Small delay */
+  25% { transform: rotate(8deg) translateX(45px) translateY(-8px); }
+  45% { transform: rotate(-8deg) translateX(-45px) translateY(-8px); }
+  65% { transform: rotate(4deg) translateX(15px); }
+  80% { transform: rotate(-3deg) translateX(-15px); }
+  100% { transform: rotate(0deg) translateX(0px); }
+}
+.animate-card-wiggle {
+  animation: swipe-card-wiggle 4.5s cubic-bezier(0.25, 1, 0.5, 1) forwards;
+}
+
+@keyframes swipe-hint-right-overlay {
+  0%, 100% { opacity: 0; }
+  25% { opacity: 0.95; }
+  40% { opacity: 0; }
+}
+.animate-hint-right {
+  animation: swipe-hint-right-overlay 4.5s cubic-bezier(0.25, 1, 0.5, 1) forwards;
+}
+
+@keyframes swipe-hint-left-overlay {
+  0%, 100% { opacity: 0; }
+  35% { opacity: 0; }
+  45% { opacity: 0.95; }
+  60% { opacity: 0; }
+}
+.animate-hint-left {
+  animation: swipe-hint-left-overlay 4.5s cubic-bezier(0.25, 1, 0.5, 1) forwards;
+}

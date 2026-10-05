@@ -1,6 +1,7 @@
 "use client";
 
-import React, { useEffect, useCallback } from "react";
+import React, { useEffect, useCallback, useState } from "react";
+import { createPortal } from "react-dom";
 import { IconX } from '@tabler/icons-react';
 import { cn } from "@/lib/cn";
 
@@ -49,7 +50,12 @@ export function Modal({
     };
   }, [isOpen, handleKeyDown]);
 
-  if (!isOpen) return null;
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  if (!isOpen || !mounted) return null;
 
   const sizes = {
     sm: "max-w-md",
@@ -58,28 +64,29 @@ export function Modal({
     xl: "max-w-4xl",
   };
 
-  return (
+  return createPortal(
     <div
       role="dialog"
       aria-modal="true"
-      className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 overflow-y-auto"
+      className="fixed inset-0 z-50 overflow-y-auto"
     >
-      {/* Backdrop with blur */}
-      <div
-        className="fixed inset-0 bg-black/50 backdrop-blur-sm transition-opacity duration-300 animate-in fade-in"
-        onClick={() => closeOnBackdrop && onClose()}
-        aria-hidden="true"
-      />
+      <div className="flex min-h-full items-center justify-center p-4 sm:p-6">
+        {/* Backdrop with blur */}
+        <div
+          className="fixed inset-0 bg-black/50 backdrop-blur-sm transition-opacity duration-300 animate-in fade-in"
+          onClick={() => closeOnBackdrop && onClose()}
+          aria-hidden="true"
+        />
 
-      {/* Modal Surface */}
-      <div
-        className={cn(
-          "relative w-full rounded-3xl border border-[var(--border)] bg-white p-6 sm:p-8 shadow-[var(--elevation-floating)] transition-all duration-300",
-          "animate-in fade-in zoom-in-95 slide-in-from-bottom-2",
-          sizes[size],
-          className
-        )}
-      >
+        {/* Modal Surface */}
+        <div
+          className={cn(
+            "relative w-full rounded-3xl border border-[var(--border)] bg-white p-6 sm:p-8 shadow-[var(--elevation-floating)] transition-all duration-300",
+            "animate-in fade-in zoom-in-95 slide-in-from-bottom-2",
+            sizes[size],
+            className
+          )}
+        >
         <button
           type="button"
           onClick={onClose}
@@ -112,6 +119,8 @@ export function Modal({
           </div>
         )}
       </div>
-    </div>
+      </div>
+    </div>,
+    document.body
   );
 }
