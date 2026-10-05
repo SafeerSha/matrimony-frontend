@@ -28,7 +28,7 @@ export default function FavoritesPage() {
   return (
     <div className="space-y-6 pb-14">
       {/* Top Header */}
-      <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
+      <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 animate-content-appear stagger-1">
         <div className="min-w-0">
           <div className="mb-1 sm:mb-1.5 flex items-center gap-1.5 sm:gap-2">
             <span className="h-1.5 w-1.5 rounded-full bg-[var(--primary)] shrink-0" aria-hidden="true" />
@@ -59,13 +59,13 @@ export default function FavoritesPage() {
 
       {/* Grid of Favorited Profiles */}
       {isLoading ? (
-        <div className="space-y-4">
+        <div className="space-y-4 animate-content-appear stagger-2">
            {[...Array(4)].map((_, i) => (
-            <div key={i} className="h-48 w-full animate-pulse rounded-3xl bg-[var(--surface-muted)]" />
+            <div key={i} className="h-48 w-full skeleton-shimmer rounded-3xl bg-[var(--surface-muted)]" />
            ))}
         </div>
       ) : favorites.length > 0 ? (
-        <div className="space-y-4">
+        <div className="space-y-4 animate-content-appear stagger-2">
           {favorites.map((profile) => (
             <InterestCard
               key={profile.id}

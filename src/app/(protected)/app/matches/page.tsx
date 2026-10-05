@@ -69,7 +69,7 @@ export default function MatchesPage() {
   return (
     <div className="space-y-6 pb-14">
       {/* Top Header */}
-      <div className="flex items-end justify-between gap-3">
+      <div className="flex items-end justify-between gap-3 animate-content-appear stagger-1">
         <div className="min-w-0">
           <div className="mb-1 sm:mb-1.5 flex items-center gap-1.5 sm:gap-2">
             <span className="h-1.5 w-1.5 rounded-full bg-[var(--primary)] shrink-0" aria-hidden="true" />
@@ -96,7 +96,7 @@ export default function MatchesPage() {
       </div>
 
       {/* Mutual Matches Spotlight Banner */}
-      <div className="rounded-3xl bg-gradient-to-r from-[#FAF3EC] via-[#FFF9F6] to-[#FFF5F7] p-5 sm:p-6 border border-[#EAD8C7] flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      <div className="rounded-3xl bg-gradient-to-r from-[#FAF3EC] via-[#FFF9F6] to-[#FFF5F7] p-5 sm:p-6 border border-[#EAD8C7] flex flex-col sm:flex-row sm:items-center justify-between gap-4 animate-content-appear stagger-2">
         <div className="flex items-center gap-3.5">
           <div className="grid h-12 w-12 place-items-center rounded-2xl bg-gradient-to-br from-[#7A1835] to-[#5C1027] text-white shadow-md shrink-0">
             <IconUsers className="h-6 w-6 text-[#D8B28C]" />
@@ -118,7 +118,7 @@ export default function MatchesPage() {
 
       {/* Dedicated Dual-Profile Mutual Match Cards (Profile A + Profile B) */}
       {matches.length > 0 ? (
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 sm:gap-6">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 sm:gap-6 animate-content-appear stagger-3">
           {matches.map((match) => (
             <MutualMatchCard
               key={match.id}

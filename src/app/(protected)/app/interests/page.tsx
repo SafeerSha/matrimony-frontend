@@ -206,7 +206,7 @@ function InterestsContent() {
       {/* ======================================================== */}
       {/* 1. HEADER & INTERACTION CENTER CONTEXT                   */}
       {/* ======================================================== */}
-      <div className="flex items-end justify-between gap-3">
+      <div className="flex items-end justify-between gap-3 animate-content-appear stagger-1">
         <div className="min-w-0">
           <div className="mb-1 sm:mb-1.5 flex items-center gap-1.5 sm:gap-2">
             <span className="h-1.5 w-1.5 rounded-full bg-[var(--primary)] shrink-0" aria-hidden="true" />
@@ -235,7 +235,7 @@ function InterestsContent() {
       {/* ======================================================== */}
       {/* 2. TABS CONTROLS & SEARCH BAR                            */}
       {/* ======================================================== */}
-      <Card className="p-3 sm:p-4 rounded-3xl border-[var(--border)] bg-white shadow-[var(--elevation-card)]">
+      <Card className="p-3 sm:p-4 rounded-3xl border-[var(--border)] bg-white shadow-[var(--elevation-card)] animate-content-appear stagger-2">
         <div className="flex flex-col lg:flex-row lg:items-center gap-3">
           {/* Segmented Tabs: Received | Sent | Accepted (Matches) | Declined */}
           <div className="flex items-center gap-1.5 p-1 bg-[var(--surface-muted)] rounded-2xl border border-[var(--border)] overflow-x-auto scrollbar-none">
@@ -327,7 +327,7 @@ function InterestsContent() {
       {/* TAB A: RECEIVED INTERESTS                                */}
       {/* -------------------------------------------------------- */}
       {tab === 'received' && (
-        <div className="space-y-4">
+        <div className="space-y-4 animate-content-appear stagger-3">
           {filteredReceived.length > 0 ? (
             <div className="space-y-4">
               {filteredReceived.map((profile) => (
@@ -364,7 +364,7 @@ function InterestsContent() {
       {/* TAB B: SENT INTERESTS                                    */}
       {/* -------------------------------------------------------- */}
       {tab === 'sent' && (
-        <div className="space-y-4">
+        <div className="space-y-4 animate-content-appear stagger-3">
           {filteredSent.length > 0 ? (
             <div className="space-y-4">
               {filteredSent.map((profile) => (
@@ -393,7 +393,7 @@ function InterestsContent() {
       {/* TAB D: DECLINED REQUESTS                                 */}
       {/* -------------------------------------------------------- */}
       {tab === 'declined' && (
-        <div className="space-y-4">
+        <div className="space-y-4 animate-content-appear stagger-3">
           {filteredDeclined.length > 0 ? (
             <div className="space-y-4">
               {filteredDeclined.map((profile) => (
@@ -423,12 +423,12 @@ export default function InterestsPage() {
   return (
     <Suspense
       fallback={
-        <div className="space-y-6 animate-pulse">
-          <div className="h-16 w-1/3 bg-[var(--surface-muted)] rounded-2xl" />
-          <div className="h-12 w-full bg-[var(--surface-muted)] rounded-2xl" />
+        <div className="space-y-6">
+          <div className="h-16 w-1/3 bg-[var(--surface-muted)] rounded-2xl skeleton-shimmer" />
+          <div className="h-12 w-full bg-[var(--surface-muted)] rounded-2xl skeleton-shimmer" />
           <div className="space-y-4">
-            <div className="h-56 w-full bg-[var(--surface-muted)] rounded-3xl" />
-            <div className="h-56 w-full bg-[var(--surface-muted)] rounded-3xl" />
+            <div className="h-56 w-full bg-[var(--surface-muted)] rounded-3xl skeleton-shimmer" />
+            <div className="h-56 w-full bg-[var(--surface-muted)] rounded-3xl skeleton-shimmer" />
           </div>
         </div>
       }

@@ -4,6 +4,7 @@ import React, { useState, useEffect } from "react";
 import { Header } from "./header";
 import { Sidebar } from "./sidebar";
 import { MobileNav } from "./mobile-nav";
+import { usePathname } from "next/navigation";
 import { authService, notificationService, chatService } from "@/services";
 
 export interface AppShellProps {
@@ -11,6 +12,7 @@ export interface AppShellProps {
 }
 
 export function AppShell({ children }: AppShellProps) {
+  const pathname = usePathname();
   const [currentUser, setCurrentUser] = useState<any>(null);
   const [unreadNotificationsCount, setUnreadNotificationsCount] = useState(0);
   const [unreadMessagesCount, setUnreadMessagesCount] = useState(0);
@@ -73,8 +75,9 @@ export function AppShell({ children }: AppShellProps) {
 
         {/* Dynamic Page Container */}
         <main
+          key={pathname}
           id="main-content"
-          className="min-w-0 flex-1 pb-24 md:pb-12"
+          className="min-w-0 flex-1 pb-24 md:pb-12 animate-page-enter"
         >
           {children}
         </main>

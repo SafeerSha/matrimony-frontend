@@ -358,7 +358,7 @@ export default function MessagesPage() {
   return (
     <div className="space-y-4 sm:space-y-6 pb-6">
       {/* Top Section Header */}
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between animate-content-appear stagger-1">
         <div>
           <SectionHeader
             eyebrow="Connections & Chat"
@@ -389,7 +389,7 @@ export default function MessagesPage() {
       </div>
 
       {/* TWO-COLUMN DESKTOP / FULL-SCREEN MOBILE CONTAINER */}
-      <div className="relative rounded-2xl sm:rounded-3xl border border-[#E9DDE0] bg-[#FFFDFB] shadow-xs overflow-hidden h-[calc(100dvh-135px)] md:h-[calc(100vh-185px)] min-h-[460px] md:min-h-[620px] max-h-[820px] flex">
+      <div className="relative rounded-2xl sm:rounded-3xl border border-[#E9DDE0] bg-[#FFFDFB] shadow-xs overflow-hidden h-[calc(100dvh-135px)] md:h-[calc(100vh-185px)] min-h-[460px] md:min-h-[620px] max-h-[820px] flex animate-content-appear stagger-2">
         
         {/* COLUMN 1: LEFT CONVERSATION LIST */}
         <aside

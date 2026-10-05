@@ -344,7 +344,7 @@ export function ChatWindow({
                 return (
                   <div
                     key={m.id || idx}
-                    className={cn('flex flex-col', isOurs ? 'items-end' : 'items-start')}
+                    className={cn('flex flex-col animate-chat-message', isOurs ? 'items-end' : 'items-start')}
                   >
                     <div className="max-w-[85%] sm:max-w-[70%]">
                       {/* Message Bubble */}

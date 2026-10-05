@@ -443,7 +443,7 @@ export default function DiscoverPage() {
       {/* ======================================================== */}
       {/* 1. TOP HEADER & VIEW MODE CONTROLS                       */}
       {/* ======================================================== */}
-      <div className="flex flex-col gap-2.5 sm:gap-4 sm:flex-row sm:items-end sm:justify-between">
+      <div className="flex flex-col gap-2.5 sm:gap-4 sm:flex-row sm:items-end sm:justify-between animate-content-appear stagger-1">
         <SectionHeader
           eyebrow="Discovery"
           title="Explore verified profiles"
@@ -502,7 +502,7 @@ export default function DiscoverPage() {
 
       {/* Active Filter Chips Summary bar (Moved up from old card) */}
       {(activeFiltersCount > 0 || query) && (
-        <div className="flex flex-wrap items-center gap-2 pt-1">
+        <div className="flex flex-wrap items-center gap-2 pt-1 animate-content-appear stagger-2">
           <span className="text-xs font-semibold text-[var(--muted)]">Active:</span>
           {query && (
             <Chip size="sm" onRemove={() => setQuery('')}>
@@ -550,7 +550,7 @@ export default function DiscoverPage() {
       {/* ======================================================== */}
 
       {isLoading ? (
-        <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+        <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 animate-content-appear stagger-2">
           {Array.from({ length: 8 }).map((_, i) => (
             <ProfileCardSkeleton key={i} />
           ))}
@@ -570,7 +570,7 @@ export default function DiscoverPage() {
           {/* FEATURED / CARD VIEW MODE (Mobile only)                  */}
           {/* ======================================================== */}
           {viewMode === 'swipe' && safeFeaturedProfile && (
-            <div className="block md:hidden max-w-2xl mx-auto space-y-2 sm:space-y-4">
+            <div className="block md:hidden max-w-2xl mx-auto space-y-2 sm:space-y-4 animate-content-appear stagger-2">
             {/* Top Navigation Bar: Previous / Next & Counter */}
             <div className="flex items-center justify-between px-2">
               <span className="text-xs font-bold tracking-wider uppercase text-[var(--muted)]">
@@ -653,7 +653,7 @@ export default function DiscoverPage() {
         {/* ======================================================== */}
         <div
           className={cn(
-            'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5 sm:gap-6',
+            'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-3 animate-content-appear stagger-3',
             viewMode === 'swipe' ? 'hidden md:grid' : 'grid'
           )}
         >
@@ -675,10 +675,10 @@ export default function DiscoverPage() {
                     router.push(`/app/profile?user=${profile.id}`);
                   }
                 }}
-                className="group relative overflow-hidden rounded-[2.5rem] border border-[var(--border)] bg-white p-0 shadow-[var(--elevation-card)] hover:shadow-[var(--elevation-floating)] transition-all duration-300 cursor-pointer"
+                className="group relative overflow-hidden rounded-[2rem] border border-[var(--border)] bg-white p-0 shadow-[var(--elevation-card)] hover:shadow-[var(--elevation-floating)] transition-all duration-300 cursor-pointer"
               >
                 {/* 3:4 Portrait Photography with Overlay */}
-                <div className="relative h-[460px] sm:h-[490px] w-full overflow-hidden bg-[var(--surface-muted)]">
+                <div className="relative h-[570px] sm:h-[530px] w-full overflow-hidden bg-[var(--surface-muted)]">
                   <img
                     src={profile.image}
                     alt={profile.name}
