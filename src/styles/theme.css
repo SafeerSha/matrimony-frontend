@@ -1,70 +1,122 @@
 /*
- * MATRIMONY THEME — THE ONLY FILE YOU NEED TO EDIT FOR BRAND COLORS.
+ * MATRIMONY THEME — LUXURY BURGUNDY + IVORY + BLUSH + CHAMPAGNE DESIGN SYSTEM
  *
- * Keep components semantic: primary, secondary, accent, surface, foreground,
- * muted, border, success, warning and danger. Client color changes should be
- * made here and nowhere else.
+ * Color Balance:
+ * - 70% Ivory / White (#FFF9F6 / #FFFFFF)
+ * - 20% Burgundy (#7A1835 / #5C1027)
+ * - 7% Blush / Rose (#C77A8B)
+ * - 3% Champagne Gold (#D8B28C)
  */
 :root {
-  --primary: #0f6b4f;
-  --primary-deep: #084936;
-  --primary-light: #dceee7;
-  --primary-lighter: #eef3ed;
-  --primary-foreground: #ffffff;
+  /* Primary Burgundy */
+  --primary: #7A1835;
+  --primary-deep: #5C1027;
+  --primary-light: #F7E8EB;
+  --primary-lighter: #FDF2F4;
+  --primary-foreground: #FFFFFF;
 
-  --secondary: #eef3ed;
-  --secondary-foreground: #163027;
+  /* Blush / Rose Accents */
+  --blush: #C77A8B;
+  --blush-deep: #A7586A;
+  --blush-light: #FCEFF2;
 
-  --accent: #c8a96b;
-  --accent-foreground: #111712;
+  /* Champagne Gold (Used sparingly for premium badges & highlights) */
+  --accent: #D8B28C;
+  --accent-foreground: #5C1027;
+  --accent-light: #FAF3EC;
+  --accent-deep: #A97C52;
+  --champagne: #D8B28C;
+  --champagne-light: #FAF3EC;
+  --champagne-border: #EAD8C7;
 
-  --background: #f7f8f4;
-  --surface: #ffffff;
-  --surface-muted: #f2f6f2;
-  --foreground: #111712;
-  --muted: #647067;
-  --muted-strong: #53625a;
-  --subtle-foreground: #8a958e;
-  --border: #dfe6df;
-  --border-strong: #cbd7cf;
+  /* Surfaces & Warm Ivory */
+  --background: #FFF9F6;
+  --surface: #FFFFFF;
+  --surface-muted: #FAF2EF;
 
-  --success: #15803d;
-  --warning: #b7791f;
-  --danger: #b42318;
-  --danger-deep: #8f1d14;
+  /* Secondary */
+  --secondary: #FFF9F6;
+  --secondary-foreground: #211B1E;
 
-  --focus-ring: rgba(15, 107, 79, .32);
-  --primary-glow: rgba(15, 107, 79, .08);
-  --primary-shadow: rgba(15, 107, 79, .18);
-  --primary-shadow-strong: rgba(15, 107, 79, .20);
-  --card-shadow: rgba(16, 36, 27, .05);
-  --hero-shadow: rgba(13, 43, 31, .14);
-  --glass-background: rgba(255, 255, 255, .82);
-  --glass-border: rgba(255, 255, 255, .70);
+  /* Charcoal / Deep Typography */
+  --foreground: #211B1E;
+  --muted: #766B6F;
+  --muted-strong: #453A3E;
+  --subtle-foreground: #9B8F94;
 
-  --botanical-primary: #15825d;
-  --botanical-deep: #0a4d36;
-  --botanical-rich: #1b9068;
-  --botanical-sage: #27795a;
-  --botanical-soft: #3d9272;
-  --botanical-glow: rgba(18, 128, 92, .09);
+  /* Borders */
+  --border: #E9DDE0;
+  --border-strong: #D5C2C6;
+
+  /* Functional Status */
+  --success: #1E7E52;
+  --warning: #C68A4C;
+  --danger: #B42318;
+  --danger-deep: #8F1D14;
+
+  /* Shadows, Rings & Glows */
+  --focus-ring: rgba(122, 24, 53, .28);
+  --primary-glow: rgba(122, 24, 53, .07);
+  --primary-shadow: rgba(122, 24, 53, .16);
+  --primary-shadow-strong: rgba(122, 24, 53, .22);
+  --card-shadow: rgba(92, 16, 39, .05);
+  --hero-shadow: rgba(92, 16, 39, .12);
+  --glass-background: rgba(255, 255, 255, .88);
+  --glass-border: rgba(233, 221, 224, .75);
+
+  --botanical-primary: #7A1835;
+  --botanical-deep: #5C1027;
+  --botanical-rich: #A7586A;
+  --botanical-sage: #C77A8B;
+  --botanical-soft: #D8B28C;
+  --botanical-glow: rgba(122, 24, 53, .08);
+
+  /* Modern Matchmaking Elevation & Shadows */
+  --elevation-card: 0 4px 20px -2px rgba(122, 24, 53, 0.05), 0 2px 6px -1px rgba(33, 27, 30, 0.03);
+  --elevation-card-hover: 0 16px 36px -6px rgba(122, 24, 53, 0.12), 0 6px 16px -2px rgba(33, 27, 30, 0.05);
+  --elevation-floating: 0 20px 48px -8px rgba(92, 16, 39, 0.18), 0 8px 16px -4px rgba(33, 27, 30, 0.08);
+  --glow-champagne: 0 0 24px -4px rgba(216, 178, 140, 0.35);
+  --glow-primary: 0 8px 24px -4px rgba(122, 24, 53, 0.25);
+
+  /* Matchmaking Radii Scale */
+  --radius-pill: 9999px;
+  --radius-card: 1.25rem;
+  --radius-card-lg: 1.75rem;
+  --radius-control: 0.875rem;
+
+  /* Centralized Typography Tokens (MANROPE) */
+  --font-family-base: var(--font-manrope), "Manrope", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --font-family-heading: var(--font-manrope), "Manrope", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --font-weight-regular: 400;
+  --font-weight-medium: 500;
+  --font-weight-semibold: 600;
+  --font-weight-bold: 700;
+  --font-weight-extrabold: 800;
+  --line-height-heading: 1.2;
+  --line-height-body: 1.55;
+  --line-height-small: 1.45;
 }
 
 @theme inline {
-  --color-botanical-primary: var(--botanical-primary);
-  --color-botanical-deep: var(--botanical-deep);
-  --color-botanical-rich: var(--botanical-rich);
-  --color-botanical-sage: var(--botanical-sage);
-  --color-botanical-soft: var(--botanical-soft);
+  --font-sans: var(--font-family-base);
+  --font-manrope: var(--font-family-base);
+  --font-heading: var(--font-family-heading);
   --color-primary: var(--primary);
   --color-primary-deep: var(--primary-deep);
   --color-primary-light: var(--primary-light);
   --color-primary-lighter: var(--primary-lighter);
   --color-primary-foreground: var(--primary-foreground);
+  --color-blush: var(--blush);
+  --color-blush-deep: var(--blush-deep);
+  --color-blush-light: var(--blush-light);
+  --color-champagne: var(--champagne);
+  --color-champagne-light: var(--champagne-light);
+  --color-champagne-border: var(--champagne-border);
   --color-secondary: var(--secondary);
   --color-secondary-foreground: var(--secondary-foreground);
   --color-accent: var(--accent);
   --color-accent-foreground: var(--accent-foreground);
+  --color-accent-light: var(--accent-light);
   --color-background: var(--background);
   --color-surface: var(--surface);
   --color-surface-muted: var(--surface-muted);
@@ -78,4 +130,9 @@
   --color-warning: var(--warning);
   --color-danger: var(--danger);
   --color-danger-deep: var(--danger-deep);
+  --color-botanical-primary: var(--botanical-primary);
+  --color-botanical-deep: var(--botanical-deep);
+  --color-botanical-rich: var(--botanical-rich);
+  --color-botanical-sage: var(--botanical-sage);
+  --color-botanical-soft: var(--botanical-soft);
 }

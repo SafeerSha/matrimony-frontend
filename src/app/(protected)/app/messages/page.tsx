@@ -1,69 +1,259 @@
 'use client';
-import { useState, useEffect, useRef } from 'react';
-import { Check, Lock, MoreHorizontal, Paperclip, Search, Send, Smile, Info, Crown, ArrowRight, Loader2, MessageCircle } from 'lucide-react';
-import { Avatar } from '@/components/ui/avatar';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import { Card } from '@/components/ui/card';
-import { SectionHeader } from '@/components/ui/section-header';
-import { cn } from '@/lib/cn';
+
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import Link from 'next/link';
+import {
+  IconMessageCircle,
+  IconCrown,
+  IconArrowRight,
+  IconShieldCheck,
+  IconCompass,
+} from '@tabler/icons-react';
+import { SectionHeader } from '@/components/ui/section-header';
+import { Button } from '@/components/ui/button';
+import { BottomSheet } from '@/components/ui/bottom-sheet';
+import { ChatConversationList } from '@/components/chat/chat-conversation-list';
+import { ChatWindow } from '@/components/chat/chat-window';
+import { ChatProfilePanel } from '@/components/chat/chat-profile-panel';
 import { chatService, Conversation, Message } from '@/services/chat.service';
+import { profiles as demoProfiles } from '@/lib/demo-data';
+import { cn } from '@/lib/cn';
+import type { Profile } from '@/lib/demo-data';
+
+// Demo initial conversation fallback seed
+const createDemoConversations = (): { conversations: Conversation[]; messageMap: Record<string, Message[]> } => {
+  const c1Id = 'conv-ananya';
+  const c2Id = 'conv-meera';
+  const c3Id = 'conv-diya';
+
+  const convs: Conversation[] = [
+    {
+      id: c1Id,
+      participantId: demoProfiles[0].id,
+      participant: {
+        id: demoProfiles[0].id,
+        name: demoProfiles[0].name,
+        firstName: 'Ananya',
+        lastName: 'Menon',
+        city: demoProfiles[0].city,
+        country: demoProfiles[0].state,
+        occupation: demoProfiles[0].profession,
+        education: demoProfiles[0].education,
+        bio: demoProfiles[0].about,
+        isVerified: true,
+        photos: [{ url: demoProfiles[0].image }],
+      } as any,
+      lastMessage: {
+        id: 'msg-1-3',
+        conversationId: c1Id,
+        senderId: demoProfiles[0].id,
+        receiverId: 'me',
+        content: 'That sounds lovely. I also enjoy quiet cafés. Have you been to the heritage spots in Fort Kochi recently?',
+        createdAt: new Date(Date.now() - 1000 * 60 * 12).toISOString(),
+        isRead: false,
+      },
+      unreadCount: 1,
+      updatedAt: new Date(Date.now() - 1000 * 60 * 12).toISOString(),
+    },
+    {
+      id: c2Id,
+      participantId: demoProfiles[1].id,
+      participant: {
+        id: demoProfiles[1].id,
+        name: demoProfiles[1].name,
+        firstName: 'Meera',
+        lastName: 'Nair',
+        city: demoProfiles[1].city,
+        country: demoProfiles[1].state,
+        occupation: demoProfiles[1].profession,
+        education: demoProfiles[1].education,
+        bio: demoProfiles[1].about,
+        isVerified: true,
+        photos: [{ url: demoProfiles[1].image }],
+      } as any,
+      lastMessage: {
+        id: 'msg-2-2',
+        conversationId: c2Id,
+        senderId: 'me',
+        receiverId: demoProfiles[1].id,
+        content: 'Yes, definitely! Would around 7 PM work for you this evening?',
+        createdAt: new Date(Date.now() - 1000 * 60 * 60 * 24).toISOString(),
+        isRead: true,
+      },
+      unreadCount: 0,
+      updatedAt: new Date(Date.now() - 1000 * 60 * 60 * 24).toISOString(),
+    },
+    {
+      id: c3Id,
+      participantId: demoProfiles[2].id,
+      participant: {
+        id: demoProfiles[2].id,
+        name: demoProfiles[2].name,
+        firstName: 'Diya',
+        lastName: 'Krishnan',
+        city: demoProfiles[2].city,
+        country: demoProfiles[2].state,
+        occupation: demoProfiles[2].profession,
+        education: demoProfiles[2].education,
+        bio: demoProfiles[2].about,
+        isVerified: true,
+        photos: [{ url: demoProfiles[2].image }],
+      } as any,
+      lastMessage: {
+        id: 'msg-3-1',
+        conversationId: c3Id,
+        senderId: demoProfiles[2].id,
+        receiverId: 'me',
+        content: 'Thank you for accepting my interest. How has your week been?',
+        createdAt: new Date(Date.now() - 1000 * 60 * 60 * 48).toISOString(),
+        isRead: true,
+      },
+      unreadCount: 0,
+      updatedAt: new Date(Date.now() - 1000 * 60 * 60 * 48).toISOString(),
+    },
+  ];
+
+  const messageMap: Record<string, Message[]> = {
+    [c1Id]: [
+      {
+        id: 'msg-1-1',
+        conversationId: c1Id,
+        senderId: demoProfiles[0].id,
+        receiverId: 'me',
+        content: 'Namaste! Thank you for accepting my interest. I was drawn to your profile and shared interest in design and travel.',
+        createdAt: new Date(Date.now() - 1000 * 60 * 60 * 3).toISOString(),
+        isRead: true,
+      },
+      {
+        id: 'msg-1-2',
+        conversationId: c1Id,
+        senderId: 'me',
+        receiverId: demoProfiles[0].id,
+        content: 'Namaste Ananya! Very happy to connect with you. I love discovering quiet cafés and thoughtful architecture as well.',
+        createdAt: new Date(Date.now() - 1000 * 60 * 45).toISOString(),
+        isRead: true,
+      },
+      {
+        id: 'msg-1-3',
+        conversationId: c1Id,
+        senderId: demoProfiles[0].id,
+        receiverId: 'me',
+        content: 'That sounds lovely. I also enjoy quiet cafés. Have you been to the heritage spots in Fort Kochi recently?',
+        createdAt: new Date(Date.now() - 1000 * 60 * 12).toISOString(),
+        isRead: false,
+      },
+    ],
+    [c2Id]: [
+      {
+        id: 'msg-2-1',
+        conversationId: c2Id,
+        senderId: demoProfiles[1].id,
+        receiverId: 'me',
+        content: 'Hello! Our families seem to have very similar values. Would you like to continue our conversation this evening?',
+        createdAt: new Date(Date.now() - 1000 * 60 * 60 * 25).toISOString(),
+        isRead: true,
+      },
+      {
+        id: 'msg-2-2',
+        conversationId: c2Id,
+        senderId: 'me',
+        receiverId: demoProfiles[1].id,
+        content: 'Yes, definitely! Would around 7 PM work for you this evening?',
+        createdAt: new Date(Date.now() - 1000 * 60 * 60 * 24).toISOString(),
+        isRead: true,
+      },
+    ],
+    [c3Id]: [
+      {
+        id: 'msg-3-1',
+        conversationId: c3Id,
+        senderId: demoProfiles[2].id,
+        receiverId: 'me',
+        content: 'Thank you for accepting my interest. How has your week been?',
+        createdAt: new Date(Date.now() - 1000 * 60 * 60 * 48).toISOString(),
+        isRead: true,
+      },
+    ],
+  };
+
+  return { conversations: convs, messageMap };
+};
 
 export default function MessagesPage() {
   const [isSubscribed, setIsSubscribed] = useState(true); // Default true for demo
-  
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [selected, setSelected] = useState<Conversation | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
-  
-  const [text, setText] = useState('');
-  const [searchQuery, setSearchQuery] = useState('');
+
   const [isLoadingConversations, setIsLoadingConversations] = useState(true);
   const [isLoadingMessages, setIsLoadingMessages] = useState(false);
-  
-  const messagesEndRef = useRef<HTMLDivElement>(null);
 
-  // Initialize Socket & Fetch Conversations
+  // Mobile View Management: 'list' (shows conversations list) vs 'chat' (full-screen active chat)
+  const [mobileView, setMobileView] = useState<'list' | 'chat'>('list');
+  const [isMobileProfileOpen, setIsMobileProfileOpen] = useState(false);
+
+  // Mock message cache for instant fallback
+  const demoFallbackRef = useRef(createDemoConversations());
+
+  // Initialize Chat Socket & Fetch Conversations
   useEffect(() => {
     setIsLoadingConversations(true);
-    
+
     // Connect to websocket
     chatService.connect();
-    
-    // Fetch initial conversations
-    chatService.getConversations()
-      .then(res => {
-        const data = Array.isArray(res) ? res : ((res as any).data || []);
-        setConversations(data);
+
+    // Fetch initial conversations from backend API
+    chatService
+      .getConversations()
+      .then((res) => {
+        const data = Array.isArray(res) ? res : ((res as any)?.data || []);
         if (data.length > 0) {
+          setConversations(data);
           setSelected(data[0]);
+        } else {
+          // Use demo conversations
+          const { conversations: initialConvs } = demoFallbackRef.current;
+          setConversations(initialConvs);
+          if (initialConvs.length > 0) {
+            setSelected(initialConvs[0]);
+          }
         }
       })
-      .catch(console.error)
+      .catch((err) => {
+        console.error('ChatService getConversations error:', err);
+        const { conversations: initialConvs } = demoFallbackRef.current;
+        setConversations(initialConvs);
+        if (initialConvs.length > 0) {
+          setSelected(initialConvs[0]);
+        }
+      })
       .finally(() => setIsLoadingConversations(false));
 
     // Listen for incoming websocket messages
     const unsubscribe = chatService.onMessage((msg: Message) => {
-      // If message belongs to current selected conversation, append it
-      setMessages(prev => {
-        // Simple check: if message is for the current conversation
+      // Append if it belongs to selected conversation
+      setMessages((prev) => {
         if (selected && msg.conversationId === selected.id) {
-          // ensure no duplicate
-          if (!prev.find(m => m.id === msg.id)) {
+          if (!prev.find((m) => m.id === msg.id)) {
             return [...prev, msg];
           }
         }
         return prev;
       });
-      
-      // Update lastMessage in conversations list
-      setConversations(prev => prev.map(c => {
-        if (c.id === msg.conversationId) {
-          return { ...c, lastMessage: msg, unreadCount: selected?.id === c.id ? 0 : c.unreadCount + 1 };
-        }
-        return c;
-      }));
+
+      // Update lastMessage in conversation list
+      setConversations((prev) =>
+        prev.map((c) => {
+          if (c.id === msg.conversationId) {
+            return {
+              ...c,
+              lastMessage: msg,
+              unreadCount: selected?.id === c.id ? 0 : (c.unreadCount || 0) + 1,
+            };
+          }
+          return c;
+        })
+      );
     });
 
     return () => {
@@ -74,262 +264,252 @@ export default function MessagesPage() {
 
   // Fetch messages when selected conversation changes
   useEffect(() => {
-    if (selected) {
-      setIsLoadingMessages(true);
-      chatService.getMessages(selected.id)
-        .then(res => {
-          const data = Array.isArray(res) ? res : ((res as any).data || []);
-          setMessages(data.reverse()); // Assume API returns latest first, we want oldest first for chat UI
-          chatService.markAsRead(selected.id).catch(console.error);
-          
-          // Clear unread count locally
-          setConversations(prev => prev.map(c => c.id === selected.id ? { ...c, unreadCount: 0 } : c));
-        })
-        .catch(console.error)
-        .finally(() => setIsLoadingMessages(false));
+    if (!selected) {
+      setMessages([]);
+      return;
     }
+
+    setIsLoadingMessages(true);
+    chatService
+      .getMessages(selected.id)
+      .then((res) => {
+        const data = Array.isArray(res) ? res : ((res as any)?.data || []);
+        if (data.length > 0) {
+          setMessages(data.reverse());
+        } else {
+          // IconCheck local demo messages map
+          const fallback = demoFallbackRef.current.messageMap[selected.id] || [];
+          setMessages(fallback);
+        }
+        chatService.markAsRead(selected.id).catch(console.error);
+
+        // Clear unread count locally
+        setConversations((prev) =>
+          prev.map((c) => (c.id === selected.id ? { ...c, unreadCount: 0 } : c))
+        );
+      })
+      .catch((err) => {
+        console.error('Failed to get messages:', err);
+        const fallback = demoFallbackRef.current.messageMap[selected.id] || [];
+        setMessages(fallback);
+      })
+      .finally(() => setIsLoadingMessages(false));
   }, [selected?.id]);
 
-  // Auto-scroll to bottom of messages
-  useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages]);
+  const handleSelectConversation = (conv: Conversation) => {
+    setSelected(conv);
+    setMobileView('chat');
+  };
 
-  const filteredConversations = conversations.filter(c => {
-    const name = c.participant?.firstName || c.participant?.name || 'User';
-    return name.toLowerCase().includes(searchQuery.toLowerCase());
-  });
+  const handleSendMessage = async (content: string) => {
+    if (!selected) return;
 
-  const handleSend = async () => {
-    if (text.trim() && selected && selected.participantId) {
-      const currentText = text.trim();
-      setText(''); // Optimistic clear
-      
-      try {
-        const newMsg = await chatService.sendMessage(selected.participantId, currentText);
-        setMessages(prev => [...prev, newMsg]);
-        setConversations(prev => prev.map(c => c.id === selected.id ? { ...c, lastMessage: newMsg } : c));
-      } catch (e) {
-        console.error("Failed to send message", e);
-        setText(currentText); // Revert on failure
+    const participantId = selected.participantId || selected.participant?.id || 'demo-partner';
+    const tempId = `temp-${Date.now()}`;
+    const newMsg: Message = {
+      id: tempId,
+      conversationId: selected.id,
+      senderId: 'me',
+      receiverId: participantId,
+      content,
+      createdAt: new Date().toISOString(),
+      isRead: false,
+    };
+
+    // Optimistic append
+    setMessages((prev) => [...prev, newMsg]);
+
+    // Update conversation list item lastMessage
+    setConversations((prev) =>
+      prev.map((c) => (c.id === selected.id ? { ...c, lastMessage: newMsg } : c))
+    );
+
+    // Keep fallback map updated
+    if (!demoFallbackRef.current.messageMap[selected.id]) {
+      demoFallbackRef.current.messageMap[selected.id] = [];
+    }
+    demoFallbackRef.current.messageMap[selected.id].push(newMsg);
+
+    try {
+      const serverMsg = await chatService.sendMessage(participantId, content);
+      if (serverMsg && serverMsg.id) {
+        setMessages((prev) =>
+          prev.map((m) => (m.id === tempId ? serverMsg : m))
+        );
       }
+    } catch (e) {
+      // In demo mode or if server is disconnected, optimistic msg remains valid
+      console.warn('Sent message optimistically (backend API unreachable):', e);
     }
   };
 
-  const formatTime = (isoString?: string) => {
-    if (!isoString) return '';
-    return new Date(isoString).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-  };
+  // Find demoProfile match for enrichment
+  const currentDemoProfile = useMemo(() => {
+    if (!selected) return demoProfiles[0];
+    const match = demoProfiles.find(
+      (p) =>
+        p.id === selected.participantId ||
+        p.id === selected.participant?.id ||
+        p.name.toLowerCase() === selected.participant?.name?.toLowerCase()
+    );
+    return match || demoProfiles[0];
+  }, [selected]);
 
   return (
-    <div className="space-y-6">
-      <SectionHeader 
-        eyebrow="Messages" 
-        title="Conversations" 
-        description="Continue conversations with people you've connected with." 
-        action={
-          <button 
-            onClick={() => setIsSubscribed(!isSubscribed)}
-            className="text-xs font-semibold text-[var(--muted)] hover:text-[var(--foreground)] border border-[var(--border)] px-3 py-1.5 rounded-lg"
-          >
-            Toggle Subscription (Dev)
-          </button>
-        }
-      />
+    <div className={cn(
+      "transition-all",
+      mobileView === 'chat' 
+        ? "fixed inset-0 z-[100] bg-[#FFFDFB] m-0 p-0 flex flex-col h-[100dvh] w-screen lg:relative lg:inset-auto lg:z-auto lg:h-auto lg:w-auto lg:space-y-6 lg:pb-6 lg:bg-transparent" 
+        : "space-y-4 sm:space-y-6 pb-6"
+    )}>
+      {/* Global overrides for immersive mobile chat */}
+      {mobileView === 'chat' && (
+        <style dangerouslySetInnerHTML={{ __html: `
+          @media (max-width: 1023px) {
+            [aria-label="Mobile navigation"] { 
+              display: none !important; 
+            }
+            header.sticky { 
+              display: none !important; 
+            }
+            #main-content { 
+              transform: none !important; 
+              animation: none !important; 
+              filter: none !important;
+              perspective: none !important;
+              contain: none !important;
+              padding: 0 !important; 
+              margin: 0 !important; 
+            }
+            div:has(> #main-content) {
+              padding: 0 !important;
+              margin: 0 !important;
+              gap: 0 !important;
+              max-width: 100% !important;
+            }
+          }
+        `}} />
+      )}
 
-      <Card className="overflow-hidden p-0 border border-[var(--border)] shadow-sm">
-        <div className="grid min-h-[650px] lg:grid-cols-[320px_1fr]">
-          
-          {/* LEFT SIDEBAR: Conversation List */}
-          <aside className="border-b border-[var(--border)] lg:border-b-0 lg:border-r bg-[var(--background)] flex flex-col">
-            <div className="border-b border-[var(--border)] p-4 shrink-0">
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--muted)]" />
-                <input 
-                  value={searchQuery}
-                  onChange={e => setSearchQuery(e.target.value)}
-                  placeholder="Search conversations" 
-                  className="focus-ring h-10 w-full rounded-xl bg-[var(--surface-muted)] pl-9 pr-3 text-sm outline-none placeholder:text-[var(--muted-light)]" 
-                />
-              </div>
-            </div>
-            
-            <div className="flex-1 overflow-y-auto scrollbar-hide max-h-[600px]">
-              {isLoadingConversations ? (
-                <div className="p-10 flex justify-center"><Loader2 className="h-6 w-6 animate-spin text-[var(--primary)]" /></div>
-              ) : filteredConversations.length === 0 ? (
-                <div className="p-10 text-center text-[var(--muted)] text-sm">No conversations found.</div>
-              ) : (
-                filteredConversations.map(c => {
-                  const pName = c.participant?.firstName || c.participant?.name || 'User';
-                  const pImage = c.participant?.photos?.[0]?.url || 'https://images.unsplash.com/photo-1517841905240-472988babdf9?auto=format&fit=crop&w=900&q=85';
-                  
-                  return (
-                    <button 
-                      key={c.id} 
-                      onClick={() => setSelected(c)} 
-                      className={cn(
-                        "flex w-full items-center gap-3 border-b border-[var(--border)] p-4 text-left transition-colors",
-                        selected?.id === c.id ? "bg-[var(--primary)]/5" : "hover:bg-[var(--surface-muted)]"
-                      )}
-                    >
-                      <div className="relative shrink-0">
-                        <Avatar src={pImage} name={pName} size="md" />
-                        <span className="absolute bottom-0 right-0 h-3 w-3 rounded-full border-2 border-[var(--background)] bg-green-500" />
-                      </div>
-                      <div className="min-w-0 flex-1">
-                        <div className="flex items-center justify-between gap-2">
-                          <p className="truncate text-sm font-bold text-[var(--foreground)]">{pName}</p>
-                          <span className="text-[11px] font-medium text-[var(--muted)]">{formatTime(c.lastMessage?.createdAt || c.updatedAt)}</span>
-                        </div>
-                        <p className={cn("mt-0.5 truncate text-xs", c.unreadCount > 0 ? "text-[var(--foreground)] font-semibold" : "text-[var(--muted)]")}>
-                          {c.lastMessage?.content || "No messages yet"}
-                        </p>
-                      </div>
-                      {c.unreadCount > 0 && (
-                        <span className="grid h-5 min-w-5 shrink-0 place-items-center rounded-full bg-[var(--primary)] px-1.5 text-[10px] font-bold text-white">
-                          {c.unreadCount}
-                        </span>
-                      )}
-                    </button>
-                  );
-                })
-              )}
-            </div>
-          </aside>
-
-          {/* RIGHT SIDE: Chat Area */}
-          <section className="flex min-h-[500px] flex-col bg-white relative">
-            {!selected ? (
-              <div className="flex-1 flex flex-col items-center justify-center bg-[var(--surface-muted)]/30 text-center p-6">
-                <MessageCircle className="h-12 w-12 text-[var(--muted-light)] mb-4" />
-                <h3 className="text-lg font-bold text-[var(--foreground)]">Your Messages</h3>
-                <p className="text-sm text-[var(--muted)] max-w-sm mt-2">Select a conversation from the left to start chatting, or connect with someone new from your matches.</p>
-              </div>
-            ) : (
-              <>
-                <header className="flex items-center justify-between border-b border-[var(--border)] p-4 bg-white/95 backdrop-blur-sm z-10 shrink-0">
-                  <div className="flex items-center gap-3">
-                    <Avatar 
-                      src={selected.participant?.photos?.[0]?.url || 'https://images.unsplash.com/photo-1517841905240-472988babdf9?auto=format&fit=crop&w=900&q=85'} 
-                      name={selected.participant?.firstName || selected.participant?.name || 'User'} 
-                      size="sm" 
-                    />
-                    <div>
-                      <p className="font-bold text-sm text-[var(--foreground)]">{selected.participant?.firstName || selected.participant?.name || 'User'}</p>
-                      <p className="text-[11px] font-medium text-[var(--muted)]">
-                        <span className="text-green-600">Online now</span>
-                      </p>
-                    </div>
-                  </div>
-                  <button aria-label="Options" className="grid h-9 w-9 place-items-center rounded-full hover:bg-[var(--surface-muted)] text-[var(--muted)]">
-                    <MoreHorizontal className="h-4 w-4" />
-                  </button>
-                </header>
-
-                {!isSubscribed ? (
-                  /* LOCKED STATE FOR FREE USERS */
-                  <div className="flex-1 flex flex-col items-center justify-center bg-[var(--surface-muted)]/50 p-6 text-center">
-                    <div className="h-20 w-20 bg-gradient-to-br from-amber-100 to-amber-200 rounded-full flex items-center justify-center mb-6 shadow-sm border border-amber-300/50">
-                      <Crown className="h-10 w-10 text-amber-600" />
-                    </div>
-                    <h2 className="text-2xl font-editorial-title text-[var(--foreground)] mb-3">Unlock Private Messaging</h2>
-                    <p className="text-sm text-[var(--muted)] max-w-md leading-relaxed mb-8">
-                      You have a connection! Upgrade to a Premium Subscription to read their messages, reply instantly, and take the next step.
-                    </p>
-                    <Link href="/app/subscription" className="focus-ring inline-flex h-12 items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 px-8 text-sm font-semibold text-white shadow-lg hover:from-amber-600 hover:to-amber-700 transition-all">
-                      View Subscription Plans <ArrowRight className="h-4 w-4" />
-                    </Link>
-                  </div>
-                ) : (
-                  /* UNLOCKED STATE FOR SUBSCRIBED USERS */
-                  <>
-                    <div className="flex-1 space-y-6 overflow-y-auto bg-[var(--surface-muted)]/30 p-6">
-                      <div className="mx-auto flex max-w-sm items-start gap-3 rounded-2xl border border-[var(--border)] bg-amber-50/50 p-4 text-left shadow-sm">
-                        <Info className="h-5 w-5 shrink-0 text-amber-600 mt-0.5" />
-                        <p className="text-xs leading-relaxed text-amber-800/80 font-medium">
-                          This is a premium private chat. Be respectful and never share sensitive financial or login information.
-                        </p>
-                      </div>
-                      
-                      {isLoadingMessages ? (
-                        <div className="flex justify-center py-10"><Loader2 className="h-6 w-6 animate-spin text-[var(--primary)]" /></div>
-                      ) : messages.length === 0 ? (
-                        <div className="text-center text-[var(--muted)] text-sm py-10">Start the conversation! Say hi.</div>
-                      ) : (
-                        messages.map((m, i) => {
-                          // Simple heuristic: if senderId is participantId, it's from them, else from us
-                          const isOurs = m.senderId !== selected.participantId;
-                          
-                          return (
-                            <div key={m.id || i} className={cn("flex", isOurs ? "justify-end" : "justify-start")}>
-                              <div className="max-w-[75%]">
-                                <div className={cn(
-                                  "px-4 py-3 text-sm shadow-sm",
-                                  isOurs 
-                                    ? "rounded-2xl rounded-tr-sm bg-[var(--primary)] text-white" 
-                                    : "rounded-2xl rounded-tl-sm bg-white border border-[var(--border)] text-[var(--foreground)]"
-                                )}>
-                                  <p>{m.content}</p>
-                                </div>
-                                <span className={cn("mt-1.5 flex items-center gap-1 text-[10px] font-medium text-[var(--muted)]", isOurs ? "justify-end mr-1" : "ml-1")}>
-                                  {formatTime(m.createdAt)} {isOurs && <Check className="h-3.5 w-3.5 text-[var(--primary)]" />}
-                                </span>
-                              </div>
-                            </div>
-                          );
-                        })
-                      )}
-                      
-                      <div ref={messagesEndRef} />
-                    </div>
-                    
-                    <div className="border-t border-[var(--border)] bg-white p-4 shrink-0">
-                      <div className="flex items-end gap-2 rounded-2xl border border-[var(--border)] bg-[var(--surface-muted)]/50 p-1.5 focus-within:border-[var(--primary)] focus-within:ring-4 focus-within:ring-[var(--primary)]/10 transition-all">
-                        <button className="grid h-10 w-10 shrink-0 place-items-center rounded-xl text-[var(--muted)] hover:bg-[var(--border)] hover:text-[var(--foreground)] transition-colors" aria-label="Attach">
-                          <Paperclip className="h-4.5 w-4.5" />
-                        </button>
-                        <textarea 
-                          value={text} 
-                          onChange={e => setText(e.target.value)} 
-                          onKeyDown={e => {
-                            if (e.key === 'Enter' && !e.shiftKey) {
-                              e.preventDefault();
-                              handleSend();
-                            }
-                          }} 
-                          placeholder="Type a message..." 
-                          className="max-h-32 min-h-[40px] w-full resize-none bg-transparent py-2.5 px-2 text-sm outline-none placeholder:text-[var(--muted-light)]" 
-                          rows={1}
-                        />
-                        <button className="hidden sm:grid h-10 w-10 shrink-0 place-items-center rounded-xl text-[var(--muted)] hover:bg-[var(--border)] hover:text-[var(--foreground)] transition-colors" aria-label="Emoji">
-                          <Smile className="h-4.5 w-4.5" />
-                        </button>
-                        <Button 
-                          onClick={handleSend} 
-                          disabled={!text.trim() || isLoadingMessages}
-                          className={cn(
-                            "h-10 w-10 shrink-0 rounded-xl p-0 transition-all duration-200",
-                            text.trim() ? "bg-[var(--primary)] text-white shadow-md hover:bg-[var(--primary-deep)]" : "bg-[var(--border)] text-[var(--muted)]"
-                          )} 
-                          aria-label="Send"
-                        >
-                          <Send className="h-4 w-4 ml-0.5" />
-                        </Button>
-                      </div>
-                      <div className="mt-3 flex items-center justify-between px-1">
-                        <p className="text-[10px] font-medium uppercase tracking-wider text-[var(--muted-light)]">Secure Connection</p>
-                        <Badge tone="accent" className="text-[9px] px-2 py-0.5">Premium Chat</Badge>
-                      </div>
-                    </div>
-                  </>
-                )}
-              </>
-            )}
-          </section>
-
+      {/* Top Section Header */}
+      <div className={cn(
+        "flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between animate-content-appear stagger-1",
+        mobileView === 'chat' && "hidden lg:flex"
+      )}>
+        <div>
+          <SectionHeader
+            eyebrow="Connections & Chat"
+            title="Messages"
+            // description="Private, verified matrimonial conversations with mutual matches."
+          />
         </div>
-      </Card>
+
+        <div className="flex items-center gap-2 self-start sm:self-auto shrink-0">
+          <button
+            onClick={() => setIsSubscribed((prev) => !prev)}
+            className="text-[11px] font-semibold text-[#766B6F] hover:text-[#7A1835] border border-[#E9DDE0] px-3 py-1.5 rounded-xl bg-white transition-colors"
+          >
+            {isSubscribed ? 'Demo: Subscribed' : 'Demo: Free Plan'}
+          </button>
+
+          <Link href="/app/discover">
+            <Button
+              variant="secondary"
+              size="sm"
+              className="rounded-xl text-xs font-bold gap-1.5 border-[#E9DDE0]"
+              leftIcon={<IconCompass className="h-3.5 w-3.5 text-[#7A1835]" />}
+            >
+              <span>Discover</span>
+            </Button>
+          </Link>
+        </div>
+      </div>
+
+      {/* TWO-COLUMN DESKTOP / FULL-SCREEN MOBILE CONTAINER */}
+      <div className={cn(
+        "relative bg-[#FFFDFB] overflow-hidden flex transition-all",
+        mobileView === 'chat'
+          ? "h-full w-full rounded-none border-0 shadow-none lg:rounded-3xl lg:border lg:border-[#E9DDE0] lg:h-[calc(100vh-185px)] lg:min-h-[620px] lg:max-h-[820px] lg:shadow-xs"
+          : "border border-[#E9DDE0] rounded-2xl sm:rounded-3xl shadow-xs h-[calc(100dvh-135px)] md:h-[calc(100vh-185px)] min-h-[460px] md:min-h-[620px] max-h-[820px] animate-content-appear stagger-2"
+      )}>
+        
+        {/* COLUMN 1: LEFT CONVERSATION LIST */}
+        <aside
+          className={cn(
+            'w-full lg:w-[320px] xl:w-[350px] shrink-0 border-r border-[#E9DDE0] bg-[#FFFDFB] flex flex-col transition-all',
+            // On mobile: hidden if we're in active chat view
+            mobileView === 'chat' ? 'hidden lg:flex' : 'flex'
+          )}
+        >
+          <ChatConversationList
+            conversations={conversations}
+            selectedId={selected?.id || null}
+            onSelect={handleSelectConversation}
+            isLoading={isLoadingConversations}
+          />
+        </aside>
+
+        {/* COLUMN 2: CENTER ACTIVE CHAT WINDOW */}
+        <main
+          className={cn(
+            'flex-1 flex flex-col min-w-0 bg-[#FFFDFB] relative',
+            // On mobile: hidden if we're in list view
+            mobileView === 'list' ? 'hidden lg:flex' : 'flex'
+          )}
+        >
+          {selected ? (
+            <ChatWindow
+              conversation={selected}
+              messages={messages}
+              demoProfile={currentDemoProfile}
+              isLoadingMessages={isLoadingMessages}
+              isSubscribed={isSubscribed}
+              onSendMessage={handleSendMessage}
+              onBack={() => setMobileView('list')}
+              onOpenProfile={() => setIsMobileProfileOpen(true)}
+            />
+          ) : (
+            <div className="flex-1 flex flex-col items-center justify-center p-8 text-center bg-[#FFF9F6]/40">
+              <div className="h-16 w-16 rounded-3xl bg-[#FAF3EC] border border-[#EAD8C7] flex items-center justify-center text-[#7A1835] mb-4">
+                <IconMessageCircle className="h-8 w-8" />
+              </div>
+              <h3 className="font-editorial-title text-xl font-bold text-[#211B1E] mb-2">
+                Your Matrimonial Conversations
+              </h3>
+              <p className="text-xs text-[#766B6F] max-w-sm leading-relaxed mb-6">
+                Select a match from the conversation list to continue your connection, or explore
+                new verified profiles in Discover.
+              </p>
+              <Link href="/app/discover">
+                <Button
+                  size="md"
+                  className="rounded-2xl bg-[#7A1835] text-white hover:bg-[#5C1027] text-xs font-bold"
+                >
+                  Discover Matches
+                </Button>
+              </Link>
+            </div>
+          )}
+        </main>
+
+
+      </div>
+
+      {/* MOBILE PROFILE BOTTOM SHEET */}
+      {selected && (
+        <BottomSheet
+          isOpen={isMobileProfileOpen}
+          onClose={() => setIsMobileProfileOpen(false)}
+          title="Member Profile"
+          description="Matrimonial connection overview"
+        >
+          <ChatProfilePanel
+            participant={selected.participant}
+            demoProfile={currentDemoProfile}
+            onClose={() => setIsMobileProfileOpen(false)}
+          />
+        </BottomSheet>
+      )}
     </div>
   );
 }

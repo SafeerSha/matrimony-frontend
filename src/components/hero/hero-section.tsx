@@ -1,6 +1,6 @@
 "use client";
 
-import { ArrowRight, Heart, MessageSquare } from "lucide-react";
+import { IconArrowRight, IconHeart, IconMessage } from '@tabler/icons-react';
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { TrustBadge } from "./trust-badge";
@@ -62,6 +62,22 @@ const HERO_IMAGES: HeroImageData[] = [
 export function HeroSection({ className = "" }: HeroSectionProps) {
   const [hoveredProfile, setHoveredProfile] = useState<string | null>(null);
 
+  const handleScrollToRegister = (e: React.MouseEvent) => {
+    e.preventDefault();
+    const el = document.getElementById("quick-register");
+    if (el) {
+      el.scrollIntoView({ behavior: "smooth", block: "start" });
+      const nameInput = el.querySelector<HTMLInputElement>('input[type="text"]');
+      if (nameInput) {
+        setTimeout(() => {
+          nameInput.focus({ preventScroll: true });
+        }, 450);
+      }
+    } else {
+      window.location.hash = "quick-register";
+    }
+  };
+
   return (
     <section
       aria-labelledby="hero-heading"
@@ -93,58 +109,61 @@ export function HeroSection({ className = "" }: HeroSectionProps) {
           {/* Left Content Column */}
           <div className="animate-hero-fade">
             <TrustBadge
-              icon={<Heart className="h-3.5 w-3.5 text-[var(--primary)]" aria-hidden="true" fill="currentColor" />}
+              icon={<IconHeart className="h-3.5 w-3.5 text-[var(--primary)]" aria-hidden="true" fill="currentColor" />}
               label="Welcome to Let's CHAT .Com"
               className="mb-5 sm:mb-6"
             />
 
             <h1
               id="hero-heading"
-              className="text-balance text-4xl sm:text-5xl lg:text-[3.6rem] xl:text-[4.2rem] font-editorial-title font-normal leading-[1.14] tracking-[-0.03em] text-[var(--foreground)]"
+              className="text-balance text-4xl sm:text-5xl lg:text-[3.5rem] xl:text-[4rem] font-bold leading-[1.15] tracking-[-0.03em] text-[var(--foreground)]"
             >
               Discover meaningful{" "}
-              <span className="font-editorial-highlight font-medium text-[var(--primary)] text-[1.08em] tracking-normal inline-block">
+              <span className="text-[var(--primary)] inline-block">
                 connections today.
               </span>
             </h1>
 
-            <p className="mt-5 sm:mt-6 max-w-xl text-base sm:text-lg leading-relaxed text-[var(--muted)]">
-              <strong>Register Free</strong> — Create your profile and discover meaningful connections. Explore categories for Friendship, Marriage, Living Together, Malayalam Matrimony, and Telugu Matrimony.
+            <p className="mt-5 sm:mt-6 max-w-xl text-base sm:text-lg leading-relaxed text-[var(--muted)] font-normal">
+              <strong className="font-semibold text-[var(--foreground)]">Register Free</strong> — Create your profile and discover meaningful connections. Explore categories for Friendship, Marriage, Living Together, Malayalam Matrimony, and Telugu Matrimony.
             </p>
 
             {/* CTAs */}
-            <div className="mt-8 flex flex-wrap items-center gap-3.5 sm:mt-10">
+            <div className="mt-8 flex flex-col sm:flex-row sm:flex-wrap items-stretch sm:items-center gap-3 sm:gap-3.5 sm:mt-10">
               <Button
-                href="/register"
+                href="#quick-register"
+                onClick={handleScrollToRegister}
                 variant="primary"
-                className="min-h-12 px-8 text-sm sm:text-base font-bold shadow-[0_14px_30px_var(--primary-shadow-strong)]"
+                className="w-full sm:w-auto min-h-12 px-6 sm:px-8 text-sm sm:text-base font-semibold shadow-[0_14px_30px_var(--primary-shadow-strong)]"
+                rightIcon={<IconArrowRight className="h-4 w-4" aria-hidden="true" />}
               >
                 Register Free
-                <ArrowRight className="h-4 w-4" aria-hidden="true" />
               </Button>
 
-              <Button
-                href="/login"
-                variant="secondary"
-                className="min-h-12 px-8 text-sm sm:text-base font-bold"
-              >
-                Login
-              </Button>
+              <div className="grid grid-cols-2 gap-3 w-full sm:w-auto sm:flex sm:items-center sm:gap-3.5">
+                <Button
+                  href="/login"
+                  variant="secondary"
+                  className="w-full sm:w-auto min-h-12 px-5 sm:px-8 text-sm sm:text-base font-semibold"
+                >
+                  Login
+                </Button>
 
-              <Button
-                href="#contact"
-                variant="secondary"
-                className="min-h-12 px-7 text-sm sm:text-base font-bold text-[var(--muted-strong)] hover:text-[var(--primary)]"
-              >
-                Contact Us
-              </Button>
+                <Button
+                  href="#contact"
+                  variant="secondary"
+                  className="w-full sm:w-auto min-h-12 px-5 sm:px-7 text-sm sm:text-base font-bold text-[var(--muted-strong)] hover:text-[var(--primary)]"
+                >
+                  Contact Us
+                </Button>
+              </div>
             </div>
 
             {/* Trust Features */}
-            <div className="mt-8 flex flex-wrap items-center gap-x-6 gap-y-3 border-t border-[var(--border)] pt-6 sm:mt-10">
-              <TrustFeature label="Privacy-first" />
-              <TrustFeature label="Verified profiles" />
-              <TrustFeature label="Mobile ready" />
+            <div className="mt-8 flex flex-wrap items-center gap-x-4 sm:gap-x-6 gap-y-3 border-t border-[var(--border)] pt-6 sm:mt-10">
+              <TrustFeature label="Privacy-first" className="text-xs sm:text-sm" />
+              <TrustFeature label="Verified profiles" className="text-xs sm:text-sm" />
+              <TrustFeature label="Mobile ready" className="text-xs sm:text-sm" />
             </div>
           </div>
 

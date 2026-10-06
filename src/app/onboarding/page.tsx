@@ -3,7 +3,7 @@
 import { useState, useRef } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { ArrowRight, ArrowLeft, Loader2, UploadCloud, CheckCircle2, Heart } from "lucide-react";
+import { IconArrowRight, IconArrowLeft, IconLoader2, IconUpload, IconCircleCheck, IconHeart } from '@tabler/icons-react';
 import { Logo } from "@/components/layout/logo";
 import { cn } from "@/lib/cn";
 import { profileService, mediaService } from "@/services";
@@ -74,10 +74,10 @@ export default function OnboardingPage() {
     setError(null);
     
     try {
-      // 1. Save Profile
+      // 1. IconDeviceFloppy Profile
       await profileService.updateProfile("me", profileData);
       
-      // 2. Save Preferences
+      // 2. IconDeviceFloppy Preferences
       await profileService.updatePreferences("me", preferencesData);
       
       // 3. Upload primary photo if selected
@@ -86,10 +86,9 @@ export default function OnboardingPage() {
       }
 
       toast.flash("success", "Profile setup complete!", "Your preferences and profile have been saved.");
-      toast.success("Profile setup complete!", "Your preferences and profile have been saved.");
 
       setTimeout(() => {
-        window.location.href = "/app";
+        window.location.href = "/app/discover";
       }, 500);
     } catch (err: any) {
       console.error("Onboarding error:", err);
@@ -135,8 +134,8 @@ export default function OnboardingPage() {
             {step === 1 && (
               <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
                 <div className="mb-8">
-                  <h1 className="font-editorial-title text-3xl font-normal text-[var(--foreground)] tracking-tight">Tell us about yourself</h1>
-                  <p className="mt-2 text-[var(--muted)]">Let's start with your demographic and educational details.</p>
+                  <h1 className="text-2xl sm:text-3xl font-bold text-[var(--foreground)] tracking-tight">Tell us about yourself</h1>
+                  <p className="mt-2 text-sm text-[var(--muted)]">Let's start with your demographic and educational details.</p>
                 </div>
                 
                 <form onSubmit={handleNext} className="space-y-5">
@@ -169,7 +168,7 @@ export default function OnboardingPage() {
 
                   <div className="pt-6 flex justify-end">
                     <button type="submit" className="focus-ring inline-flex h-12 items-center justify-center gap-2 rounded-xl bg-[var(--primary)] px-8 text-sm font-semibold text-white shadow-md hover:bg-[var(--primary-deep)] transition-all">
-                      Continue <ArrowRight className="h-4 w-4" />
+                      Continue <IconArrowRight className="h-4 w-4" />
                     </button>
                   </div>
                 </form>
@@ -180,8 +179,8 @@ export default function OnboardingPage() {
             {step === 2 && (
               <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
                 <div className="mb-8">
-                  <h1 className="font-editorial-title text-3xl font-normal text-[var(--foreground)] tracking-tight">Partner Preferences</h1>
-                  <p className="mt-2 text-[var(--muted)]">What are you looking for in your ideal match?</p>
+                  <h1 className="text-2xl sm:text-3xl font-bold text-[var(--foreground)] tracking-tight">Partner Preferences</h1>
+                  <p className="mt-2 text-sm text-[var(--muted)]">What are you looking for in your ideal match?</p>
                 </div>
                 
                 <form onSubmit={handleNext} className="space-y-5">
@@ -210,10 +209,10 @@ export default function OnboardingPage() {
 
                   <div className="pt-6 flex justify-between">
                     <button type="button" onClick={handleBack} className="focus-ring inline-flex h-12 items-center justify-center gap-2 rounded-xl bg-[var(--surface-muted)] px-6 text-sm font-semibold text-[var(--foreground)] hover:bg-[var(--border)] transition-all">
-                      <ArrowLeft className="h-4 w-4" /> Back
+                      <IconArrowLeft className="h-4 w-4" /> Back
                     </button>
                     <button type="submit" className="focus-ring inline-flex h-12 items-center justify-center gap-2 rounded-xl bg-[var(--primary)] px-8 text-sm font-semibold text-white shadow-md hover:bg-[var(--primary-deep)] transition-all">
-                      Continue <ArrowRight className="h-4 w-4" />
+                      Continue <IconArrowRight className="h-4 w-4" />
                     </button>
                   </div>
                 </form>
@@ -224,8 +223,8 @@ export default function OnboardingPage() {
             {step === 3 && (
               <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
                 <div className="mb-8">
-                  <h1 className="font-editorial-title text-3xl font-normal text-[var(--foreground)] tracking-tight">Service Categories</h1>
-                  <p className="mt-2 text-[var(--muted)]">What kind of connections are you seeking on Let's CHAT .Com?</p>
+                  <h1 className="text-2xl sm:text-3xl font-bold text-[var(--foreground)] tracking-tight">Service Categories</h1>
+                  <p className="mt-2 text-sm text-[var(--muted)]">What kind of connections are you seeking on Let's CHAT .Com?</p>
                 </div>
                 
                 <form onSubmit={handleNext} className="space-y-5">
@@ -256,7 +255,7 @@ export default function OnboardingPage() {
                               else setSelectedCategories(selectedCategories.filter(id => id !== cat.id));
                             }}
                           />
-                          <span className="font-bold text-sm text-[var(--foreground)]">{cat.label}</span>
+                          <span className="font-semibold text-sm text-[var(--foreground)]">{cat.label}</span>
                         </div>
                         <p className="text-xs text-[var(--muted)] ml-7">{cat.desc}</p>
                       </label>
@@ -265,22 +264,22 @@ export default function OnboardingPage() {
 
                   <div className="pt-6 flex justify-between">
                     <button type="button" onClick={handleBack} className="focus-ring inline-flex h-12 items-center justify-center gap-2 rounded-xl bg-[var(--surface-muted)] px-6 text-sm font-semibold text-[var(--foreground)] hover:bg-[var(--border)] transition-all">
-                      <ArrowLeft className="h-4 w-4" /> Back
+                      <IconArrowLeft className="h-4 w-4" /> Back
                     </button>
                     <button type="submit" disabled={selectedCategories.length === 0} className="focus-ring inline-flex h-12 items-center justify-center gap-2 rounded-xl bg-[var(--primary)] px-8 text-sm font-semibold text-white shadow-md hover:bg-[var(--primary-deep)] transition-all disabled:opacity-50">
-                      Continue <ArrowRight className="h-4 w-4" />
+                      Continue <IconArrowRight className="h-4 w-4" />
                     </button>
                   </div>
                 </form>
               </div>
             )}
 
-            {/* Step 4: Primary Image Upload */}
+            {/* Step 4: Primary IconPhoto Upload */}
             {step === 4 && (
               <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
                 <div className="mb-8">
-                  <h1 className="font-editorial-title text-3xl font-normal text-[var(--foreground)] tracking-tight">Profile Picture</h1>
-                  <p className="mt-2 text-[var(--muted)]">Upload a clear, recent photo. Profiles with photos get 10x more responses.</p>
+                  <h1 className="text-2xl sm:text-3xl font-bold text-[var(--foreground)] tracking-tight">Profile Picture</h1>
+                  <p className="mt-2 text-sm text-[var(--muted)]">Upload a clear, recent photo. Profiles with photos get 10x more responses.</p>
                 </div>
                 
                 <form onSubmit={handleNext} className="space-y-8">
@@ -289,7 +288,7 @@ export default function OnboardingPage() {
                     className="flex flex-col items-center justify-center border-2 border-dashed border-[var(--border)] rounded-2xl bg-[var(--surface-muted)] p-12 text-center hover:bg-[var(--primary)]/5 hover:border-[var(--primary)]/30 transition-colors cursor-pointer"
                   >
                     <div className="h-16 w-16 rounded-full bg-white shadow-sm flex items-center justify-center mb-4 text-[var(--primary)]">
-                      <UploadCloud className="h-8 w-8" />
+                      <IconUpload className="h-8 w-8" />
                     </div>
                     <h3 className="text-sm font-semibold text-[var(--foreground)]">
                       {primaryPhoto ? primaryPhoto.name : "Click to upload your display picture"}
@@ -307,10 +306,10 @@ export default function OnboardingPage() {
 
                   <div className="pt-2 flex justify-between">
                     <button type="button" onClick={handleBack} className="focus-ring inline-flex h-12 items-center justify-center gap-2 rounded-xl bg-[var(--surface-muted)] px-6 text-sm font-semibold text-[var(--foreground)] hover:bg-[var(--border)] transition-all">
-                      <ArrowLeft className="h-4 w-4" /> Back
+                      <IconArrowLeft className="h-4 w-4" /> Back
                     </button>
                     <button type="submit" className="focus-ring inline-flex h-12 items-center justify-center gap-2 rounded-xl bg-[var(--primary)] px-8 text-sm font-semibold text-white shadow-md hover:bg-[var(--primary-deep)] transition-all">
-                      Continue <ArrowRight className="h-4 w-4" />
+                      Continue <IconArrowRight className="h-4 w-4" />
                     </button>
                   </div>
                 </form>
@@ -322,38 +321,38 @@ export default function OnboardingPage() {
               <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
                 <div className="mb-8 text-center">
                   <div className="mx-auto h-16 w-16 bg-[var(--primary)]/10 rounded-full flex items-center justify-center mb-4">
-                    <Heart className="h-8 w-8 text-[var(--primary)]" />
+                    <IconHeart className="h-8 w-8 text-[var(--primary)]" />
                   </div>
-                  <h1 className="font-editorial-title text-3xl font-normal text-[var(--foreground)] tracking-tight">Create your Album</h1>
-                  <p className="mt-2 text-[var(--muted)]">Add up to 5 supplementary photos to build your gallery.</p>
+                  <h1 className="text-2xl sm:text-3xl font-bold text-[var(--foreground)] tracking-tight">Create your Album</h1>
+                  <p className="mt-2 text-sm text-[var(--muted)]">Add up to 5 supplementary photos to build your gallery.</p>
                 </div>
                 
                 <form onSubmit={handleComplete} className="space-y-8">
                   <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
                     {[1, 2, 3, 4].map((i) => (
                       <div key={i} className="aspect-square border border-dashed border-[var(--border)] rounded-xl bg-[var(--surface-muted)] flex items-center justify-center hover:bg-[var(--primary)]/5 cursor-pointer transition-colors text-[var(--muted)]">
-                        <UploadCloud className="h-6 w-6" />
+                        <IconUpload className="h-6 w-6" />
                       </div>
                     ))}
                   </div>
 
                   <div className="bg-[var(--primary)]/5 border border-[var(--primary)]/10 p-4 rounded-xl flex items-start gap-4">
-                    <CheckCircle2 className="h-5 w-5 text-[var(--primary)] shrink-0 mt-0.5" />
+                    <IconCircleCheck className="h-5 w-5 text-[var(--primary)] shrink-0 mt-0.5" />
                     <div>
-                      <h4 className="text-sm font-semibold text-[var(--primary-deep)]">System Check Ready</h4>
+                      <h4 className="text-sm font-semibold text-[var(--primary-deep)]">System IconCheck Ready</h4>
                       <p className="text-xs text-[var(--primary)] mt-1 opacity-90">Completing this step will instantly generate your Unique Matrimony ID, save your preferences, upload your photo, and unlock all application features.</p>
                     </div>
                   </div>
 
                   <div className="pt-2 flex justify-between">
                     <button type="button" onClick={handleBack} disabled={isLoading} className="focus-ring inline-flex h-12 items-center justify-center gap-2 rounded-xl bg-[var(--surface-muted)] px-6 text-sm font-semibold text-[var(--foreground)] hover:bg-[var(--border)] transition-all disabled:opacity-50">
-                      <ArrowLeft className="h-4 w-4" /> Back
+                      <IconArrowLeft className="h-4 w-4" /> Back
                     </button>
                     <button type="submit" disabled={isLoading} className="focus-ring inline-flex h-12 items-center justify-center gap-2 rounded-xl bg-[var(--primary)] px-8 text-sm font-semibold text-white shadow-md hover:bg-[var(--primary-deep)] transition-all disabled:opacity-50">
                       {isLoading ? (
-                        <><Loader2 className="h-5 w-5 animate-spin" /><span>Finalizing...</span></>
+                        <><IconLoader2 className="h-5 w-5 animate-spin" /><span>Finalizing...</span></>
                       ) : (
-                        <><CheckCircle2 className="h-4 w-4" /><span>Complete Profile</span></>
+                        <><IconCircleCheck className="h-4 w-4" /><span>Complete Profile</span></>
                       )}
                     </button>
                   </div>

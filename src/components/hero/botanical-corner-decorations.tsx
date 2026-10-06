@@ -29,25 +29,25 @@ export function BotanicalCornerDecorations({
       )}
       aria-hidden="true"
     >
-      {/* 1. Atmospheric Ambient Tint Glows for the Botanical & Cherry Blossom Corners */}
-      {/* Emerald Botanical Glow (Top-Left) */}
+      {/* 1. Atmospheric Ambient Tint Glows for the Burgundy & Rose Corners */}
+      {/* Burgundy Ambient Glow (Top-Left) */}
       <div
-        className="pointer-events-none absolute -top-24 -left-24 h-[32rem] w-[32rem] rounded-full bg-[radial-gradient(circle,rgba(16,133,96,0.12)_0%,transparent_70%)] blur-3xl opacity-75"
+        className="pointer-events-none absolute -top-24 -left-24 h-[32rem] w-[32rem] rounded-full bg-[radial-gradient(circle,rgba(122,24,53,0.09)_0%,transparent_70%)] blur-3xl opacity-80"
         aria-hidden="true"
       />
-      {/* Soft Rose Blossom Glow (Top-Right) */}
+      {/* Soft Blush Rose Blossom Glow (Top-Right) */}
       <div
-        className="pointer-events-none absolute -top-24 -right-24 h-[32rem] w-[32rem] rounded-full bg-[radial-gradient(circle,rgba(236,72,153,0.08)_0%,transparent_68%)] blur-3xl opacity-75"
+        className="pointer-events-none absolute -top-24 -right-24 h-[32rem] w-[32rem] rounded-full bg-[radial-gradient(circle,rgba(199,122,139,0.08)_0%,transparent_68%)] blur-3xl opacity-80"
         aria-hidden="true"
       />
-      {/* Warm Golden Botanical Glow (Bottom-Left) */}
+      {/* Warm Champagne Gold Glow (Bottom-Left) */}
       <div
-        className="pointer-events-none absolute bottom-8 -left-16 h-[26rem] w-[26rem] rounded-full bg-[radial-gradient(circle,rgba(16,133,96,0.07)_0%,transparent_70%)] blur-3xl"
+        className="pointer-events-none absolute bottom-8 -left-16 h-[26rem] w-[26rem] rounded-full bg-[radial-gradient(circle,rgba(216,178,140,0.10)_0%,transparent_70%)] blur-3xl"
         aria-hidden="true"
       />
-      {/* Soft Blossom Glow (Bottom-Right) */}
+      {/* Soft Rose Glow (Bottom-Right) */}
       <div
-        className="pointer-events-none absolute bottom-8 -right-16 h-[28rem] w-[28rem] rounded-full bg-[radial-gradient(circle,rgba(236,72,153,0.06)_0%,transparent_70%)] blur-3xl"
+        className="pointer-events-none absolute bottom-8 -right-16 h-[28rem] w-[28rem] rounded-full bg-[radial-gradient(circle,rgba(199,122,139,0.07)_0%,transparent_70%)] blur-3xl"
         aria-hidden="true"
       />
 

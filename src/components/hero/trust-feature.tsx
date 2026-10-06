@@ -1,5 +1,5 @@
 import type { ComponentType } from "react";
-import { Check } from "lucide-react";
+import { IconCheck } from '@tabler/icons-react';
 import { cn } from "@/lib/cn";
 
 export interface TrustFeatureProps {
@@ -12,7 +12,7 @@ export interface TrustFeatureProps {
 export function TrustFeature({
   label,
   description,
-  icon: Icon = Check,
+  icon: Icon = IconCheck,
   className = "",
 }: TrustFeatureProps) {
   return (

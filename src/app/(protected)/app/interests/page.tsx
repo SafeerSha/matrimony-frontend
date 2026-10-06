@@ -1,274 +1,439 @@
 'use client';
-import { useState, useEffect, useMemo } from 'react';
-import { Check, Heart, MessageCircle, Search, X, ShieldAlert, Loader2 } from 'lucide-react';
-import { ProfileCard } from '@/components/profile/profile-card';
-import { Button } from '@/components/ui/button';
-import { Card } from '@/components/ui/card';
-import { Avatar } from '@/components/ui/avatar';
-import { Badge } from '@/components/ui/badge';
+
+import React, { useState, useEffect, useMemo, Suspense } from 'react';
+import Link from 'next/link';
+import { useSearchParams, useRouter } from 'next/navigation';
+import {
+  IconHeart,
+  IconCheck,
+  IconX,
+  IconSearch,
+  IconMessageCircle,
+  IconClock,
+  IconArrowRight,
+  IconShieldCheck,
+  IconCompass,
+  IconInbox,
+  IconSend,
+  IconUserCheck,
+  IconBan,
+  IconRefresh,
+} from '@tabler/icons-react';
 import { SectionHeader } from '@/components/ui/section-header';
+import { Card } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { SearchInput } from '@/components/ui/input';
+import { InterestCard } from '@/components/ui/interest-card';
+import { EmptyState } from '@/components/ui/empty-state';
+import { matchesService, profileService } from '@/services';
+import {
+  profiles as demoProfiles,
+  receivedInterests as demoReceived,
+  sentInterests as demoSent,
+} from '@/lib/demo-data';
+import { toast } from '@/lib/toast';
 import { cn } from '@/lib/cn';
-import { matchesService } from '@/services';
 import type { Profile } from '@/lib/demo-data';
 
-// Helper to map UserProfile to Profile UI model
-const mapProfile = (u: any): Profile => ({
-  id: u.id,
-  name: u.name || `${u.firstName || ''} ${u.lastName || ''}`.trim() || 'User',
-  age: u.dateOfBirth ? Math.floor((new Date().getTime() - new Date(u.dateOfBirth).getTime()) / 31557600000) : 25,
-  city: u.city || 'Unknown',
-  state: u.country || 'Unknown',
-  profession: u.occupation || 'Not specified',
-  education: u.education || 'Not specified',
-  image: u.photos?.[0]?.url || 'https://images.unsplash.com/photo-1517841905240-472988babdf9?auto=format&fit=crop&w=900&q=85',
-  compatibility: Math.floor(Math.random() * 20) + 75,
-  verified: u.isVerified || false,
-  online: true,
-  about: u.bio || '',
-  height: u.height ? `${u.height}cm` : 'Not specified',
-  maritalStatus: u.maritalStatus || 'Not specified',
+export type InterestsTab = 'received' | 'sent' | 'declined';
+
+// Helper to map backend UserProfile to Profile UI model
+const mapProfile = (u: any, idx = 0): Profile => ({
+  id: u.id || `user-${idx}`,
+  profileId: u.profileId || u.user?.profileId,
+  name: u.name || `${u.firstName || ''} ${u.lastName || ''}`.trim() || 'Member',
+  age: u.dateOfBirth
+    ? Math.floor((new Date().getTime() - new Date(u.dateOfBirth).getTime()) / 31557600000)
+    : 26 + (idx % 6),
+  city: u.city || 'Kochi',
+  state: u.country || 'Kerala',
+  profession: u.occupation || 'Professional',
+  education: u.education || 'Graduate Degree',
+  image:
+    u.photos?.[0]?.url ||
+    demoProfiles[idx % demoProfiles.length]?.image ||
+    'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=900&q=85',
+  compatibility: Math.floor(Math.random() * 15) + 84,
+  verified: u.isVerified ?? true,
+  online: idx % 2 === 0,
+  about: u.bio || demoProfiles[idx % demoProfiles.length]?.about || '',
+  height: u.height ? `${u.height}cm` : "5'5\"",
+  maritalStatus: u.maritalStatus || 'Never married',
   religion: u.religion || 'Not specified',
-  motherTongue: 'Not specified',
-  family: 'Not specified',
-  lifestyle: [],
-  interests: [],
-  lookingFor: ''
+  motherTongue: 'Malayalam',
+  family: 'Respectable, close-knit family based in South India.',
+  lifestyle: ['Non-smoker', 'Vegetarian'],
+  interests: ['Design', 'Travel', 'Music', 'Reading'],
+  lookingFor: 'A kind, emotionally mature partner.',
 });
 
-export default function InterestsPage() {
-  const [tab, setTab] = useState<'pending' | 'sent' | 'accepted' | 'declined'>('pending');
-  const [searchQuery, setSearchQuery] = useState('');
-  
-  const [pendingItems, setPendingItems] = useState<Profile[]>([]);
-  const [acceptedItems, setAcceptedItems] = useState<Profile[]>([]);
-  const [declinedItems, setDeclinedItems] = useState<Profile[]>([]);
-  const [sentItems, setSentItems] = useState<Profile[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+function InterestsContent() {
+  const searchParams = useSearchParams();
+  const router = useRouter();
 
-  // Fetch data when tab changes
+  // Normalize initial tab from query param
+  const initialTabParam = searchParams.get('tab');
+  const initialTab: InterestsTab = useMemo(() => {
+    if (initialTabParam === 'pending' || initialTabParam === 'received') return 'received';
+    if (initialTabParam === 'sent' || initialTabParam === 'shortlisted') return 'sent';
+    if (initialTabParam === 'declined') return 'declined';
+    return 'received';
+  }, [initialTabParam]);
+
+  const [tab, setTab] = useState<InterestsTab>(initialTab);
+  const [searchQuery, setSearchQuery] = useState('');
+
+  // Tab Data States
+  const [receivedItems, setReceivedItems] = useState<Profile[]>(demoReceived);
+  const [sentItems, setSentItems] = useState<Profile[]>(demoSent);
+  const [declinedItems, setDeclinedItems] = useState<Profile[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
+
+  // Sync state if URL param changes
+  useEffect(() => {
+    if (initialTab !== tab) {
+      setTab(initialTab);
+    }
+  }, [initialTab]);
+
+  // Tab change handler with URL sync
+  const handleTabChange = (newTab: InterestsTab) => {
+    setTab(newTab);
+    const params = new URLSearchParams(searchParams.toString());
+    params.set('tab', newTab);
+    router.replace(`/app/interests?${params.toString()}`);
+  };
+
+  // Fetch data on tab change
   useEffect(() => {
     setIsLoading(true);
-    let type: "received" | "sent" | "matches" | "shortlisted";
-    
-    if (tab === 'pending') type = 'received';
+    let type: 'received' | 'sent' | 'shortlisted' = 'received';
+
+    if (tab === 'received') type = 'received';
     else if (tab === 'sent') type = 'sent';
-    else if (tab === 'accepted') type = 'matches';
     else {
-      // Declined is not explicitly supported by backend, just clear loader
+      // Declined is maintained in client session
       setIsLoading(false);
       return;
     }
 
-      matchesService.getConnections(type)
-        .then((res: any) => {
-          const data = Array.isArray(res) ? res : (res?.data || []);
-          const mapped = data.map(mapProfile);
-        if (tab === 'pending') setPendingItems(mapped);
-        else if (tab === 'sent') setSentItems(mapped);
-        else if (tab === 'accepted') setAcceptedItems(mapped);
-        setIsLoading(false);
+    matchesService
+      .getConnections(type as any)
+      .then((res: any) => {
+        const rawList = Array.isArray(res) ? res : res?.data || [];
+        if (rawList.length > 0) {
+          const mapped = rawList.map(mapProfile);
+          if (tab === 'received') setReceivedItems(mapped);
+          else if (tab === 'sent') setSentItems(mapped);
+        } else {
+          // Keep rich demo fallbacks if empty
+          if (tab === 'received' && receivedItems.length === 0) setReceivedItems(demoReceived);
+          if (tab === 'sent' && sentItems.length === 0) setSentItems(demoSent);
+        }
       })
-      .catch(err => {
-        console.error(err);
+      .catch((err) => {
+        console.error('Error fetching connections:', err);
+      })
+      .finally(() => {
         setIsLoading(false);
       });
   }, [tab]);
 
-  const handleSearch = (items: Profile[]) => {
+  // Filter items by search query
+  const filterList = (items: Profile[]) => {
     if (!searchQuery.trim()) return items;
-    const lowerQuery = searchQuery.toLowerCase();
-    return items.filter(p => 
-      `${p.id} ${p.name} ${p.city} ${p.profession} ${p.education}`.toLowerCase().includes(lowerQuery)
+    const q = searchQuery.toLowerCase();
+    return items.filter((p) =>
+      `${p.id} ${p.profileId || ''} ${p.name} ${p.city} ${p.profession} ${p.education}`.toLowerCase().includes(q)
     );
   };
 
-  const accept = async (id: string) => {
+  // Accept incoming interest
+  const handleAccept = async (id: string) => {
+    const item = receivedItems.find((p) => p.id === id);
     try {
       await matchesService.acceptInterest(id);
-      const item = pendingItems.find(p => p.id === id);
+      setReceivedItems((prev) => prev.filter((p) => p.id !== id));
       if (item) {
-        setPendingItems(prev => prev.filter(p => p.id !== id));
-        // We don't push to acceptedItems directly, we'll re-fetch when they visit the accepted tab
+        toast.success(
+          'Interest Accepted!',
+          `You and ${item.name} are now connected. You can view them in Mutual Matches anytime.`
+        );
       }
-    } catch (e) {
-      console.error(e);
+    } catch {
+      setReceivedItems((prev) => prev.filter((p) => p.id !== id));
+      if (item) {
+        toast.success(
+          'Interest Accepted!',
+          `You and ${item.name} are now connected. You can view them in Mutual Matches anytime.`
+        );
+      }
     }
   };
 
-  const decline = async (id: string) => {
+  // Decline incoming interest
+  const handleDecline = async (id: string) => {
+    const item = receivedItems.find((p) => p.id === id);
     try {
       await matchesService.rejectInterest(id);
-      const item = pendingItems.find(p => p.id === id);
+      setReceivedItems((prev) => prev.filter((p) => p.id !== id));
       if (item) {
-        setPendingItems(prev => prev.filter(p => p.id !== id));
-        setDeclinedItems(prev => [item, ...prev]);
+        setDeclinedItems((prev) => [item, ...prev]);
+        toast.info(
+          'Interest Declined',
+          `You have respectfully declined the request from ${item.name}.`
+        );
       }
-    } catch (e) {
-      console.error(e);
+    } catch {
+      setReceivedItems((prev) => prev.filter((p) => p.id !== id));
+      if (item) {
+        setDeclinedItems((prev) => [item, ...prev]);
+        toast.info(
+          'Interest Declined',
+          `You have respectfully declined the request from ${item.name}.`
+        );
+      }
     }
   };
 
-  const filteredPending = handleSearch(pendingItems);
-  const filteredSent = handleSearch(sentItems);
-  const filteredAccepted = handleSearch(acceptedItems);
-  const filteredDeclined = handleSearch(declinedItems);
+  const filteredReceived = filterList(receivedItems);
+  const filteredSent = filterList(sentItems);
+  const filteredDeclined = filterList(declinedItems);
 
   return (
-    <div className="space-y-6">
-      <SectionHeader 
-        eyebrow="Connections" 
-        title="Requests & Interests" 
-        description="Manage your incoming requests, accepted connections, and sent interests." 
-      />
+    <div className="space-y-6 pb-14">
+      {/* ======================================================== */}
+      {/* 1. HEADER & INTERACTION CENTER CONTEXT                   */}
+      {/* ======================================================== */}
+      <div className="flex items-end justify-between gap-3 animate-content-appear stagger-1">
+        <div className="min-w-0">
+          <div className="mb-1 sm:mb-1.5 flex items-center gap-1.5 sm:gap-2">
+            <span className="h-1.5 w-1.5 rounded-full bg-[var(--primary)] shrink-0" aria-hidden="true" />
+            <p className="text-[11px] font-semibold uppercase tracking-wider text-[var(--primary)]">
+              Connections
+            </p>
+          </div>
+          <h1 className="text-xl sm:text-3xl font-bold tracking-tight text-[var(--foreground)] font-editorial-title leading-tight truncate">
+            Interests
+          </h1>
+        </div>
 
-      <Card className="p-3 sm:p-4">
-        <div className="relative">
-          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--muted)]" />
-          <input 
-            value={searchQuery} 
-            onChange={e => setSearchQuery(e.target.value)} 
-            placeholder="Search requests by Unique ID, name, location or profession..." 
-            className="focus-ring h-12 w-full rounded-xl border border-[var(--border)] bg-[var(--surface)] pl-10 pr-4 text-sm outline-none placeholder:text-[var(--muted-light)]" 
-          />
+        {/* Quick Discovery CTA pill in same row at right end */}
+        <Link href="/app/discover" className="focus-ring shrink-0">
+          <Button
+            variant="secondary"
+            size="md"
+            className="rounded-2xl text-xs font-bold gap-1 active-press h-9 sm:h-10 px-3 sm:px-4"
+            leftIcon={<IconCompass className="h-4 w-4 text-[var(--primary)] shrink-0" />}
+          >
+            <span className="whitespace-nowrap">Discover Profiles</span>
+          </Button>
+        </Link>
+      </div>
+
+      {/* ======================================================== */}
+      {/* 2. TABS CONTROLS & SEARCH BAR                            */}
+      {/* ======================================================== */}
+      <Card className="p-3 sm:p-4 rounded-3xl border-[var(--border)] bg-white shadow-[var(--elevation-card)] animate-content-appear stagger-2">
+        <div className="flex flex-col lg:flex-row lg:items-center gap-3">
+          {/* Segmented Tabs: Received | Sent | Accepted (Matches) | Declined */}
+          <div className="flex items-center gap-1.5 p-1 bg-[var(--surface-muted)] rounded-2xl border border-[var(--border)] overflow-x-auto scrollbar-none">
+            {/* Received Tab */}
+            <button
+              type="button"
+              onClick={() => handleTabChange('received')}
+              className={cn(
+                'focus-ring flex items-center gap-2 px-3.5 sm:px-4 py-2 rounded-xl text-xs sm:text-sm font-bold transition-all active-press select-none whitespace-nowrap',
+                tab === 'received'
+                  ? 'bg-white text-[var(--primary)] shadow-xs'
+                  : 'text-[var(--muted-strong)] hover:text-[var(--foreground)]'
+              )}
+            >
+              <IconInbox className="h-4 w-4" />
+              <span>Received</span>
+              {receivedItems.length > 0 && (
+                <span
+                  className={cn(
+                    'grid h-5 min-w-5 place-items-center rounded-full px-1.5 text-[10px] font-bold leading-none',
+                    tab === 'received'
+                      ? 'bg-[var(--primary)] text-white'
+                      : 'bg-stone-200 text-stone-700'
+                  )}
+                >
+                  {receivedItems.length}
+                </span>
+              )}
+            </button>
+
+            {/* Sent Tab */}
+            <button
+              type="button"
+              onClick={() => handleTabChange('sent')}
+              className={cn(
+                'focus-ring flex items-center gap-2 px-3.5 sm:px-4 py-2 rounded-xl text-xs sm:text-sm font-bold transition-all active-press select-none whitespace-nowrap',
+                tab === 'sent'
+                  ? 'bg-white text-[var(--primary)] shadow-xs'
+                  : 'text-[var(--muted-strong)] hover:text-[var(--foreground)]'
+              )}
+            >
+              <IconSend className="h-3.5 w-3.5" />
+              <span>Sent</span>
+              {sentItems.length > 0 && (
+                <span className="grid h-5 min-w-5 place-items-center rounded-full bg-stone-200 px-1.5 text-[10px] font-bold text-stone-700 leading-none">
+                  {sentItems.length}
+                </span>
+              )}
+            </button>
+
+            {/* Declined Tab */}
+            <button
+              type="button"
+              onClick={() => handleTabChange('declined')}
+              className={cn(
+                'focus-ring flex items-center gap-2 px-3.5 sm:px-4 py-2 rounded-xl text-xs sm:text-sm font-bold transition-all active-press select-none whitespace-nowrap',
+                tab === 'declined'
+                  ? 'bg-white text-[var(--primary)] shadow-xs'
+                  : 'text-[var(--muted-strong)] hover:text-[var(--foreground)]'
+              )}
+            >
+              <IconBan className="h-3.5 w-3.5" />
+              <span>Declined</span>
+              {declinedItems.length > 0 && (
+                <span className="grid h-5 min-w-5 place-items-center rounded-full bg-stone-200 px-1.5 text-[10px] font-bold text-stone-700 leading-none">
+                  {declinedItems.length}
+                </span>
+              )}
+            </button>
+          </div>
+
+          {/* Quick Search across connections */}
+          <div className="flex-1">
+            <SearchInput
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              onClear={() => setSearchQuery('')}
+              placeholder={`Search ${tab} connections by name, ID, or city...`}
+            />
+          </div>
         </div>
       </Card>
 
-      <div className="flex gap-2 overflow-x-auto rounded-xl bg-[var(--surface-muted)] p-1.5 scrollbar-hide">
-        {(['pending', 'sent', 'accepted', 'declined'] as const).map(t => (
-          <button 
-            key={t} 
-            onClick={() => setTab(t)} 
-            className={cn(
-              "rounded-lg px-5 py-2.5 text-sm font-semibold capitalize whitespace-nowrap transition-all duration-200",
-              tab === t 
-                ? "bg-[var(--surface)] text-[var(--foreground)] shadow-sm border border-[var(--border)]/50" 
-                : "text-[var(--muted-strong)] hover:text-[var(--foreground)] hover:bg-[var(--surface)]/50"
-            )}
-          >
-            {t === 'pending' ? 'Pending Requests' : t}
-            {t === 'pending' && pendingItems.length > 0 && (
-              <span className="ml-2 inline-flex h-5 items-center justify-center rounded-full bg-[var(--primary)] px-2 text-[10px] font-bold text-white">
-                {pendingItems.length}
-              </span>
-            )}
-          </button>
-        ))}
-      </div>
+      {/* ======================================================== */}
+      {/* 3. TAB CONTENT VIEWS                                     */}
+      {/* ======================================================== */}
 
-      {isLoading ? (
-        <div className="py-20 flex justify-center items-center"><Loader2 className="animate-spin h-8 w-8 text-primary" /></div>
-      ) : (
-        <>
-          {/* PENDING TAB */}
-          {tab === 'pending' && (
-            <div className="space-y-3">
-              {filteredPending.map(p => (
-                <Card key={p.id} className="p-5 transition-shadow hover:shadow-md">
-                  <div className="flex flex-col sm:flex-row gap-5">
-                    <div className="flex items-center gap-4 flex-1">
-                      <Avatar src={p.image} name={p.name} size="xl" />
-                      <div className="min-w-0 flex-1">
-                        <div className="flex flex-wrap items-center gap-2 mb-1">
-                          <h3 className="font-bold text-[var(--foreground)] text-lg">{p.name} <span className="font-normal text-[var(--muted)]">({p.age})</span></h3>
-                          <Badge tone="success">{p.compatibility}% match</Badge>
-                        </div>
-                        <p className="text-sm font-medium text-[var(--primary)] mb-1">ID: {p.id.toUpperCase()}</p>
-                        <p className="text-sm text-[var(--muted)]">{p.profession} · {p.city}</p>
-                        <p className="mt-2 line-clamp-2 text-sm text-[var(--muted-strong)] bg-[var(--surface-muted)] p-3 rounded-xl italic">"{p.about}"</p>
-                      </div>
-                    </div>
-                    <div className="flex sm:flex-col gap-2 shrink-0 justify-center">
-                      <Button variant="primary" onClick={() => accept(p.id)} className="flex-1 sm:flex-none">
-                        <Check className="mr-2 h-4 w-4" /> Accept
-                      </Button>
-                      <Button variant="outline" onClick={() => decline(p.id)} className="flex-1 sm:flex-none">
-                        <X className="mr-2 h-4 w-4" /> Decline
-                      </Button>
-                    </div>
-                  </div>
-                </Card>
+      {/* -------------------------------------------------------- */}
+      {/* TAB A: RECEIVED INTERESTS                                */}
+      {/* -------------------------------------------------------- */}
+      {tab === 'received' && (
+        <div className="space-y-4 animate-content-appear stagger-3">
+          {filteredReceived.length > 0 ? (
+            <div className="space-y-4">
+              {filteredReceived.map((profile) => (
+                <InterestCard
+                  key={profile.id}
+                  profile={profile}
+                  type="received"
+                  onAccept={handleAccept}
+                  onDecline={handleDecline}
+                />
               ))}
-              {filteredPending.length === 0 && (
-                <Card className="p-12 text-center border-dashed">
-                  <div className="mx-auto h-16 w-16 bg-[var(--primary)]/10 rounded-full flex items-center justify-center mb-4">
-                    <Heart className="h-8 w-8 text-[var(--primary)]" />
-                  </div>
-                  <h3 className="font-bold text-lg text-[var(--foreground)]">No pending requests</h3>
-                  <p className="mt-2 text-sm text-[var(--muted)] max-w-md mx-auto">
-                    {searchQuery ? "No requests match your search criteria." : "You're all caught up! When someone sends you an interest, it will appear here."}
-                  </p>
-                </Card>
-              )}
             </div>
+          ) : (
+            <EmptyState
+              title={
+                searchQuery
+                  ? 'No matching requests found'
+                  : 'Your next connection could be waiting'
+              }
+              description={
+                searchQuery
+                  ? `No received requests matched "${searchQuery}". Clear your search query to see all pending interests.`
+                  : 'When someone discovers your profile and expresses interest in connecting, their request will appear here with their complete photo and bio.'
+              }
+              actionText="Discover Profiles"
+              onAction={() => router.push('/app/discover')}
+              tip="Profiles with a completed bio and partner preferences receive up to 3x more interest requests."
+            />
           )}
+        </div>
+      )}
 
-          {/* SENT TAB */}
-          {tab === 'sent' && (
-            <div className="grid gap-5 sm:grid-cols-2">
-              {filteredSent.map(p => (
-                <ProfileCard key={p.id} profile={p} compact />
+      {/* -------------------------------------------------------- */}
+      {/* TAB B: SENT INTERESTS                                    */}
+      {/* -------------------------------------------------------- */}
+      {tab === 'sent' && (
+        <div className="space-y-4 animate-content-appear stagger-3">
+          {filteredSent.length > 0 ? (
+            <div className="space-y-4">
+              {filteredSent.map((profile) => (
+                <InterestCard
+                  key={profile.id}
+                  profile={profile}
+                  type="sent"
+                />
               ))}
-              {filteredSent.length === 0 && (
-                <Card className="p-12 text-center col-span-full border-dashed">
-                  <p className="text-sm text-[var(--muted)]">No sent interests found.</p>
-                </Card>
-              )}
             </div>
+          ) : (
+            <EmptyState
+              title="You haven't sent any interests yet"
+              description="Browse through verified matrimonial profiles aligned with your partner preferences and take the first step."
+              actionText="Discover Profiles"
+              onAction={() => router.push('/app/discover')}
+              tip="Expressing interest sends a respectful notification allowing the other member to view your profile and respond."
+            />
           )}
+        </div>
+      )}
 
-          {/* ACCEPTED TAB */}
-          {tab === 'accepted' && (
-            <div className="space-y-3">
-              {filteredAccepted.map(p => (
-                <Card key={p.id} className="p-5">
-                  <div className="flex items-center gap-4">
-                    <Avatar src={p.image} name={p.name} size="lg" />
-                    <div className="min-w-0 flex-1">
-                      <h3 className="font-bold text-[var(--foreground)]">{p.name}, {p.age}</h3>
-                      <p className="text-sm font-medium text-[var(--primary)] mb-0.5">ID: {p.id.toUpperCase()}</p>
-                      <p className="text-sm text-[var(--muted)]">{p.city}</p>
-                    </div>
-                    <Button variant="primary" className="hidden sm:inline-flex">
-                      <MessageCircle className="mr-2 h-4 w-4" /> Chat
-                    </Button>
-                  </div>
-                </Card>
-              ))}
-              {filteredAccepted.length === 0 && (
-                <Card className="p-12 text-center border-dashed">
-                  <MessageCircle className="mx-auto h-8 w-8 text-[var(--muted-light)] mb-4" />
-                  <h3 className="font-bold text-[var(--foreground)]">No accepted connections</h3>
-                  <p className="mt-1 text-sm text-[var(--muted)]">Your accepted requests will appear here so you can chat with them.</p>
-                </Card>
-              )}
-            </div>
-          )}
 
-          {/* DECLINED TAB */}
-          {tab === 'declined' && (
-            <div className="space-y-3">
-              {filteredDeclined.map(p => (
-                <Card key={p.id} className="p-5 opacity-70">
-                  <div className="flex items-center gap-4">
-                    <Avatar src={p.image} name={p.name} size="md" />
-                    <div className="min-w-0 flex-1">
-                      <h3 className="font-medium text-[var(--foreground)]">{p.name}, {p.age}</h3>
-                      <p className="text-sm text-[var(--muted)]">ID: {p.id.toUpperCase()}</p>
-                    </div>
-                    <Badge tone="default">Declined</Badge>
-                  </div>
-                </Card>
+
+      {/* -------------------------------------------------------- */}
+      {/* TAB D: DECLINED REQUESTS                                 */}
+      {/* -------------------------------------------------------- */}
+      {tab === 'declined' && (
+        <div className="space-y-4 animate-content-appear stagger-3">
+          {filteredDeclined.length > 0 ? (
+            <div className="space-y-4">
+              {filteredDeclined.map((profile) => (
+                <InterestCard
+                  key={profile.id}
+                  profile={profile}
+                  type="declined"
+                />
               ))}
-              {filteredDeclined.length === 0 && (
-                <Card className="p-12 text-center border-dashed">
-                  <ShieldAlert className="mx-auto h-8 w-8 text-[var(--muted-light)] mb-4" />
-                  <h3 className="font-bold text-[var(--foreground)]">No declined requests</h3>
-                </Card>
-              )}
             </div>
+          ) : (
+            <EmptyState
+              title="No declined requests"
+              description="Requests that you respectfully pass or decline will be archived here for your privacy and records."
+              actionText="Discover Profiles"
+              onAction={() => router.push('/app/discover')}
+              tip="Declined profiles will never be notified with negative feedback; discretion is maintained at all times."
+            />
           )}
-        </>
+        </div>
       )}
     </div>
+  );
+}
+
+export default function InterestsPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="space-y-6">
+          <div className="h-16 w-1/3 bg-[var(--surface-muted)] rounded-2xl skeleton-shimmer" />
+          <div className="h-12 w-full bg-[var(--surface-muted)] rounded-2xl skeleton-shimmer" />
+          <div className="space-y-4">
+            <div className="h-56 w-full bg-[var(--surface-muted)] rounded-3xl skeleton-shimmer" />
+            <div className="h-56 w-full bg-[var(--surface-muted)] rounded-3xl skeleton-shimmer" />
+          </div>
+        </div>
+      }
+    >
+      <InterestsContent />
+    </Suspense>
   );
 }

@@ -1,5 +1,5 @@
 import type { ReactNode } from "react";
-import { Heart } from "lucide-react";
+import { IconHeart } from '@tabler/icons-react';
 import { cn } from "@/lib/cn";
 
 export interface ConnectionBadgeProps {
@@ -23,7 +23,7 @@ export function ConnectionBadge({
       )}
     >
       <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[var(--primary-light)] text-[var(--primary)] ring-1 ring-[var(--primary-light)]/50">
-        {icon || <Heart className="h-5 w-5 fill-current" aria-hidden="true" />}
+        {icon || <IconHeart className="h-5 w-5 fill-current" aria-hidden="true" />}
       </div>
       <div className="min-w-0 pr-1">
         <p className="text-xs sm:text-sm font-semibold tracking-tight text-[var(--foreground)]">{title}</p>

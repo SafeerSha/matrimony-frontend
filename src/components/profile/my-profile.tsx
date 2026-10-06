@@ -1,17 +1,22 @@
 'use client';
 import { useState, useEffect, useRef } from 'react';
-import { Camera, CheckCircle2, ChevronRight, Edit3, Eye, Lock, Plus, Save, ShieldCheck, Sparkles, Image as ImageIcon, Loader2, Trash2 } from 'lucide-react';
+import { IconCamera, IconCircleCheck, IconChevronRight, IconEdit, IconEye, IconLock, IconPlus, IconDeviceFloppy, IconShieldCheck, IconPhoto, IconLoader2, IconTrash } from '@tabler/icons-react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Avatar } from '@/components/ui/avatar';
+import { SectionHeader } from '@/components/ui/section-header';
+import { cn } from '@/lib/cn';
 import { profileService, mediaService, authService } from '@/services';
 import type { UserProfile } from '@/services/profile.service';
+import { PartnerPreferencesEditor } from '@/components/preferences/partner-preferences-editor';
+import { PageLoader } from '@/components/ui/page-loader';
+import { toast } from '@/lib/toast';
 
 export function MyProfile() {
   const [saved, setSaved] = useState(false);
   const [tab, setTab] = useState<'overview' | 'about' | 'preferences' | 'album'>('overview');
-  
+
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isUploading, setIsUploading] = useState(false);
@@ -66,7 +71,7 @@ export function MyProfile() {
   };
 
   if (isLoading) {
-    return <div className="py-20 flex justify-center"><Loader2 className="h-8 w-8 animate-spin text-[var(--primary)]" /></div>;
+    return <PageLoader text="Loading your profile..." />;
   }
 
   if (!profile) return null;
@@ -74,8 +79,8 @@ export function MyProfile() {
   const displayName = profile.firstName
     ? `${profile.firstName} ${profile.lastName || ''}`.trim()
     : profile.name || (profile as any)?.user?.firstName
-    ? `${(profile as any).user.firstName} ${(profile as any).user.lastName || ''}`.trim()
-    : 'User';
+      ? `${(profile as any).user.firstName} ${(profile as any).user.lastName || ''}`.trim()
+      : 'User';
 
   const dob = profile.dateOfBirth || (profile as any)?.user?.dateOfBirth;
   const age = dob ? Math.floor((new Date().getTime() - new Date(dob).getTime()) / 31557600000) : '--';
@@ -93,112 +98,152 @@ export function MyProfile() {
   ];
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-5 pb-8">
+      {/* Header */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-        <div>
-          <p className="text-xs font-bold uppercase tracking-[.16em] text-[var(--primary)]">My Profile</p>
-          <h1 className="mt-1 text-2xl font-bold text-[var(--foreground)]">Profile Management</h1>
-          <p className="mt-1 text-sm text-[var(--muted)]">Keep your details up to date to find the best matches.</p>
-        </div>
-        <div className="flex gap-2">
-          <Button variant="secondary"><Eye className="mr-2 h-4 w-4" /> Preview</Button>
-          <Button onClick={() => setSaved(true)}><Save className="mr-2 h-4 w-4" /> {saved ? 'Saved' : 'Save changes'}</Button>
+        <SectionHeader
+          eyebrow="My Profile"
+          title="Profile Management"
+          description="Keep your matrimonial profile details up to date to find genuine, high-compatibility matches."
+        />
+        <div className="flex items-center gap-2.5 self-start sm:self-auto shrink-0">
+          <Button
+            variant="secondary"
+            size="sm"
+            leftIcon={<IconEye className="h-4 w-4 text-[var(--primary)]" />}
+            className="rounded-xl text-xs font-bold shadow-2xs h-10 px-4"
+          >
+            Preview
+          </Button>
+          <Button
+            variant="primary"
+            size="sm"
+            leftIcon={<IconDeviceFloppy className="h-4 w-4" />}
+            className="rounded-xl text-xs font-bold shadow-xs active-press h-10 px-4"
+            onClick={() => {
+              setSaved(true);
+              toast.success('Changes Saved', 'Your matrimonial profile details have been updated.');
+            }}
+          >
+            {saved ? 'Saved' : 'Save changes'}
+          </Button>
         </div>
       </div>
 
-      <Card className="overflow-hidden p-0 border border-[var(--border)] shadow-sm">
-        <div className="relative h-48 bg-gradient-to-r from-[var(--primary-deep)] to-[var(--primary)]">
-          <div className="absolute -bottom-12 left-6 rounded-full border-4 border-[var(--background)] bg-[var(--background)]">
-            <Avatar src={displayImage} name={displayName} size="xl" className="h-24 w-24 sm:h-28 sm:w-28" />
+      {/* Main Profile Cover & Hero Card */}
+      <Card className="overflow-hidden p-0 rounded-3xl">
+        <div className="relative h-32 sm:h-40 bg-gradient-to-r from-[#5C1027] via-[#7A1835] to-[#8C1D3D]">
+          {/* Subtle Ambient Radial Highlight */}
+          <div
+            className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_70%_30%,rgba(216,178,140,0.2)_0%,transparent_60%)]"
+            aria-hidden="true"
+          />
+          <div className="absolute -bottom-10 left-6 rounded-full border-4 border-white bg-white shadow-md">
+            <Avatar src={displayImage} name={displayName} size="xl" />
           </div>
-          <button className="absolute bottom-4 right-4 inline-flex items-center gap-2 rounded-xl bg-black/30 px-4 py-2 text-xs font-semibold text-white backdrop-blur hover:bg-black/40 transition-colors">
-            <Camera className="h-4 w-4" /> Change cover
-          </button>
         </div>
-        
-        <div className="px-6 pb-6 pt-16">
+
+        <div className="px-6 pb-6 pt-12">
           <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
             <div>
               <div className="flex items-center gap-3">
-                <h2 className="text-2xl font-bold text-[var(--foreground)]">{displayName}, {age}</h2>
-                {profile.isVerified && <Badge tone="success" className="h-6">Verified</Badge>}
+                <h2 className="font-editorial-title text-2xl sm:text-3xl font-bold text-[var(--foreground)]">
+                  {displayName}, {age}
+                </h2>
+                {profile.isVerified && <Badge tone="accent" size="sm" className="font-bold">Verified</Badge>}
               </div>
-              <p className="mt-1.5 text-sm font-medium text-[var(--muted-strong)]">{profile.occupation || 'Profession not set'} · {profile.city || 'City not set'}</p>
-              
-              <div className="mt-4 inline-flex items-center gap-2 rounded-lg border border-[var(--primary)]/20 bg-[var(--primary)]/5 px-3 py-1.5">
-                <span className="text-xs font-semibold uppercase tracking-wider text-[var(--muted)]">Matrimony ID</span>
-                <span className="text-sm font-bold tracking-widest text-[var(--primary-deep)]">{matrimonyId}</span>
+              <p className="mt-1.5 text-xs sm:text-sm font-semibold text-[var(--muted-strong)]">
+                {profile.occupation || 'Profession not set'} · {profile.city || 'City not set'}
+              </p>
+
+              <div className="mt-3.5 inline-flex items-center gap-2 rounded-xl border border-[#EAD8C7] bg-[#FAF3EC] px-3 py-1 shadow-2xs">
+                <span className="text-[10px] font-bold uppercase tracking-wider text-[#8C5D30]">Matrimony ID</span>
+                <span className="text-xs font-bold tracking-wider text-[#5C1027]">{matrimonyId}</span>
               </div>
             </div>
-            
-            <div className="rounded-2xl bg-[var(--primary)]/10 px-5 py-4 sm:min-w-[200px] border border-[var(--primary)]/20">
-              <div className="flex justify-between items-end">
-                <p className="text-xs font-semibold text-[var(--primary)]">Profile status</p>
-                <p className="text-xl font-bold text-[var(--primary-deep)]">82%</p>
+
+            <div className="rounded-2xl bg-gradient-to-br from-[#FAF3EC] to-[#FFF9F6] p-4 sm:min-w-[220px] border border-[#EAD8C7] shadow-2xs">
+              <div className="flex justify-between items-end mb-2">
+                <p className="text-xs font-bold text-[#5C1027]">Profile Strength</p>
+                <p className="text-lg font-bold text-[var(--primary)]">82%</p>
               </div>
-              <div className="mt-3 h-2 overflow-hidden rounded-full bg-[var(--primary)]/20">
-                <div className="h-full w-[82%] rounded-full bg-[var(--primary)]" />
+              <div className="h-2 w-full overflow-hidden rounded-full bg-stone-200/80">
+                <div className="h-full rounded-full bg-gradient-to-r from-[var(--primary)] to-[var(--blush-deep)] transition-all duration-500" style={{ width: '82%' }} />
               </div>
+              <p className="mt-2 text-[10px] font-semibold text-[var(--muted)]">Almost complete · Add partner preferences</p>
             </div>
           </div>
         </div>
       </Card>
 
-      <div className="flex gap-2 overflow-x-auto rounded-xl bg-[var(--surface-muted)] p-1.5 scrollbar-hide">
-        {(['overview', 'about', 'preferences', 'album'] as const).map(t => (
-          <button 
-            key={t} 
-            onClick={() => setTab(t)} 
-            className={`rounded-lg px-5 py-2.5 text-sm font-semibold capitalize whitespace-nowrap transition-all duration-200 ${
-              tab === t 
-                ? 'bg-[var(--surface)] text-[var(--foreground)] shadow-sm border border-[var(--border)]/50' 
-                : 'text-[var(--muted-strong)] hover:text-[var(--foreground)] hover:bg-[var(--surface)]/50'
-            }`}
-          >
-            {t === 'about' ? 'Bio / Details' : t}
-          </button>
-        ))}
+      {/* Modern Filter / Section Tabs */}
+      <div className="flex items-center gap-2 border-b border-[#E9DDE0] pb-3 overflow-x-auto scrollbar-none -mx-4 px-4 sm:mx-0 sm:px-0 sm:flex-wrap">
+        {(['overview', 'about', 'preferences', 'album'] as const).map((t) => {
+          const isActive = tab === t;
+          const label = t === 'about' ? 'Bio & Values' : t === 'album' ? 'Photo Gallery' : t;
+          return (
+            <button
+              key={t}
+              onClick={() => setTab(t)}
+              className={cn(
+                'inline-flex items-center gap-2 rounded-2xl px-4 py-2 text-xs font-bold transition-all shrink-0 whitespace-nowrap capitalize select-none active-press',
+                isActive
+                  ? 'bg-[#7A1835] text-white shadow-xs'
+                  : 'bg-white text-[#766B6F] border border-[#E9DDE0] hover:bg-[#FAF3EC] hover:text-[#211B1E]'
+              )}
+            >
+              <span>{label}</span>
+            </button>
+          );
+        })}
       </div>
 
       {tab === 'overview' && (
         <div className="grid gap-6 lg:grid-cols-[1fr_340px]">
-          <div className="space-y-6">
+          <div className="space-y-5">
             <Card className="p-6 shadow-sm border border-[var(--border)]">
               <div className="flex items-center justify-between">
                 <div>
                   <h2 className="text-lg font-bold text-[var(--foreground)]">Profile sections</h2>
                   <p className="mt-1 text-sm text-[var(--muted)]">Keep these details current and genuine.</p>
                 </div>
-                <Sparkles className="h-5 w-5 text-amber-500" />
+                <IconShieldCheck className="h-5 w-5 text-amber-500" />
               </div>
               <div className="mt-6 divide-y divide-[var(--border)] border-t border-[var(--border)]">
                 {sections.map(([title, desc, status]) => (
                   <button key={title} className="flex w-full items-center gap-4 py-4 text-left hover:bg-[var(--surface-muted)] transition-colors rounded-lg px-2 -mx-2">
                     <div className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-[var(--primary)]/10 text-[var(--primary)]">
-                      <CheckCircle2 className="h-5 w-5" />
+                      <IconCircleCheck className="h-5 w-5" />
                     </div>
                     <div className="min-w-0 flex-1">
                       <p className="text-sm font-semibold text-[var(--foreground)]">{title}</p>
                       <p className="mt-0.5 text-xs text-[var(--muted)]">{desc}</p>
                     </div>
-                    <span className="text-xs font-semibold text-green-600">{status}</span>
-                    <ChevronRight className="h-4 w-4 text-[var(--muted-light)]" />
+                    <span className="text-xs font-semibold text-[var(--primary)]">{status}</span>
+                    <IconChevronRight className="h-4 w-4 text-[var(--muted-light)]" />
                   </button>
                 ))}
               </div>
             </Card>
           </div>
-          
-          <div className="space-y-6">
-            <Card className="p-6 shadow-sm border border-[var(--border)]">
+
+          <div className="space-y-5">
+            <Card className="p-5 sm:p-6 rounded-3xl">
               <div className="flex items-center gap-3">
-                <ShieldCheck className="h-5 w-5 text-[var(--primary)]" />
-                <h2 className="font-bold text-[var(--foreground)]">Privacy preview</h2>
+                <div className="grid h-10 w-10 place-items-center rounded-2xl bg-[#FAF3EC] text-[#7A1835]">
+                  <IconShieldCheck className="h-5 w-5" />
+                </div>
+                <div>
+                  <h2 className="font-editorial-title text-lg font-bold text-[var(--foreground)]">Privacy preview</h2>
+                  <p className="text-xs text-[var(--muted)]">You control what is visible</p>
+                </div>
               </div>
-              <p className="mt-2 text-sm leading-6 text-[var(--muted)]">You control what is visible. Contact details stay private.</p>
-              <div className="mt-4 flex items-center justify-between rounded-xl bg-[var(--surface-muted)] p-4 border border-[var(--border)]">
-                <span className="text-sm font-semibold text-[var(--foreground)]">Discoverable</span>
-                <Badge tone="success">On</Badge>
+              <p className="mt-3 text-xs leading-relaxed text-[var(--muted-strong)]">
+                You control what information is displayed to prospective matches. Contact details and phone number stay strictly private until mutually accepted.
+              </p>
+              <div className="mt-4 flex items-center justify-between rounded-2xl bg-[#FAF3EC]/60 p-3.5 border border-[#EAD8C7]">
+                <span className="text-xs font-bold text-[#5C1027]">Profile Discoverable</span>
+                <Badge tone="accent" size="sm" className="font-bold">Active</Badge>
               </div>
             </Card>
           </div>
@@ -206,64 +251,56 @@ export function MyProfile() {
       )}
 
       {tab === 'about' && (
-        <Card className="p-6 sm:p-8 shadow-sm border border-[var(--border)]">
-          <div className="flex items-center justify-between border-b border-[var(--border)] pb-6">
+        <Card className="p-5 sm:p-6 rounded-3xl">
+          <div className="flex items-center justify-between border-b border-[#E9DDE0] pb-6">
             <div>
-              <h2 className="text-xl font-bold text-[var(--foreground)]">About You (Bio)</h2>
-              <p className="mt-1 text-sm text-[var(--muted)]">Keep your introduction natural and specific.</p>
+              <h2 className="font-editorial-title text-xl sm:text-2xl font-bold text-[var(--foreground)]">About You (Bio)</h2>
+              <p className="mt-1 text-xs sm:text-sm text-[var(--muted)]">Keep your introduction natural, respectful, and specific.</p>
             </div>
-            <Button variant="secondary"><Edit3 className="mr-2 h-4 w-4" /> Edit Bio</Button>
+            <Button variant="secondary" size="sm" className="rounded-2xl text-xs font-bold">
+              <IconEdit className="mr-2 h-4 w-4" /> Edit Bio
+            </Button>
           </div>
-          <div className="mt-6 rounded-2xl bg-[var(--surface-muted)] p-6 border border-[var(--border)]/50">
-            <p className="leading-relaxed text-[var(--muted-strong)]">
-              {profile.bio || "No bio added yet."}
+          <div className="mt-6 rounded-2xl bg-[#FFFDFB] p-6 border border-[#E9DDE0]/80">
+            <p className="leading-relaxed text-sm text-[var(--muted-strong)]">
+              {profile.bio || "No bio added yet. Write a thoughtful summary of yourself, your family values, and what you seek in a life partner."}
             </p>
           </div>
         </Card>
       )}
 
       {tab === 'preferences' && (
-        <Card className="p-6 sm:p-8 shadow-sm border border-[var(--border)]">
-          <div className="flex items-center justify-between border-b border-[var(--border)] pb-6">
-            <div>
-              <h2 className="text-xl font-bold text-[var(--foreground)]">Preferences</h2>
-            </div>
-            <Button variant="secondary"><Edit3 className="mr-2 h-4 w-4" /> Update Filters</Button>
-          </div>
-          <div className="mt-6 grid gap-5 sm:grid-cols-2">
-            {[
-              ['Location', profile.preferences?.city || 'Any'],
-              ['Education', profile.preferences?.education || 'Any']
-            ].map(([k, v]) => (
-              <div key={k} className="bg-[var(--surface-muted)] p-3 rounded-lg border border-[var(--border)]/50">
-                <p className="text-xs font-semibold text-[var(--muted)] uppercase tracking-wider">{k}</p>
-                <p className="mt-1 text-sm font-bold text-[var(--foreground)]">{v}</p>
-              </div>
-            ))}
-          </div>
-        </Card>
+        <div className="pt-2">
+          <PartnerPreferencesEditor isEmbedded={true} initialPreferences={profile.preferences} />
+        </div>
       )}
 
       {tab === 'album' && (
-        <Card className="p-6 sm:p-8 shadow-sm border border-[var(--border)]">
-          <div className="flex items-center justify-between border-b border-[var(--border)] pb-6 mb-6">
+        <Card className="p-5 sm:p-6 rounded-3xl">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b border-[var(--border)] pb-5 mb-5 gap-3">
             <div>
-              <h2 className="text-xl font-bold text-[var(--foreground)]">Photo Gallery</h2>
-              <p className="mt-1 text-sm text-[var(--muted)]">Manage your supplementary photos (Max 5).</p>
+              <h2 className="font-editorial-title text-xl sm:text-2xl font-bold text-[var(--foreground)]">Photo Gallery</h2>
+              <p className="mt-1 text-xs sm:text-sm text-[var(--muted)]">Manage your supplementary photos (Max 5 verified photos).</p>
             </div>
-            <Button variant="primary" onClick={() => fileInputRef.current?.click()} disabled={isUploading}>
-              {isUploading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Plus className="mr-2 h-4 w-4" />} 
+            <Button
+              variant="primary"
+              size="sm"
+              className="rounded-2xl text-xs font-bold shadow-xs active-press self-start sm:self-auto shrink-0"
+              onClick={() => fileInputRef.current?.click()}
+              disabled={isUploading}
+              leftIcon={isUploading ? <IconLoader2 className="h-4 w-4 animate-spin shrink-0" /> : <IconPlus className="h-4 w-4 shrink-0" />}
+            >
               {isUploading ? 'Uploading...' : 'Add Photo'}
             </Button>
-            <input 
-              type="file" 
+            <input
+              type="file"
               accept="image/*"
-              className="hidden" 
+              className="hidden"
               ref={fileInputRef}
               onChange={handlePhotoUpload}
             />
           </div>
-          
+
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
             {profile.photos && profile.photos.length > 0 ? profile.photos.map((photo: any, index: number) => (
               <div key={photo.id || index} className="relative aspect-[4/5] rounded-xl overflow-hidden border-2 border-[var(--border)] group">
@@ -271,16 +308,16 @@ export function MyProfile() {
                 {index === 0 && <div className="absolute top-2 left-2 bg-[var(--primary)] text-white text-[10px] font-bold px-2 py-1 rounded uppercase tracking-wider">Display Pic</div>}
                 <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
                   <Button variant="danger" className="h-8 w-8 p-0" onClick={() => handleDeletePhoto(photo.id)}>
-                    <Trash2 className="h-4 w-4" />
+                    <IconTrash className="h-4 w-4" />
                   </Button>
                 </div>
               </div>
             )) : null}
-            
+
             {/* Empty Slots Filler */}
             {Array.from({ length: Math.max(0, 5 - (profile.photos?.length || 0)) }).map((_, i) => (
               <div key={i} onClick={() => fileInputRef.current?.click()} className="aspect-[4/5] rounded-xl border-2 border-dashed border-[var(--border)] bg-[var(--surface-muted)] flex flex-col items-center justify-center hover:bg-[var(--primary)]/5 hover:border-[var(--primary)]/30 transition-colors cursor-pointer text-[var(--muted)]">
-                <ImageIcon className="h-8 w-8 mb-2 opacity-50" />
+                <IconPhoto className="h-8 w-8 mb-2 opacity-50" />
                 <span className="text-xs font-semibold">Upload Photo</span>
               </div>
             ))}

@@ -1,115 +1,93 @@
 "use client";
 
-import Link from "next/link";
+import React, { useState, useEffect } from "react";
+import { Header } from "./header";
+import { Sidebar } from "./sidebar";
+import { MobileNav } from "./mobile-nav";
 import { usePathname } from "next/navigation";
-import { Bell, Heart, Home, MessageCircle, Search, Settings, UserRound, LogOut } from "lucide-react";
-import { Logo } from "./logo";
-import { cn } from "@/lib/cn";
-import { authService } from "@/services";
-import { toast } from "@/lib/toast";
-const nav = [
-  { href: "/app", label: "Home", icon: Home },
-  { href: "/app/discover", label: "Discover", icon: Search },
-  { href: "/app/interests", label: "Interests", icon: Heart },
-  { href: "/app/messages", label: "Messages", icon: MessageCircle },
-  { href: "/app/profile", label: "Profile", icon: UserRound },
-];
+import { authService, notificationService, chatService } from "@/services";
 
-export function AppShell({ children }: { children: React.ReactNode }) {
+export interface AppShellProps {
+  children: React.ReactNode;
+}
+
+export function AppShell({ children }: AppShellProps) {
   const pathname = usePathname();
+  const [currentUser, setCurrentUser] = useState<any>(null);
+  const [unreadNotificationsCount, setUnreadNotificationsCount] = useState(0);
+  const [unreadMessagesCount, setUnreadMessagesCount] = useState(0);
+
+  // Load user data and counters
+  useEffect(() => {
+    // 1. Current user
+    authService
+      .getCurrentUser()
+      .then((user) => {
+        if (user) setCurrentUser(user);
+      })
+      .catch(() => {});
+
+    // 2. Notifications count
+    notificationService
+      .getNotifications()
+      .then((data) => {
+        if (Array.isArray(data)) {
+          const unread = data.filter((n) => !n.isRead).length;
+          setUnreadNotificationsCount(unread);
+        }
+      })
+      .catch(() => {});
+
+    // 3. Messages count
+    chatService
+      .getConversations()
+      .then((convos) => {
+        if (Array.isArray(convos)) {
+          const totalUnread = convos.reduce((sum, c) => sum + (c.unreadCount || 0), 0);
+          setUnreadMessagesCount(totalUnread);
+        }
+      })
+      .catch(() => {});
+  }, []);
 
   return (
-    <div className="min-h-screen">
-      <header className="sticky top-0 z-40 border-b border-[var(--border)]/80 bg-white/85 backdrop-blur-xl">
-        <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6">
-          <Logo href="/app" />
-          <div className="flex items-center gap-2">
-            <Link href="/app/notifications" className="focus-ring relative grid h-10 w-10 place-items-center rounded-xl text-[var(--muted-strong)] hover:bg-[var(--primary-lighter)]" aria-label="Notifications">
-              <Bell className="h-5 w-5" aria-hidden />
-              <span className="absolute right-2 top-2 h-2 w-2 rounded-full bg-primary" />
-            </Link>
-            <Link href="/app/profile" className="focus-ring flex items-center gap-2 rounded-xl p-1.5 hover:bg-[var(--primary-lighter)]">
-              <span className="grid h-9 w-9 place-items-center rounded-full bg-[var(--primary-light)] text-sm font-bold text-[var(--primary)]">S</span>
-              <span className="hidden text-sm font-semibold sm:block">My profile</span>
-            </Link>
-          </div>
-        </div>
-      </header>
-
-      <div className="mx-auto flex max-w-7xl gap-6 px-4 py-6 sm:px-6">
-        <aside className="hidden w-56 shrink-0 md:block">
-          <nav className="sticky top-24 space-y-1 rounded-2xl border border-emerald-500/20 bg-white p-3 shadow-[inset_0_2px_12px_rgba(16,185,129,0.12),0_8px_28px_rgba(16,185,129,0.06)]" aria-label="Application navigation">
-            {nav.map(({ href, label, icon: Icon }) => {
-              const isActive = href === "/app" ? pathname === "/app" : pathname.startsWith(href);
-              return (
-                <Link key={href} href={href} className={cn(
-                  "focus-ring flex items-center gap-3 rounded-xl px-3 py-3 text-sm font-medium transition-all duration-200 hover:bg-emerald-500/10 hover:text-emerald-800",
-                  isActive ? "bg-emerald-500/12 shadow-[inset_0_2px_4px_rgba(16,185,129,0.2),inset_0_0_0_1px_rgba(16,185,129,0.25)] text-emerald-900 font-semibold" : "text-[var(--muted-strong)]"
-                )}>
-                  <Icon className="h-5 w-5 transition-transform duration-200" aria-hidden />
-                  {label}
-                </Link>
-              );
-            })}
-            <Link href="/app/settings" className={cn(
-              "focus-ring flex items-center gap-3 rounded-xl px-3 py-3 text-sm font-medium transition-all duration-200 hover:bg-emerald-500/10 hover:text-emerald-800",
-              pathname.startsWith("/app/settings") ? "bg-emerald-500/12 shadow-[inset_0_2px_4px_rgba(16,185,129,0.2),inset_0_0_0_1px_rgba(16,185,129,0.25)] text-emerald-900 font-semibold" : "text-[var(--muted-strong)]"
-            )}>
-              <Settings className="h-5 w-5 transition-transform duration-200" aria-hidden />
-              Settings
-            </Link>
-            <Link href="/app/subscription" className={cn(
-              "focus-ring flex items-center gap-3 rounded-xl px-3 py-3 text-sm font-medium transition-all duration-200 hover:bg-emerald-500/10 hover:text-emerald-800",
-              pathname.startsWith("/app/subscription") ? "bg-emerald-500/12 shadow-[inset_0_2px_4px_rgba(16,185,129,0.2),inset_0_0_0_1px_rgba(16,185,129,0.25)] text-emerald-900 font-semibold" : "text-[var(--muted-strong)]"
-            )}>
-              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-5 w-5 transition-transform duration-200" aria-hidden><rect width="20" height="14" x="2" y="5" rx="2"/><line x1="2" x2="22" y1="10" y2="10"/></svg>
-              Subscription
-            </Link>
-            <Link href="/app/support" className={cn(
-              "focus-ring flex items-center gap-3 rounded-xl px-3 py-3 text-sm font-medium transition-all duration-200 hover:bg-emerald-500/10 hover:text-emerald-800",
-              pathname.startsWith("/app/support") ? "bg-emerald-500/12 shadow-[inset_0_2px_4px_rgba(16,185,129,0.2),inset_0_0_0_1px_rgba(16,185,129,0.25)] text-emerald-900 font-semibold" : "text-[var(--muted-strong)]"
-            )}>
-              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-5 w-5 transition-transform duration-200" aria-hidden><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" x2="12.01" y1="17" y2="17"/></svg>
-              Help & Support
-            </Link>
-            <div className="pt-2">
-              <button
-                type="button"
-                onClick={async () => {
-                  toast.info("Signing Out", "You have been signed out. Redirecting to login...");
-                  await authService.logout();
-                  setTimeout(() => {
-                    window.location.href = "/login";
-                  }, 800);
-                }}
-                className="focus-ring flex w-full items-center gap-3 rounded-xl px-3 py-3 text-sm font-medium text-red-600 transition-all duration-200 hover:bg-red-50 hover:text-red-700"
-              >
-                <LogOut className="h-5 w-5 transition-transform duration-200" aria-hidden />
-                Sign Out
-              </button>
-            </div>
-          </nav>
-        </aside>
-
-        <main className="min-w-0 flex-1 pb-24">{children}</main>
+    <div className="relative min-h-screen bg-[var(--background)] flex flex-col antialiased selection:bg-[var(--primary-light)] selection:text-[var(--primary-deep)]">
+      {/* Ambient Romantic Background Glows (Warm Ivory + Subtle Burgundy Accents) */}
+      <div
+        className="pointer-events-none fixed inset-0 z-0 overflow-hidden"
+        aria-hidden="true"
+      >
+        <div className="absolute -top-40 right-0 h-[36rem] w-[36rem] rounded-full bg-[radial-gradient(circle,rgba(122,24,53,0.045)_0%,transparent_70%)] blur-3xl" />
+        <div className="absolute top-1/3 -left-32 h-[30rem] w-[30rem] rounded-full bg-[radial-gradient(circle,rgba(216,178,140,0.05)_0%,transparent_70%)] blur-3xl" />
+        <div className="absolute bottom-0 right-1/4 h-[28rem] w-[28rem] rounded-full bg-[radial-gradient(circle,rgba(199,122,139,0.035)_0%,transparent_70%)] blur-3xl" />
       </div>
 
-      <nav className="fixed inset-x-0 bottom-0 z-40 border-t border-[var(--border)] bg-white/95 px-2 py-2 backdrop-blur-xl md:hidden" aria-label="Mobile navigation">
-        <div className="mx-auto grid max-w-md grid-cols-5">
-          {nav.map(({ href, label, icon: Icon }) => {
-            const isActive = href === "/app" ? pathname === "/app" : pathname.startsWith(href);
-            return (
-              <Link key={href} href={href} className={cn(
-                "focus-ring flex flex-col items-center gap-1 rounded-xl py-2 text-[11px] font-medium transition-colors",
-                isActive ? "text-[var(--primary)] font-semibold" : "text-[var(--muted-strong)] hover:text-[var(--primary)]"
-              )}>
-                <Icon className="h-5 w-5 transition-transform duration-200" aria-hidden />
-                {label}
-              </Link>
-            );
-          })}
-        </div>
-      </nav>
+      {/* Top Application Header */}
+      <Header user={currentUser} />
+
+      {/* Main Responsive Layout */}
+      <div className="relative z-10 mx-auto flex w-full max-w-[1600px] flex-1 gap-6 px-4 py-6 sm:px-6 lg:px-8 xl:px-10">
+        {/* Desktop & Tablet Sidebar */}
+        <Sidebar
+          unreadMessagesCount={unreadMessagesCount}
+          unreadNotificationsCount={unreadNotificationsCount}
+        />
+
+        {/* Dynamic Page Container */}
+        <main
+          key={pathname}
+          id="main-content"
+          className="min-w-0 flex-1 pb-24 md:pb-12 animate-page-enter"
+        >
+          {children}
+        </main>
+      </div>
+
+      {/* Mobile Bottom Navigation Dock */}
+      <MobileNav 
+        unreadMessagesCount={unreadMessagesCount}
+        unreadNotificationsCount={unreadNotificationsCount} 
+      />
     </div>
   );
 }
