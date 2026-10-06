@@ -1,7 +1,12 @@
 import { z } from "zod";
 import { toast } from "@/lib/toast";
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "";
+// In browser, use same-origin relative path so requests route through Next.js rewrites,
+// eliminating CORS preflight issues and third-party cookie restrictions.
+const API_URL =
+  typeof window !== "undefined"
+    ? "/api/v1"
+    : (process.env.NEXT_PUBLIC_API_URL || "https://matrimony-backend-taupe.vercel.app/api/v1");
 
 export class ApiError extends Error {
   constructor(
