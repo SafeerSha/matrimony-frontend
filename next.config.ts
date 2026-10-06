@@ -15,11 +15,11 @@ const securityHeaders = [
       "form-action 'self'",
       "frame-ancestors 'none'",
       "object-src 'none'",
-      `script-src 'self' ${process.env.NODE_ENV === 'development' ? "'unsafe-inline' 'unsafe-eval'" : ""}`,
+      "script-src 'self' 'unsafe-inline' 'unsafe-eval'",
       "style-src 'self' 'unsafe-inline'",
-      "img-src 'self' data: blob: http://localhost:4000 https://i.pravatar.cc https://images.unsplash.com",
+      "img-src 'self' data: blob: https: http://localhost:4000 http://localhost:8080 https://i.pravatar.cc https://images.unsplash.com",
       "font-src 'self' data:",
-      "connect-src 'self' http://localhost:4000 ws://localhost:4000",
+      "connect-src 'self' https: wss: http://localhost:4000 ws://localhost:4000 http://localhost:8080 ws://localhost:8080",
       "worker-src 'self' blob:",
       "manifest-src 'self'"
     ].join("; ")
