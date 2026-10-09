@@ -51,7 +51,7 @@ export function AppShell({ children }: AppShellProps) {
   }, []);
 
   return (
-    <div className="relative min-h-screen bg-[var(--background)] flex flex-col antialiased selection:bg-[var(--primary-light)] selection:text-[var(--primary-deep)]">
+    <div className="relative min-h-screen bg-transparent flex flex-col antialiased selection:bg-[var(--primary-light)] selection:text-[var(--primary-deep)]">
       {/* Ambient Romantic Background Glows (Warm Ivory + Subtle Burgundy Accents) */}
       <div
         className="pointer-events-none fixed inset-0 z-0 overflow-hidden"

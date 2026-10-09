@@ -27,8 +27,10 @@ export default function RegisterPage() {
       const params = new URLSearchParams(window.location.search);
       const qName = params.get("name");
       const qPhone = params.get("phone");
+      const qEmail = params.get("email");
       if (qName) setName(qName);
       if (qPhone) setPhone(qPhone);
+      if (qEmail) setEmail(qEmail);
     }
   }, []);
 
