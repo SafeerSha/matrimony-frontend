@@ -232,9 +232,7 @@ export default function OnboardingPage() {
                     {[
                       { id: 'friendship', label: 'Chat for Friendship', desc: 'Social interaction and making new friends.' },
                       { id: 'marriage', label: 'Chat for Marriage', desc: 'Marriage-oriented connections.' },
-                      { id: 'living_together', label: 'Chat for Living Together', desc: 'Living-together relationships.' },
-                      { id: 'malayalam_matrimony', label: 'Malayalam Matrimony', desc: 'Malayalam-speaking matrimonial connections.' },
-                      { id: 'telugu_matrimony', label: 'Telugu Matrimony', desc: 'Telugu-speaking matrimonial connections.' }
+                      { id: 'living_together', label: 'Chat for Living Together', desc: 'Living-together relationships.' }
                     ].map((cat) => (
                       <label 
                         key={cat.id}

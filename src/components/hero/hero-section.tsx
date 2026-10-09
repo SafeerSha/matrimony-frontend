@@ -82,7 +82,7 @@ export function HeroSection({ className = "" }: HeroSectionProps) {
     <section
       aria-labelledby="hero-heading"
       className={cn(
-        "relative overflow-hidden bg-transparent pt-4 pb-20 sm:pt-8 sm:pb-28 lg:pt-12 lg:pb-36 z-[1]",
+        "relative overflow-hidden bg-transparent pt-0 pb-16 sm:pt-8 sm:pb-28 lg:pt-12 lg:pb-36 z-[1]",
         className
       )}
     >
@@ -104,8 +104,86 @@ export function HeroSection({ className = "" }: HeroSectionProps) {
         aria-hidden="true"
       />
 
-      <div className="relative z-10 mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-        <div className="grid gap-12 lg:grid-cols-[1.08fr_0.92fr] lg:items-center lg:gap-16">
+      <div className="relative z-10 mx-auto max-w-7xl px-0 sm:px-6 lg:px-8">
+        {/* Mobile View Hero Layout: Edge-to-Edge Immersive Couple Visual with Mid-to-Bottom Overlay */}
+        <div className="block lg:hidden animate-hero-fade">
+          <div className="relative w-full overflow-hidden bg-neutral-950 min-h-[calc(100svh-20px)] sm:min-h-[780px] flex flex-col justify-between">
+            {/* Background Couple Image with Edge-to-Edge Fit */}
+            <div className="absolute inset-0 z-0">
+              <img
+                src="/images/hero-1.jpg"
+                alt="Couple celebrating meaningful connection"
+                className="h-full w-full object-cover object-[center_18%] scale-[1.02]"
+              />
+              {/* Top ambient shadow for transparent header & badges */}
+              <div className="absolute inset-x-0 top-0 h-36 bg-gradient-to-b from-black/75 via-black/30 to-transparent" />
+
+              {/* Bottom gradient overlay focused behind bottom text & buttons */}
+              <div className="absolute inset-x-0 bottom-0 h-[54%] bg-gradient-to-t from-[#100104] via-[#22030B]/95 via-42% to-transparent" />
+            </div>
+
+            {/* Top Bar Floating Badges (Positioned below transparent header) */}
+            <div className="relative z-10 px-5 pt-22 sm:pt-26 flex items-center justify-between gap-2">
+              <div className="inline-flex items-center gap-1.5 rounded-full border border-white/30 bg-black/60 backdrop-blur-md px-3.5 py-1.5 text-xs font-bold text-white shadow-[0_4px_12px_rgba(0,0,0,0.35)]">
+                <IconHeart className="h-3.5 w-3.5 text-rose-400 fill-rose-400" />
+                <span>Let's CHAT</span>
+              </div>
+
+              <div className="inline-flex items-center gap-1.5 rounded-full border border-white/30 bg-black/60 backdrop-blur-md px-3.5 py-1.5 text-[11px] font-bold text-white shadow-[0_4px_12px_rgba(0,0,0,0.35)]">
+                <span className="h-2 w-2 rounded-full bg-emerald-400 animate-pulse" />
+                <span>100% Verified</span>
+              </div>
+            </div>
+
+            {/* Bottom Content Overlay: Middle to Bottom */}
+            <div className="relative z-10 px-5 sm:px-6 pb-10 sm:pb-12 pt-6 flex flex-col gap-3.5">
+              {/* Main Headline */}
+              <h1 className="text-2.5xl sm:text-3xl font-bold tracking-tight text-white leading-[1.2] drop-shadow-[0_2px_10px_rgba(0,0,0,0.9)]">
+                Discover meaningful{" "}
+                <span className="text-amber-200 drop-shadow-[0_2px_12px_rgba(0,0,0,0.95)] inline-block font-extrabold">
+                  connections today.
+                </span>
+              </h1>
+
+              {/* Subtitle */}
+              <p className="text-xs sm:text-sm text-white/90 leading-relaxed font-normal drop-shadow-[0_1px_6px_rgba(0,0,0,0.85)]">
+                <strong className="font-semibold text-white">Register Free</strong> — Create your profile and discover meaningful connections for Friendship, Marriage, and Living Together.
+              </p>
+
+              {/* Action Buttons */}
+              <div className="flex flex-col gap-2.5 pt-1">
+                <Button
+                  href="#quick-register"
+                  onClick={handleScrollToRegister}
+                  variant="primary"
+                  className="w-full min-h-12 text-sm font-bold shadow-[0_10px_25px_rgba(225,29,72,0.35)] bg-gradient-to-r from-rose-700 via-rose-600 to-rose-700 hover:from-rose-600 hover:to-rose-500 text-white border border-rose-400/30"
+                  rightIcon={<IconArrowRight className="h-4 w-4" aria-hidden="true" />}
+                >
+                  Register Free
+                </Button>
+
+                <div className="grid grid-cols-2 gap-2.5">
+                  <Button
+                    href="/login"
+                    className="w-full min-h-11 px-3 text-xs font-semibold rounded-xl bg-white/15 hover:bg-white/25 text-white border border-white/20 backdrop-blur-md transition shadow-sm"
+                  >
+                    Login
+                  </Button>
+
+                  <Button
+                    href="#contact"
+                    className="w-full min-h-11 px-3 text-xs font-semibold rounded-xl bg-white/15 hover:bg-white/25 text-white border border-white/20 backdrop-blur-md transition shadow-sm"
+                  >
+                    Contact Us
+                  </Button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Desktop View Hero Layout (lg and above) */}
+        <div className="hidden lg:grid gap-12 lg:grid-cols-[1.08fr_0.92fr] lg:items-center lg:gap-16">
           {/* Left Content Column */}
           <div className="animate-hero-fade">
             <TrustBadge
@@ -125,7 +203,7 @@ export function HeroSection({ className = "" }: HeroSectionProps) {
             </h1>
 
             <p className="mt-5 sm:mt-6 max-w-xl text-base sm:text-lg leading-relaxed text-[var(--muted)] font-normal">
-              <strong className="font-semibold text-[var(--foreground)]">Register Free</strong> — Create your profile and discover meaningful connections. Explore categories for Friendship, Marriage, Living Together, Malayalam Matrimony, and Telugu Matrimony.
+              <strong className="font-semibold text-[var(--foreground)]">Register Free</strong> — Create your profile and discover meaningful connections. Explore categories for Friendship, Marriage, and Living Together.
             </p>
 
             {/* CTAs */}

@@ -12,16 +12,16 @@ const features = [
 export default function LandingPage() {
   return (
     <main className="relative min-h-screen overflow-x-hidden bg-[var(--background)]">
-      {/* Landing page top-corners botanical framing (framing header and hero corners seamlessly) */}
+      {/* Landing page top-corners botanical framing (hidden on mobile for seamless hero background) */}
       <BotanicalCornerDecorations
         showTopLeft={true}
         showTopRight={true}
         showBottomLeft={false}
         showBottomRight={false}
-        className="pointer-events-none absolute inset-x-0 top-0 h-[880px] z-[2]"
+        className="pointer-events-none absolute inset-x-0 top-0 h-[880px] z-[2] hidden sm:block"
       />
-      <header className="relative z-20 mx-auto flex h-20 max-w-[1600px] items-center justify-between px-4 sm:px-6 lg:px-8 xl:px-10">
-        <Logo />
+      <header className="absolute top-0 inset-x-0 z-30 mx-auto flex h-18 sm:h-20 max-w-[1600px] items-center justify-between px-4 sm:px-6 lg:px-8 xl:px-10 bg-transparent lg:relative">
+        <Logo lightOnMobile={true} />
         <div className="flex items-center gap-3">
           <a
             href="#contact"
@@ -31,7 +31,7 @@ export default function LandingPage() {
           </a>
           <Link
             href="/login"
-            className="focus-ring rounded-xl bg-[var(--primary)] px-5 py-2 text-sm font-semibold text-white shadow-[0_8px_16px_var(--primary-shadow)] hover:bg-[var(--primary-deep)] hover:-translate-y-0.5 transition-all duration-200"
+            className="focus-ring rounded-xl bg-[var(--primary)] hover:bg-[var(--primary-deep)] text-white border border-white/25 px-4 sm:px-5 py-2 text-xs sm:text-sm font-bold shadow-[0_4px_14px_rgba(0,0,0,0.3)] hover:-translate-y-0.5 transition-all duration-200"
           >
             Sign in
           </Link>

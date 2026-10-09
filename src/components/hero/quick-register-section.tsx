@@ -12,28 +12,21 @@ import {
   IconUser,
   IconPhone,
   IconCheck,
+  IconMail,
 } from "@tabler/icons-react";
 import { toast } from "@/lib/toast";
 import { cn } from "@/lib/cn";
 import { ScrollReveal } from "@/components/ui/scroll-reveal";
 
-const countryCodes = [
-  { code: "+91", label: "India (+91)" },
-  { code: "+971", label: "UAE (+971)" },
-  { code: "+1", label: "USA/CA (+1)" },
-  { code: "+44", label: "UK (+44)" },
-  { code: "+65", label: "Singapore (+65)" },
-  { code: "+966", label: "Saudi Arabia (+966)" },
-  { code: "+974", label: "Qatar (+974)" },
-  { code: "+61", label: "Australia (+61)" },
-];
-
 const profileForOptions = [
   { value: "Marriage", label: "Marriage" },
   { value: "Friendship", label: "Friendship" },
   { value: "Living Together", label: "Living Together" },
-  { value: "Malayalam Matrimony", label: "Malayalam Matrimony" },
-  { value: "Telugu Matrimony", label: "Telugu Matrimony" },
+];
+
+const lookingInOptions = [
+  { value: "Kerala", label: "Kerala" },
+  { value: "Telugu", label: "Telugu" },
 ];
 
 const createdByOptions = [
@@ -137,89 +130,14 @@ function ModernSelect({
   );
 }
 
-// Modern Country Code Dropdown
-function ModernCountrySelect({
-  value,
-  onChange,
-  options,
-}: {
-  value: string;
-  onChange: (value: string) => void;
-  options: { code: string; label: string }[];
-}) {
-  const [isOpen, setIsOpen] = useState(false);
-  const containerRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    function handleClickOutside(event: MouseEvent) {
-      if (containerRef.current && !containerRef.current.contains(event.target as Node)) {
-        setIsOpen(false);
-      }
-    }
-    if (isOpen) {
-      document.addEventListener("mousedown", handleClickOutside);
-      return () => document.removeEventListener("mousedown", handleClickOutside);
-    }
-  }, [isOpen]);
-
-  return (
-    <div ref={containerRef} className="relative w-20 sm:w-22 shrink-0">
-      <button
-        type="button"
-        onClick={() => setIsOpen(!isOpen)}
-        className={cn(
-          "focus-ring h-[52px] w-full flex items-center justify-between rounded-xl border border-[var(--border)] bg-[var(--surface-muted)]/40 px-2.5 py-3 text-xs font-bold text-[var(--foreground)] transition hover:border-[var(--border-strong)] cursor-pointer",
-          isOpen && "border-[var(--primary)] ring-4 ring-[var(--primary)]/10"
-        )}
-      >
-        <span>{value}</span>
-        <IconChevronDown
-          className={cn(
-            "h-3.5 w-3.5 text-[var(--muted)] transition-transform duration-200 shrink-0",
-            isOpen && "rotate-180 text-[var(--primary)]"
-          )}
-        />
-      </button>
-
-      {isOpen && (
-        <div className="absolute top-full left-0 mt-1.5 z-50 w-52 overflow-hidden rounded-2xl border border-[var(--border)] bg-white/98 backdrop-blur-xl p-1.5 shadow-[0_16px_40px_rgba(40,10,20,0.14)] animate-in fade-in zoom-in-95 duration-150">
-          <div className="max-h-60 overflow-y-auto space-y-0.5 custom-scrollbar">
-            {options.map((opt) => {
-              const isSelected = opt.code === value;
-              return (
-                <button
-                  key={opt.code}
-                  type="button"
-                  onClick={() => {
-                    onChange(opt.code);
-                    setIsOpen(false);
-                  }}
-                  className={cn(
-                    "flex w-full items-center justify-between px-3 py-2 rounded-xl text-xs font-medium transition-all text-left cursor-pointer",
-                    isSelected
-                      ? "bg-[var(--primary-light)]/90 text-[var(--primary)] font-bold shadow-2xs"
-                      : "text-[var(--foreground)] hover:bg-[var(--surface-muted)] hover:text-[var(--primary)]"
-                  )}
-                >
-                  <span className="truncate">{opt.label}</span>
-                  {isSelected && <IconCheck className="h-3.5 w-3.5 text-[var(--primary)] shrink-0 ml-1.5" />}
-                </button>
-              );
-            })}
-          </div>
-        </div>
-      )}
-    </div>
-  );
-}
-
 export function QuickRegisterSection() {
   const router = useRouter();
   const [profileFor, setProfileFor] = useState("Marriage");
+  const [lookingIn, setLookingIn] = useState("Kerala");
   const [createdBy, setCreatedBy] = useState("Myself");
   const [gender, setGender] = useState("Female");
   const [name, setName] = useState("");
-  const [countryCode, setCountryCode] = useState("+91");
+  const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
   const [error, setError] = useState<string | null>(null);
 
@@ -242,20 +160,28 @@ export function QuickRegisterSection() {
       return;
     }
 
-    const cleanPhone = phone.replace(/\D/g, "");
-    if (!cleanPhone || cleanPhone.length < 8) {
-      setError("Please enter a valid mobile number");
+    const trimmedEmail = email.trim();
+    if (!trimmedEmail || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmedEmail)) {
+      setError("Please enter a valid email address");
       return;
     }
 
-    const fullPhone = `${countryCode} ${cleanPhone}`;
+    const cleanPhone = phone.replace(/\D/g, "");
+    if (!cleanPhone || cleanPhone.length !== 10) {
+      setError("Please enter a valid 10-digit mobile number");
+      return;
+    }
+
+    const fullPhone = `+91 ${cleanPhone}`;
     const paramsObj: Record<string, string> = {
       name: trimmedName,
+      email: trimmedEmail,
       phone: fullPhone,
       profileFor,
       category: profileFor,
       gender,
       createdBy: isByLocked ? "Myself" : createdBy,
+      ...(profileFor === "Marriage" ? { lookingIn } : {}),
     };
 
     const params = new URLSearchParams(paramsObj);
@@ -329,17 +255,17 @@ export function QuickRegisterSection() {
               </span>
             </div>
 
-            {/* Form Fields: Single Horizontal Row on Desktop */}
-            <form onSubmit={handleSubmit} className="p-8 sm:p-10 lg:p-11">
+            {/* Form Fields: Two Balanced Rows on Desktop */}
+            <form onSubmit={handleSubmit} className="p-6 sm:p-8 lg:p-9 xl:p-10">
               {error && (
                 <div className="mb-5 rounded-xl border border-rose-200 bg-rose-50 px-4 py-2.5 text-xs font-medium text-rose-700">
                   {error}
                 </div>
               )}
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-[1fr_0.8fr_0.75fr_1.15fr_1.65fr_1fr] gap-4 sm:gap-5 items-end">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-5 items-end">
                 {/* 1. Profile Created For */}
-                <div>
+                <div className={cn(profileFor !== "Marriage" && "lg:col-span-2")}>
                   <label className="block text-[11px] font-bold uppercase tracking-wider text-[var(--muted)] mb-2">
                     Profile created for
                   </label>
@@ -349,6 +275,20 @@ export function QuickRegisterSection() {
                     options={profileForOptions}
                   />
                 </div>
+
+                {/* Community (Shown when Marriage is selected) */}
+                {profileFor === "Marriage" && (
+                  <div>
+                    <label className="block text-[11px] font-bold uppercase tracking-wider text-[var(--muted)] mb-2">
+                      Community
+                    </label>
+                    <ModernSelect
+                      value={lookingIn}
+                      onChange={setLookingIn}
+                      options={lookingInOptions}
+                    />
+                  </div>
+                )}
 
                 {/* 2. Created By field */}
                 <div>
@@ -402,36 +342,53 @@ export function QuickRegisterSection() {
                   </div>
                 </div>
 
-                {/* 5. Mobile Number */}
+                {/* 5. Email Address */}
+                <div>
+                  <label className="block text-[11px] font-bold uppercase tracking-wider text-[var(--muted)] mb-2">
+                    Email Address
+                  </label>
+                  <div className="relative">
+                    <input
+                      type="email"
+                      placeholder="e.g. anand@example.com"
+                      value={email}
+                      onChange={(e) => {
+                        setEmail(e.target.value);
+                        if (error) setError(null);
+                      }}
+                      className="focus-ring h-[52px] w-full rounded-xl border border-[var(--border)] bg-white px-3.5 py-3 pl-9 text-sm font-medium text-[var(--foreground)] placeholder:text-[var(--muted)] transition hover:border-[var(--border-strong)]"
+                    />
+                    <IconMail className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-[var(--muted)]" />
+                  </div>
+                </div>
+
+                {/* 6. Mobile Number */}
                 <div>
                   <label className="block text-[11px] font-bold uppercase tracking-wider text-[var(--muted)] mb-2">
                     Mobile Number
                   </label>
-                  <div className="flex gap-2">
-                    <ModernCountrySelect
-                      value={countryCode}
-                      onChange={setCountryCode}
-                      options={countryCodes}
-                    />
-
-                    <div className="relative flex-1">
-                      <input
-                        type="tel"
-                        placeholder="Enter mobile number"
-                        value={phone}
-                        onChange={(e) => {
-                          setPhone(e.target.value);
-                          if (error) setError(null);
-                        }}
-                        className="focus-ring h-[52px] w-full rounded-xl border border-[var(--border)] bg-white px-3.5 py-3 pl-9 text-sm font-medium text-[var(--foreground)] placeholder:text-[var(--muted)] transition hover:border-[var(--border-strong)]"
-                      />
-                      <IconPhone className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-[var(--muted)]" />
+                  <div className="relative flex items-center">
+                    <div className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 flex items-center pr-2.5 border-r border-[var(--border)] select-none">
+                      <span className="text-sm font-bold text-[var(--primary)]">+91</span>
                     </div>
+                    <input
+                      type="tel"
+                      maxLength={10}
+                      placeholder="98765 43210"
+                      value={phone}
+                      onChange={(e) => {
+                        const val = e.target.value.replace(/\D/g, "").slice(0, 10);
+                        setPhone(val);
+                        if (error) setError(null);
+                      }}
+                      className="focus-ring h-[52px] w-full rounded-xl border border-[var(--border)] bg-white py-3 pl-16 pr-9 text-sm font-medium text-[var(--foreground)] placeholder:text-[var(--muted)] transition hover:border-[var(--border-strong)]"
+                    />
+                    <IconPhone className="pointer-events-none absolute right-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-[var(--muted)]" />
                   </div>
                 </div>
 
-                {/* 6. Submit CTA Button */}
-                <div className="sm:col-span-2 lg:col-span-1">
+                {/* 7. Submit CTA Button */}
+                <div>
                   <span className="hidden lg:block text-[11px] font-bold uppercase tracking-wider text-transparent mb-2 select-none">
                     Submit
                   </span>
@@ -445,8 +402,8 @@ export function QuickRegisterSection() {
                 </div>
               </div>
 
-              {/* Bottom Footer Info: Disclaimer & Trust */}
-              <div className="mt-7 pt-4 border-t border-[var(--border)]/70 flex flex-col sm:flex-row items-center justify-between gap-3 text-[11px] text-[var(--muted)]">
+              {/* Bottom Footer Info: Disclaimer & Trust Checkmarks */}
+              <div className="mt-7 pt-4 border-t border-[var(--border)]/70 flex flex-col md:flex-row items-center justify-between gap-3 text-[11px] text-[var(--muted)]">
                 <p>
                   *By clicking Let's Begin, I agree to the{" "}
                   <Link href="/terms" className="underline hover:text-[var(--primary)]">
@@ -458,9 +415,16 @@ export function QuickRegisterSection() {
                   </Link>
                 </p>
 
-                <div className="flex items-center gap-1.5 text-[var(--muted-strong)] font-medium">
-                  <IconShieldCheck className="h-4 w-4 text-emerald-600 shrink-0" />
-                  <span>100% Privacy & Verification Guarantee</span>
+                <div className="flex flex-wrap items-center justify-center gap-3 sm:gap-4 text-xs font-semibold text-[var(--foreground)]/80">
+                  <span className="flex items-center gap-1.5">
+                    <span className="text-emerald-600 font-bold">✓</span> Privacy-first
+                  </span>
+                  <span className="flex items-center gap-1.5">
+                    <span className="text-emerald-600 font-bold">✓</span> Verified profiles
+                  </span>
+                  <span className="flex items-center gap-1.5">
+                    <span className="text-emerald-600 font-bold">✓</span> Mobile ready
+                  </span>
                 </div>
               </div>
             </form>
