@@ -111,7 +111,7 @@ export function HeroSection({ className = "" }: HeroSectionProps) {
             {/* Background Couple Image with Edge-to-Edge Fit */}
             <div className="absolute inset-0 z-0">
               <img
-                src="/images/hero-1.jpg"
+                src="/images/hero-mobile-1.jpg"
                 alt="Couple celebrating meaningful connection"
                 className="h-full w-full object-cover object-[center_18%] scale-[1.02]"
               />
@@ -156,7 +156,7 @@ export function HeroSection({ className = "" }: HeroSectionProps) {
                   href="#quick-register"
                   onClick={handleScrollToRegister}
                   variant="primary"
-                  className="w-full min-h-12 text-sm font-bold shadow-[0_10px_25px_rgba(225,29,72,0.35)] bg-gradient-to-r from-rose-700 via-rose-600 to-rose-700 hover:from-rose-600 hover:to-rose-500 text-white border border-rose-400/30"
+                  className="w-full min-h-12 text-sm font-bold shadow-[0_12px_28px_rgba(122,20,40,0.45)] bg-gradient-to-r from-[#7A1428] via-[#8C1D33] to-[#7A1428] hover:from-[#8C1D33] hover:to-[#6E1224] text-white border border-white/20 active:scale-[0.99] transition-all"
                   rightIcon={<IconArrowRight className="h-4 w-4" aria-hidden="true" />}
                 >
                   Register Free
