@@ -1,0 +1,43 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64">
+  <defs>
+    <!-- Background burgundy gradient matching ShaadiChat logo emblem -->
+    <linearGradient id="burgundyGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#931B39" />
+      <stop offset="45%" stop-color="#741129" />
+      <stop offset="100%" stop-color="#450716" />
+    </linearGradient>
+
+    <!-- Glass reflection highlight -->
+    <linearGradient id="glassReflection" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#FFFFFF" stop-opacity="0.28" />
+      <stop offset="100%" stop-color="#FFFFFF" stop-opacity="0.0" />
+    </linearGradient>
+
+    <!-- Subtle drop shadow on heart -->
+    <filter id="heartShadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="1.5" stdDeviation="1.2" flood-color="#000000" flood-opacity="0.35" />
+    </filter>
+
+    <!-- Sparkle glow -->
+    <filter id="sparkleGlow" x="-30%" y="-30%" width="160%" height="160%">
+      <feDropShadow dx="0" dy="0" stdDeviation="1.2" flood-color="#F9E2B2" flood-opacity="0.8" />
+    </filter>
+  </defs>
+
+  <!-- Base Squircle with Burgundy Gradient & Champagne Border -->
+  <rect x="2" y="2" width="60" height="60" rx="17" fill="url(#burgundyGrad)" stroke="#EAD8C7" stroke-width="1.2" stroke-opacity="0.35" />
+
+  <!-- Inner Subtle Ring -->
+  <rect x="3.2" y="3.2" width="57.6" height="57.6" rx="15.8" fill="none" stroke="#FFFFFF" stroke-width="0.8" stroke-opacity="0.22" />
+
+  <!-- Glass Top Reflection Highlight -->
+  <path d="M3.2 18 C3.2 9.5 9.5 3.2 18 3.2 L46 3.2 C54.5 3.2 60.8 9.5 60.8 18 L60.8 28 C45 32 19 32 3.2 28 Z" fill="url(#glassReflection)" />
+
+  <!-- Central Heart -->
+  <g transform="translate(15.2, 15.6) scale(1.4)" filter="url(#heartShadow)">
+    <path d="M19.5 12.572l-7.5 7.428l-7.5 -7.428a5 5 0 1 1 7.5 -6.566a5 5 0 1 1 7.5 6.572" fill="#FFFFFF" stroke="#FFFFFF" stroke-width="0.8" stroke-linecap="round" stroke-linejoin="round" />
+  </g>
+
+  <!-- Champagne Gold Sparkle ✦ in top right -->
+  <path d="M44.5 13 C44.5 16.5 41.5 18.5 38.5 18.5 C41.5 18.5 44.5 20.5 44.5 24 C44.5 20.5 47.5 18.5 50.5 18.5 C47.5 18.5 44.5 16.5 44.5 13 Z" fill="#F9E2B2" filter="url(#sparkleGlow)" />
+</svg>

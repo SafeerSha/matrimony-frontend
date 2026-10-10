@@ -460,14 +460,13 @@ export default function DiscoverPage() {
   );
 
   return (
-    <div className="space-y-3.5 sm:space-y-6 pb-3 sm:pb-12">
+    <div className="space-y-2.5 sm:space-y-4 pb-2 sm:pb-8">
       {/* ======================================================== */}
       {/* 1. TOP HEADER & VIEW MODE CONTROLS                       */}
       {/* ======================================================== */}
-      <div className="flex flex-col gap-3 sm:gap-4 animate-content-appear stagger-1">
+      <div className="flex flex-col gap-2 sm:gap-3 animate-content-appear stagger-1">
         <SectionHeader
           eyebrow="Discovery"
-          title="Explore verified profiles"
         />
 
         <div className="flex items-center justify-between w-full gap-2 shrink-0">

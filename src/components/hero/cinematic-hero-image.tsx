@@ -14,12 +14,16 @@ export interface CinematicHeroImageProps {
   images: HeroImageData[];
   className?: string;
   hoveredProfile?: string | null;
+  activeSlideIndex?: number;
+  onHoverChange?: (isHovered: boolean) => void;
 }
 
 export function CinematicHeroImage({
   images,
   className = "",
   hoveredProfile = null,
+  activeSlideIndex,
+  onHoverChange,
 }: CinematicHeroImageProps) {
   const [activeId, setActiveId] = useState<string>(images[0]?.id || "hero-1");
   const [previousId, setPreviousId] = useState<string | null>(null);
@@ -55,12 +59,26 @@ export function CinematicHeroImage({
     };
   }, [images]);
 
-  // Determine which image should be target based on user hover state
+  const [autoIndex, setAutoIndex] = useState<number>(0);
+
+  // Automatically cycle through category images if not controlled by parent
+  useEffect(() => {
+    if (activeSlideIndex !== undefined) return;
+    if (isHeroHovered || Boolean(hoveredProfile)) return;
+
+    const timer = setInterval(() => {
+      setAutoIndex((prev) => (prev + 1) % 3);
+    }, 4500);
+
+    return () => clearInterval(timer);
+  }, [activeSlideIndex, isHeroHovered, hoveredProfile]);
+
+  // Determine which image should be target based on user hover state or active category
   const targetId = (() => {
     if (hoveredProfile === "ananya") return "hero-2";
     if (hoveredProfile === "rohan") return "hero-3";
-    if (isHeroHovered) return "hero-4";
-    return images[0]?.id || "hero-1";
+    const selectedIdx = activeSlideIndex !== undefined ? activeSlideIndex : autoIndex;
+    return images[selectedIdx]?.id || images[0]?.id || "hero-1";
   })();
 
   // Trigger smooth crossfade whenever targetId changes
@@ -96,12 +114,15 @@ export function CinematicHeroImage({
   const handleMouseEnter = () => {
     if (!hasFinePointer) return;
     setIsHeroHovered(true);
+    onHoverChange?.(true);
   };
 
   const handleMouseLeave = () => {
     if (!hasFinePointer) return;
     setIsHeroHovered(false);
+    onHoverChange?.(false);
   };
+
 
   // Optional tap handler for mobile/touch devices (cycles through images safely without scroll interference)
   const handleTap = () => {

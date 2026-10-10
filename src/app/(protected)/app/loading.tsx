@@ -1,5 +1,5 @@
 import { PageLoader } from "@/components/ui/page-loader";
 
 export default function AppLoading() {
-  return <PageLoader fullScreen text="Loading Let's CHAT..." />;
+  return <PageLoader fullScreen text="Loading ShaadiChat..." />;
 }

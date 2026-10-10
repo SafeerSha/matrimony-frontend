@@ -74,7 +74,7 @@ function SettingsContent() {
     },
     {
       id: 'sess-2',
-      device: 'Let’s CHAT iOS Mobile App',
+      device: 'ShaadiChat iOS Mobile App',
       location: 'iPhone 15 Pro • Kochi',
       isCurrent: false,
       time: '2 hours ago',
