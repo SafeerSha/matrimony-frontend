@@ -20,9 +20,15 @@ export default function LandingPage() {
         showBottomRight={false}
         className="pointer-events-none absolute inset-x-0 top-0 h-[880px] z-[2] hidden sm:block"
       />
-      <header className="absolute top-0 inset-x-0 z-30 mx-auto flex h-18 sm:h-20 max-w-[1600px] items-center justify-between px-4 sm:px-6 lg:px-8 xl:px-10 bg-transparent lg:relative">
+      <header className="absolute top-0 inset-x-0 w-full z-30 mx-auto flex h-16 sm:h-20 max-w-[1600px] items-center justify-between px-3 sm:px-6 lg:px-8 xl:px-10 bg-transparent lg:relative">
         <Logo lightOnMobile={true} />
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2 sm:gap-3 shrink-0">
+          {/* 100% Verified badge in top header on mobile (replacing Sign in) */}
+          <div className="inline-flex lg:hidden items-center gap-1.5 rounded-full border border-white/30 bg-black/60 backdrop-blur-md px-2.5 py-1 text-[10.5px] font-bold text-white shadow-sm shrink-0 whitespace-nowrap">
+            <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse shrink-0" />
+            <span className="whitespace-nowrap">100% Verified</span>
+          </div>
+
           <a
             href="#contact"
             className="focus-ring hidden sm:inline-flex rounded-xl bg-white/70 backdrop-blur-md border border-[var(--border)] px-4 py-2 text-sm font-semibold text-[var(--foreground)] hover:text-[var(--primary)] hover:bg-white/95 shadow-sm transition"
@@ -31,7 +37,7 @@ export default function LandingPage() {
           </a>
           <Link
             href="/login"
-            className="focus-ring rounded-xl bg-[var(--primary)] hover:bg-[var(--primary-deep)] text-white border border-white/25 px-4 sm:px-5 py-2 text-xs sm:text-sm font-bold shadow-[0_4px_14px_rgba(0,0,0,0.3)] hover:-translate-y-0.5 transition-all duration-200"
+            className="focus-ring hidden lg:inline-flex rounded-xl bg-[var(--primary)] hover:bg-[var(--primary-deep)] text-white border border-white/25 px-4 sm:px-5 py-2 text-xs sm:text-sm font-bold shadow-[0_4px_14px_rgba(0,0,0,0.3)] hover:-translate-y-0.5 transition-all duration-200"
           >
             Sign in
           </Link>
@@ -74,7 +80,7 @@ export default function LandingPage() {
               </p>
               <div className="mt-8 flex flex-wrap items-center justify-center gap-3.5">
                 <a
-                  href="mailto:care@letschat.com"
+                  href="mailto:care@shaadichat.com"
                   className="focus-ring inline-flex min-h-12 items-center gap-2 rounded-xl bg-[var(--primary)] px-6 text-sm font-semibold text-white shadow-[0_10px_25px_var(--primary-shadow)] hover:bg-[var(--primary-deep)] transition"
                 >
                   Email us
@@ -92,7 +98,7 @@ export default function LandingPage() {
       </section>
 
       <footer className="mx-auto flex max-w-[1600px] flex-wrap items-center justify-center gap-x-8 gap-y-2 px-4 py-8 text-sm text-[var(--muted)] sm:px-6 xl:px-10">
-        <span>© 2026 Let’s CHAT .Com</span>
+        <span>© 2026 ShaadiChat</span>
         <div className="flex gap-4"><Link href="/privacy" className="hover:text-[var(--primary)]">Privacy</Link><Link href="/terms" className="hover:text-[var(--primary)]">Terms</Link></div>
       </footer>
     </main>

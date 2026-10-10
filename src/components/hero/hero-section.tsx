@@ -1,7 +1,7 @@
 "use client";
 
-import { IconArrowRight, IconHeart, IconMessage } from '@tabler/icons-react';
-import { useState } from "react";
+import { IconArrowRight, IconHeart, IconMessage, IconUsers, IconHomeHeart } from '@tabler/icons-react';
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { TrustBadge } from "./trust-badge";
 import { TrustFeature } from "./trust-feature";
@@ -36,11 +36,57 @@ const sampleProfiles: [HeroProfile, HeroProfile] = [
   },
 ];
 
+const HERO_SLIDES = [
+  {
+    id: "marriage",
+    category: "Marriage",
+    title: "Chat for Marriage",
+    subtitle: "Values-aligned & verified",
+    src: "/images/hero-mobile-1.jpg",
+    desktopSrc: "/images/hero-1.jpg",
+    alt: "Smiling Indian couple in traditional wedding attire celebrating marriage",
+    objectPosition: "center 18%",
+    iconBoxClass: "bg-rose-50 text-rose-700 ring-rose-200/70",
+  },
+  {
+    id: "friendship",
+    category: "Friendship",
+    title: "Chat for Friendship",
+    subtitle: "Meaningful bonds & shared vibes",
+    src: "/images/hero-friendship.jpg",
+    desktopSrc: "/images/hero-friendship.jpg",
+    alt: "Young Indian friends laughing together at a sunny cafe terrace representing Friendship",
+    objectPosition: "center 22%",
+    iconBoxClass: "bg-amber-50 text-amber-700 ring-amber-200/70",
+  },
+  {
+    id: "living-together",
+    category: "Living Together",
+    title: "Chat for Living Together",
+    subtitle: "Modern partners & compatible living",
+    src: "/images/hero-living-together.jpg",
+    desktopSrc: "/images/hero-living-together.jpg",
+    alt: "Modern Indian couple in cozy contemporary home representing Living Together",
+    objectPosition: "center 18%",
+    iconBoxClass: "bg-emerald-50 text-emerald-700 ring-emerald-200/70",
+  },
+];
+
 const HERO_IMAGES: HeroImageData[] = [
   {
     id: "hero-1",
     src: "/images/hero-1.jpg",
-    alt: "A smiling Indian couple in tasteful contemporary attire celebrating their connection",
+    alt: "Smiling Indian couple in traditional wedding attire celebrating marriage",
+  },
+  {
+    id: "hero-friendship",
+    src: "/images/hero-friendship.jpg",
+    alt: "Young Indian friends laughing together at a sunny cafe terrace representing Friendship",
+  },
+  {
+    id: "hero-living-together",
+    src: "/images/hero-living-together.jpg",
+    alt: "Modern Indian couple in contemporary home representing Living Together",
   },
   {
     id: "hero-2",
@@ -52,15 +98,24 @@ const HERO_IMAGES: HeroImageData[] = [
     src: "/images/hero-3.jpg",
     alt: "Rohan in dignified forest green Nehru jacket and cream kurta on palace veranda",
   },
-  {
-    id: "hero-4",
-    src: "/images/hero-4.jpg",
-    alt: "Joyful Indian couple candidly laughing together in warm sunset golden hour",
-  },
 ];
 
 export function HeroSection({ className = "" }: HeroSectionProps) {
   const [hoveredProfile, setHoveredProfile] = useState<string | null>(null);
+  const [activeSlideIndex, setActiveSlideIndex] = useState<number>(0);
+  const [isHeroHovered, setIsHeroHovered] = useState<boolean>(false);
+
+  // Automatically cycle through Marriage, Friendship, and Living Together every 4.5 seconds with smooth fade
+  useEffect(() => {
+    if (hoveredProfile || isHeroHovered) return;
+
+    const timer = setInterval(() => {
+      setActiveSlideIndex((prev) => (prev + 1) % HERO_SLIDES.length);
+    }, 4500);
+
+    return () => clearInterval(timer);
+  }, [hoveredProfile, isHeroHovered]);
+
 
   const handleScrollToRegister = (e: React.MouseEvent) => {
     e.preventDefault();
@@ -82,7 +137,7 @@ export function HeroSection({ className = "" }: HeroSectionProps) {
     <section
       aria-labelledby="hero-heading"
       className={cn(
-        "relative overflow-hidden bg-transparent pt-0 pb-16 sm:pt-8 sm:pb-28 lg:pt-12 lg:pb-36 z-[1]",
+        "relative overflow-hidden bg-transparent pt-0 pb-0 sm:pt-8 sm:pb-28 lg:pt-12 lg:pb-36 z-[1]",
         className
       )}
     >
@@ -105,43 +160,72 @@ export function HeroSection({ className = "" }: HeroSectionProps) {
       />
 
       <div className="relative z-10 mx-auto max-w-7xl px-0 sm:px-6 lg:px-8">
-        {/* Mobile View Hero Layout: Edge-to-Edge Immersive Couple Visual with Mid-to-Bottom Overlay */}
+        {/* Mobile View Hero Layout: Edge-to-Edge Immersive Visual with Auto-Switching Fade Transitions */}
         <div className="block lg:hidden animate-hero-fade">
-          <div className="relative w-full overflow-hidden bg-neutral-950 min-h-[calc(100svh-20px)] sm:min-h-[780px] flex flex-col justify-between">
-            {/* Background Couple Image with Edge-to-Edge Fit */}
-            <div className="absolute inset-0 z-0">
-              <img
-                src="/images/hero-mobile-1.jpg"
-                alt="Couple celebrating meaningful connection"
-                className="h-full w-full object-cover object-[center_18%] scale-[1.02]"
-              />
+          <div className="relative w-full overflow-hidden bg-neutral-950 h-[100dvh] min-h-[100dvh] flex flex-col justify-end">
+            {/* Background Couple Images with Smooth Crossfade Transition */}
+            <div className="absolute inset-0 z-0 overflow-hidden bg-neutral-950">
+              {HERO_SLIDES.map((slide, idx) => {
+                const isActive = idx === activeSlideIndex;
+                return (
+                  <div
+                    key={slide.id}
+                    className={cn(
+                      "absolute inset-0 transition-opacity duration-1000 ease-in-out",
+                      isActive ? "opacity-100 z-[1]" : "opacity-0 z-0 pointer-events-none"
+                    )}
+                  >
+                    <img
+                      src={slide.src}
+                      alt={slide.alt}
+                      className={cn(
+                        "h-full w-full object-cover transition-transform duration-[5500ms] ease-out",
+                        isActive ? "scale-105" : "scale-100"
+                      )}
+                      style={{ objectPosition: slide.objectPosition }}
+                    />
+                  </div>
+                );
+              })}
+
               {/* Top ambient shadow for transparent header & badges */}
-              <div className="absolute inset-x-0 top-0 h-36 bg-gradient-to-b from-black/75 via-black/30 to-transparent" />
+              <div className="absolute inset-x-0 top-0 h-36 bg-gradient-to-b from-black/75 via-black/30 to-transparent z-[2] pointer-events-none" />
 
               {/* Bottom gradient overlay focused behind bottom text & buttons */}
-              <div className="absolute inset-x-0 bottom-0 h-[54%] bg-gradient-to-t from-[#100104] via-[#22030B]/95 via-42% to-transparent" />
-            </div>
-
-            {/* Top Bar Floating Badges (Positioned below transparent header) */}
-            <div className="relative z-10 px-5 pt-22 sm:pt-26 flex items-center justify-between gap-2">
-              <div className="inline-flex items-center gap-1.5 rounded-full border border-white/30 bg-black/60 backdrop-blur-md px-3.5 py-1.5 text-xs font-bold text-white shadow-[0_4px_12px_rgba(0,0,0,0.35)]">
-                <IconHeart className="h-3.5 w-3.5 text-rose-400 fill-rose-400" />
-                <span>Let's CHAT</span>
-              </div>
-
-              <div className="inline-flex items-center gap-1.5 rounded-full border border-white/30 bg-black/60 backdrop-blur-md px-3.5 py-1.5 text-[11px] font-bold text-white shadow-[0_4px_12px_rgba(0,0,0,0.35)]">
-                <span className="h-2 w-2 rounded-full bg-emerald-400 animate-pulse" />
-                <span>100% Verified</span>
-              </div>
+              <div className="absolute inset-x-0 bottom-0 h-[60%] bg-gradient-to-t from-[#100104] via-[#22030B]/95 via-42% to-transparent z-[2] pointer-events-none" />
             </div>
 
             {/* Bottom Content Overlay: Middle to Bottom */}
-            <div className="relative z-10 px-5 sm:px-6 pb-10 sm:pb-12 pt-6 flex flex-col gap-3.5">
+            <div className="relative z-10 px-5 sm:px-6 pb-7 sm:pb-9 pt-4 flex flex-col gap-3">
+              {/* Category indicator & Slide dots */}
+              <div className="flex items-center justify-between">
+                <span className="inline-flex items-center gap-1.5 rounded-full border border-amber-300/35 bg-black/55 backdrop-blur-md px-2.5 py-1 text-[11px] font-bold text-amber-200 shadow-sm transition-all duration-300">
+                  <span className="h-1.5 w-1.5 rounded-full bg-rose-400 animate-pulse" />
+                  <span>Chat for {HERO_SLIDES[activeSlideIndex].category}</span>
+                </span>
+
+                <div className="flex items-center gap-1.5" aria-label="Slides">
+                  {HERO_SLIDES.map((slide, idx) => (
+                    <button
+                      key={slide.id}
+                      onClick={() => setActiveSlideIndex(idx)}
+                      className={cn(
+                        "h-1 rounded-full transition-all duration-500 cursor-pointer",
+                        idx === activeSlideIndex
+                          ? "w-6 bg-amber-300 shadow-[0_0_8px_rgba(252,211,77,0.8)]"
+                          : "w-2 bg-white/40 hover:bg-white/70"
+                      )}
+                      aria-label={`Switch to ${slide.category}`}
+                    />
+                  ))}
+                </div>
+              </div>
+
               {/* Main Headline */}
-              <h1 className="text-2.5xl sm:text-3xl font-bold tracking-tight text-white leading-[1.2] drop-shadow-[0_2px_10px_rgba(0,0,0,0.9)]">
+              <h1 className="text-3xl sm:text-3.5xl font-extrabold tracking-tight text-white leading-[1.16] drop-shadow-[0_2px_12px_rgba(0,0,0,0.95)]">
                 Discover meaningful{" "}
-                <span className="text-amber-200 drop-shadow-[0_2px_12px_rgba(0,0,0,0.95)] inline-block font-extrabold">
-                  connections today.
+                <span className="text-amber-200 drop-shadow-[0_2px_14px_rgba(0,0,0,0.95)] inline-block font-black">
+                  connections today
                 </span>
               </h1>
 
@@ -167,7 +251,7 @@ export function HeroSection({ className = "" }: HeroSectionProps) {
                     href="/login"
                     className="w-full min-h-11 px-3 text-xs font-semibold rounded-xl bg-white/15 hover:bg-white/25 text-white border border-white/20 backdrop-blur-md transition shadow-sm"
                   >
-                    Login
+                    Sign In
                   </Button>
 
                   <Button
@@ -188,7 +272,7 @@ export function HeroSection({ className = "" }: HeroSectionProps) {
           <div className="animate-hero-fade">
             <TrustBadge
               icon={<IconHeart className="h-3.5 w-3.5 text-[var(--primary)]" aria-hidden="true" fill="currentColor" />}
-              label="Welcome to Let's CHAT .Com"
+              label="Welcome to ShaadiChat"
               className="mb-5 sm:mb-6"
             />
 
@@ -198,7 +282,7 @@ export function HeroSection({ className = "" }: HeroSectionProps) {
             >
               Discover meaningful{" "}
               <span className="text-[var(--primary)] inline-block">
-                connections today.
+                connections today
               </span>
             </h1>
 
@@ -224,7 +308,7 @@ export function HeroSection({ className = "" }: HeroSectionProps) {
                   variant="secondary"
                   className="w-full sm:w-auto min-h-12 px-5 sm:px-8 text-sm sm:text-base font-semibold"
                 >
-                  Login
+                  Sign In
                 </Button>
 
                 <Button
@@ -257,6 +341,8 @@ export function HeroSection({ className = "" }: HeroSectionProps) {
             <CinematicHeroImage
               images={HERO_IMAGES}
               hoveredProfile={hoveredProfile}
+              activeSlideIndex={activeSlideIndex}
+              onHoverChange={setIsHeroHovered}
               className="origin-center"
             />
 
@@ -286,14 +372,55 @@ export function HeroSection({ className = "" }: HeroSectionProps) {
               />
             </div>
 
-            {/* Connection Badge - Bottom Left */}
-            <div className="absolute bottom-6 left-3 sm:bottom-8 sm:left-4 z-20">
+            {/* Dynamic Category Card - Bottom Left (Changes with Marriage, Friendship, and Living Together) */}
+            <div
+              className="absolute bottom-6 left-3 sm:bottom-8 sm:left-4 z-20"
+              onMouseEnter={() => setIsHeroHovered(true)}
+              onMouseLeave={() => setIsHeroHovered(false)}
+            >
               <ConnectionBadge
-                title="Meaningful connections"
-                subtitle="Values-aligned & verified"
+                title={
+                  hoveredProfile === "ananya"
+                    ? "Chat with Ananya M."
+                    : hoveredProfile === "rohan"
+                    ? "Chat with Rohan K."
+                    : HERO_SLIDES[activeSlideIndex].title
+                }
+                subtitle={
+                  hoveredProfile === "ananya"
+                    ? "Product Designer • 94% Match"
+                    : hoveredProfile === "rohan"
+                    ? "Architect & Partner • 91% Match"
+                    : HERO_SLIDES[activeSlideIndex].subtitle
+                }
+                icon={
+                  hoveredProfile === "ananya" ? (
+                    <IconHeart className="h-5 w-5 fill-current" aria-hidden="true" />
+                  ) : hoveredProfile === "rohan" ? (
+                    <IconHeart className="h-5 w-5 fill-current" aria-hidden="true" />
+                  ) : activeSlideIndex === 0 ? (
+                    <IconHeart className="h-5 w-5 fill-current" aria-hidden="true" />
+                  ) : activeSlideIndex === 1 ? (
+                    <IconUsers className="h-5 w-5" aria-hidden="true" />
+                  ) : (
+                    <IconHomeHeart className="h-5 w-5" aria-hidden="true" />
+                  )
+                }
+                iconBoxClassName={
+                  hoveredProfile === "ananya"
+                    ? "bg-rose-50 text-rose-700 ring-rose-200/70"
+                    : hoveredProfile === "rohan"
+                    ? "bg-emerald-50 text-emerald-700 ring-emerald-200/70"
+                    : HERO_SLIDES[activeSlideIndex].iconBoxClass
+                }
+                activeCategoryIndex={activeSlideIndex}
+                totalCategories={HERO_SLIDES.length}
+                onSelectCategory={(idx) => setActiveSlideIndex(idx)}
+                onClick={() => setActiveSlideIndex((prev) => (prev + 1) % HERO_SLIDES.length)}
                 className="scale-90 sm:scale-100 origin-bottom-left"
               />
             </div>
+
           </div>
         </div>
       </div>

@@ -3,7 +3,7 @@ import { cn } from "@/lib/cn";
 
 export interface SectionHeaderProps {
   eyebrow?: string;
-  title: React.ReactNode;
+  title?: React.ReactNode;
   description?: React.ReactNode;
   action?: React.ReactNode;
   editorial?: boolean;
@@ -29,14 +29,16 @@ export function SectionHeader({
             </p>
           </div>
         )}
-        <h2
-          className={cn(
-            "text-2xl sm:text-3xl font-bold tracking-tight text-[var(--foreground)] leading-[1.2]",
-            editorial && "font-editorial-title"
-          )}
-        >
-          {title}
-        </h2>
+        {title && (
+          <h2
+            className={cn(
+              "text-2xl sm:text-3xl font-bold tracking-tight text-[var(--foreground)] leading-[1.2]",
+              editorial && "font-editorial-title"
+            )}
+          >
+            {title}
+          </h2>
+        )}
         {description && (
           <p className="mt-1.5 text-sm leading-relaxed text-[var(--muted)] font-normal">
             {description}

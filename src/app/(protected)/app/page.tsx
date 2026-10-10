@@ -652,7 +652,7 @@ export default function DashboardPage() {
                 <div>
                   <p className="text-xs font-bold text-[#5C1027]">Protected Conversations</p>
                   <p className="mt-0.5 text-[11px] leading-relaxed text-[var(--muted-strong)]">
-                    All chat threads on Let's CHAT .Com are private and encrypted. Never share financial
+                    All chat threads on ShaadiChat are private and encrypted. Never share financial
                     or banking credentials.
                   </p>
                 </div>

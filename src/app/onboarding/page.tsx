@@ -224,7 +224,7 @@ export default function OnboardingPage() {
               <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
                 <div className="mb-8">
                   <h1 className="text-2xl sm:text-3xl font-bold text-[var(--foreground)] tracking-tight">Service Categories</h1>
-                  <p className="mt-2 text-sm text-[var(--muted)]">What kind of connections are you seeking on Let's CHAT .Com?</p>
+                  <p className="mt-2 text-sm text-[var(--muted)]">What kind of connections are you seeking on ShaadiChat?</p>
                 </div>
                 
                 <form onSubmit={handleNext} className="space-y-5">

@@ -12,12 +12,24 @@ const manrope = Manrope({
 
 export const metadata: Metadata = {
   title: {
-    default: "Let’s CHAT .Com — Meaningful connections, thoughtfully made",
-    template: "%s | Let’s CHAT .Com"
+    default: "ShaadiChat — Meaningful connections, thoughtfully made",
+    template: "%s | ShaadiChat"
   },
   description: "A modern, privacy-first matrimony and relationship discovery experience.",
-  robots: { index: false, follow: false }
+  robots: { index: false, follow: false },
+  icons: {
+    icon: [
+      { url: "/favicon.ico", sizes: "any" },
+      { url: "/favicon.svg", type: "image/svg+xml" },
+      { url: "/icon.png", type: "image/png", sizes: "32x32" },
+      { url: "/icon-192.png", type: "image/png", sizes: "192x192" },
+    ],
+    apple: [
+      { url: "/apple-touch-icon.png", sizes: "180x180", type: "image/png" },
+    ],
+  },
 };
+
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (

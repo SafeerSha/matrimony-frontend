@@ -1,4 +1,4 @@
-# Matrimony Web Foundation
+# ShaadiChat
 
 A client-ready, production-oriented frontend prototype for a modern matrimonial platform.
 
