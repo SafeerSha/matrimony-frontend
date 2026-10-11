@@ -484,10 +484,14 @@ export default function DiscoverPage() {
         ? "h-[calc(100dvh-132px)] flex flex-col gap-2.5 sm:gap-3 overflow-hidden pb-0 md:h-auto md:overflow-visible md:pb-8 md:space-y-4 md:gap-0"
         : "space-y-2.5 sm:space-y-4 pb-2 sm:pb-8"
     )}>
-      {/* Mobile viewport height lock for Swipe mode */}
-      {viewMode === 'swipe' && (
-        <style dangerouslySetInnerHTML={{ __html: `
-          @media (max-width: 767px) {
+      {/* Mobile layout spacing & Swipe mode lock */}
+      <style dangerouslySetInnerHTML={{ __html: `
+        @media (max-width: 767px) {
+          div:has(> #main-content) {
+            padding-top: 0.4rem !important;
+            gap: 0 !important;
+          }
+          ${viewMode === 'swipe' ? `
             html, body {
               overflow: hidden !important;
               overscroll-behavior: none !important;
@@ -498,13 +502,11 @@ export default function DiscoverPage() {
               overflow: hidden !important;
             }
             div:has(> #main-content) {
-              padding-top: 0.4rem !important;
               padding-bottom: 0 !important;
-              gap: 0 !important;
             }
-          }
-        `}} />
-      )}
+          ` : ''}
+        }
+      `}} />
 
       {/* ======================================================== */}
       {/* 1. TOP HEADER & VIEW MODE CONTROLS                       */}
