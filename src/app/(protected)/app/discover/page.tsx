@@ -37,7 +37,7 @@ import { EmptyState } from '@/components/ui/empty-state';
 import { SectionHeader } from '@/components/ui/section-header';
 import { VerificationBadge } from '@/components/ui/verification-badge';
 import { ProfileCardSkeleton, SwipeCardSkeleton } from '@/components/ui/skeleton';
-import { matchesService, profileService } from '@/services';
+import { matchesService, profileService, isDraftUser } from '@/services';
 import { profiles as demoProfiles } from '@/lib/demo-data';
 import { toast } from '@/lib/toast';
 import { cn } from '@/lib/cn';
@@ -106,10 +106,7 @@ export default function DiscoverPage() {
       .getProfile('me')
       .then((profile: any) => {
         if (!profile) return;
-        const uStatus = profile.user?.status ? String(profile.user.status).toUpperCase() : '';
-        const pStatus = profile.status ? String(profile.status).toUpperCase() : '';
-        const step = profile.onboardingStep !== undefined ? Number(profile.onboardingStep) : undefined;
-        if (uStatus === 'DRAFT' || pStatus === 'DRAFT' || (step !== undefined && step < 5)) {
+        if (isDraftUser(profile)) {
           toast.warning(
             'Complete Profile Required',
             'Please complete your profile details to unlock discovery.'

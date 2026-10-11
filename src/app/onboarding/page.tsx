@@ -29,7 +29,7 @@ import {
 } from "@tabler/icons-react";
 import { Logo } from "@/components/layout/logo";
 import { cn } from "@/lib/cn";
-import { profileService, mediaService, authService } from "@/services";
+import { profileService, mediaService, authService, isDraftUser } from "@/services";
 import { toast } from "@/lib/toast";
 import {
   DatePicker,
@@ -203,6 +203,12 @@ export default function OnboardingPage() {
         .getProfile("me")
         .then((profile) => {
           if (profile) {
+            // If the user is already active and completed onboarding, do not restart onboarding
+            if (!isDraftUser(profile)) {
+              window.location.href = "/app/discover";
+              return;
+            }
+
             setProfileData((prev: any) => ({
               ...prev,
               ...profile,
