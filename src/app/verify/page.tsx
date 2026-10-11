@@ -18,7 +18,7 @@ import {
 } from "@tabler/icons-react";
 import { Logo } from "@/components/layout/logo";
 import { cn } from "@/lib/cn";
-import { authService } from "@/services";
+import { authService, resolvePostAuthRoute } from "@/services";
 import { toast } from "@/lib/toast";
 
 export default function VerifyPage() {
@@ -132,21 +132,31 @@ export default function VerifyPage() {
     }
 
     try {
-      await authService.verifyRegistration({
+      const res = await authService.verifyRegistration({
         phone: phone || "+91 9876543210",
         phoneOtp: cleanPhoneOtp,
         email: email || undefined,
         emailOtp: email ? cleanEmailOtp : undefined,
       });
 
-      toast.flash(
-        "success",
-        "Verification Successful!",
-        "Your contact details have been verified. Welcome to ShaadiChat!"
-      );
+      const { url, isDraft } = resolvePostAuthRoute(res, "/app/discover");
+
+      if (isDraft) {
+        toast.flash(
+          "info",
+          "Complete Your Profile",
+          "Please finish setting up your profile to start exploring compatible matches."
+        );
+      } else {
+        toast.flash(
+          "success",
+          "Verification Successful!",
+          "Your contact details have been verified. Welcome to ShaadiChat!"
+        );
+      }
 
       setTimeout(() => {
-        router.push("/onboarding");
+        router.push(url);
       }, 500);
     } catch (err: any) {
       const msg = err.message || "Verification code is invalid or has expired.";

@@ -32,28 +32,53 @@ export interface UserStatusCheckInput {
 export function isDraftUser(data?: UserStatusCheckInput | null): boolean {
   if (!data) return false;
 
-  const userStatus = data.user?.status ? String(data.user.status).toUpperCase().trim() : "";
-  const profileStatus = data.profile?.status ? String(data.profile.status).toUpperCase().trim() : "";
+  // Extract status from nested objects or flat root object (e.g. /profiles/me or /auth/me returns status at root)
+  const userStatus = data.user?.status
+    ? String(data.user.status).toUpperCase().trim()
+    : data.status
+    ? String(data.status).toUpperCase().trim()
+    : "";
 
-  // 1. Explicit DRAFT user or profile status
+  const profileStatus = data.profile?.status
+    ? String(data.profile.status).toUpperCase().trim()
+    : "";
+
+  // 1. Explicit ACTIVE status always overrides everything:
+  // An active user has completed onboarding/verification and must not be looped into onboarding
+  if (userStatus === "ACTIVE" || profileStatus === "ACTIVE") {
+    if (typeof window !== "undefined") {
+      try {
+        sessionStorage.removeItem("shaadi_onboarding_draft");
+      } catch {}
+    }
+    return false;
+  }
+
+  // 2. Explicit DRAFT user or profile status
   if (userStatus === "DRAFT" || profileStatus === "DRAFT") {
     return true;
   }
 
-  // 2. Profile onboarding step check (1 through 4 = in progress, 5 = completed)
-  if (data.profile?.onboardingStep !== undefined && data.profile?.onboardingStep !== null) {
-    const step = Number(data.profile.onboardingStep);
-    if (!isNaN(step) && step < 5) {
-      return true;
+  // 3. Profile onboarding step check (steps 1 through 4 = in progress, >= 5 = completed)
+  const rawStep = data.profile?.onboardingStep ?? data.onboardingStep;
+  if (rawStep !== undefined && rawStep !== null) {
+    const step = Number(rawStep);
+    if (!isNaN(step)) {
+      if (step >= 5) {
+        if (typeof window !== "undefined") {
+          try {
+            sessionStorage.removeItem("shaadi_onboarding_draft");
+          } catch {}
+        }
+        return false;
+      }
+      if (step < 5) {
+        return true;
+      }
     }
   }
 
-  // 3. Explicit ACTIVE status
-  if (userStatus === "ACTIVE" || profileStatus === "ACTIVE") {
-    return false;
-  }
-
-  // 4. Client-side local draft check as defense-in-depth
+  // 4. Client-side local draft check as defense-in-depth ONLY IF user is not already active
   if (typeof window !== "undefined") {
     const draft = sessionStorage.getItem("shaadi_onboarding_draft");
     if (draft) {
@@ -82,6 +107,12 @@ export function resolvePostAuthRoute(
 
   if (isDraft) {
     return { url: "/onboarding", isDraft: true };
+  }
+
+  if (typeof window !== "undefined") {
+    try {
+      sessionStorage.removeItem("shaadi_onboarding_draft");
+    } catch {}
   }
 
   let destination = fallbackTarget;

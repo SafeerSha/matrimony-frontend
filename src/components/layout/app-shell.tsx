@@ -5,7 +5,7 @@ import { Header } from "./header";
 import { Sidebar } from "./sidebar";
 import { MobileNav } from "./mobile-nav";
 import { usePathname } from "next/navigation";
-import { authService, profileService, notificationService, chatService } from "@/services";
+import { authService, profileService, notificationService, chatService, isDraftUser } from "@/services";
 
 export interface AppShellProps {
   children: React.ReactNode;
@@ -26,7 +26,7 @@ export function AppShell({ children }: AppShellProps) {
         if (!user) return;
         setCurrentUser(user);
 
-        if (user.status && String(user.status).toUpperCase() === "DRAFT") {
+        if (isDraftUser({ user })) {
           window.location.href = "/onboarding";
           return;
         }
@@ -37,10 +37,7 @@ export function AppShell({ children }: AppShellProps) {
       .getProfile("me")
       .then((profile: any) => {
         if (!profile) return;
-        const uStatus = profile.user?.status ? String(profile.user.status).toUpperCase() : "";
-        const pStatus = profile.status ? String(profile.status).toUpperCase() : "";
-        const step = profile.onboardingStep !== undefined ? Number(profile.onboardingStep) : undefined;
-        if (uStatus === "DRAFT" || pStatus === "DRAFT" || (step !== undefined && step < 5)) {
+        if (isDraftUser(profile)) {
           window.location.href = "/onboarding";
         }
       })

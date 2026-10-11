@@ -48,15 +48,21 @@ export default function LoginPage() {
   const determineDestination = async (authRes: any) => {
     let checkTarget: any = authRes;
 
+    const hasStatus = Boolean(authRes?.user?.status || authRes?.status);
+    const hasStep = authRes?.profile?.onboardingStep !== undefined || authRes?.onboardingStep !== undefined;
+
     // If auth response does not explicitly include user status or onboardingStep,
     // fetch the latest profile status from /profiles/me
-    if (!authRes?.user?.status && authRes?.profile?.onboardingStep === undefined) {
+    if (!hasStatus && !hasStep) {
       try {
         const profile = await profileService.getProfile("me");
         if (profile) {
           checkTarget = {
-            user: profile.user || authRes?.user,
+            ...authRes,
+            user: profile.user || authRes?.user || { status: profile.status },
             profile,
+            status: profile.status,
+            onboardingStep: profile.onboardingStep,
           };
         }
       } catch {
