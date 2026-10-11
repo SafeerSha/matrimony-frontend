@@ -16,6 +16,7 @@ import {
 } from '@tabler/icons-react';
 import { Modal } from '@/components/ui/modal';
 import { Button } from '@/components/ui/button';
+import { ModernSelect } from '@/components/ui/modern-select';
 import { cn } from '@/lib/cn';
 import type { PartnerPreferences } from './preference-types';
 
@@ -325,39 +326,26 @@ export function PreferenceModalEditor({
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-xs font-semibold text-[#211B1E] mb-1.5">
-                    Min Height
-                  </label>
-                  <select
+                  <ModernSelect
+                    label="Min Height"
                     value={draft.minHeight}
-                    onChange={(e) => setDraft({ ...draft, minHeight: e.target.value })}
-                    className="w-full rounded-xl bg-white border border-[#E9DDE0] p-2.5 text-xs text-[#211B1E] outline-none focus:border-[#7A1835]"
-                  >
-                    {HEIGHT_OPTIONS.map((h) => (
-                      <option key={h} value={h}>
-                        {h}
-                      </option>
-                    ))}
-                  </select>
+                    onChange={(val) => setDraft({ ...draft, minHeight: val })}
+                    options={HEIGHT_OPTIONS.map((h) => ({ value: h, label: h }))}
+                    size="sm"
+                  />
                 </div>
 
                 <div>
-                  <label className="block text-xs font-semibold text-[#211B1E] mb-1.5">
-                    Max Height
-                  </label>
-                  <select
+                  <ModernSelect
+                    label="Max Height"
                     value={draft.maxHeight}
-                    onChange={(e) => setDraft({ ...draft, maxHeight: e.target.value })}
-                    className="w-full rounded-xl bg-white border border-[#E9DDE0] p-2.5 text-xs text-[#211B1E] outline-none focus:border-[#7A1835]"
-                  >
-                    {HEIGHT_OPTIONS.map((h) => (
-                      <option key={h} value={h}>
-                        {h}
-                      </option>
-                    ))}
-                  </select>
+                    onChange={(val) => setDraft({ ...draft, maxHeight: val })}
+                    options={HEIGHT_OPTIONS.map((h) => ({ value: h, label: h }))}
+                    size="sm"
+                  />
                 </div>
               </div>
+
             </div>
           </div>
         )}

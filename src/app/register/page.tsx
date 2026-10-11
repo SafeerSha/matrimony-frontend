@@ -93,7 +93,7 @@ export default function RegisterPage() {
       );
 
       setTimeout(() => {
-        window.location.href = "/app/discover";
+        window.location.href = "/onboarding";
       }, 600);
     } catch (error: any) {
       const msg = error.message || "Failed to create account. Email might already exist.";
@@ -252,7 +252,7 @@ export default function RegisterPage() {
               {/* Header Title */}
               <div className="mt-0 sm:mt-1 lg:mt-6 mb-4 sm:mb-5">
                 <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold tracking-tight text-[var(--foreground)]">
-                  {step === 1 ? "Create an account" : "Verify your email"}
+                  {step === 1 ? "Create an profile" : "Verify your email"}
                 </h1>
                 <p className="mt-1 text-xs sm:text-sm text-[var(--muted)] leading-relaxed">
                   {step === 1
@@ -340,19 +340,29 @@ export default function RegisterPage() {
                     >
                       Phone Number
                     </label>
-                    <div className="relative">
-                      <span className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-4 text-[var(--muted)] group-focus-within:text-[var(--primary)] transition-colors">
+                    <div className="relative flex items-center">
+                      <span className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3.5 sm:pl-4 text-[var(--muted)] group-focus-within:text-[var(--primary)] transition-colors">
                         <IconPhone className="h-5 w-5" aria-hidden="true" />
                       </span>
+                      <div className="pointer-events-none absolute left-11 sm:left-12 flex items-center pr-2.5 border-r border-slate-200 select-none">
+                        <span className="text-sm sm:text-base font-bold text-[var(--foreground)]">+91</span>
+                      </div>
                       <input
                         id="phone"
                         type="tel"
+                        maxLength={10}
                         required
                         value={phone}
-                        onChange={(e) => setPhone(e.target.value)}
-                        placeholder="+91 98765 43210"
+                        onChange={(e) => {
+                          let val = e.target.value.replace(/\D/g, "");
+                          if (val.startsWith("91") && val.length > 10) {
+                            val = val.slice(2);
+                          }
+                          setPhone(val.slice(0, 10));
+                        }}
+                        placeholder="98765 43210"
                         className={cn(
-                          "h-11 sm:h-12 w-full rounded-xl border border-[var(--border)] bg-slate-50/70 pl-11 pr-4 text-sm sm:text-base",
+                          "h-11 sm:h-12 w-full rounded-xl border border-[var(--border)] bg-slate-50/70 pl-23 sm:pl-24 pr-4 text-sm sm:text-base font-medium",
                           "text-[var(--foreground)] placeholder:text-[var(--muted-light)]",
                           "outline-none transition-all duration-200",
                           "focus:bg-white focus:border-[var(--primary)] focus:ring-4 focus:ring-[var(--primary)]/10"

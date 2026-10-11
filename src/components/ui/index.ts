@@ -15,3 +15,8 @@ export * from "./match-card";
 export * from "./interest-card";
 export * from "./mutual-match-card";
 export * from "./toaster";
+export * from "./date-picker";
+export * from "./education-selector";
+export * from "./profession-combobox";
+export * from "./employment-status-selector";
+export * from "./modern-select";

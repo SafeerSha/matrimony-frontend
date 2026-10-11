@@ -5,6 +5,7 @@ import { IconCheck, IconCrown, IconLoader2, IconStar } from '@tabler/icons-react
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { SectionHeader } from '@/components/ui/section-header';
+import { FeatureGate } from '@/components/ui/under-development';
 import { cn } from '@/lib/cn';
 
 export default function SubscriptionPage() {
@@ -93,7 +94,8 @@ export default function SubscriptionPage() {
   ];
 
   return (
-    <div className="w-full max-w-full min-w-0 space-y-8 pb-10">
+    <FeatureGate page="subscription" title="Membership & Subscription">
+      <div className="w-full max-w-full min-w-0 space-y-8 pb-10">
       <SectionHeader
         eyebrow="Chat Permits"
         title="Unlock Member Interactions"
@@ -197,6 +199,7 @@ export default function SubscriptionPage() {
           Mock Payment Gateway Integration: Clicking "Upgrade" will simulate a secure checkout process and instantly provision the selected tier to your account.
         </p>
       </div>
-    </div>
+      </div>
+    </FeatureGate>
   );
 }

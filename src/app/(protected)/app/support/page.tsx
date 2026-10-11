@@ -3,6 +3,8 @@ import { useState } from 'react';
 import { SectionHeader } from '@/components/ui/section-header';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { ModernSelect } from '@/components/ui/modern-select';
+import { FeatureGate } from '@/components/ui/under-development';
 import { cn } from '@/lib/cn';
 import {
   IconPhone,
@@ -20,6 +22,7 @@ export default function SupportPage() {
   const [tab, setTab] = useState<'contact' | 'feedback'>('contact');
 
   // Form states
+  const [topic, setTopic] = useState('General Inquiry');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
   const [rating, setRating] = useState(0);
@@ -37,7 +40,8 @@ export default function SupportPage() {
   };
 
   return (
-    <div className="space-y-6 pb-10">
+    <FeatureGate page="support" title="Help & Support">
+      <div className="space-y-6 pb-10">
       <SectionHeader
         eyebrow="Help & Support"
         title="How can we help you?"
@@ -100,14 +104,20 @@ export default function SupportPage() {
                   <input type="email" required className="focus-ring h-11 w-full rounded-2xl border border-[var(--border)] bg-[#FFFDFB] px-4 text-xs sm:text-sm outline-none font-medium" />
                 </div>
                 <div>
-                  <label className="block text-[11px] font-bold uppercase tracking-wider text-[var(--muted-strong)] mb-1.5">Topic</label>
-                  <select className="focus-ring h-11 w-full rounded-2xl border border-[var(--border)] bg-[#FFFDFB] px-4 text-xs sm:text-sm outline-none font-medium text-[var(--foreground)]">
-                    <option>General Inquiry</option>
-                    <option>Billing & Premium</option>
-                    <option>Technical Issue</option>
-                    <option>Report Profile or Concern</option>
-                  </select>
+                  <ModernSelect
+                    label="Topic"
+                    value={topic}
+                    onChange={setTopic}
+                    options={[
+                      { value: "General Inquiry", label: "General Inquiry" },
+                      { value: "Billing & Premium", label: "Billing & Premium" },
+                      { value: "Technical Issue", label: "Technical Issue" },
+                      { value: "Report Profile or Concern", label: "Report Profile or Concern" },
+                    ]}
+                    size="sm"
+                  />
                 </div>
+
                 <div>
                   <label className="block text-[11px] font-bold uppercase tracking-wider text-[var(--muted-strong)] mb-1.5">Message</label>
                   <textarea required rows={4} className="focus-ring w-full rounded-2xl border border-[var(--border)] bg-[#FFFDFB] p-4 text-xs sm:text-sm outline-none resize-none font-medium" placeholder="How can our trust & support team assist you?" />
@@ -234,6 +244,7 @@ export default function SupportPage() {
           )}
         </Card>
       )}
-    </div>
+      </div>
+    </FeatureGate>
   );
 }

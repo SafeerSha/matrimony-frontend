@@ -40,7 +40,7 @@ const HERO_SLIDES = [
   {
     id: "marriage",
     category: "Marriage",
-    title: "Chat for Marriage",
+    title: "Explore for Marriage",
     subtitle: "Values-aligned & verified",
     src: "/images/hero-mobile-1.jpg",
     desktopSrc: "/images/hero-1.jpg",
@@ -51,7 +51,7 @@ const HERO_SLIDES = [
   {
     id: "friendship",
     category: "Friendship",
-    title: "Chat for Friendship",
+    title: "Explore for Friendship",
     subtitle: "Meaningful bonds & shared vibes",
     src: "/images/hero-friendship.jpg",
     desktopSrc: "/images/hero-friendship.jpg",
@@ -62,7 +62,7 @@ const HERO_SLIDES = [
   {
     id: "living-together",
     category: "Living Together",
-    title: "Chat for Living Together",
+    title: "Explore for Living Together",
     subtitle: "Modern partners & compatible living",
     src: "/images/hero-living-together.jpg",
     desktopSrc: "/images/hero-living-together.jpg",
@@ -149,20 +149,20 @@ export function HeroSection({ className = "" }: HeroSectionProps) {
         showBottomRight={true}
       />
 
-      {/* Soft ambient green & warm gold background glows */}
+      {/* Soft ambient green & warm gold background glows (desktop/tablet only to save mobile GPU) */}
       <div
-        className="pointer-events-none absolute -top-24 right-0 h-[32rem] w-[32rem] rounded-full bg-[var(--primary)]/6 blur-3xl lg:h-[40rem] lg:w-[40rem]"
+        className="pointer-events-none absolute -top-24 right-0 hidden sm:block h-[32rem] w-[32rem] rounded-full bg-[var(--primary)]/6 blur-3xl lg:h-[40rem] lg:w-[40rem]"
         aria-hidden="true"
       />
       <div
-        className="pointer-events-none absolute top-1/3 -left-20 h-[24rem] w-[24rem] rounded-full bg-[var(--accent)]/8 blur-3xl sm:h-[30rem] sm:w-[30rem]"
+        className="pointer-events-none absolute top-1/3 -left-20 hidden sm:block h-[24rem] w-[24rem] rounded-full bg-[var(--accent)]/8 blur-3xl sm:h-[30rem] sm:w-[30rem]"
         aria-hidden="true"
       />
 
       <div className="relative z-10 mx-auto max-w-7xl px-0 sm:px-6 lg:px-8">
         {/* Mobile View Hero Layout: Edge-to-Edge Immersive Visual with Auto-Switching Fade Transitions */}
         <div className="block lg:hidden animate-hero-fade">
-          <div className="relative w-full overflow-hidden bg-neutral-950 h-[100dvh] min-h-[100dvh] flex flex-col justify-end">
+          <div className="relative w-full overflow-hidden bg-neutral-950 h-screen h-[100svh] min-h-[100svh] max-h-[100svh] flex flex-col justify-end touch-pan-y">
             {/* Background Couple Images with Smooth Crossfade Transition */}
             <div className="absolute inset-0 z-0 overflow-hidden bg-neutral-950">
               {HERO_SLIDES.map((slide, idx) => {
@@ -174,15 +174,16 @@ export function HeroSection({ className = "" }: HeroSectionProps) {
                       "absolute inset-0 transition-opacity duration-1000 ease-in-out",
                       isActive ? "opacity-100 z-[1]" : "opacity-0 z-0 pointer-events-none"
                     )}
+                    style={{ willChange: "opacity", transform: "translateZ(0)" }}
                   >
                     <img
                       src={slide.src}
                       alt={slide.alt}
                       className={cn(
-                        "h-full w-full object-cover transition-transform duration-[5500ms] ease-out",
+                        "h-full w-full object-cover transition-transform duration-[5500ms] ease-out will-change-transform",
                         isActive ? "scale-105" : "scale-100"
                       )}
-                      style={{ objectPosition: slide.objectPosition }}
+                      style={{ objectPosition: slide.objectPosition, transform: "translateZ(0)" }}
                     />
                   </div>
                 );
@@ -201,7 +202,7 @@ export function HeroSection({ className = "" }: HeroSectionProps) {
               <div className="flex items-center justify-between">
                 <span className="inline-flex items-center gap-1.5 rounded-full border border-amber-300/35 bg-black/55 backdrop-blur-md px-2.5 py-1 text-[11px] font-bold text-amber-200 shadow-sm transition-all duration-300">
                   <span className="h-1.5 w-1.5 rounded-full bg-rose-400 animate-pulse" />
-                  <span>Chat for {HERO_SLIDES[activeSlideIndex].category}</span>
+                  <span>Explore for {HERO_SLIDES[activeSlideIndex].category}</span>
                 </span>
 
                 <div className="flex items-center gap-1.5" aria-label="Slides">
@@ -325,7 +326,6 @@ export function HeroSection({ className = "" }: HeroSectionProps) {
             <div className="mt-8 flex flex-wrap items-center gap-x-4 sm:gap-x-6 gap-y-3 border-t border-[var(--border)] pt-6 sm:mt-10">
               <TrustFeature label="Privacy-first" className="text-xs sm:text-sm" />
               <TrustFeature label="Verified profiles" className="text-xs sm:text-sm" />
-              <TrustFeature label="Mobile ready" className="text-xs sm:text-sm" />
             </div>
           </div>
 
@@ -383,15 +383,15 @@ export function HeroSection({ className = "" }: HeroSectionProps) {
                   hoveredProfile === "ananya"
                     ? "Chat with Ananya M."
                     : hoveredProfile === "rohan"
-                    ? "Chat with Rohan K."
-                    : HERO_SLIDES[activeSlideIndex].title
+                      ? "Chat with Rohan K."
+                      : HERO_SLIDES[activeSlideIndex].title
                 }
                 subtitle={
                   hoveredProfile === "ananya"
                     ? "Product Designer • 94% Match"
                     : hoveredProfile === "rohan"
-                    ? "Architect & Partner • 91% Match"
-                    : HERO_SLIDES[activeSlideIndex].subtitle
+                      ? "Architect & Partner • 91% Match"
+                      : HERO_SLIDES[activeSlideIndex].subtitle
                 }
                 icon={
                   hoveredProfile === "ananya" ? (
@@ -410,8 +410,8 @@ export function HeroSection({ className = "" }: HeroSectionProps) {
                   hoveredProfile === "ananya"
                     ? "bg-rose-50 text-rose-700 ring-rose-200/70"
                     : hoveredProfile === "rohan"
-                    ? "bg-emerald-50 text-emerald-700 ring-emerald-200/70"
-                    : HERO_SLIDES[activeSlideIndex].iconBoxClass
+                      ? "bg-emerald-50 text-emerald-700 ring-emerald-200/70"
+                      : HERO_SLIDES[activeSlideIndex].iconBoxClass
                 }
                 activeCategoryIndex={activeSlideIndex}
                 totalCategories={HERO_SLIDES.length}
@@ -425,9 +425,9 @@ export function HeroSection({ className = "" }: HeroSectionProps) {
         </div>
       </div>
 
-      {/* Soft curved transition into the next section */}
+      {/* Soft curved transition into the next section (tablet/desktop only) */}
       <div
-        className="pointer-events-none absolute inset-x-0 bottom-0 overflow-hidden leading-none"
+        className="pointer-events-none absolute inset-x-0 bottom-0 overflow-hidden leading-none hidden sm:block"
         aria-hidden="true"
       >
         <svg

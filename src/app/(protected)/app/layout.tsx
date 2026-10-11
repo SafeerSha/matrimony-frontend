@@ -7,5 +7,8 @@ export const dynamic = "force-dynamic";
 export default async function ProtectedLayout({ children }: { children: React.ReactNode }) {
   const session = await getSession();
   if (!session) redirect("/login");
+  if (session.status === "DRAFT" || session.status === "draft") {
+    redirect("/onboarding");
+  }
   return <AppShell>{children}</AppShell>;
 }

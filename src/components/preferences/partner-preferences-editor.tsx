@@ -64,9 +64,16 @@ export function PartnerPreferencesEditor({
         .getProfile('me')
         .then((res: any) => {
           if (res && res.preferences) {
+            const p = res.preferences;
             setPreferences((prev) => ({
               ...prev,
-              ...res.preferences,
+              ...p,
+              religions: Array.isArray(p.religions) ? p.religions : p.religions ? [p.religions] : prev.religions,
+              locations: Array.isArray(p.locations) ? p.locations : p.locations ? [p.locations] : prev.locations,
+              diet: Array.isArray(p.diet) ? p.diet : p.diet ? [p.diet] : prev.diet,
+              maritalStatus: Array.isArray(p.maritalStatus) ? p.maritalStatus : p.maritalStatus ? [p.maritalStatus] : prev.maritalStatus,
+              education: Array.isArray(p.education) ? p.education : p.education ? [p.education] : prev.education,
+              professions: Array.isArray(p.professions) ? p.professions : p.professions ? [p.professions] : prev.professions,
             }));
           }
         })
@@ -88,14 +95,34 @@ export function PartnerPreferencesEditor({
     }));
     setHasChanges(true);
     toast.success('Section Updated', {
-      description: 'Your changes are staged. Click DeviceFloppy Preferences to publish them.',
+      description: 'Your changes are staged. Click Save Preferences to publish them.',
     });
   };
 
   const handleSave = async () => {
     setIsSaving(true);
     try {
-      await profileService.updatePreferences('me', preferences);
+      const payload = {
+        minAge: Number(preferences.minAge) || 24,
+        maxAge: Number(preferences.maxAge) || 30,
+        minHeight: preferences.minHeight,
+        maxHeight: preferences.maxHeight,
+        religions: Array.isArray(preferences.religions) ? preferences.religions : [preferences.religions].filter(Boolean),
+        locations: Array.isArray(preferences.locations) ? preferences.locations : [preferences.locations].filter(Boolean),
+        diet: Array.isArray(preferences.diet) ? preferences.diet : [preferences.diet].filter(Boolean),
+        maritalStatus: Array.isArray(preferences.maritalStatus) ? preferences.maritalStatus : [preferences.maritalStatus].filter(Boolean),
+        education: Array.isArray(preferences.education) ? preferences.education : [preferences.education].filter(Boolean),
+        professions: Array.isArray(preferences.professions) ? preferences.professions : [preferences.professions].filter(Boolean),
+        openToRelocate: Boolean(preferences.openToRelocate),
+        caste: preferences.caste || 'Open to all',
+        horoscopeMatch: Boolean(preferences.horoscopeMatch),
+        minIncome: preferences.minIncome || "Doesn't matter",
+        partnerIntent: preferences.partnerIntent,
+        lifestyleHabits: preferences.lifestyleHabits,
+        aboutPartner: preferences.aboutPartner,
+      };
+
+      await profileService.updatePreferences('me', payload);
       toast.success('Preferences Saved', {
         description: 'Your matchmaking filters and discoverability reach have been updated.',
       });

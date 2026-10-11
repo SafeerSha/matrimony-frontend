@@ -1,8 +1,10 @@
 export type Profile = {
   id: string; profileId?: string; name: string; age: number; city: string; state: string; profession: string; education: string;
+  employmentStatus?: string;
   image: string; compatibility: number; verified?: boolean; online?: boolean; status?: string;
   about: string; height: string; maritalStatus: string; religion: string; motherTongue: string;
   family: string; lifestyle: string[]; interests: string[]; lookingFor: string;
+  photos?: any[];
 };
 
 export const getProfileUniqueId = (profile?: { id?: string; profileId?: string } | null): string => {

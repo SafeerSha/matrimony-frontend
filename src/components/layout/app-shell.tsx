@@ -5,7 +5,7 @@ import { Header } from "./header";
 import { Sidebar } from "./sidebar";
 import { MobileNav } from "./mobile-nav";
 import { usePathname } from "next/navigation";
-import { authService, notificationService, chatService } from "@/services";
+import { authService, profileService, notificationService, chatService } from "@/services";
 
 export interface AppShellProps {
   children: React.ReactNode;
@@ -19,11 +19,30 @@ export function AppShell({ children }: AppShellProps) {
 
   // Load user data and counters
   useEffect(() => {
-    // 1. Current user
+    // 1. Current user & draft completeness check
     authService
       .getCurrentUser()
-      .then((user) => {
-        if (user) setCurrentUser(user);
+      .then((user: any) => {
+        if (!user) return;
+        setCurrentUser(user);
+
+        if (user.status && String(user.status).toUpperCase() === "DRAFT") {
+          window.location.href = "/onboarding";
+          return;
+        }
+      })
+      .catch(() => {});
+
+    profileService
+      .getProfile("me")
+      .then((profile: any) => {
+        if (!profile) return;
+        const uStatus = profile.user?.status ? String(profile.user.status).toUpperCase() : "";
+        const pStatus = profile.status ? String(profile.status).toUpperCase() : "";
+        const step = profile.onboardingStep !== undefined ? Number(profile.onboardingStep) : undefined;
+        if (uStatus === "DRAFT" || pStatus === "DRAFT" || (step !== undefined && step < 5)) {
+          window.location.href = "/onboarding";
+        }
       })
       .catch(() => {});
 
