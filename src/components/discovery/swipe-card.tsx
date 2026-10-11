@@ -161,7 +161,7 @@ export function SwipeCard({
           }
         }}
         className={cn(
-          "group relative w-full h-full overflow-hidden rounded-[2.5rem] border border-[var(--border)] bg-white shadow-[var(--elevation-floating)] touch-pan-y select-none",
+          "group relative w-full h-full overflow-hidden rounded-[2rem] sm:rounded-[2.5rem] border border-[var(--border)] bg-white shadow-[var(--elevation-floating)] touch-pan-y select-none",
           !isNext && "cursor-pointer",
           !isNext && showHint && !isDragging && !prefersReducedMotion && "animate-card-wiggle"
         )}

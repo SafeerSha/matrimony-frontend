@@ -352,26 +352,26 @@ export default function DiscoverPage() {
 
       {/* Identity & Action Overlay on Photo */}
       <div 
-        className="absolute inset-x-0 bottom-0 p-4 sm:p-6 md:p-8 text-white z-10 space-y-2 pointer-events-auto cursor-pointer"
+        className="absolute inset-x-0 bottom-0 p-3.5 sm:p-5 md:p-8 text-white z-10 space-y-1 sm:space-y-2 pointer-events-auto cursor-pointer"
         onClick={() => router.push(`/app/profile?user=${profile.id}`)}
       >
-        <div className="group/name flex items-center gap-2.5">
-          <h2 className="font-editorial-title text-3xl sm:text-4xl font-bold tracking-tight text-white drop-shadow-sm group-hover/name:text-[var(--accent-light)] transition-colors">
+        <div className="group/name flex items-center gap-2">
+          <h2 className="font-editorial-title text-2xl sm:text-3xl font-bold tracking-tight text-white drop-shadow-sm group-hover/name:text-[var(--accent-light)] transition-colors">
             {profile.name}, {profile.age}
           </h2>
           {profile.verified && (
-            <VerificationBadge type="general" showIconOnly size="md" />
+            <VerificationBadge type="general" showIconOnly size="sm" />
           )}
         </div>
 
-        <div className="flex items-center gap-2 text-xs font-semibold text-white/90">
+        <div className="flex items-center gap-2 text-[11px] sm:text-xs font-semibold text-white/90">
           <span>{profile.education}</span>
           <span>•</span>
           <span>{profile.profession}</span>
         </div>
 
-        <p className="flex items-center gap-1.5 text-sm text-white/90 font-medium">
-          <IconMapPin className="h-4 w-4 text-[var(--accent)] shrink-0" />
+        <p className="flex items-center gap-1.5 text-xs sm:text-sm text-white/90 font-medium">
+          <IconMapPin className="h-3.5 w-3.5 text-[var(--accent)] shrink-0" />
           <span>
             {profile.city}, {profile.state}
           </span>
@@ -379,7 +379,7 @@ export default function DiscoverPage() {
 
         {/* Matrimonial Discovery Actions Floating in Overlay */}
         <div 
-          className="w-full pt-3 flex items-center justify-between gap-2 sm:gap-3"
+          className="w-full pt-1.5 sm:pt-3 flex items-center justify-between gap-2 sm:gap-3"
           onClick={(e) => e.stopPropagation()}
           onPointerDown={(e) => e.stopPropagation()}
         >
@@ -397,10 +397,10 @@ export default function DiscoverPage() {
                 );
               }
             }}
-            className="rounded-full aspect-square h-12 w-12 sm:h-14 sm:w-14 shrink-0 p-0 flex items-center justify-center bg-white/95 backdrop-blur-md text-rose-600 border border-white/70 hover:bg-white hover:scale-110 active-press shadow-lg hover:shadow-xl transition-all"
+            className="rounded-full aspect-square h-11 w-11 sm:h-14 sm:w-14 shrink-0 p-0 flex items-center justify-center bg-white/95 backdrop-blur-md text-rose-600 border border-white/70 hover:bg-white hover:scale-110 active-press shadow-lg hover:shadow-xl transition-all"
             title="Pass"
           >
-            <IconX className="h-6 w-6 sm:h-6.5 sm:w-6.5 stroke-[2.3]" />
+            <IconX className="h-5 w-5 sm:h-6.5 sm:w-6.5 stroke-[2.3]" />
           </Button>
 
           {/* Chat button: flex-1 end-to-end */}
@@ -467,10 +467,10 @@ export default function DiscoverPage() {
                 );
               }
             }}
-            className="rounded-full aspect-square h-12 w-12 sm:h-14 sm:w-14 shrink-0 p-0 flex items-center justify-center bg-white/95 backdrop-blur-md text-rose-600 border border-white/70 hover:bg-white hover:scale-110 active-press shadow-lg hover:shadow-xl disabled:opacity-50 transition-all"
+            className="rounded-full aspect-square h-11 w-11 sm:h-14 sm:w-14 shrink-0 p-0 flex items-center justify-center bg-white/95 backdrop-blur-md text-rose-600 border border-white/70 hover:bg-white hover:scale-110 active-press shadow-lg hover:shadow-xl disabled:opacity-50 transition-all"
             title="Send Interest"
           >
-            <IconHeart className="h-6 w-6 sm:h-6.5 sm:w-6.5 fill-rose-600" />
+            <IconHeart className="h-5.5 w-5.5 sm:h-6.5 sm:w-6.5 fill-rose-600" />
           </Button>
         </div>
       </div>
@@ -478,11 +478,38 @@ export default function DiscoverPage() {
   );
 
   return (
-    <div className="space-y-2.5 sm:space-y-4 pb-2 sm:pb-8">
+    <div className={cn(
+      "transition-all",
+      viewMode === 'swipe'
+        ? "h-[calc(100dvh-132px)] flex flex-col gap-2.5 sm:gap-3 overflow-hidden pb-0 md:h-auto md:overflow-visible md:pb-8 md:space-y-4 md:gap-0"
+        : "space-y-2.5 sm:space-y-4 pb-2 sm:pb-8"
+    )}>
+      {/* Mobile viewport height lock for Swipe mode */}
+      {viewMode === 'swipe' && (
+        <style dangerouslySetInnerHTML={{ __html: `
+          @media (max-width: 767px) {
+            html, body {
+              overflow: hidden !important;
+              overscroll-behavior: none !important;
+              height: 100% !important;
+            }
+            #main-content { 
+              padding-bottom: 0 !important; 
+              overflow: hidden !important;
+            }
+            div:has(> #main-content) {
+              padding-top: 0.4rem !important;
+              padding-bottom: 0 !important;
+              gap: 0 !important;
+            }
+          }
+        `}} />
+      )}
+
       {/* ======================================================== */}
       {/* 1. TOP HEADER & VIEW MODE CONTROLS                       */}
       {/* ======================================================== */}
-      <div className="flex flex-col gap-2 sm:gap-3 animate-content-appear stagger-1">
+      <div className="flex flex-col gap-2 sm:gap-3 animate-content-appear stagger-1 shrink-0">
         {/* <SectionHeader
           eyebrow="Discovery jj"
         /> */}
@@ -589,10 +616,10 @@ export default function DiscoverPage() {
 
       {isLoading ? (
         viewMode === 'swipe' ? (
-          <div className="relative max-w-2xl mx-auto space-y-4 animate-content-appear stagger-2">
+          <div className="relative max-w-2xl mx-auto w-full flex-1 min-h-0 flex flex-col animate-content-appear stagger-2">
             <SwipeCardSkeleton />
             {/* Peek of next card underneath */}
-            <div className="absolute top-8 inset-x-4 -z-10 h-[600px] rounded-[2.5rem] bg-stone-200/50 scale-[0.95]" />
+            <div className="absolute top-6 inset-x-4 -z-10 h-[calc(100%-1.5rem)] rounded-[2rem] sm:rounded-[2.5rem] bg-stone-200/50 scale-[0.95]" />
           </div>
         ) : (
           <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 animate-content-appear stagger-2">
@@ -616,14 +643,14 @@ export default function DiscoverPage() {
           {/* FEATURED / CARD VIEW MODE (Mobile only)                  */}
           {/* ======================================================== */}
           {viewMode === 'swipe' && safeFeaturedProfile && (
-            <div className="block md:hidden max-w-2xl mx-auto space-y-2 sm:space-y-4 animate-content-appear stagger-2">
-            {/* Top Navigation Bar: Previous / Next & Counter */}
-            <div className="flex items-center justify-between px-2">
+            <div className="block md:hidden max-w-2xl mx-auto w-full flex-1 min-h-0 flex flex-col animate-content-appear stagger-2">
+            {/* Top Navigation Bar: Previous / Next & Counter (Hidden on mobile) */}
+            <div className="hidden">
               <span className="text-xs font-bold tracking-wider uppercase text-[var(--muted)]">
                 {/* Profile {featuredIndex + 1} of {filteredProfiles.length} */}
               </span>
 
-              <div className="flex items-center gap-2 hidden">
+              <div className="flex items-center gap-2">
                 <Button
                   variant="secondary"
                   size="sm"
@@ -649,8 +676,8 @@ export default function DiscoverPage() {
               </div>
             </div>
 
-            {/* Stack of SwipeCards */}
-            <div className="relative h-[640px] w-full">
+            {/* Stack of SwipeCards - Dynamically sized to fill available viewport */}
+            <div className="relative flex-1 min-h-[400px] max-h-[640px] w-full">
               {[
                 featuredIndex < filteredProfiles.length - 1 ? filteredProfiles[featuredIndex + 1] : null,
                 safeFeaturedProfile,
