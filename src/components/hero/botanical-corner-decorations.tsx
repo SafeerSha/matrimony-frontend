@@ -29,25 +29,25 @@ export function BotanicalCornerDecorations({
       )}
       aria-hidden="true"
     >
-      {/* 1. Atmospheric Ambient Tint Glows for the Burgundy & Rose Corners */}
+      {/* 1. Atmospheric Ambient Tint Glows for the Burgundy & Rose Corners (hidden on mobile for high FPS scrolling) */}
       {/* Burgundy Ambient Glow (Top-Left) */}
       <div
-        className="pointer-events-none absolute -top-24 -left-24 h-[32rem] w-[32rem] rounded-full bg-[radial-gradient(circle,rgba(122,24,53,0.09)_0%,transparent_70%)] blur-3xl opacity-80"
+        className="pointer-events-none absolute -top-24 -left-24 hidden sm:block h-[32rem] w-[32rem] rounded-full bg-[radial-gradient(circle,rgba(122,24,53,0.09)_0%,transparent_70%)] blur-3xl opacity-80"
         aria-hidden="true"
       />
       {/* Soft Blush Rose Blossom Glow (Top-Right) */}
       <div
-        className="pointer-events-none absolute -top-24 -right-24 h-[32rem] w-[32rem] rounded-full bg-[radial-gradient(circle,rgba(199,122,139,0.08)_0%,transparent_68%)] blur-3xl opacity-80"
+        className="pointer-events-none absolute -top-24 -right-24 hidden sm:block h-[32rem] w-[32rem] rounded-full bg-[radial-gradient(circle,rgba(199,122,139,0.08)_0%,transparent_68%)] blur-3xl opacity-80"
         aria-hidden="true"
       />
       {/* Warm Champagne Gold Glow (Bottom-Left) */}
       <div
-        className="pointer-events-none absolute bottom-8 -left-16 h-[26rem] w-[26rem] rounded-full bg-[radial-gradient(circle,rgba(216,178,140,0.10)_0%,transparent_70%)] blur-3xl"
+        className="pointer-events-none absolute bottom-8 -left-16 hidden sm:block h-[26rem] w-[26rem] rounded-full bg-[radial-gradient(circle,rgba(216,178,140,0.10)_0%,transparent_70%)] blur-3xl"
         aria-hidden="true"
       />
       {/* Soft Rose Glow (Bottom-Right) */}
       <div
-        className="pointer-events-none absolute bottom-8 -right-16 h-[28rem] w-[28rem] rounded-full bg-[radial-gradient(circle,rgba(199,122,139,0.07)_0%,transparent_70%)] blur-3xl"
+        className="pointer-events-none absolute bottom-8 -right-16 hidden sm:block h-[28rem] w-[28rem] rounded-full bg-[radial-gradient(circle,rgba(199,122,139,0.07)_0%,transparent_70%)] blur-3xl"
         aria-hidden="true"
       />
 

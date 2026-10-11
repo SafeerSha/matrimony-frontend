@@ -32,8 +32,10 @@ import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { SectionHeader } from '@/components/ui/section-header';
+import { ModernSelect } from '@/components/ui/modern-select';
 import { ChangePasswordModal } from '@/components/settings/change-password-modal';
 import { BlockedUsersModal } from '@/components/settings/blocked-users-modal';
+import { FeatureGate } from '@/components/ui/under-development';
 import { toast } from '@/lib/toast';
 import { cn } from '@/lib/cn';
 
@@ -569,17 +571,19 @@ function SettingsContent() {
                         </p>
                       </div>
                     </div>
-                    <div className="w-full sm:w-auto min-w-0">
-                      <select
+                    <div className="w-full sm:w-64 min-w-0">
+                      <ModernSelect
                         value={whoCanContact}
-                        onChange={(e) => setWhoCanContact(e.target.value as any)}
-                        className="w-full sm:w-auto max-w-full rounded-xl bg-[#FFF9F6] border border-[#E9DDE0] px-3 py-2 text-xs font-semibold text-[#211B1E] outline-none focus:border-[#7A1835]"
-                      >
-                        <option value="verified">Verified Matches Only (Recommended)</option>
-                        <option value="all">All Registered Members</option>
-                      </select>
+                        onChange={(val) => setWhoCanContact(val as any)}
+                        options={[
+                          { value: "verified", label: "Verified Matches Only (Recommended)" },
+                          { value: "all", label: "All Registered Members" },
+                        ]}
+                        size="sm"
+                      />
                     </div>
                   </div>
+
 
                   {/* Blocked Profiles */}
                   <div className="p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4">
@@ -919,15 +923,17 @@ function SettingsContent() {
 
 export default function SettingsPage() {
   return (
-    <React.Suspense
-      fallback={
-        <div className="py-24 flex flex-col items-center justify-center text-[#766B6F] gap-2">
-          <div className="h-7 w-7 animate-spin rounded-full border-2 border-[#7A1835] border-t-transparent" />
-          <span className="text-xs font-semibold">Loading settings...</span>
-        </div>
-      }
-    >
-      <SettingsContent />
-    </React.Suspense>
+    <FeatureGate page="settings" title="Settings">
+      <React.Suspense
+        fallback={
+          <div className="py-24 flex flex-col items-center justify-center text-[#766B6F] gap-2">
+            <div className="h-7 w-7 animate-spin rounded-full border-2 border-[#7A1835] border-t-transparent" />
+            <span className="text-xs font-semibold">Loading settings...</span>
+          </div>
+        }
+      >
+        <SettingsContent />
+      </React.Suspense>
+    </FeatureGate>
   );
 }

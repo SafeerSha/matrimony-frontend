@@ -26,6 +26,7 @@ import { Badge } from '@/components/ui/badge';
 import { SearchInput } from '@/components/ui/input';
 import { InterestCard } from '@/components/ui/interest-card';
 import { EmptyState } from '@/components/ui/empty-state';
+import { FeatureGate } from '@/components/ui/under-development';
 import { matchesService, profileService } from '@/services';
 import {
   profiles as demoProfiles,
@@ -421,19 +422,21 @@ function InterestsContent() {
 
 export default function InterestsPage() {
   return (
-    <Suspense
-      fallback={
-        <div className="space-y-6">
-          <div className="h-16 w-1/3 bg-[var(--surface-muted)] rounded-2xl skeleton-shimmer" />
-          <div className="h-12 w-full bg-[var(--surface-muted)] rounded-2xl skeleton-shimmer" />
-          <div className="space-y-4">
-            <div className="h-56 w-full bg-[var(--surface-muted)] rounded-3xl skeleton-shimmer" />
-            <div className="h-56 w-full bg-[var(--surface-muted)] rounded-3xl skeleton-shimmer" />
+    <FeatureGate page="interests" title="Interests & Requests">
+      <Suspense
+        fallback={
+          <div className="space-y-6">
+            <div className="h-16 w-1/3 bg-[var(--surface-muted)] rounded-2xl skeleton-shimmer" />
+            <div className="h-12 w-full bg-[var(--surface-muted)] rounded-2xl skeleton-shimmer" />
+            <div className="space-y-4">
+              <div className="h-56 w-full bg-[var(--surface-muted)] rounded-3xl skeleton-shimmer" />
+              <div className="h-56 w-full bg-[var(--surface-muted)] rounded-3xl skeleton-shimmer" />
+            </div>
           </div>
-        </div>
-      }
-    >
-      <InterestsContent />
-    </Suspense>
+        }
+      >
+        <InterestsContent />
+      </Suspense>
+    </FeatureGate>
   );
 }

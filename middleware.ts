@@ -25,6 +25,12 @@ export default async function middleware(request: NextRequest) {
   response.headers.set("X-Request-Id", crypto.randomUUID());
 
   const pathname = request.nextUrl.pathname;
+
+  // Convenience redirect from /discover to /app/discover
+  if (pathname === "/discover" || pathname === "/discover/") {
+    return NextResponse.redirect(new URL("/app/discover", request.url));
+  }
+
   const isProtectedPath = pathname.startsWith("/app") || pathname.startsWith("/admin") || pathname.startsWith("/rm");
 
   if (isProtectedPath) {
@@ -34,6 +40,11 @@ export default async function middleware(request: NextRequest) {
       const login = new URL("/login", request.url);
       login.searchParams.set("next", pathname);
       return NextResponse.redirect(login);
+    }
+
+    // Incomplete / Draft profile protection: must complete onboarding
+    if (session.status === "DRAFT" || session.status === "draft") {
+      return NextResponse.redirect(new URL("/onboarding", request.url));
     }
 
     // Role-based authorization
@@ -50,5 +61,5 @@ export default async function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/app/:path*", "/admin/:path*", "/rm/:path*"]
+  matcher: ["/discover", "/app/:path*", "/admin/:path*", "/rm/:path*"]
 };

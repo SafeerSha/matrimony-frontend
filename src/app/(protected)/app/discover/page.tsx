@@ -30,13 +30,14 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Chip } from '@/components/ui/chip';
-import { SearchInput, Select } from '@/components/ui/input';
+import { SearchInput } from '@/components/ui/input';
+import { ModernSelect } from '@/components/ui/modern-select';
 import { BottomSheet } from '@/components/ui/bottom-sheet';
 import { EmptyState } from '@/components/ui/empty-state';
 import { SectionHeader } from '@/components/ui/section-header';
 import { VerificationBadge } from '@/components/ui/verification-badge';
 import { ProfileCardSkeleton, SwipeCardSkeleton } from '@/components/ui/skeleton';
-import { matchesService } from '@/services';
+import { matchesService, profileService } from '@/services';
 import { profiles as demoProfiles } from '@/lib/demo-data';
 import { toast } from '@/lib/toast';
 import { cn } from '@/lib/cn';
@@ -98,6 +99,26 @@ export default function DiscoverPage() {
       setHasSeenSwipeHint(false);
     }
   }, []);
+
+  // Guard: Incomplete / Draft profiles are not allowed on Discover
+  useEffect(() => {
+    profileService
+      .getProfile('me')
+      .then((profile: any) => {
+        if (!profile) return;
+        const uStatus = profile.user?.status ? String(profile.user.status).toUpperCase() : '';
+        const pStatus = profile.status ? String(profile.status).toUpperCase() : '';
+        const step = profile.onboardingStep !== undefined ? Number(profile.onboardingStep) : undefined;
+        if (uStatus === 'DRAFT' || pStatus === 'DRAFT' || (step !== undefined && step < 5)) {
+          toast.warning(
+            'Complete Profile Required',
+            'Please complete your profile details to unlock discovery.'
+          );
+          router.replace('/onboarding');
+        }
+      })
+      .catch(() => {});
+  }, [router]);
 
   // Fetch profiles based on filters
   useEffect(() => {
@@ -465,9 +486,9 @@ export default function DiscoverPage() {
       {/* 1. TOP HEADER & VIEW MODE CONTROLS                       */}
       {/* ======================================================== */}
       <div className="flex flex-col gap-2 sm:gap-3 animate-content-appear stagger-1">
-        <SectionHeader
-          eyebrow="Discovery"
-        />
+        {/* <SectionHeader
+          eyebrow="Discovery jj"
+        /> */}
 
         <div className="flex items-center justify-between w-full gap-2 shrink-0">
           {/* View Switcher: Mobile & Desktop */}
@@ -911,20 +932,19 @@ export default function DiscoverPage() {
               />
             </div>
 
-            <div className="space-y-2">
-              <label className="text-[11px] font-bold uppercase tracking-wider text-[var(--muted-strong)]">
-                Sort By
-              </label>
-              <Select
+            <div>
+              <ModernSelect
+                label="Sort By"
                 value={sortBy}
-                onChange={(e) => setSortBy(e.target.value as SortOption)}
-                className="h-11 rounded-xl text-sm font-semibold w-full bg-[var(--surface)] border border-[var(--border)]"
-              >
-                <option value="recommended">Recommended Matches</option>
-                <option value="recent">Recently Active</option>
-                <option value="new">New Profiles</option>
-                <option value="nearby">Nearby Location</option>
-              </Select>
+                onChange={(val) => setSortBy(val as SortOption)}
+                options={[
+                  { value: "recommended", label: "Recommended Matches" },
+                  { value: "recent", label: "Recently Active" },
+                  { value: "new", label: "New Profiles" },
+                  { value: "nearby", label: "Nearby Location" },
+                ]}
+                size="sm"
+              />
             </div>
           </div>
 

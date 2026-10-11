@@ -27,6 +27,7 @@ import { notificationService, NotificationItem } from '@/services';
 import { profiles as demoProfiles } from '@/lib/demo-data';
 import { toast } from '@/lib/toast';
 import { cn } from '@/lib/cn';
+import { FeatureGate } from '@/components/ui/under-development';
 
 export interface NotificationDisplayItem {
   id: string;
@@ -294,9 +295,10 @@ export default function NotificationsPage() {
   };
 
   return (
-    <div className="space-y-6 pb-12">
-      {/* Header */}
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+    <FeatureGate page="notifications" title="Notification Center">
+      <div className="space-y-6 pb-12">
+        {/* Header */}
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
         <div>
           <SectionHeader
             eyebrow="IconActivity & Updates"
@@ -480,7 +482,8 @@ export default function NotificationsPage() {
           </Button>
         </Link>
       </Card>
-    </div>
+      </div>
+    </FeatureGate>
   );
 }
 

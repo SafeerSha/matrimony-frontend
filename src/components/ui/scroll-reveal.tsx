@@ -38,8 +38,8 @@ export function ScrollReveal({
       },
       {
         root: null,
-        rootMargin: '0px 0px -50px 0px', // trigger slightly before it comes into view fully, or adjust as needed. 
-        threshold,
+        rootMargin: '120px 0px 20px 0px', // proactively trigger before scrolling into view to eliminate blank delays
+        threshold: 0.01,
       }
     );
 

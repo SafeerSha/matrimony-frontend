@@ -18,6 +18,7 @@ import { ChatProfilePanel } from '@/components/chat/chat-profile-panel';
 import { chatService, Conversation, Message } from '@/services/chat.service';
 import { profiles as demoProfiles } from '@/lib/demo-data';
 import { cn } from '@/lib/cn';
+import { FeatureGate } from '@/components/ui/under-development';
 import type { Profile } from '@/lib/demo-data';
 
 // Demo initial conversation fallback seed
@@ -356,12 +357,13 @@ export default function MessagesPage() {
   }, [selected]);
 
   return (
-    <div className={cn(
-      "transition-all",
-      mobileView === 'chat' 
-        ? "fixed inset-0 z-[100] bg-[#FFFDFB] m-0 p-0 flex flex-col h-[100dvh] w-screen lg:relative lg:inset-auto lg:z-auto lg:h-auto lg:w-auto lg:space-y-6 lg:pb-6 lg:bg-transparent" 
-        : "space-y-4 sm:space-y-6 pb-6"
-    )}>
+    <FeatureGate page="messages" title="Messages & Chat">
+      <div className={cn(
+        "transition-all",
+        mobileView === 'chat' 
+          ? "fixed inset-0 z-[100] bg-[#FFFDFB] m-0 p-0 flex flex-col h-[100dvh] w-screen lg:relative lg:inset-auto lg:z-auto lg:h-auto lg:w-auto lg:space-y-6 lg:pb-6 lg:bg-transparent" 
+          : "space-y-4 sm:space-y-6 pb-6"
+      )}>
       {/* Global overrides for immersive mobile chat */}
       {mobileView === 'chat' && (
         <style dangerouslySetInnerHTML={{ __html: `
@@ -510,6 +512,7 @@ export default function MessagesPage() {
           />
         </BottomSheet>
       )}
-    </div>
+      </div>
+    </FeatureGate>
   );
 }

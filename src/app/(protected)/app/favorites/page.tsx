@@ -8,6 +8,7 @@ import { IconBookmark, IconCompass } from '@tabler/icons-react';
 import { Button } from '@/components/ui/button';
 import { InterestCard } from '@/components/ui/interest-card';
 import { EmptyState } from '@/components/ui/empty-state';
+import { FeatureGate } from '@/components/ui/under-development';
 import { profiles as demoProfiles } from '@/lib/demo-data';
 import type { Profile } from '@/lib/demo-data';
 
@@ -26,7 +27,8 @@ export default function FavoritesPage() {
   }, []);
 
   return (
-    <div className="space-y-6 pb-14">
+    <FeatureGate page="favorites" title="Favorites & Shortlist">
+      <div className="space-y-6 pb-14">
       {/* Top Header */}
       <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 animate-content-appear stagger-1">
         <div className="min-w-0">
@@ -83,6 +85,7 @@ export default function FavoritesPage() {
           icon={<IconBookmark className="h-10 w-10 text-[var(--primary)]" />}
         />
       )}
-    </div>
+      </div>
+    </FeatureGate>
   );
 }

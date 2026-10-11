@@ -12,10 +12,16 @@ import {
   IconUser,
   IconPhone,
   IconCheck,
-  IconMail,
+  IconLoader2,
+  IconUsers,
+  IconHomeHeart,
+  IconMapPin,
+  IconUserHeart,
+  IconLock,
 } from "@tabler/icons-react";
 import { toast } from "@/lib/toast";
 import { cn } from "@/lib/cn";
+import { authService } from "@/services";
 import { ScrollReveal } from "@/components/ui/scroll-reveal";
 
 const profileForOptions = [
@@ -25,8 +31,8 @@ const profileForOptions = [
 ];
 
 const lookingInOptions = [
-  { value: "Kerala", label: "Kerala" },
-  { value: "Telugu", label: "Telugu" },
+  { value: "Kerala", label: "Kerala Community" },
+  { value: "Telugu", label: "Telugu Community" },
 ];
 
 const createdByOptions = [
@@ -38,97 +44,8 @@ const createdByOptions = [
   { value: "By Friend", label: "By Friend" },
 ];
 
-const genderOptions = [
-  { value: "Female", label: "Female" },
-  { value: "Male", label: "Male" },
-];
+import { ModernSelect } from "@/components/ui/modern-select";
 
-// Modern Custom Dropdown Component
-function ModernSelect({
-  value,
-  onChange,
-  options,
-  disabled = false,
-  className,
-}: {
-  value: string;
-  onChange: (value: string) => void;
-  options: { value: string; label: string }[];
-  disabled?: boolean;
-  className?: string;
-}) {
-  const [isOpen, setIsOpen] = useState(false);
-  const containerRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    function handleClickOutside(event: MouseEvent) {
-      if (containerRef.current && !containerRef.current.contains(event.target as Node)) {
-        setIsOpen(false);
-      }
-    }
-    if (isOpen) {
-      document.addEventListener("mousedown", handleClickOutside);
-      return () => document.removeEventListener("mousedown", handleClickOutside);
-    }
-  }, [isOpen]);
-
-  const selectedOption = options.find((opt) => opt.value === value) || options[0];
-
-  return (
-    <div ref={containerRef} className={cn("relative w-full", className)}>
-      <button
-        type="button"
-        disabled={disabled}
-        onClick={() => !disabled && setIsOpen(!isOpen)}
-        className={cn(
-          "focus-ring h-[52px] w-full flex items-center justify-between rounded-xl border border-[var(--border)] px-3.5 py-3 text-sm font-medium transition text-left select-none cursor-pointer",
-          disabled
-            ? "bg-[var(--surface-muted)]/80 text-[var(--muted-strong)] cursor-not-allowed opacity-80"
-            : "bg-[var(--surface-muted)]/40 text-[var(--foreground)] hover:border-[var(--border-strong)] hover:bg-[var(--surface-muted)]/60",
-          isOpen && "border-[var(--primary)] ring-4 ring-[var(--primary)]/10"
-        )}
-      >
-        <span className="truncate">{selectedOption?.label || value}</span>
-        <IconChevronDown
-          className={cn(
-            "h-4 w-4 transition-transform duration-200 shrink-0 ml-2",
-            disabled ? "text-[var(--muted)]/50" : "text-[var(--muted)]",
-            isOpen && "rotate-180 text-[var(--primary)]"
-          )}
-        />
-      </button>
-
-      {isOpen && !disabled && (
-        <div className="absolute top-full left-0 right-0 mt-1.5 z-50 min-w-[200px] overflow-hidden rounded-2xl border border-[var(--border)] bg-white/98 backdrop-blur-xl p-1.5 shadow-[0_16px_40px_rgba(40,10,20,0.14)] animate-in fade-in zoom-in-95 duration-150">
-          <div className="max-h-60 overflow-y-auto space-y-0.5 custom-scrollbar">
-            {options.map((opt) => {
-              const isSelected = opt.value === value;
-              return (
-                <button
-                  key={opt.value}
-                  type="button"
-                  onClick={() => {
-                    onChange(opt.value);
-                    setIsOpen(false);
-                  }}
-                  className={cn(
-                    "flex w-full items-center justify-between px-3 py-2.5 rounded-xl text-sm font-medium transition-all text-left cursor-pointer",
-                    isSelected
-                      ? "bg-[var(--primary-light)]/90 text-[var(--primary)] font-bold shadow-2xs"
-                      : "text-[var(--foreground)] hover:bg-[var(--surface-muted)] hover:text-[var(--primary)]"
-                  )}
-                >
-                  <span className="truncate">{opt.label}</span>
-                  {isSelected && <IconCheck className="h-4 w-4 text-[var(--primary)] shrink-0 ml-2" />}
-                </button>
-              );
-            })}
-          </div>
-        </div>
-      )}
-    </div>
-  );
-}
 
 export function QuickRegisterSection() {
   const router = useRouter();
@@ -137,9 +54,20 @@ export function QuickRegisterSection() {
   const [createdBy, setCreatedBy] = useState("Myself");
   const [gender, setGender] = useState("Female");
   const [name, setName] = useState("");
-  const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
   const [error, setError] = useState<string | null>(null);
+
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const params = new URLSearchParams(window.location.search);
+      const qPhone = params.get("phone");
+      const qName = params.get("name");
+      if (qPhone) setPhone(qPhone);
+      if (qName) setName(qName);
+    }
+  }, []);
 
   const isByLocked = profileFor === "Friendship" || profileFor === "Living Together";
 
@@ -150,19 +78,13 @@ export function QuickRegisterSection() {
     }
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
 
     const trimmedName = name.trim();
     if (!trimmedName) {
       setError("Please enter your full name");
-      return;
-    }
-
-    const trimmedEmail = email.trim();
-    if (!trimmedEmail || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmedEmail)) {
-      setError("Please enter a valid email address");
       return;
     }
 
@@ -173,9 +95,8 @@ export function QuickRegisterSection() {
     }
 
     const fullPhone = `+91 ${cleanPhone}`;
-    const paramsObj: Record<string, string> = {
+    const payload = {
       name: trimmedName,
-      email: trimmedEmail,
       phone: fullPhone,
       profileFor,
       category: profileFor,
@@ -184,10 +105,36 @@ export function QuickRegisterSection() {
       ...(profileFor === "Marriage" ? { lookingIn } : {}),
     };
 
-    const params = new URLSearchParams(paramsObj);
+    setIsSubmitting(true);
 
-    toast.info("Starting Registration", `Welcome, ${trimmedName}! Taking you to account setup.`);
-    router.push(`/register?${params.toString()}`);
+    try {
+      await authService.quickRegister(payload);
+      // Trigger mobile verification code in background
+      authService.sendOtp(fullPhone).catch(() => {});
+
+      toast.info(
+        "Verification Code Sent",
+        `We've sent a 6-digit verification code to ${fullPhone}.`
+      );
+      router.push("/verify");
+    } catch (err: any) {
+      if (err?.status === 409) {
+        setError("An account with this mobile number already exists. Please sign in.");
+        toast.warning("Account exists", "Please sign in to access your profile.");
+        setIsSubmitting(false);
+        return;
+      }
+      // If network/endpoint is in progress, local draft is stored in sessionStorage
+      console.warn("Backend notice (proceeding with local draft):", err);
+      authService.sendOtp(fullPhone).catch(() => {});
+      toast.info(
+        "Verification Code Sent",
+        `Please verify your mobile number to continue.`
+      );
+      router.push("/verify");
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -195,110 +142,178 @@ export function QuickRegisterSection() {
       id="quick-register"
       className="scroll-mt-8 sm:scroll-mt-16 relative py-12 sm:py-16 lg:py-20 border-y border-[var(--border)] bg-transparent"
     >
-      {/* Background Romantic Photo Collage with repeated/tiled pattern and luxury atmospheric overlay */}
+      {/* Romantic Photo Collage Background with repeated/tiled pattern */}
       <div className="pointer-events-none absolute inset-0 z-0 overflow-hidden">
         <div
-          className="h-full w-full bg-repeat bg-center opacity-90 blur-[2.5px] scale-[1.02]"
+          className="h-full w-full bg-repeat bg-center opacity-60 blur-[1px] sm:blur-[2px] scale-[1.01]"
           style={{
             backgroundImage: "url('/registerFormBg.webp'), url('/registerFormBg.png')",
             backgroundSize: "440px auto",
+            transform: "translateZ(0)",
+            willChange: "transform",
           }}
         />
-        {/* Soft atmospheric overlay for readability with high background visibility */}
-        <div className="absolute inset-0 bg-gradient-to-b from-white/40 via-white/25 to-white/45" />
+        {/* Soft atmospheric overlay for high text readability */}
+        <div className="absolute inset-0 bg-gradient-to-b from-white/80 via-white/65 to-white/85" />
       </div>
 
       {/* Decorative ambient background glows */}
       <div className="pointer-events-none absolute inset-0 z-0 overflow-hidden">
         <div
-          className="absolute -top-24 left-1/3 h-[28rem] w-[28rem] rounded-full bg-[var(--primary)]/5 blur-3xl"
+          className="absolute -top-24 left-1/3 hidden sm:block h-[28rem] w-[28rem] rounded-full bg-[var(--primary)]/6 blur-3xl"
           aria-hidden="true"
         />
         <div
-          className="absolute -bottom-24 right-1/3 h-[28rem] w-[28rem] rounded-full bg-[var(--accent)]/10 blur-3xl"
+          className="absolute -bottom-24 right-1/3 hidden sm:block h-[28rem] w-[28rem] rounded-full bg-[#D4AF37]/10 blur-3xl"
           aria-hidden="true"
         />
       </div>
 
-      <div className="relative z-10 mx-auto max-w-[1400px] px-4 sm:px-6 lg:px-8">
-        {/* Section Header */}
-        <div className="text-center max-w-3xl mx-auto mb-8 sm:mb-10 space-y-3">
-          <ScrollReveal staggerClass="stagger-1">
-            <div className="inline-flex items-center gap-2 rounded-full border border-[var(--primary)]/20 bg-white/95 backdrop-blur-md px-4 py-1.5 text-xs font-bold text-[var(--primary)] shadow-sm">
-              <IconHeart className="h-3.5 w-3.5 fill-current" />
-              <span>The Biggest & Most Trusted Matrimony Service</span>
-            </div>
-          </ScrollReveal>
+      <div className="relative z-10 mx-auto max-w-[1300px] px-4 sm:px-6 lg:px-8">
+        {/* Integrated Section Header with Frosted Glass Plate for Crystal-Clear Visibility */}
+        <div className="text-center max-w-2xl mx-auto mb-6 sm:mb-8">
+          <ScrollReveal>
+            <div className="inline-flex flex-col items-center rounded-3xl bg-white/95 backdrop-blur-xl border border-white/90 shadow-[0_10px_30px_rgba(92,16,39,0.08)] px-5 sm:px-8 py-4 sm:py-5 space-y-2.5">
+              <div className="inline-flex items-center gap-2 rounded-full border border-[#D89B65]/40 bg-[#FAF3EC] px-3.5 py-1 text-[10px] sm:text-xs font-bold text-[#8C5D2C] shadow-2xs">
+                <IconSparkles className="h-3.5 w-3.5 text-[#D89B65]" />
+                <span>The Most Trusted Matrimony & Matchmaking Network</span>
+              </div>
 
-          <ScrollReveal staggerClass="stagger-2">
-            <div className="inline-block rounded-2xl bg-white/90 backdrop-blur-md border border-white/60 px-5 py-2 shadow-sm">
-              <p className="text-sm sm:text-base font-semibold text-[var(--foreground)]">
-                Now find verified matches based on your hobbies, values, and shared interests.
+              <h2 className="font-editorial-title text-[28px] sm:text-3xl lg:text-4xl font-black text-[#5C1027] tracking-tight">
+                Begin Your{" "}
+                <span className="bg-gradient-to-r from-[#A86E38] via-[#C98B50] to-[#8C5523] bg-clip-text text-transparent">
+                  Story
+                </span>
+              </h2>
+
+              <p className="text-xs sm:text-sm font-semibold text-slate-700 max-w-md">
+                Discover verified matches curated for your community, values, and shared interests.
               </p>
             </div>
           </ScrollReveal>
         </div>
 
-        {/* Horizontal Registration Card */}
-        <ScrollReveal className="mx-auto max-w-[1380px]" staggerClass="stagger-3">
-          <div className="relative rounded-3xl border border-[var(--border)] bg-white/95 backdrop-blur-md shadow-[0_20px_50px_rgba(122,20,40,0.10)]">
-            {/* Top Micro-Header Banner */}
-            <div className="rounded-t-3xl bg-gradient-to-r from-[#7A1428] via-[#8C1D33] to-[#7A1428] px-6 sm:px-8 py-3.5 text-white flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <IconSparkles className="h-4 w-4 text-[var(--accent)]" />
-                <span className="font-editorial-title text-sm sm:text-base font-bold tracking-wide">
-                  Create a Profile
-                </span>
+        {/* The Luxury Matchmaker Bar Card */}
+        <ScrollReveal className="mx-auto max-w-[1240px]">
+          <div className="relative rounded-3xl border border-[#EAD8C7]/70 hover:border-[#D89B65]/60 bg-white/95 backdrop-blur-2xl shadow-[0_24px_70px_rgba(128,19,46,0.12)] p-4 sm:p-7 lg:p-8 transition-colors duration-300">
+            {/* Top Deck: Intent Tabs + Verified Pill (Zero Horizontal Overflow) */}
+            <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3 pb-4 sm:pb-5 mb-4 sm:mb-5 border-b border-slate-100">
+              <div className="w-full lg:w-auto">
+                <div className="grid grid-cols-3 gap-1 sm:gap-2 w-full sm:w-auto sm:inline-flex sm:items-center">
+                  <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400 mr-1 hidden lg:inline">
+                    Seeking:
+                  </span>
+                  {profileForOptions.map((opt) => {
+                    const isSelected = profileFor === opt.value;
+                    const IconComp =
+                      opt.value === "Marriage"
+                        ? IconHeart
+                        : opt.value === "Friendship"
+                        ? IconUsers
+                        : IconHomeHeart;
+                    return (
+                      <button
+                        key={opt.value}
+                        type="button"
+                        onClick={() => handleProfileForChange(opt.value)}
+                        className={cn(
+                          "flex items-center justify-center gap-1 sm:gap-1.5 px-2 sm:px-3.5 py-2 sm:py-2.5 rounded-xl text-[11px] sm:text-xs md:text-sm font-semibold transition-all cursor-pointer border text-center select-none",
+                          isSelected
+                            ? "bg-[#80132E] text-white border-[#80132E] shadow-sm shadow-[#80132E]/25 font-bold"
+                            : "bg-slate-50 text-slate-700 border-slate-200/70 hover:bg-[#FDF2F4] hover:text-[#80132E] hover:border-[#80132E]/30"
+                        )}
+                      >
+                        <IconComp className={cn("h-3.5 w-3.5 sm:h-4 sm:w-4 shrink-0", isSelected ? "text-white" : "text-[#80132E]")} />
+                        {opt.value === "Living Together" ? (
+                          <>
+                            <span className="hidden sm:inline">Living Together</span>
+                            <span className="sm:hidden">Live-in</span>
+                          </>
+                        ) : (
+                          <span>{opt.label}</span>
+                        )}
+                      </button>
+                    );
+                  })}
+                </div>
               </div>
-              <span className="hidden sm:inline-block text-xs font-medium text-white/85">
-                100% Verified Profiles & Privacy Protection
-              </span>
+
+              {/* Verified Trust Pill */}
+              {/* <div className="inline-flex items-center justify-center gap-1.5 text-[10px] sm:text-[11px] font-semibold text-emerald-700 bg-emerald-50/90 border border-emerald-200/70 px-2.5 py-1 sm:px-3 sm:py-1.5 rounded-full w-full sm:w-auto text-center self-center lg:self-auto">
+                <IconShieldCheck className="h-3.5 w-3.5 text-emerald-600 shrink-0" />
+                <span>100% Verified Profiles & Privacy Protection</span>
+              </div> */}
             </div>
 
-            {/* Form Fields: Two Balanced Rows on Desktop */}
-            <form onSubmit={handleSubmit} className="p-6 sm:p-8 lg:p-9 xl:p-10">
+            {/* Registration Form */}
+            <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-5">
               {error && (
-                <div className="mb-5 rounded-xl border border-rose-200 bg-rose-50 px-4 py-2.5 text-xs font-medium text-rose-700">
+                <div className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-2.5 text-xs font-semibold text-rose-700 animate-in fade-in">
                   {error}
                 </div>
               )}
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-5 items-end">
-                {/* 1. Profile Created For */}
-                <div className={cn(profileFor !== "Marriage" && "lg:col-span-2")}>
-                  <label className="block text-[11px] font-bold uppercase tracking-wider text-[var(--muted)] mb-2">
-                    Profile created for
+              {/* Row 1: Match Criteria (1-Tap Chips & Selectors) */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3.5 sm:gap-4 items-end">
+                {/* 1. Looking For (Interactive 1-Tap Bride / Groom Chips) */}
+                <div>
+                  <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-500 mb-1.5">
+                    Looking For
                   </label>
-                  <ModernSelect
-                    value={profileFor}
-                    onChange={handleProfileForChange}
-                    options={profileForOptions}
-                  />
+                  <div className="h-[52px] p-1 rounded-xl bg-slate-100/80 border border-slate-200/80 flex items-center gap-1">
+                    <button
+                      type="button"
+                      onClick={() => setGender("Female")}
+                      className={cn(
+                        "flex-1 h-full rounded-lg text-xs sm:text-sm font-semibold transition-all flex items-center justify-center gap-1.5 cursor-pointer",
+                        gender === "Female"
+                          ? "bg-[#80132E] text-white shadow-sm font-bold scale-[1.01] ring-1 ring-[#D89B65]/40"
+                          : "text-slate-600 hover:text-slate-900 hover:bg-white/60"
+                      )}
+                    >
+                      <span>{profileFor === "Marriage" ? "👰 Bride" : "👩 Female"}</span>
+                      {gender === "Female" && <IconCheck className="h-3.5 w-3.5 text-[#F9E2B2]" />}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setGender("Male")}
+                      className={cn(
+                        "flex-1 h-full rounded-lg text-xs sm:text-sm font-semibold transition-all flex items-center justify-center gap-1.5 cursor-pointer",
+                        gender === "Male"
+                          ? "bg-[#80132E] text-white shadow-sm font-bold scale-[1.01] ring-1 ring-[#D89B65]/40"
+                          : "text-slate-600 hover:text-slate-900 hover:bg-white/60"
+                      )}
+                    >
+                      <span>{profileFor === "Marriage" ? "🤵 Groom" : "👨 Male"}</span>
+                      {gender === "Male" && <IconCheck className="h-3.5 w-3.5 text-[#F9E2B2]" />}
+                    </button>
+                  </div>
                 </div>
 
-                {/* Community (Shown when Marriage is selected) */}
+                {/* 2. Community / Region (Shown for Marriage, or auto-adapts) */}
                 {profileFor === "Marriage" && (
                   <div>
-                    <label className="block text-[11px] font-bold uppercase tracking-wider text-[var(--muted)] mb-2">
+                    <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-500 mb-1.5">
                       Community
                     </label>
                     <ModernSelect
                       value={lookingIn}
                       onChange={setLookingIn}
                       options={lookingInOptions}
+                      icon={<IconMapPin className="h-4 w-4 text-[#C58F5A]" />}
                     />
                   </div>
                 )}
 
-                {/* 2. Created By field */}
+                {/* 3. Profile Created By */}
                 <div>
-                  <div className="flex items-center justify-between mb-2">
-                    <label className="block text-[11px] font-bold uppercase tracking-wider text-[var(--muted)]">
-                      Created By
+                  <div className="flex items-center justify-between mb-1.5">
+                    <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-500">
+                      Profile Created By
                     </label>
                     {isByLocked && (
-                      <span className="text-[10px] text-[var(--muted)] font-medium">
-                        (Self only)
+                      <span className="text-[10px] text-slate-400 font-medium inline-flex items-center gap-0.5">
+                        <IconLock className="h-2.5 w-2.5" /> Self only
                       </span>
                     )}
                   </div>
@@ -307,25 +322,17 @@ export function QuickRegisterSection() {
                     disabled={isByLocked}
                     onChange={setCreatedBy}
                     options={isByLocked ? [{ value: "Myself", label: "Myself" }] : createdByOptions}
+                    icon={<IconUserHeart className="h-4 w-4 text-[#C58F5A]" />}
                   />
                 </div>
+              </div>
 
-                {/* 3. Gender */}
-                <div>
-                  <label className="block text-[11px] font-bold uppercase tracking-wider text-[var(--muted)] mb-2">
-                    Gender
-                  </label>
-                  <ModernSelect
-                    value={gender}
-                    onChange={setGender}
-                    options={genderOptions}
-                  />
-                </div>
-
-                {/* 4. Full Name */}
-                <div>
-                  <label className="block text-[11px] font-bold uppercase tracking-wider text-[var(--muted)] mb-2">
-                    Enter the name
+              {/* Row 2: Personal Details & Instant Submission */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-12 gap-3.5 sm:gap-4 items-end pt-1">
+                {/* 4. Full Name (5 cols on lg) */}
+                <div className="lg:col-span-5">
+                  <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-500 mb-1.5">
+                    Your Full Name
                   </label>
                   <div className="relative">
                     <input
@@ -336,40 +343,20 @@ export function QuickRegisterSection() {
                         setName(e.target.value);
                         if (error) setError(null);
                       }}
-                      className="focus-ring h-[52px] w-full rounded-xl border border-[var(--border)] bg-white px-3.5 py-3 pl-9 text-sm font-medium text-[var(--foreground)] placeholder:text-[var(--muted)] transition hover:border-[var(--border-strong)]"
+                      className="focus-ring h-[52px] w-full rounded-xl border border-slate-200/90 bg-white px-3.5 py-3 pl-10 text-sm font-semibold text-slate-800 placeholder:text-slate-400 placeholder:font-normal transition hover:border-[#D89B65]/50 focus:border-[#80132E]"
                     />
-                    <IconUser className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-[var(--muted)]" />
+                    <IconUser className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
                   </div>
                 </div>
 
-                {/* 5. Email Address */}
-                <div>
-                  <label className="block text-[11px] font-bold uppercase tracking-wider text-[var(--muted)] mb-2">
-                    Email Address
-                  </label>
-                  <div className="relative">
-                    <input
-                      type="email"
-                      placeholder="e.g. anand@example.com"
-                      value={email}
-                      onChange={(e) => {
-                        setEmail(e.target.value);
-                        if (error) setError(null);
-                      }}
-                      className="focus-ring h-[52px] w-full rounded-xl border border-[var(--border)] bg-white px-3.5 py-3 pl-9 text-sm font-medium text-[var(--foreground)] placeholder:text-[var(--muted)] transition hover:border-[var(--border-strong)]"
-                    />
-                    <IconMail className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-[var(--muted)]" />
-                  </div>
-                </div>
-
-                {/* 6. Mobile Number */}
-                <div>
-                  <label className="block text-[11px] font-bold uppercase tracking-wider text-[var(--muted)] mb-2">
+                {/* 5. Mobile Number (4 cols on lg) */}
+                <div className="lg:col-span-4">
+                  <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-500 mb-1.5">
                     Mobile Number
                   </label>
                   <div className="relative flex items-center">
-                    <div className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 flex items-center pr-2.5 border-r border-[var(--border)] select-none">
-                      <span className="text-sm font-bold text-[var(--primary)]">+91</span>
+                    <div className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 flex items-center pr-2.5 border-r border-slate-200 select-none">
+                      <span className="text-sm font-bold text-[#80132E]">+91</span>
                     </div>
                     <input
                       type="tel"
@@ -381,49 +368,56 @@ export function QuickRegisterSection() {
                         setPhone(val);
                         if (error) setError(null);
                       }}
-                      className="focus-ring h-[52px] w-full rounded-xl border border-[var(--border)] bg-white py-3 pl-16 pr-9 text-sm font-medium text-[var(--foreground)] placeholder:text-[var(--muted)] transition hover:border-[var(--border-strong)]"
+                      className="focus-ring h-[52px] w-full rounded-xl border border-slate-200/90 bg-white py-3 pl-16 pr-9 text-sm font-semibold text-slate-800 placeholder:text-slate-400 placeholder:font-normal transition hover:border-[#D89B65]/50 focus:border-[#80132E]"
                     />
-                    <IconPhone className="pointer-events-none absolute right-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-[var(--muted)]" />
+                    <IconPhone className="pointer-events-none absolute right-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
                   </div>
                 </div>
 
-                {/* 7. Submit CTA Button */}
-                <div>
-                  <span className="hidden lg:block text-[11px] font-bold uppercase tracking-wider text-transparent mb-2 select-none">
-                    Submit
-                  </span>
+                {/* 6. Primary CTA Button (3 cols on lg) */}
+                <div className="sm:col-span-2 lg:col-span-3">
                   <button
                     type="submit"
-                    className="focus-ring group h-[52px] w-full flex items-center justify-center gap-2 rounded-xl bg-[var(--primary)] hover:bg-[var(--primary-deep)] text-white px-4 font-bold text-sm sm:text-base shadow-[0_10px_25px_var(--primary-shadow-strong)] transition-all duration-200 active-press cursor-pointer whitespace-nowrap"
+                    disabled={isSubmitting}
+                    className="focus-ring group relative h-[52px] w-full flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-[#80132E] via-[#941c38] to-[#80132E] hover:from-[#6c1027] hover:to-[#7a142c] text-white px-5 font-bold text-sm sm:text-base shadow-[0_12px_28px_rgba(128,19,46,0.28)] border border-[#D89B65]/40 transition-all duration-200 active-press cursor-pointer whitespace-nowrap disabled:opacity-75 disabled:cursor-not-allowed"
                   >
-                    <span>Let's Begin</span>
-                    <IconArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
+                    {isSubmitting ? (
+                      <>
+                        <IconLoader2 className="h-4 w-4 animate-spin" />
+                        <span>Creating Profile...</span>
+                      </>
+                    ) : (
+                      <>
+                        <span>Let&apos;s Begin</span>
+                        <IconArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1 text-[#F9E2B2]" />
+                      </>
+                    )}
                   </button>
                 </div>
               </div>
 
-              {/* Bottom Footer Info: Disclaimer & Trust Checkmarks */}
-              <div className="mt-7 pt-4 border-t border-[var(--border)]/70 flex flex-col md:flex-row items-center justify-between gap-3 text-[11px] text-[var(--muted)]">
-                <p>
-                  *By clicking Let's Begin, I agree to the{" "}
-                  <Link href="/terms" className="underline hover:text-[var(--primary)]">
-                    Terms & Conditions
+              {/* Bottom Footer Disclaimers & Micro-Guarantees */}
+              <div className="mt-5 pt-3.5 border-t border-slate-100 flex flex-col md:flex-row items-center justify-between gap-2.5 text-[11px] text-slate-500">
+                <p className="text-center md:text-left">
+                  By clicking Let&apos;s Begin, you agree to our{" "}
+                  <Link href="/terms" className="underline hover:text-[#80132E]">
+                    Terms
                   </Link>{" "}
                   and{" "}
-                  <Link href="/privacy" className="underline hover:text-[var(--primary)]">
+                  <Link href="/privacy" className="underline hover:text-[#80132E]">
                     Privacy Policy
-                  </Link>
+                  </Link>.
                 </p>
 
-                <div className="flex flex-wrap items-center justify-center gap-3 sm:gap-4 text-xs font-semibold text-[var(--foreground)]/80">
-                  <span className="flex items-center gap-1.5">
-                    <span className="text-emerald-600 font-bold">✓</span> Privacy-first
+                <div className="flex flex-wrap items-center justify-center gap-3 sm:gap-4 text-[11px] font-semibold text-slate-600">
+                  <span className="flex items-center gap-1">
+                    <span className="text-emerald-600 font-bold">✓</span> Free Registration
                   </span>
-                  <span className="flex items-center gap-1.5">
-                    <span className="text-emerald-600 font-bold">✓</span> Verified profiles
+                  <span className="flex items-center gap-1">
+                    <span className="text-emerald-600 font-bold">✓</span> 100% Privacy-First
                   </span>
-                  <span className="flex items-center gap-1.5">
-                    <span className="text-emerald-600 font-bold">✓</span> Mobile ready
+                  <span className="flex items-center gap-1">
+                    <span className="text-emerald-600 font-bold">✓</span> Verified Profiles
                   </span>
                 </div>
               </div>
@@ -434,3 +428,4 @@ export function QuickRegisterSection() {
     </section>
   );
 }
+

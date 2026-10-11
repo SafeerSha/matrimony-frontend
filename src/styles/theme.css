@@ -95,6 +95,10 @@
   --line-height-heading: 1.2;
   --line-height-body: 1.55;
   --line-height-small: 1.45;
+
+  /* Standard Placeholder Style */
+  --placeholder-color: var(--subtle-foreground);
+  --placeholder-font-weight: var(--font-weight-regular);
 }
 
 @theme inline {
@@ -135,4 +139,22 @@
   --color-botanical-rich: var(--botanical-rich);
   --color-botanical-sage: var(--botanical-sage);
   --color-botanical-soft: var(--botanical-soft);
+}
+
+/* Standard input placeholder styling */
+*::placeholder {
+  color: var(--placeholder-color);
+  font-weight: var(--placeholder-font-weight);
+  opacity: 1;
+  font-size: 0.875rem;
+  letter-spacing: 0.02em;
+}
+
+/* Firefox specific */
+*::-moz-placeholder {
+  color: var(--placeholder-color);
+  font-weight: var(--placeholder-font-weight);
+  opacity: 1;
+  font-size: 0.875rem;
+  letter-spacing: 0.02em;
 }

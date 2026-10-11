@@ -86,16 +86,40 @@ export function ProfileDetail({ id }: { id?: string }) {
       profileService
         .getProfile(id)
         .then((res: any) => {
-          if (res && res.name) {
-            setProfile((prev) => ({
-              ...prev,
-              name: res.name || `${res.firstName || ''} ${res.lastName || ''}`.trim() || prev.name,
-              city: res.city || prev.city,
-              profession: res.occupation || prev.profession,
-              education: res.education || prev.education,
-              about: res.bio || prev.about,
-              image: res.photos?.[0]?.url || prev.image,
-            }));
+          if (res) {
+            setProfile((prev) => {
+              const calculatedAge =
+                res.age !== undefined && res.age !== null
+                  ? res.age
+                  : res.dateOfBirth
+                    ? Math.floor((new Date().getTime() - new Date(res.dateOfBirth).getTime()) / 31557600000)
+                    : prev.age;
+
+              const primaryImg =
+                res.photos?.find((p: any) => p.isPrimary)?.url ||
+                res.photos?.[0]?.url ||
+                prev.image;
+
+              return {
+                ...prev,
+                name: res.name || `${res.firstName || ''} ${res.lastName || ''}`.trim() || prev.name,
+                age: calculatedAge,
+                city: res.city || prev.city,
+                state: res.state || prev.state,
+                motherTongue: res.motherTongue || prev.motherTongue,
+                verified: res.isVerified ?? prev.verified,
+                profession: res.occupation || res.profession || prev.profession,
+                education: res.education || prev.education,
+                employmentStatus: res.employmentStatus || prev.employmentStatus,
+                about: res.bio || prev.about,
+                family: res.family || prev.family,
+                lookingFor: res.lookingFor || prev.lookingFor,
+                lifestyle: Array.isArray(res.lifestyle) ? res.lifestyle : prev.lifestyle,
+                interests: Array.isArray(res.interests) ? res.interests : prev.interests,
+                image: primaryImg,
+                photos: res.photos,
+              };
+            });
           }
         })
         .catch(() => {
@@ -107,8 +131,11 @@ export function ProfileDetail({ id }: { id?: string }) {
     }
   }, [id]);
 
-  // Gallery Photos (Multi-angle photos)
+  // Gallery Photos (Multi-angle photos from backend with fallback)
   const galleryPhotos = useMemo(() => {
+    if (profile.photos && profile.photos.length > 0) {
+      return profile.photos.map((p: any) => p.url);
+    }
     const baseList = [
       profile.image,
       'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=900&q=85',
@@ -116,7 +143,7 @@ export function ProfileDetail({ id }: { id?: string }) {
       'https://images.unsplash.com/photo-1524504388940-b1c1722653e1?auto=format&fit=crop&w=900&q=85',
     ];
     return baseList;
-  }, [profile.image]);
+  }, [profile.image, profile.photos]);
 
   // Related Profiles for bottom "You may also like" rail
   const relatedProfiles = useMemo(() => {
@@ -286,7 +313,7 @@ export function ProfileDetail({ id }: { id?: string }) {
 
             {/* Gallery Thumbnails Strip */}
             <div className="p-3 bg-white border-t border-[var(--border)] flex items-center gap-2.5 overflow-x-auto scrollbar-none">
-              {galleryPhotos.map((photo, idx) => (
+              {galleryPhotos.map((photo: string, idx: number) => (
                 <button
                   key={idx}
                   type="button"
@@ -643,7 +670,7 @@ export function ProfileDetail({ id }: { id?: string }) {
                   {profile.profession}
                 </p>
                 <p className="mt-0.5 text-xs text-[var(--muted)]">
-                  Private Enterprise / Technology
+                  {profile.employmentStatus || 'Working Professional'}
                 </p>
               </div>
 

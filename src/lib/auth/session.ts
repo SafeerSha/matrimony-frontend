@@ -9,7 +9,8 @@ export type Session = JWTPayload & {
   sub: string;
   email?: string;
   name?: string;
-  role?: "user" | "admin";
+  role?: "user" | "admin" | string;
+  status?: "DRAFT" | "ACTIVE" | string;
 };
 
 function getSecret() {
