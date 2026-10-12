@@ -49,7 +49,7 @@ export const FEATURE_FLAGS: FeatureFlags = {
 
     // Outside pages show "Under Development"
     matches: false,
-    messages: false,
+    messages: true,
     favorites: false,
     interests: false,
     notifications: false,

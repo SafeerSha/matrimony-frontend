@@ -49,6 +49,31 @@ export interface QuickRegisterDto {
 }
 
 export const authService = {
+  getAccessToken: (): string | null => {
+    if (typeof window === "undefined") return null;
+    return (
+      sessionStorage.getItem("accessToken") ||
+      localStorage.getItem("accessToken") ||
+      null
+    );
+  },
+
+  setAccessToken: (token: string) => {
+    if (typeof window === "undefined" || !token) return;
+    try {
+      sessionStorage.setItem("accessToken", token);
+      localStorage.setItem("accessToken", token);
+    } catch {}
+  },
+
+  clearAccessToken: () => {
+    if (typeof window === "undefined") return;
+    try {
+      sessionStorage.removeItem("accessToken");
+      localStorage.removeItem("accessToken");
+    } catch {}
+  },
+
   login: async (data: LoginDto) => {
     // Normalize identifier for backend support
     const identifier = (data.identifier || data.email || data.phone || "").trim();
@@ -60,10 +85,16 @@ export const authService = {
       phone: data.phone || (!isEmail ? identifier : undefined),
     };
 
-    return await apiFetch<AuthResponse>("/auth/login", {
+    const res = await apiFetch<AuthResponse>("/auth/login", {
       method: "POST",
       body: JSON.stringify(payload),
     });
+
+    if (res?.accessToken) {
+      authService.setAccessToken(res.accessToken);
+    }
+
+    return res;
   },
 
   sendOtp: async (phone: string) => {
@@ -93,10 +124,14 @@ export const authService = {
 
   verifyOtp: async (phone: string, otp: string) => {
     try {
-      return await apiFetch<AuthResponse>("/auth/verify-otp", {
+      const res = await apiFetch<AuthResponse>("/auth/verify-otp", {
         method: "POST",
         body: JSON.stringify({ phone, otp }),
       });
+      if (res?.accessToken) {
+        authService.setAccessToken(res.accessToken);
+      }
+      return res;
     } catch (err: any) {
       if (
         err?.status === 404 &&
@@ -143,10 +178,14 @@ export const authService = {
     emailOtp?: string;
   }) => {
     try {
-      return await apiFetch<AuthResponse>("/auth/verify-registration", {
+      const res = await apiFetch<AuthResponse>("/auth/verify-registration", {
         method: "POST",
         body: JSON.stringify(payload),
       });
+      if (res?.accessToken) {
+        authService.setAccessToken(res.accessToken);
+      }
+      return res;
     } catch (err: any) {
       if (err?.status === 404 || !err?.status) {
         // Fallback for mock/dev environment
@@ -233,6 +272,7 @@ export const authService = {
   },
 
   logout: async () => {
+    authService.clearAccessToken();
     // The backend should clear the HttpOnly cookie when this is called
     try {
       await apiFetch("/auth/logout", {

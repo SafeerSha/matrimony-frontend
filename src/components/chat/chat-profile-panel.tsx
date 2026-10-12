@@ -22,7 +22,7 @@ import { Button } from '@/components/ui/button';
 import { VerificationBadge } from '@/components/ui/verification-badge';
 import { toast } from '@/lib/toast';
 import { cn } from '@/lib/cn';
-import type { Profile } from '@/lib/demo-data';
+import { matchesService } from '@/services/matches.service';
 
 interface ChatProfilePanelProps {
   participant?: {
@@ -42,53 +42,49 @@ interface ChatProfilePanelProps {
     religion?: string;
     maritalStatus?: string;
   };
-  demoProfile?: Profile;
   className?: string;
   onClose?: () => void;
 }
 
 export function ChatProfilePanel({
   participant,
-  demoProfile,
   className,
   onClose,
 }: ChatProfilePanelProps) {
   const [isShortlisted, setIsShortlisted] = useState(false);
   const [isBlocked, setIsBlocked] = useState(false);
 
-  // Derive unified profile data
+  // Derive profile data cleanly from participant
   const name =
     participant?.name ||
     `${participant?.firstName || ''} ${participant?.lastName || ''}`.trim() ||
-    demoProfile?.name ||
     'Member Profile';
 
-  const photo =
-    participant?.photos?.[0]?.url ||
-    demoProfile?.image ||
-    'https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=900&q=85';
+  const photo = participant?.photos?.[0]?.url;
 
   const age = participant?.dateOfBirth
     ? Math.floor(
         (new Date().getTime() - new Date(participant.dateOfBirth).getTime()) / 31557600000
       )
-    : demoProfile?.age || 27;
+    : 27;
 
-  const city = participant?.city || demoProfile?.city || 'Kochi';
-  const state = participant?.country || demoProfile?.state || 'Kerala';
-  const occupation = participant?.occupation || demoProfile?.profession || 'Professional';
-  const education = participant?.education || demoProfile?.education || 'Postgraduate';
+  const city = participant?.city || 'Kerala';
+  const state = participant?.country || 'India';
+  const occupation = participant?.occupation || 'Professional';
+  const education = participant?.education || 'Graduate Degree';
   const bio =
     participant?.bio ||
-    demoProfile?.about ||
     'Looking forward to meaningful conversations and building a life based on mutual respect and shared values.';
-  const compatibility = demoProfile?.compatibility || 92;
-  const isVerified = participant?.isVerified ?? demoProfile?.verified ?? true;
-  const profileId = participant?.id || demoProfile?.id || 'profile';
+  const compatibility = 92;
+  const isVerified = participant?.isVerified ?? true;
+  const profileId = participant?.id || '';
 
-  const handleShortlistToggle = () => {
-    setIsShortlisted((prev) => {
-      const next = !prev;
+  const handleShortlistToggle = async () => {
+    if (!profileId) return;
+    const next = !isShortlisted;
+    setIsShortlisted(next);
+    try {
+      await matchesService.shortlistProfile(profileId);
       if (next) {
         toast.success('Saved to Shortlist', {
           description: `${name} has been added to your shortlisted connections.`,
@@ -98,8 +94,10 @@ export function ChatProfilePanel({
           description: `${name} was removed from your shortlist.`,
         });
       }
-      return next;
-    });
+    } catch {
+      setIsShortlisted(!next);
+      toast.error('Failed to update shortlist', 'Could not update your shortlist right now.');
+    }
   };
 
   const handleBlock = () => {
@@ -127,13 +125,21 @@ export function ChatProfilePanel({
     >
       {/* Profile Header IconPhoto & Compatibility */}
       <div className="p-5 pb-0">
-        <div className="relative aspect-[4/3] w-full overflow-hidden rounded-2xl border border-[#E9DDE0] bg-[#FAF3EC] shadow-xs group">
-          <img
-            src={photo}
-            alt={name}
-            className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
-          />
-          <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
+        <div className="relative aspect-[4/3] w-full overflow-hidden rounded-2xl border border-[#E9DDE0] bg-[#FAF3EC] shadow-xs group flex items-center justify-center">
+          {photo ? (
+            <img
+              src={photo}
+              alt={name}
+              className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
+            />
+          ) : (
+            <div className="flex flex-col items-center justify-center text-[#7A1835]">
+              <div className="h-16 w-16 rounded-full bg-white border border-[#E9DDE0] flex items-center justify-center text-xl font-bold">
+                {name.charAt(0).toUpperCase()}
+              </div>
+            </div>
+          )}
+          <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent pointer-events-none" />
 
           {/* Compatibility Pill */}
           <div className="absolute top-3 left-3">
