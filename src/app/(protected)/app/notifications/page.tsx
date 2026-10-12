@@ -143,7 +143,7 @@ const DEMO_ENRICHED_NOTIFICATIONS: NotificationDisplayItem[] = [
     id: 'notif-6',
     type: 'SYSTEM',
     title: 'Profile Verification Complete',
-    text: 'Your phone number and government ID verification were confirmed by our Trust Team.',
+    text: 'Your phone number and photo selfie verification were confirmed by our Trust Team.',
     time: '3 days ago',
     timestamp: Date.now() - 1000 * 60 * 60 * 72,
     group: 'earlier',
