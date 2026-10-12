@@ -95,13 +95,25 @@ export function QuickRegisterSection() {
     }
 
     const fullPhone = `+91 ${cleanPhone}`;
+    const finalCreatedBy = isByLocked ? "Myself" : createdBy;
+    const isCreatedByMyself = finalCreatedBy.trim().toLowerCase() === "myself";
+
+    // Auto-fill gender ONLY when created by "Myself":
+    // If Looking For Female (Bride) -> User's own gender is Male
+    // If Looking For Male (Groom) -> User's own gender is Female
+    // If created by Parent / Sibling / Relative, do NOT auto-fill gender (leave undefined for manual selection)
+    const derivedUserGender = isCreatedByMyself
+      ? (gender === "Female" ? "male" : "female")
+      : undefined;
+
     const payload = {
       name: trimmedName,
       phone: fullPhone,
       profileFor,
       category: profileFor,
-      gender,
-      createdBy: isByLocked ? "Myself" : createdBy,
+      gender: derivedUserGender,
+      lookingFor: gender,
+      createdBy: finalCreatedBy,
       ...(profileFor === "Marriage" ? { lookingIn } : {}),
     };
 

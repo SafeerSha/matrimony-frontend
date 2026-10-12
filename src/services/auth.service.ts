@@ -41,7 +41,8 @@ export interface QuickRegisterDto {
   name: string;
   email?: string;
   phone: string;
-  gender: string;
+  gender?: string;
+  lookingFor?: string;
   profileFor: string;
   createdBy?: string;
   lookingIn?: string;

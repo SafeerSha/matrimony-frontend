@@ -192,7 +192,7 @@ export function ProfessionCombobox({
           {required && <span className="text-rose-500 ml-1">*</span>}
         </label>
         <p className="text-[11px] text-[var(--muted)] mb-1.5">
-          Select the occupation that best describes your current work.
+          Select the occupation.
         </p>
 
         {/* Input Bar */}
@@ -286,8 +286,8 @@ export function ProfessionCombobox({
                         isSelected
                           ? "bg-[#80132E] text-white font-semibold shadow-sm"
                           : isHighlighted
-                          ? "bg-[#FDF2F4] text-[#80132E] font-medium"
-                          : "text-slate-700 hover:bg-slate-50"
+                            ? "bg-[#FDF2F4] text-[#80132E] font-medium"
+                            : "text-slate-700 hover:bg-slate-50"
                       )}
                     >
                       <span className="truncate">{prof}</span>
