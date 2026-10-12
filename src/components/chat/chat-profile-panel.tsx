@@ -243,7 +243,7 @@ export function ChatProfilePanel({
           <IconShieldCheck className="h-4 w-4 text-[#7A1835] shrink-0 mt-0.5" />
           <div className="text-[11px] leading-relaxed text-[#5C1027]">
             <span className="font-bold block">Verified Matrimonial Match</span>
-            Identity verified via government ID and contact screening.
+            Identity verified via photo selfie and contact screening.
           </div>
         </div>
 
