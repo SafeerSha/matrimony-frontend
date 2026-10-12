@@ -8,9 +8,12 @@ export interface MediaUploadResponse {
 
 export const mediaService = {
   /** Upload a single photo */
-  uploadPhoto: (file: File) => {
+  uploadPhoto: (file: File, isPrimary: boolean = false) => {
     const formData = new FormData();
     formData.append("photo", file);
+    if (isPrimary) {
+      formData.append("isPrimary", "true");
+    }
 
     return apiFetch<MediaUploadResponse>("/media/upload", {
       method: "POST",
