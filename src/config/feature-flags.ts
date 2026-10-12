@@ -36,7 +36,7 @@ export interface FeatureFlags {
 
 export const FEATURE_FLAGS: FeatureFlags = {
   // Master toggle: Set to false to disable all placeholders and reveal normal page content
-  ENABLE_IN_PROGRESS_PLACEHOLDERS: true,
+  ENABLE_IN_PROGRESS_PLACEHOLDERS: false,
 
   pages: {
     // Sprint 1 Agenda items remain active

@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import {
@@ -27,15 +27,18 @@ import {
   IconAdjustments,
   IconExternalLink,
   IconSettings,
+  IconLoader2,
 } from '@tabler/icons-react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { Modal } from '@/components/ui/modal';
 import { SectionHeader } from '@/components/ui/section-header';
 import { ModernSelect } from '@/components/ui/modern-select';
 import { ChangePasswordModal } from '@/components/settings/change-password-modal';
 import { BlockedUsersModal } from '@/components/settings/blocked-users-modal';
 import { FeatureGate } from '@/components/ui/under-development';
+import { authService, UserDevice } from '@/services/auth.service';
 import { toast } from '@/lib/toast';
 import { cn } from '@/lib/cn';
 
@@ -49,7 +52,50 @@ function SettingsContent() {
 
   // Modals
   const [isPasswordModalOpen, setIsPasswordModalOpen] = useState(false);
+  const [passwordModalMode, setPasswordModalMode] = useState<'enable' | 'change'>('change');
+  const [isDisableConfirmOpen, setIsDisableConfirmOpen] = useState(false);
   const [isBlockedModalOpen, setIsBlockedModalOpen] = useState(false);
+
+  // Password Security State
+  const [isPasswordEnabled, setIsPasswordEnabled] = useState(true);
+  const [passwordLastChanged, setPasswordLastChanged] = useState('3 weeks ago');
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const storedEnabled = localStorage.getItem('shaadi_password_enabled');
+      if (storedEnabled !== null) {
+        setIsPasswordEnabled(storedEnabled === 'true');
+      }
+      const storedLastChanged = localStorage.getItem('shaadi_password_last_changed');
+      if (storedLastChanged) {
+        setPasswordLastChanged(storedLastChanged);
+      }
+    }
+  }, []);
+
+  const handleTogglePassword = () => {
+    if (isPasswordEnabled) {
+      setIsDisableConfirmOpen(true);
+    } else {
+      setPasswordModalMode('enable');
+      setIsPasswordModalOpen(true);
+    }
+  };
+
+  const handleConfirmDisablePassword = async () => {
+    try {
+      await authService.disablePassword();
+      setIsPasswordEnabled(false);
+      setIsDisableConfirmOpen(false);
+      toast.success('Password Login Disabled', {
+        description: 'You can now log in securely using Mobile OTP.',
+      });
+    } catch (err: any) {
+      toast.error('Failed to disable password', {
+        description: err?.message || 'Please try again later.',
+      });
+    }
+  };
 
   // Privacy Toggles
   const [profileDiscoverable, setProfileDiscoverable] = useState(true);
@@ -64,31 +110,82 @@ function SettingsContent() {
   const [notifyMatches, setNotifyMatches] = useState(true);
   const [notifyMarketing, setNotifyMarketing] = useState(false);
 
-  // Security State
-  const [sessions, setSessions] = useState([
-    {
-      id: 'sess-1',
-      device: 'Chrome on Windows 11',
-      location: 'Kochi, Kerala (Current Device)',
-      isCurrent: true,
-      time: 'Active now',
-      icon: IconDeviceLaptop,
-    },
-    {
-      id: 'sess-2',
-      device: 'ShaadiChat iOS Mobile App',
-      location: 'iPhone 15 Pro • Kochi',
-      isCurrent: false,
-      time: '2 hours ago',
-      icon: IconDeviceMobile,
-    },
-  ]);
+  // Active Devices State
+  const [devices, setDevices] = useState<UserDevice[]>([]);
+  const [isLoadingDevices, setIsLoadingDevices] = useState(false);
+  const [isTerminatingDevices, setIsTerminatingDevices] = useState(false);
+  const [terminatingDeviceId, setTerminatingDeviceId] = useState<string | null>(null);
 
-  const handleTerminateOtherSessions = () => {
-    setSessions((prev) => prev.filter((s) => s.isCurrent));
-    toast.success('Sessions Terminated', {
-      description: 'All other active sessions have been logged out.',
-    });
+  const fetchDevices = useCallback(async () => {
+    setIsLoadingDevices(true);
+    try {
+      const data = await authService.getDevices();
+      setDevices(data);
+    } catch (err: any) {
+      console.warn("Could not fetch active devices:", err);
+    } finally {
+      setIsLoadingDevices(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (activeTab === 'security') {
+      fetchDevices();
+    }
+  }, [activeTab, fetchDevices]);
+
+  const handleTerminateOtherSessions = async () => {
+    setIsTerminatingDevices(true);
+    try {
+      await authService.terminateOtherDevices();
+      setDevices((prev) => prev.filter((s) => s.isCurrent));
+      toast.success('Sessions Terminated', {
+        description: 'All other active sessions have been safely logged out.',
+      });
+    } catch (err: any) {
+      toast.error('Termination Failed', {
+        description: err?.message || 'Could not log out other devices. Please try again.',
+      });
+    } finally {
+      setIsTerminatingDevices(false);
+    }
+  };
+
+  const handleTerminateSingleDevice = async (deviceId: string) => {
+    setTerminatingDeviceId(deviceId);
+    try {
+      await authService.terminateDevice(deviceId);
+      setDevices((prev) => prev.filter((d) => d.id !== deviceId));
+      toast.success('Device Logged Out', {
+        description: 'Selected device session has been terminated.',
+      });
+    } catch (err: any) {
+      toast.error('Termination Failed', {
+        description: err?.message || 'Could not terminate device session.',
+      });
+    } finally {
+      setTerminatingDeviceId(null);
+    }
+  };
+
+  const formatDeviceActiveTime = (lastActiveAt?: string, isCurrent?: boolean) => {
+    if (isCurrent) return 'Active now';
+    if (!lastActiveAt) return 'Recently';
+    try {
+      const date = new Date(lastActiveAt);
+      if (isNaN(date.getTime())) return 'Recently';
+      const diffMs = Date.now() - date.getTime();
+      const diffMins = Math.floor(diffMs / 60000);
+      if (diffMins < 1) return 'Active just now';
+      if (diffMins < 60) return `${diffMins} min${diffMins > 1 ? 's' : ''} ago`;
+      const diffHours = Math.floor(diffMins / 60);
+      if (diffHours < 24) return `${diffHours} hour${diffHours > 1 ? 's' : ''} ago`;
+      const diffDays = Math.floor(diffHours / 24);
+      if (diffDays < 7) return `${diffDays} day${diffDays > 1 ? 's' : ''} ago`;
+      return date.toLocaleDateString();
+    } catch {
+      return 'Recently';
+    }
   };
 
   const navItems: { key: SettingsSection; label: string; icon: React.ComponentType<{ className?: string }>; desc: string }[] = [
@@ -758,60 +855,46 @@ function SettingsContent() {
           {activeTab === 'security' && (
             <div className="w-full max-w-full min-w-0 space-y-5 animate-in fade-in duration-200">
               {/* Account Verification Badges Card */}
-              <Card className="w-full max-w-full min-w-0 rounded-3xl border border-[#E9DDE0] bg-white p-4 sm:p-6 shadow-xs space-y-4">
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-3 border-b border-[#E9DDE0]">
-                  <div>
-                    <h3 className="font-editorial-title text-base font-bold text-[#211B1E]">
+              <Card className="w-full max-w-full min-w-0 rounded-3xl border border-[#E9DDE0] bg-white p-3.5 sm:p-6 shadow-xs space-y-3 sm:space-y-4">
+                <div className="flex items-center justify-between gap-2 pb-2.5 sm:pb-3 border-b border-[#E9DDE0]">
+                  <div className="min-w-0 flex-1">
+                    <h3 className="font-editorial-title text-sm sm:text-base font-bold text-[#211B1E] truncate">
                       Account Trust & Verification
                     </h3>
-                    <p className="text-xs text-[#766B6F] mt-0.5">
+                    <p className="text-[11px] sm:text-xs text-[#766B6F] mt-0.5 line-clamp-1 sm:line-clamp-none">
                       Badges earn higher trust and boost response rates from prospective matches.
                     </p>
                   </div>
-                  <span className="self-start sm:self-auto shrink-0 text-[11px] font-bold text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-full border border-emerald-200 flex items-center gap-1">
-                    <IconCircleCheck className="h-3.5 w-3.5" /> 100% Verified
+                  <span className="shrink-0 text-[10px] sm:text-[11px] font-bold text-emerald-700 bg-emerald-50 px-2 sm:px-2.5 py-0.5 sm:py-1 rounded-full border border-emerald-200 flex items-center gap-1">
+                    <IconCircleCheck className="h-3 w-3 sm:h-3.5 sm:w-3.5" /> 100% Verified
                   </span>
                 </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                  <div className="rounded-2xl bg-[#FFF9F6] p-3.5 border border-[#E9DDE0] flex items-center gap-3 min-w-0">
-                    <div className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-emerald-50 text-emerald-600">
-                      <IconShieldCheck className="h-5 w-5" />
+                <div className="grid grid-cols-2 gap-2 sm:gap-3">
+                  <div className="rounded-2xl bg-[#FFF9F6] p-2.5 sm:p-3.5 border border-[#E9DDE0] flex items-center gap-2 sm:gap-3 min-w-0">
+                    <div className="grid h-8 w-8 sm:h-9 sm:w-9 shrink-0 place-items-center rounded-xl bg-emerald-50 text-emerald-600">
+                      <IconPhone className="h-4 w-4 sm:h-5 sm:w-5" />
                     </div>
                     <div className="min-w-0 flex-1">
-                      <span className="text-xs font-bold text-[#211B1E] block truncate">
-                        Govt. ID
-                      </span>
-                      <span className="text-[10px] text-emerald-700 font-semibold flex items-center gap-1">
-                        <IconCircleCheck className="h-3 w-3" /> Verified
-                      </span>
-                    </div>
-                  </div>
-
-                  <div className="rounded-2xl bg-[#FFF9F6] p-3.5 border border-[#E9DDE0] flex items-center gap-3 min-w-0">
-                    <div className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-emerald-50 text-emerald-600">
-                      <IconPhone className="h-5 w-5" />
-                    </div>
-                    <div className="min-w-0 flex-1">
-                      <span className="text-xs font-bold text-[#211B1E] block truncate">
+                      <span className="text-[11px] sm:text-xs font-bold text-[#211B1E] block truncate">
                         Mobile OTP
                       </span>
-                      <span className="text-[10px] text-emerald-700 font-semibold flex items-center gap-1">
-                        <IconCircleCheck className="h-3 w-3" /> Verified
+                      <span className="text-[9.5px] sm:text-[10px] text-emerald-700 font-semibold flex items-center gap-1">
+                        <IconCircleCheck className="h-2.5 w-2.5 sm:h-3 sm:w-3 shrink-0" /> Verified
                       </span>
                     </div>
                   </div>
 
-                  <div className="rounded-2xl bg-[#FFF9F6] p-3.5 border border-[#E9DDE0] flex items-center gap-3 min-w-0">
-                    <div className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-emerald-50 text-emerald-600">
-                      <IconShieldCheck className="h-5 w-5" />
+                  <div className="rounded-2xl bg-[#FFF9F6] p-2.5 sm:p-3.5 border border-[#E9DDE0] flex items-center gap-2 sm:gap-3 min-w-0">
+                    <div className="grid h-8 w-8 sm:h-9 sm:w-9 shrink-0 place-items-center rounded-xl bg-emerald-50 text-emerald-600">
+                      <IconShieldCheck className="h-4 w-4 sm:h-5 sm:w-5" />
                     </div>
                     <div className="min-w-0 flex-1">
-                      <span className="text-xs font-bold text-[#211B1E] block truncate">
+                      <span className="text-[11px] sm:text-xs font-bold text-[#211B1E] block truncate">
                         Photo Selfie
                       </span>
-                      <span className="text-[10px] text-emerald-700 font-semibold flex items-center gap-1">
-                        <IconCircleCheck className="h-3 w-3" /> Verified
+                      <span className="text-[9.5px] sm:text-[10px] text-emerald-700 font-semibold flex items-center gap-1">
+                        <IconCircleCheck className="h-2.5 w-2.5 sm:h-3 sm:w-3 shrink-0" /> Verified
                       </span>
                     </div>
                   </div>
@@ -819,32 +902,94 @@ function SettingsContent() {
               </Card>
 
               {/* Password Management */}
-              <Card className="w-full max-w-full min-w-0 rounded-3xl border border-[#E9DDE0] bg-white p-4 sm:p-6 shadow-xs">
+              <Card className="w-full max-w-full min-w-0 rounded-3xl border border-[#E9DDE0] bg-white p-3.5 sm:p-6 shadow-xs">
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4">
-                  <div className="flex items-center gap-3 sm:gap-3.5 min-w-0 flex-1">
-                    <div className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-[#FAF3EC] text-[#7A1835]">
-                      <IconKey className="h-5 w-5" />
+                  <div className="flex items-center gap-2.5 sm:gap-3.5 min-w-0 flex-1">
+                    <div
+                      className={cn(
+                        'grid h-9 w-9 sm:h-10 sm:w-10 shrink-0 place-items-center rounded-xl transition-colors',
+                        isPasswordEnabled ? 'bg-[#FAF3EC] text-[#7A1835]' : 'bg-slate-100 text-[#766B6F]'
+                      )}
+                    >
+                      <IconKey className="h-4.5 w-4.5 sm:h-5 sm:w-5" />
                     </div>
                     <div className="min-w-0 flex-1">
-                      <h4 className="text-xs font-bold text-[#211B1E]">Account Password</h4>
-                      <p className="text-[11px] text-[#766B6F] mt-0.5">
-                        Last changed 3 weeks ago • Strong security
+                      <div className="flex items-center gap-1.5 sm:gap-2">
+                        <h4 className="text-xs font-bold text-[#211B1E]">Account Password</h4>
+                        <span
+                          className={cn(
+                            'inline-flex items-center gap-1 px-1.5 sm:px-2 py-0.5 rounded-full text-[9.5px] sm:text-[10px] font-semibold transition-colors',
+                            isPasswordEnabled
+                              ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
+                              : 'bg-slate-100 text-slate-600 border border-slate-200'
+                          )}
+                        >
+                          {isPasswordEnabled ? (
+                            <>
+                              <IconCircleCheck className="h-2.5 w-2.5 sm:h-3 sm:w-3" /> Enabled
+                            </>
+                          ) : (
+                            'Disabled'
+                          )}
+                        </span>
+                      </div>
+                      <p className="text-[10.5px] sm:text-[11px] text-[#766B6F] mt-0.5">
+                        {isPasswordEnabled
+                          ? `Last changed ${passwordLastChanged} • Strong security`
+                          : 'Password login is disabled • Sign in using Mobile OTP'}
                       </p>
                     </div>
                   </div>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setIsPasswordModalOpen(true)}
-                    className="rounded-xl border-[#7A1835] text-[#7A1835] hover:bg-[#FAF3EC] text-xs font-bold self-start sm:self-auto shrink-0"
-                  >
-                    Change Password
-                  </Button>
+
+                  <div className="flex items-center justify-between sm:justify-end gap-2.5 sm:gap-3 w-full sm:w-auto pt-2.5 sm:pt-0 border-t border-[#E9DDE0]/60 sm:border-t-0 shrink-0">
+                    {isPasswordEnabled ? (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => {
+                          setPasswordModalMode('change');
+                          setIsPasswordModalOpen(true);
+                        }}
+                        className="rounded-xl border-[#7A1835] text-[#7A1835] hover:bg-[#FAF3EC] text-xs font-bold shrink-0 h-8 sm:h-9 px-3"
+                      >
+                        Change Password
+                      </Button>
+                    ) : (
+                      <span className="text-[11px] text-[#766B6F] sm:hidden">
+                        Enable password login
+                      </span>
+                    )}
+
+                    {/* Enable / Disable Controller Switch */}
+                    <div className="flex items-center gap-2 pl-2 sm:pl-3 border-l border-[#E9DDE0]">
+                      <span className="text-[11px] font-semibold text-[#453A3E]">
+                        {isPasswordEnabled ? 'Enabled' : 'Enable'}
+                      </span>
+                      <button
+                        type="button"
+                        role="switch"
+                        aria-checked={isPasswordEnabled}
+                        aria-label="Toggle password login"
+                        onClick={handleTogglePassword}
+                        className={cn(
+                          'h-6 w-11 rounded-full p-0.5 transition-colors shrink-0 focus-ring',
+                          isPasswordEnabled ? 'bg-[#7A1835]' : 'bg-[#E9DDE0]'
+                        )}
+                      >
+                        <div
+                          className={cn(
+                            'h-5 w-5 rounded-full bg-white transition-transform shadow-xs',
+                            isPasswordEnabled ? 'translate-x-5' : 'translate-x-0'
+                          )}
+                        />
+                      </button>
+                    </div>
+                  </div>
                 </div>
               </Card>
 
               {/* Active Login Sessions */}
-              <Card className="w-full max-w-full min-w-0 rounded-3xl border border-[#E9DDE0] bg-white p-4 sm:p-6 shadow-xs space-y-4">
+              <Card className="w-full max-w-full min-w-0 rounded-3xl border border-[#E9DDE0] bg-white p-3.5 sm:p-6 shadow-xs space-y-4">
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-3 border-b border-[#E9DDE0]">
                   <div>
                     <h3 className="font-editorial-title text-base font-bold text-[#211B1E]">
@@ -854,52 +999,98 @@ function SettingsContent() {
                       Devices currently authorized and connected to your account.
                     </p>
                   </div>
-                  {sessions.length > 1 && (
+                  {devices.filter((d) => !d.isCurrent).length > 0 && (
                     <Button
                       variant="ghost"
                       size="sm"
                       onClick={handleTerminateOtherSessions}
-                      className="text-xs font-bold text-red-600 hover:bg-red-50 rounded-xl self-start sm:self-auto"
+                      disabled={isTerminatingDevices}
+                      className="text-xs font-bold text-red-600 hover:bg-red-50 rounded-xl self-start sm:self-auto h-8 px-3"
                     >
-                      Log out other devices
+                      {isTerminatingDevices ? (
+                        <>
+                          <IconLoader2 className="h-3.5 w-3.5 animate-spin mr-1.5" />
+                          <span>Logging out...</span>
+                        </>
+                      ) : (
+                        'Log out other devices'
+                      )}
                     </Button>
                   )}
                 </div>
 
-                <div className="divide-y divide-[#E9DDE0]/70">
-                  {sessions.map((sess) => {
-                    const DeviceIcon = sess.icon;
-                    return (
-                      <div
-                        key={sess.id}
-                        className="py-3 flex items-center justify-between gap-3 first:pt-0 last:pb-0"
-                      >
-                        <div className="flex items-center gap-3 min-w-0 flex-1">
-                          <div className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-[#FFF9F6] border border-[#E9DDE0] text-[#7A1835]">
-                            <DeviceIcon className="h-4.5 w-4.5" />
-                          </div>
-                          <div className="min-w-0 flex-1">
-                            <div className="flex items-center gap-2">
-                              <span className="text-xs font-bold text-[#211B1E] truncate">
-                                {sess.device}
-                              </span>
-                              {sess.isCurrent && (
-                                <Badge tone="success" className="text-[9px] py-0 px-1.5 shrink-0">
-                                  Current
-                                </Badge>
-                              )}
+                {isLoadingDevices ? (
+                  <div className="py-6 flex flex-col items-center justify-center text-[#766B6F] gap-2">
+                    <IconLoader2 className="h-5 w-5 animate-spin text-[#7A1835]" />
+                    <span className="text-xs font-medium">Loading active devices...</span>
+                  </div>
+                ) : devices.length === 0 ? (
+                  <div className="py-6 text-center text-xs text-[#766B6F]">
+                    No active device sessions found.
+                  </div>
+                ) : (
+                  <div className="divide-y divide-[#E9DDE0]/70">
+                    {devices.map((device) => {
+                      const isMobile =
+                        device.deviceType === 'MOBILE' ||
+                        device.os?.toLowerCase().includes('ios') ||
+                        device.os?.toLowerCase().includes('android');
+                      const DeviceIcon = isMobile ? IconDeviceMobile : IconDeviceLaptop;
+
+                      return (
+                        <div
+                          key={device.id}
+                          className="py-3 flex items-center justify-between gap-3 first:pt-0 last:pb-0"
+                        >
+                          <div className="flex items-center gap-3 min-w-0 flex-1">
+                            <div className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-[#FFF9F6] border border-[#E9DDE0] text-[#7A1835]">
+                              <DeviceIcon className="h-4.5 w-4.5" />
                             </div>
-                            <p className="text-[10px] text-[#766B6F] truncate">{sess.location}</p>
+                            <div className="min-w-0 flex-1">
+                              <div className="flex items-center gap-2 flex-wrap">
+                                <span className="text-xs font-bold text-[#211B1E] truncate">
+                                  {device.deviceName}
+                                </span>
+                                {device.isCurrent && (
+                                  <Badge tone="success" className="text-[9px] py-0 px-1.5 shrink-0">
+                                    Current
+                                  </Badge>
+                                )}
+                              </div>
+                              <p className="text-[10px] text-[#766B6F] truncate">
+                                {device.location ||
+                                  [device.browser, device.os].filter(Boolean).join(' • ') ||
+                                  'Location unknown'}
+                              </p>
+                            </div>
+                          </div>
+
+                          <div className="flex items-center gap-2.5 shrink-0">
+                            <span className="text-[10px] font-semibold text-[#766B6F]">
+                              {formatDeviceActiveTime(device.lastActiveAt, device.isCurrent)}
+                            </span>
+                            {!device.isCurrent && (
+                              <button
+                                type="button"
+                                onClick={() => handleTerminateSingleDevice(device.id)}
+                                disabled={terminatingDeviceId === device.id}
+                                title="Log out this device"
+                                aria-label={`Log out ${device.deviceName}`}
+                                className="text-red-500 hover:text-red-700 hover:bg-red-50 p-1.5 rounded-lg transition-colors focus-ring"
+                              >
+                                {terminatingDeviceId === device.id ? (
+                                  <IconLoader2 className="h-3.5 w-3.5 animate-spin" />
+                                ) : (
+                                  <IconLogout className="h-3.5 w-3.5" />
+                                )}
+                              </button>
+                            )}
                           </div>
                         </div>
-
-                        <span className="text-[10px] font-semibold text-[#766B6F] shrink-0">
-                          {sess.time}
-                        </span>
-                      </div>
-                    );
-                  })}
-                </div>
+                      );
+                    })}
+                  </div>
+                )}
               </Card>
             </div>
           )}
@@ -910,7 +1101,53 @@ function SettingsContent() {
       <ChangePasswordModal
         isOpen={isPasswordModalOpen}
         onClose={() => setIsPasswordModalOpen(false)}
+        mode={passwordModalMode}
+        onSuccess={() => {
+          setIsPasswordEnabled(true);
+          setPasswordLastChanged('Just now');
+        }}
       />
+
+      {/* DISABLE PASSWORD CONFIRMATION MODAL */}
+      <Modal
+        isOpen={isDisableConfirmOpen}
+        onClose={() => setIsDisableConfirmOpen(false)}
+        title="Disable Password Login?"
+        description="Are you sure you want to turn off password login for your account?"
+        size="sm"
+      >
+        <div className="space-y-4 pt-1">
+          <div className="rounded-2xl bg-amber-50 border border-amber-200 p-3.5 text-xs text-amber-900 flex items-start gap-2.5">
+            <IconAlertCircle className="h-5 w-5 text-amber-700 shrink-0 mt-0.5" />
+            <div>
+              <p className="font-bold">Mobile OTP login remains active</p>
+              <p className="mt-0.5 text-[11px] text-amber-800">
+                You will only be able to sign in via Mobile OTP. You can re-enable a password at any time.
+              </p>
+            </div>
+          </div>
+
+          <div className="flex items-center justify-end gap-2.5 pt-3 border-t border-[#E9DDE0]">
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              onClick={() => setIsDisableConfirmOpen(false)}
+              className="rounded-xl text-xs font-semibold text-[#766B6F]"
+            >
+              Keep Enabled
+            </Button>
+            <Button
+              type="button"
+              size="md"
+              onClick={handleConfirmDisablePassword}
+              className="rounded-xl bg-red-600 hover:bg-red-700 text-white text-xs font-bold px-5 shadow-sm active-press"
+            >
+              Disable Password
+            </Button>
+          </div>
+        </div>
+      </Modal>
 
       {/* BLOCKED USERS MODAL */}
       <BlockedUsersModal
