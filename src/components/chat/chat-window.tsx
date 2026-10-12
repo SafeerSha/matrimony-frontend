@@ -33,12 +33,11 @@ import { VerificationBadge } from '@/components/ui/verification-badge';
 import { toast } from '@/lib/toast';
 import { cn } from '@/lib/cn';
 import type { Conversation, Message } from '@/services/chat.service';
-import type { Profile } from '@/lib/demo-data';
+import { matchesService } from '@/services/matches.service';
 
 interface ChatWindowProps {
   conversation: Conversation;
   messages: Message[];
-  demoProfile?: Profile;
   isLoadingMessages?: boolean;
   isSubscribed?: boolean;
   onSendMessage: (text: string) => Promise<void>;
@@ -50,7 +49,6 @@ interface ChatWindowProps {
 export function ChatWindow({
   conversation,
   messages,
-  demoProfile,
   isLoadingMessages = false,
   isSubscribed = true,
   onSendMessage,
@@ -64,9 +62,7 @@ export function ChatWindow({
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const [showHooks, setShowHooks] = useState(false);
   const [activeCategory, setActiveCategory] = useState<'all' | 'roots' | 'family' | 'career'>('all');
-  const [messageReactions, setMessageReactions] = useState<Record<string, string>>({
-    'msg-2-2': '❤️',
-  });
+  const [messageReactions, setMessageReactions] = useState<Record<string, string>>({});
   const [hoveredMessageId, setHoveredMessageId] = useState<string | null>(null);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -75,22 +71,18 @@ export function ChatWindow({
   const participantName =
     conversation.participant?.name ||
     `${conversation.participant?.firstName || ''} ${conversation.participant?.lastName || ''}`.trim() ||
-    demoProfile?.name ||
-    'Match';
+    'Member';
 
   const firstName =
     conversation.participant?.firstName ||
     participantName.split(' ')[0] ||
     'there';
 
-  const participantPhoto =
-    conversation.participant?.photos?.[0]?.url ||
-    demoProfile?.image ||
-    'https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=900&q=85';
+  const participantPhoto = conversation.participant?.photos?.[0]?.url;
 
-  const isVerified = conversation.participant?.isVerified ?? demoProfile?.verified ?? true;
+  const isVerified = conversation.participant?.isVerified ?? true;
   const isOnline = (conversation as any).online ?? true;
-  const matchPercentage = demoProfile?.compatibility || 89;
+  const matchPercentage = (conversation.participant as any)?.compatibility || 92;
 
   // Categorized Kerala matrimonial initiator hook sentences
   const categorizedHooks = [
@@ -242,12 +234,18 @@ export function ChatWindow({
             onClick={onOpenProfile}
             className="relative shrink-0 cursor-pointer group"
           >
-            <div className="h-10 w-10 sm:h-11 sm:w-11 rounded-full overflow-hidden border-2 border-white shadow-sm ring-2 ring-[#7A1835]/20 group-hover:ring-[#7A1835] transition-all">
-              <img
-                src={participantPhoto}
-                alt={participantName}
-                className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
-              />
+            <div className="h-10 w-10 sm:h-11 sm:w-11 rounded-full overflow-hidden border-2 border-white shadow-sm ring-2 ring-[#7A1835]/20 group-hover:ring-[#7A1835] transition-all bg-[#FAF3EC] flex items-center justify-center">
+              {participantPhoto ? (
+                <img
+                  src={participantPhoto}
+                  alt={participantName}
+                  className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
+                />
+              ) : (
+                <span className="font-bold text-[#7A1835] text-sm sm:text-base">
+                  {participantName.charAt(0).toUpperCase()}
+                </span>
+              )}
             </div>
             {isOnline && (
               <span
@@ -344,11 +342,16 @@ export function ChatWindow({
                     <span>View Full Profile</span>
                   </button>
                   <button
-                    onClick={() => {
+                    onClick={async () => {
                       setShowMenu(false);
-                      toast.success('Shortlisted', {
-                        description: `${participantName} was added to your shortlisted connections.`,
-                      });
+                      try {
+                        await matchesService.shortlistProfile(conversation.participantId || conversation.id);
+                        toast.success('Shortlisted', {
+                          description: `${participantName} was added to your shortlisted connections.`,
+                        });
+                      } catch {
+                        toast.error('Failed to Shortlist', 'Could not save profile to shortlist.');
+                      }
                     }}
                     className="flex w-full items-center gap-2.5 rounded-xl px-3 py-2 text-xs font-semibold text-[#211B1E] hover:bg-[#FAF3EC] hover:text-[#7A1835] transition-colors"
                   >
@@ -439,8 +442,14 @@ export function ChatWindow({
                 <div className="h-12 w-12 rounded-full border-2 border-white shadow-md overflow-hidden bg-gradient-to-br from-[#7A1835] to-[#B85D75] flex items-center justify-center text-white font-bold text-xs z-0 ring-2 ring-[#7A1835]/10">
                   <span>You</span>
                 </div>
-                <div className="h-14 w-14 rounded-full border-2 border-white shadow-lg overflow-hidden -ml-3.5 z-10 ring-2 ring-[#7A1835]/20">
-                  <img src={participantPhoto} alt={participantName} className="h-full w-full object-cover" />
+                <div className="h-14 w-14 rounded-full border-2 border-white shadow-lg overflow-hidden -ml-3.5 z-10 ring-2 ring-[#7A1835]/20 bg-[#FAF3EC] flex items-center justify-center">
+                  {participantPhoto ? (
+                    <img src={participantPhoto} alt={participantName} className="h-full w-full object-cover" />
+                  ) : (
+                    <span className="font-bold text-[#7A1835] text-sm">
+                      {participantName.charAt(0).toUpperCase()}
+                    </span>
+                  )}
                 </div>
                 <div className="absolute -bottom-1 -right-1 z-20 h-6 w-6 rounded-full bg-gradient-to-br from-[#7A1835] to-[#9E2045] text-white flex items-center justify-center shadow-md ring-2 ring-white text-[11px]">
                   💍
@@ -549,11 +558,17 @@ export function ChatWindow({
                     <div className="flex items-end gap-2 max-w-[85%] sm:max-w-[72%]">
                       {/* Received message avatar */}
                       {!isOurs && (
-                        <img
-                          src={participantPhoto}
-                          alt={participantName}
-                          className="h-7 w-7 rounded-full object-cover border border-[#EAD8C7] shadow-2xs shrink-0 mb-1"
-                        />
+                        participantPhoto ? (
+                          <img
+                            src={participantPhoto}
+                            alt={participantName}
+                            className="h-7 w-7 rounded-full object-cover border border-[#EAD8C7] shadow-2xs shrink-0 mb-1"
+                          />
+                        ) : (
+                          <div className="h-7 w-7 rounded-full bg-[#FAF3EC] border border-[#EAD8C7] shadow-2xs shrink-0 mb-1 flex items-center justify-center text-[10px] font-bold text-[#7A1835]">
+                            {participantName.charAt(0).toUpperCase()}
+                          </div>
+                        )
                       )}
 
                       <div className="relative">

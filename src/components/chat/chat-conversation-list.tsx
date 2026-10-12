@@ -138,9 +138,7 @@ export function ChatConversationList({
               c.participant?.name ||
               `${c.participant?.firstName || ''} ${c.participant?.lastName || ''}`.trim() ||
               'Member';
-            const pPhoto =
-              c.participant?.photos?.[0]?.url ||
-              'https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=900&q=85';
+            const pPhoto = c.participant?.photos?.[0]?.url;
             const unread = c.unreadCount || 0;
             const timeStr = formatTime(c.lastMessage?.createdAt || c.updatedAt);
             const isOnline = (c as any).online ?? true;
@@ -158,12 +156,18 @@ export function ChatConversationList({
               >
                 {/* Avatar with subtle online indicator */}
                 <div className="relative shrink-0">
-                  <div className="h-11 w-11 rounded-2xl overflow-hidden border border-[#E9DDE0] bg-[#FAF3EC] shadow-2xs">
-                    <img
-                      src={pPhoto}
-                      alt={pName}
-                      className="h-full w-full object-cover"
-                    />
+                  <div className="h-11 w-11 rounded-2xl overflow-hidden border border-[#E9DDE0] bg-[#FAF3EC] shadow-2xs flex items-center justify-center">
+                    {pPhoto ? (
+                      <img
+                        src={pPhoto}
+                        alt={pName}
+                        className="h-full w-full object-cover"
+                      />
+                    ) : (
+                      <span className="font-bold text-[#7A1835] text-sm">
+                        {pName.charAt(0).toUpperCase()}
+                      </span>
+                    )}
                   </div>
                   {isOnline && (
                     <span
