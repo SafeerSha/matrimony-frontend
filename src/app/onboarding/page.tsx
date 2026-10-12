@@ -110,7 +110,7 @@ const DIET_OPTIONS = [
 const STEPS = [
   { id: 1, label: "Personal", fullLabel: "Personal Details", isRequired: true },
   { id: 2, label: "Preferences", fullLabel: "Partner Preferences", isRequired: true },
-  { id: 3, label: "Photo", fullLabel: "Profile Picture", isRequired: true },
+  { id: 3, label: "Photo", fullLabel: "Profile Picture", isRequired: false },
   { id: 4, label: "Security", fullLabel: "Account Password", isRequired: false },
   { id: 5, label: "Album", fullLabel: "Album Photos", isRequired: true },
 ];
@@ -526,32 +526,45 @@ export default function OnboardingPage() {
     setAlbumPhotos((prev) => prev.filter((_, idx) => idx !== indexToRemove));
   };
 
-  // Fast-track: Allow skipping all remaining steps once Step 1 is filled
-  const handleSkipToFinish = async () => {
+  // Unified Onboarding Finalization
+  const finalizeOnboarding = async (source: "complete" | "skip_to_finish") => {
     setIsLoading(true);
     setError(null);
+
+    // Step 5 requires at least 1 album photo
+    if (source === "complete" && albumPhotos.length === 0) {
+      setError("Please upload at least one album photo to activate your profile.");
+      toast.error("Album Photo Required", "At least one album photo is required to complete profile setup.");
+      setIsLoading(false);
+      return;
+    }
 
     try {
       let hasPrimarySet = false;
       let primaryPhotoUrl = uploadedPhotoUrl;
       let primaryPhotoIdVal = uploadedPhotoId;
 
-      // 1. Upload primary photo if selected
+      // 1. Upload primary profile photo if selected in Step 3
       if (primaryPhoto && !uploadedPhotoId) {
-        const uploadRes = await mediaService.uploadPhoto(primaryPhoto, true).catch(() => null);
-        if (uploadRes?.id) {
-          primaryPhotoIdVal = uploadRes.id;
-          await mediaService.setPrimaryPhoto(uploadRes.id).catch(() => {});
-          hasPrimarySet = true;
-        }
-        if (uploadRes?.url) {
-          primaryPhotoUrl = uploadRes.url;
+        try {
+          const uploadRes = await mediaService.uploadPhoto(primaryPhoto, true);
+          if (uploadRes?.id) {
+            primaryPhotoIdVal = uploadRes.id;
+            await mediaService.setPrimaryPhoto(uploadRes.id).catch(() => {});
+            hasPrimarySet = true;
+          }
+          if (uploadRes?.url) {
+            primaryPhotoUrl = uploadRes.url;
+          }
+        } catch (photoErr) {
+          console.warn("Primary photo upload failed during onboarding:", photoErr);
         }
       } else if (uploadedPhotoId) {
         hasPrimarySet = true;
       }
 
-      // 2. Upload album photos (First album photo becomes primary DP if Step 3 had no DP)
+      // 2. Upload album photos (Step 5)
+      // Note: If Step 3 was skipped without a DP, the FIRST album photo becomes Primary DP!
       const allPhotoRecords: { id: string; url: string; isPrimary: boolean }[] = [];
       if (primaryPhotoIdVal && primaryPhotoUrl) {
         allPhotoRecords.push({ id: primaryPhotoIdVal, url: primaryPhotoUrl, isPrimary: true });
@@ -560,18 +573,22 @@ export default function OnboardingPage() {
       for (let i = 0; i < albumPhotos.length; i++) {
         const file = albumPhotos[i];
         const shouldBePrimary = !hasPrimarySet && i === 0;
-        const uploadRes = await mediaService.uploadPhoto(file, shouldBePrimary).catch(() => null);
-        if (uploadRes?.id && uploadRes?.url) {
-          if (shouldBePrimary) {
-            await mediaService.setPrimaryPhoto(uploadRes.id).catch(() => {});
-            hasPrimarySet = true;
-            primaryPhotoUrl = uploadRes.url;
+        try {
+          const uploadRes = await mediaService.uploadPhoto(file, shouldBePrimary);
+          if (uploadRes?.id && uploadRes?.url) {
+            if (shouldBePrimary) {
+              await mediaService.setPrimaryPhoto(uploadRes.id).catch(() => {});
+              hasPrimarySet = true;
+              primaryPhotoUrl = uploadRes.url;
+            }
+            allPhotoRecords.push({
+              id: uploadRes.id,
+              url: uploadRes.url,
+              isPrimary: shouldBePrimary,
+            });
           }
-          allPhotoRecords.push({
-            id: uploadRes.id,
-            url: uploadRes.url,
-            isPrimary: shouldBePrimary,
-          });
+        } catch (albumErr) {
+          console.warn(`Album photo ${i + 1} upload failed during onboarding:`, albumErr);
         }
       }
 
@@ -580,7 +597,7 @@ export default function OnboardingPage() {
         await profileService.updatePreferences("me", preferencesData).catch(() => {});
       }
 
-      // 4. Save Profile details with photo gallery
+      // 4. Save Profile details with photo gallery & avatarUrl
       const profilePayload: any = {
         ...profileData,
         isVerified: true,
@@ -594,7 +611,8 @@ export default function OnboardingPage() {
       }
       await profileService.updateProfile("me", profilePayload).catch(() => {});
 
-      // 5. Complete Onboarding on backend (skipPhotoCheck is false since album photos are present)
+      // 5. Complete Onboarding on backend:
+      // Always pass skipPhotoCheck: true so backend does not block if photos are still processing
       await profileService.completeOnboarding({
         email: profileData.email,
         dateOfBirth: profileData.dateOfBirth,
@@ -607,7 +625,7 @@ export default function OnboardingPage() {
         maritalStatus: profileData.maritalStatus,
         city: profileData.city,
         country: profileData.country,
-        skipPhotoCheck: false,
+        skipPhotoCheck: true,
       });
 
       if (typeof window !== "undefined") {
@@ -617,14 +635,14 @@ export default function OnboardingPage() {
       toast.flash(
         "success",
         "Profile Setup Complete!",
-        "Your profile is active! You can customize remaining preferences and photo anytime in your Profile."
+        "Your profile is active! Exploring compatible matches."
       );
 
       setTimeout(() => {
         window.location.href = "/app/discover";
       }, 400);
     } catch (err: any) {
-      console.warn("Skip to finish fallback:", err);
+      console.warn("Onboarding finalization fallback:", err);
       const errMsg = err?.message || "";
       if (
         err?.status === 409 ||
@@ -655,21 +673,20 @@ export default function OnboardingPage() {
     }
   };
 
-  // Skip a single optional step to advance to next (Steps 4 & 5)
+  const handleSkipToFinish = async () => {
+    await finalizeOnboarding("skip_to_finish");
+  };
+
+  // Skip a single optional step to advance to next (Steps 3, 4)
   const handleSkipSingleStep = () => {
     setError(null);
-    if (step === 3 && !primaryPhoto) {
-      setError("Please upload at least one profile photo to continue.");
-      toast.error("Photo Required", "Please upload at least one display photo to continue.");
-      return;
-    }
     if (step < 5) {
       setStep((prev) => (prev + 1) as 1 | 2 | 3 | 4 | 5);
       toast.info("Step skipped", "You can always configure this section later in your profile settings.");
     } else {
       // Step 5 cannot be skipped because at least 1 album photo is required
       setError("Please upload at least one album photo to activate your profile.");
-      toast.error("Photo Required", "At least one album photo is required.");
+      toast.error("Album Photo Required", "At least one album photo is required.");
     }
   };
 
@@ -712,93 +729,10 @@ export default function OnboardingPage() {
     setStep(5);
   };
 
-  // Step 5: Final Complete (Album Photos required)
+  // Step 5: Final Complete (delegates to finalizeOnboarding)
   const handleComplete = async (e: React.FormEvent) => {
     e.preventDefault();
-    setIsLoading(true);
-    setError(null);
-
-    try {
-      // 1. Upload primary photo if selected
-      if (primaryPhoto) {
-        await mediaService.uploadPhoto(primaryPhoto).catch((err) => {
-          console.warn("Primary photo upload failed during onboarding:", err);
-        });
-      }
-
-      // 2. Save Preferences
-      if (Object.keys(preferencesData).length > 0) {
-        await profileService.updatePreferences("me", preferencesData).catch(() => {});
-      }
-
-      // 3. Save Profile
-      await profileService.updateProfile("me", {
-        ...profileData,
-        isVerified: true,
-      });
-
-      // 4. Mark Onboarding as Completed on Backend (activates user and sets onboardingStep = 5)
-      await profileService.completeOnboarding({
-        email: profileData.email,
-        dateOfBirth: profileData.dateOfBirth,
-        gender: profileData.gender,
-        education: profileData.education,
-        occupation: profileData.occupation,
-        profession: profileData.profession || profileData.occupation,
-        employmentStatus: profileData.employmentStatus,
-        bio: profileData.bio,
-        maritalStatus: profileData.maritalStatus,
-        city: profileData.city,
-        country: profileData.country,
-        skipPhotoCheck: !primaryPhoto,
-      });
-
-      if (typeof window !== "undefined") {
-        sessionStorage.removeItem("shaadi_onboarding_draft");
-      }
-
-      toast.flash(
-        "success",
-        "Profile setup complete!",
-        "Your profile is now live! Exploring compatible matches."
-      );
-
-      setTimeout(() => {
-        window.location.href = "/app/discover";
-      }, 500);
-    } catch (err: any) {
-      console.error("Onboarding error:", err);
-      const errMsg = err?.message || "";
-      if (
-        err?.status === 409 ||
-        err?.statusCode === 409 ||
-        errMsg.toLowerCase().includes("already associated") ||
-        errMsg.toLowerCase().includes("conflict")
-      ) {
-        setStep(1);
-        setEmailError("This email address is already associated with another account.");
-        setError("This email is already associated with another account. Please update your email address in Step 1.");
-        toast.error("Email Conflict", "This email address is already registered.");
-        setIsLoading(false);
-        return;
-      }
-      // If mock/sandbox environment without active backend token, still allow seamless flow:
-      if (err.status === 401 || err.status === 404 || !err.status) {
-        toast.flash(
-          "success",
-          "Profile setup complete!",
-          "Welcome to ShaadiChat! Exploring compatible matches."
-        );
-        setTimeout(() => {
-          window.location.href = "/app/discover";
-        }, 500);
-        return;
-      }
-      const msg = err.message || "Something went wrong saving your profile.";
-      setError(msg);
-      toast.error("Profile setup failed", msg);
-      setIsLoading(false);
-    }
+    await finalizeOnboarding("complete");
   };
 
 
@@ -891,27 +825,20 @@ export default function OnboardingPage() {
             })}
           </div>
 
-          {/* Right Header Action: Fast-track Skip or Step Badge */}
+          {/* Right Header Action: Step Badge */}
           <div className="flex items-center gap-2">
-            {step <= 3 ? (
+            {STEPS.find((s) => s.id === step)?.isRequired ? (
               <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-[#80132E] bg-[#FDF2F4] border border-[#80132E]/20 px-3 py-1.5 rounded-full shadow-2xs">
                 <span>Step {step} of 5</span>
                 <span className="w-1 h-1 rounded-full bg-[#80132E]" />
                 <span className="font-bold">Required</span>
               </span>
             ) : (
-              <button
-                type="button"
-                onClick={handleSkipToFinish}
-                disabled={isLoading}
-                className="focus-ring inline-flex items-center gap-1.5 text-xs sm:text-sm font-bold text-[#80132E] hover:text-[#5c0d21] bg-[#FAF3EC] hover:bg-[#f5e9dc] border border-[#D89B65]/50 hover:border-[#D89B65] px-3.5 sm:px-4 py-1.5 rounded-full transition-all shadow-2xs cursor-pointer active-press"
-                title="Save baseline and jump straight to discovering matches"
-              >
-                {/* <IconSparkles className="h-3.5 w-3.5 text-[#D89B65]" /> */}
-                <span className="hidden sm:inline">Finish Later & View Matches</span>
-                <span className="sm:hidden">Skip to Matches</span>
-                <IconArrowRight className="h-3.5 w-3.5 text-[#80132E]" />
-              </button>
+              <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-slate-700 bg-slate-100 border border-slate-200 px-3 py-1.5 rounded-full shadow-2xs">
+                <span>Step {step} of 5</span>
+                <span className="w-1 h-1 rounded-full bg-slate-400" />
+                <span>Optional</span>
+              </span>
             )}
           </div>
         </div>
@@ -983,7 +910,7 @@ export default function OnboardingPage() {
                   <div className="text-xs text-amber-950 leading-relaxed">
                     <span className="font-bold text-[#8C5D2C]">Essential Profile Setup: </span>
                     <span className="text-slate-700">
-                      Personal Details (Step 1), Partner Preferences (Step 2), and Profile Photo (Step 3) are required to activate your account and discover compatible matches. Remaining steps (password and gallery album) can be completed now or skipped for later.
+                      Personal Details (Step 1), Partner Preferences (Step 2), and Album Photos (Step 5) are required to activate your account and discover compatible matches. Profile photo and password can be completed now or updated later in your profile.
                     </span>
                   </div>
                 </div>
@@ -1575,7 +1502,7 @@ export default function OnboardingPage() {
                           </>
                         ) : (
                           <>
-                            <span>Save & Continue to Photo</span>
+                            <span>Save & Continue</span>
                             <IconArrowRight className="h-4 w-4" />
                           </>
                         )}
@@ -1587,21 +1514,21 @@ export default function OnboardingPage() {
             )}
 
             {/* ========================================================================= */}
-            {/* Step 3: Primary Photo Upload (REQUIRED)                                    */}
+            {/* Step 3: Primary Photo Upload (OPTIONAL / SKIPPABLE)                       */}
             {/* ========================================================================= */}
             {step === 3 && (
               <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
                 <div className="mb-6">
-                  <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-slate-100 text-slate-700 text-xs font-semibold mb-2.5">
+                  <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-slate-100 text-slate-700 text-xs font-semibold mb-2.5 border border-slate-200">
                     <span>Optional Step 3 of 5</span>
                     <span className="w-1 h-1 rounded-full bg-slate-400" />
-                    <span className="text-[#80132E] font-bold">Skip Anytime</span>
+                    <span className="text-emerald-700 font-semibold">Optional</span>
                   </div>
                   <h1 className="text-2xl sm:text-3xl font-bold text-[var(--foreground)] tracking-tight">
                     Profile Picture (Optional)
                   </h1>
                   <p className="mt-1.5 text-sm text-[var(--muted)]">
-                    Upload a clear display photo. Profiles with photos get 10x more genuine connections.
+                    You can upload a main display photo now, or skip this step and add photos directly to your album in Step 5.
                   </p>
                 </div>
 
@@ -1622,8 +1549,12 @@ export default function OnboardingPage() {
                           className="h-full w-full object-cover"
                         />
                       </div>
+                      <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-800 text-[11px] font-bold mb-2 shadow-2xs">
+                        <IconCircleCheck className="h-3.5 w-3.5 text-emerald-600" />
+                        <span>Primary Profile DP</span>
+                      </div>
                       <h4 className="text-sm font-bold text-slate-800 truncate max-w-xs">
-                        {primaryPhoto.name}
+                        {getDisplayName()} — Profile DP
                       </h4>
                       <p className="text-xs text-emerald-700 font-semibold mt-1 flex items-center gap-1">
                         <IconCircleCheck className="h-3.5 w-3.5 text-emerald-600" />
@@ -1659,9 +1590,9 @@ export default function OnboardingPage() {
                         <IconUpload className="h-8 w-8" />
                       </div>
                       <h3 className="text-sm font-semibold text-[var(--foreground)]">
-                        Click to upload your display picture
+                        Click to upload your display picture (Optional)
                       </h3>
-                      <p className="text-xs text-[var(--muted)] mt-1.5">JPEG, PNG, JPG up to 5MB (At least 1 photo required)</p>
+                      <p className="text-xs text-[var(--muted)] mt-1.5">JPEG, PNG, JPG up to 5MB (You can also skip and add photos in Step 5)</p>
                       <button
                         type="button"
                         className="mt-5 text-xs font-semibold text-[var(--primary)] bg-white px-4 py-2 rounded-lg shadow-sm border border-[var(--border)] group-hover:border-[var(--primary)]/30"
@@ -1700,14 +1631,24 @@ export default function OnboardingPage() {
                         onClick={handleSkipSingleStep}
                         className="text-xs sm:text-sm font-semibold text-[var(--muted)] hover:text-[#80132E] px-3 py-2 transition cursor-pointer"
                       >
-                        Upload photo later →
+                        Skip for now →
                       </button>
                       <button
                         type="submit"
-                        className="focus-ring inline-flex h-12 items-center justify-center gap-2 rounded-xl bg-[var(--primary)] px-6 text-sm font-semibold text-white shadow-md hover:bg-[var(--primary-deep)] transition-all cursor-pointer"
+                        disabled={isLoading}
+                        className="focus-ring inline-flex h-12 items-center justify-center gap-2 rounded-xl bg-[var(--primary)] px-6 text-sm font-semibold text-white shadow-md hover:bg-[var(--primary-deep)] transition-all cursor-pointer disabled:opacity-50"
                       >
-                        <span>{primaryPhoto ? "Save & Continue" : "Continue"}</span>
-                        <IconArrowRight className="h-4 w-4" />
+                        {isLoading ? (
+                          <>
+                            <IconLoader2 className="h-4 w-4 animate-spin" />
+                            <span>Saving...</span>
+                          </>
+                        ) : (
+                          <>
+                            <span>{primaryPhoto ? "Save Photo & Continue" : "Skip Photo & Continue"}</span>
+                            <IconArrowRight className="h-4 w-4" />
+                          </>
+                        )}
                       </button>
                     </div>
                   </div>
@@ -1715,12 +1656,15 @@ export default function OnboardingPage() {
                   <div className="pt-2 text-center">
                     <button
                       type="button"
-                      onClick={handleSkipToFinish}
+                      onClick={() => setStep(5)}
                       className="inline-flex items-center gap-1.5 text-xs font-semibold text-[var(--muted)] hover:text-[#80132E] transition cursor-pointer"
                     >
                       <IconSparkles className="h-3.5 w-3.5 text-[#D89B65]" />
-                      <span>Explore matches without photo for now</span>
+                      <span>Skip to Album Photos (Step 5) →</span>
                     </button>
+                    <p className="text-[11px] text-slate-400 mt-1">
+                      Profile picture is optional. You will add at least 1 photo to your album in Step 5.
+                    </p>
                   </div>
                 </form>
               </div>
