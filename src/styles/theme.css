@@ -84,9 +84,9 @@
   --radius-card-lg: 1.75rem;
   --radius-control: 0.875rem;
 
-  /* Centralized Typography Tokens (MANROPE) */
+  /* Centralized Typography Tokens (CORMORANT GARAMOND + MANROPE) */
   --font-family-base: var(--font-manrope), "Manrope", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-  --font-family-heading: var(--font-manrope), "Manrope", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --font-family-heading: var(--font-cormorant), "Cormorant Garamond", Garamond, Georgia, serif;
   --font-weight-regular: 400;
   --font-weight-medium: 500;
   --font-weight-semibold: 600;
@@ -105,6 +105,8 @@
   --font-sans: var(--font-family-base);
   --font-manrope: var(--font-family-base);
   --font-heading: var(--font-family-heading);
+  --font-serif: var(--font-family-heading);
+  --font-cormorant: var(--font-family-heading);
   --color-primary: var(--primary);
   --color-primary-deep: var(--primary-deep);
   --color-primary-light: var(--primary-light);

@@ -40,10 +40,14 @@ button, input, textarea, select {
 }
 .text-balance { text-wrap: balance; }
 
-/* Unified Modern Matchmaking Typography (MANROPE) */
+/* Unified Modern Matchmaking Typography (CORMORANT GARAMOND + MANROPE) */
+h1, h2, .font-heading, .font-editorial-title {
+  font-family: var(--font-family-heading);
+}
+
 .font-editorial-title {
   font-family: var(--font-family-heading);
-  letter-spacing: -0.02em;
+  letter-spacing: -0.01em;
 }
 
 .font-editorial-highlight {
@@ -53,7 +57,15 @@ button, input, textarea, select {
 
 .font-heading {
   font-family: var(--font-family-heading);
-  letter-spacing: -0.02em;
+  letter-spacing: -0.01em;
+}
+
+.font-serif {
+  font-family: var(--font-family-heading);
+}
+
+.font-sans {
+  font-family: var(--font-family-base);
 }
 
 @keyframes float-subtle-1 {
