@@ -1,6 +1,5 @@
 ---
-trigger: always_on
-name: efficient-rule-application
+trigger: model_decision
 description: Applies engineering rules efficiently according to task scope and risk while avoiding duplicated analysis and unnecessary work.
 ---
 

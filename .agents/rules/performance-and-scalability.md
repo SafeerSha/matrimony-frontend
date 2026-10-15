@@ -1,6 +1,5 @@
 ---
-trigger: always_on
-name: performance-and-scalability
+trigger: model_decision
 description: Prevents unnecessary frontend work, inefficient database queries, excessive network traffic, unsafe caching, and resource bottlenecks while preserving correctness and privacy.
 ---
 
