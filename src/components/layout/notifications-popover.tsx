@@ -174,7 +174,7 @@ export function NotificationsPopover({ className }: NotificationsPopoverProps) {
                   <div className="relative mt-0.5 shrink-0">
                     <Avatar
                       src={item.profile?.image}
-                      name={item.profile?.name || "ShaadiChat"}
+                      name={item.profile?.name || "IshtamChat"}
                       size="sm"
                     />
                     <span className="absolute -bottom-1 -right-1 grid h-4 w-4 place-items-center rounded-full bg-white shadow-xs border border-[var(--border)]">

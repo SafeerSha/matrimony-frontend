@@ -89,7 +89,7 @@ export default function RegisterPage() {
       toast.flash(
         "success",
         "Account created successfully!",
-        "Welcome to ShaadiChat. Redirecting to your dashboard..."
+        "Welcome to IshtamChat. Redirecting to your dashboard..."
       );
 
       setTimeout(() => {

@@ -149,7 +149,7 @@ export default function SupportPage() {
                   </div>
                   <div>
                     <p className="text-xs font-bold text-[var(--foreground)]">Email Support</p>
-                    <p className="text-sm font-bold text-[#5C1027] mt-0.5">care@shaadichat.com</p>
+                    <p className="text-sm font-bold text-[#5C1027] mt-0.5">care@ishtamchat.com</p>
                     <p className="text-[11px] text-[var(--muted)] mt-0.5">Replies typically within 24 hours</p>
                   </div>
                 </div>

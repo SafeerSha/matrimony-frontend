@@ -23,7 +23,7 @@ export default function LandingPage() {
       <header className="absolute top-0 inset-x-0 w-full z-30 mx-auto flex h-16 sm:h-20 max-w-[1600px] items-start pt-3 sm:pt-4 lg:pt-0 lg:items-center justify-between px-3 sm:px-6 lg:px-8 xl:px-10 bg-transparent lg:relative">
         <Logo lightOnMobile={true} />
         <div className="flex items-start lg:items-center gap-2 sm:gap-3 shrink-0">
-          {/* 100% Verified badge in top header on mobile (aligned with the top line of ShaadiChat logo) */}
+          {/* 100% Verified badge in top header on mobile (aligned with the top line of IshtamChat logo) */}
           <div className="inline-flex lg:hidden items-center gap-1.5 rounded-full border border-white/30 bg-black/60 backdrop-blur-md px-2.5 py-1 text-[10.5px] font-bold text-white shadow-sm shrink-0 whitespace-nowrap">
             <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse shrink-0" />
             <span className="whitespace-nowrap">100% Verified</span>
@@ -80,7 +80,7 @@ export default function LandingPage() {
               </p>
               <div className="mt-8 flex flex-wrap items-center justify-center gap-3.5">
                 <a
-                  href="mailto:care@shaadichat.com"
+                  href="mailto:care@ishtamchat.com"
                   className="focus-ring inline-flex min-h-12 items-center gap-2 rounded-xl bg-[var(--primary)] px-6 text-sm font-semibold text-white shadow-[0_10px_25px_var(--primary-shadow)] hover:bg-[var(--primary-deep)] transition"
                 >
                   Email us
@@ -98,7 +98,7 @@ export default function LandingPage() {
       </section>
 
       <footer className="mx-auto flex max-w-[1600px] flex-wrap items-center justify-center gap-x-8 gap-y-2 px-4 py-8 text-sm text-[var(--muted)] sm:px-6 xl:px-10">
-        <span>© 2026 ShaadiChat</span>
+        <span>© 2026 IshtamChat</span>
         <div className="flex gap-4"><Link href="/privacy" className="hover:text-[var(--primary)]">Privacy</Link><Link href="/terms" className="hover:text-[var(--primary)]">Terms</Link></div>
       </footer>
     </main>

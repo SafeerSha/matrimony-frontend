@@ -151,7 +151,7 @@ export default function VerifyPage() {
         toast.flash(
           "success",
           "Verification Successful!",
-          "Your contact details have been verified. Welcome to ShaadiChat!"
+          "Your contact details have been verified. Welcome to IshtamChat!"
         );
       }
 

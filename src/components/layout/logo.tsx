@@ -28,7 +28,7 @@ export function Logo({
         ),
         className
       )}
-      aria-label="ShaadiChat home"
+      aria-label="IshtamChat home"
     >
       {/* Brand Icon Emblem */}
       <span className="relative grid h-10 w-10 shrink-0 place-items-center rounded-[13px] bg-gradient-to-br from-[#931B39] via-[#741129] to-[#450716] text-white shadow-[0_4px_14px_rgba(116,17,41,0.28)] border border-[#EAD8C7]/35 ring-1 ring-inset ring-white/25 group-hover:shadow-[0_6px_20px_rgba(116,17,41,0.38)] group-hover:scale-105 transition-all duration-300 overflow-hidden">
@@ -58,7 +58,7 @@ export function Logo({
                 : "text-[#5C1027]"
             )}
           >
-            Shaadi
+            Ishtam
           </span>
           <span
             className={cn(
@@ -75,13 +75,13 @@ export function Logo({
         {showTagline && (
           <span
             className={cn(
-              "text-[8.5px] font-bold uppercase tracking-[0.26em] leading-none mt-1 transition-colors",
+              "text-[9.5px] font-semibold tracking-[0.04em] leading-none mt-0.5 transition-colors",
               lightOnMobile
                 ? "text-white/80 drop-shadow-[0_1px_2px_rgba(0,0,0,0.7)] lg:drop-shadow-none lg:text-[#A97C52]"
                 : "text-[#A97C52]"
             )}
           >
-            Matrimony
+            Relationships
           </span>
         )}
       </div>

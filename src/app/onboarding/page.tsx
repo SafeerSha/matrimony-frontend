@@ -663,7 +663,7 @@ export default function OnboardingPage() {
       toast.flash(
         "success",
         "Profile Setup Complete!",
-        "Welcome to ShaadiChat! Exploring compatible matches."
+        "Welcome to IshtamChat! Exploring compatible matches."
       );
       setTimeout(() => {
         window.location.href = "/app/discover";

@@ -273,7 +273,7 @@ export function HeroSection({ className = "" }: HeroSectionProps) {
           <div className="animate-hero-fade">
             <TrustBadge
               icon={<IconHeart className="h-3.5 w-3.5 text-[var(--primary)]" aria-hidden="true" fill="currentColor" />}
-              label="Welcome to ShaadiChat"
+              label="Welcome to IshtamChat"
               className="mb-5 sm:mb-6"
             />
 

@@ -290,7 +290,7 @@ export const authService = {
         return await apiFetch<AuthResponse>("/auth/register", {
           method: "POST",
           body: JSON.stringify({
-            email: data.email || `${data.phone.replace(/\D/g, "")}@shaadichat.temp`,
+            email: data.email || `${data.phone.replace(/\D/g, "")}@ishtamchat.temp`,
             firstName,
             lastName,
             phone: data.phone,
@@ -342,9 +342,9 @@ export const authService = {
           },
           {
             id: "sess-2",
-            deviceName: "ShaadiChat iOS Mobile App",
+            deviceName: "IshtamChat iOS Mobile App",
             deviceType: "MOBILE",
-            browser: "ShaadiChat App",
+            browser: "IshtamChat App",
             os: "iOS",
             location: "iPhone 15 Pro • Kochi",
             isCurrent: false,
