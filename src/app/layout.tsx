@@ -12,8 +12,8 @@ const manrope = Manrope({
 
 export const metadata: Metadata = {
   title: {
-    default: "ShaadiChat — Meaningful connections, thoughtfully made",
-    template: "%s | ShaadiChat"
+    default: "IshtamChat — Meaningful connections, thoughtfully made",
+    template: "%s | IshtamChat"
   },
   description: "A modern, privacy-first matrimony and relationship discovery experience.",
   robots: { index: false, follow: false },

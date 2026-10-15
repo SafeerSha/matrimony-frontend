@@ -1,5 +1,5 @@
 /**
- * Feature Flags Configuration for ShaadiChat
+ * Feature Flags Configuration for IshtamChat
  *
  * Controls whether out-of-scope pages or features show the "Under Development"
  * placeholder during the Sprint 1 demo.

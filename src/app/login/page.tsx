@@ -146,7 +146,7 @@ export default function LoginPage() {
           "Please finish setting up your profile to start exploring compatible matches."
         );
       } else {
-        toast.flash("success", "Signed in successfully!", "Welcome back to ShaadiChat");
+        toast.flash("success", "Signed in successfully!", "Welcome back to IshtamChat");
       }
 
       setTimeout(() => {
@@ -451,7 +451,7 @@ export default function LoginPage() {
                     <div className="flex-1 min-w-0">
                       <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-[#D89B65]/25 text-[#8C5D2C] text-[10px] font-bold uppercase tracking-wider mb-1.5">
                         <IconSparkles className="h-3 w-3 text-[#D89B65]" />
-                        <span>New to ShaadiChat?</span>
+                        <span>New to IshtamChat?</span>
                       </div>
                       <h3 className="text-sm sm:text-base font-bold text-slate-900 leading-snug">
                         No account found for{" "}
@@ -814,7 +814,7 @@ export default function LoginPage() {
 
             {/* Bottom Create Account Switcher */}
             <div className="mt-5 sm:mt-8 pt-3.5 sm:pt-5 border-t border-[var(--border)] text-center text-xs sm:text-sm text-[var(--muted)]">
-              <span>New to ShaadiChat? </span>
+              <span>New to IshtamChat? </span>
               <Link
                 href="/#quick-register"
                 className="font-semibold text-[var(--primary)] hover:text-[var(--primary-deep)] hover:underline focus-ring rounded"
