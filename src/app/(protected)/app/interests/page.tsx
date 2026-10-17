@@ -35,6 +35,7 @@ import {
 } from '@/lib/demo-data';
 import { toast } from '@/lib/toast';
 import { cn } from '@/lib/cn';
+import { useCelebration } from '@/context/celebration-context';
 import type { Profile } from '@/lib/demo-data';
 
 export type InterestsTab = 'received' | 'sent' | 'declined';
@@ -72,6 +73,7 @@ const mapProfile = (u: any, idx = 0): Profile => ({
 function InterestsContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
+  const { celebrateMatch } = useCelebration();
 
   // Normalize initial tab from query param
   const initialTabParam = searchParams.get('tab');
@@ -157,18 +159,12 @@ function InterestsContent() {
       await matchesService.acceptInterest(id);
       setReceivedItems((prev) => prev.filter((p) => p.id !== id));
       if (item) {
-        toast.success(
-          'Interest Accepted!',
-          `You and ${item.name} are now connected. You can view them in Mutual Matches anytime.`
-        );
+        celebrateMatch({ match: item });
       }
     } catch {
       setReceivedItems((prev) => prev.filter((p) => p.id !== id));
       if (item) {
-        toast.success(
-          'Interest Accepted!',
-          `You and ${item.name} are now connected. You can view them in Mutual Matches anytime.`
-        );
+        celebrateMatch({ match: item });
       }
     }
   };

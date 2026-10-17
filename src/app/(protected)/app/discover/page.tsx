@@ -42,6 +42,7 @@ import { profiles as demoProfiles } from '@/lib/demo-data';
 import { toast } from '@/lib/toast';
 import { cn } from '@/lib/cn';
 import { SwipeCard } from '@/components/discovery/swipe-card';
+import { useCelebration } from '@/context/celebration-context';
 import type { Profile } from '@/lib/demo-data';
 
 export type DiscoveryViewMode = 'swipe' | 'grid';
@@ -49,6 +50,7 @@ export type SortOption = 'recommended' | 'recent' | 'new' | 'nearby';
 
 export default function DiscoverPage() {
   const router = useRouter();
+  const { celebrateMatch } = useCelebration();
   // Discovery view mode: 'swipe' on mobile by default, 'grid' on desktop
   const [viewMode, setViewMode] = useState<DiscoveryViewMode>('swipe');
 
@@ -289,8 +291,17 @@ export default function DiscoverPage() {
   ) => {
     const isMobileSwipe = viewMode === 'swipe' || options?.silentToast;
     try {
-      await matchesService.sendInterest(id);
+      const res = await matchesService.sendInterest(id);
       setSentInterestIds((prev) => new Set(prev).add(id));
+
+      if (res?.isMutualMatch) {
+        const matchedProfile = profiles.find((p) => p.id === id);
+        if (matchedProfile) {
+          celebrateMatch({ match: matchedProfile });
+          return;
+        }
+      }
+
       if (!isMobileSwipe) {
         toast.success('Interest Sent!', `We have notified ${name} of your interest.`);
       }

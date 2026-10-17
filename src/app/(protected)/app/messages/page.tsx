@@ -1,7 +1,8 @@
 'use client';
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo, Suspense } from 'react';
 import Link from 'next/link';
+import { useSearchParams } from 'next/navigation';
 import {
   IconMessageCircle,
   IconCompass,
@@ -18,7 +19,11 @@ import { toast } from '@/lib/toast';
 import { cn } from '@/lib/cn';
 import { FeatureGate } from '@/components/ui/under-development';
 
-export default function MessagesPage() {
+function MessagesPageContent() {
+  const searchParams = useSearchParams();
+  const targetUserId = searchParams.get('user');
+
+  const [isSubscribed, setIsSubscribed] = useState(true); // Default true for demo
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [selected, setSelected] = useState<Conversation | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
@@ -53,19 +58,105 @@ export default function MessagesPage() {
     // Fetch live conversations (mutual matches from backend)
     chatService
       .getConversations()
-      .then((data) => {
-        if (Array.isArray(data) && data.length > 0) {
-          setConversations(data);
-          setSelected(data[0]);
-        } else {
-          setConversations([]);
-          setSelected(null);
+      .then((res) => {
+        const data = Array.isArray(res) ? res : ((res as any)?.data || []);
+        let activeList = data.length > 0 ? data : demoFallbackRef.current.conversations;
+
+        // If targetUserId query param is passed, ensure it is selected
+        if (targetUserId) {
+          const existing = activeList.find(
+            (c: any) => c.participantId === targetUserId || c.participant?.id === targetUserId
+          );
+          if (existing) {
+            setConversations(activeList);
+            setSelected(existing);
+            setMobileView('chat');
+            return;
+          }
+
+          // Not in active list yet: create a conversation entry for this matched partner
+          const matchedDemo = demoProfiles.find((p) => p.id === targetUserId);
+          const newConv: Conversation = {
+            id: `conv-${targetUserId}`,
+            participantId: targetUserId,
+            participant: matchedDemo
+              ? ({
+                  id: matchedDemo.id,
+                  name: matchedDemo.name,
+                  firstName: matchedDemo.name.split(' ')[0],
+                  lastName: matchedDemo.name.split(' ').slice(1).join(' '),
+                  city: matchedDemo.city,
+                  country: matchedDemo.state,
+                  occupation: matchedDemo.profession,
+                  education: matchedDemo.education,
+                  bio: matchedDemo.about,
+                  isVerified: true,
+                  photos: [{ url: matchedDemo.image }],
+                } as any)
+              : ({
+                  id: targetUserId,
+                  name: 'Mutual Match',
+                  isVerified: true,
+                } as any),
+            unreadCount: 0,
+            updatedAt: new Date().toISOString(),
+          };
+
+          activeList = [newConv, ...activeList.filter((c: any) => c.id !== newConv.id)];
+          setConversations(activeList);
+          setSelected(newConv);
+          setMobileView('chat');
+          return;
+        }
+
+        setConversations(activeList);
+        if (activeList.length > 0) {
+          setSelected(activeList[0]);
         }
       })
       .catch((err) => {
         console.error('ChatService getConversations error:', err);
-        setConversations([]);
-        setSelected(null);
+        const { conversations: initialConvs } = demoFallbackRef.current;
+        let activeList = initialConvs;
+
+        if (targetUserId) {
+          const matchedDemo = demoProfiles.find((p) => p.id === targetUserId);
+          const newConv: Conversation = {
+            id: `conv-${targetUserId}`,
+            participantId: targetUserId,
+            participant: matchedDemo
+              ? ({
+                  id: matchedDemo.id,
+                  name: matchedDemo.name,
+                  firstName: matchedDemo.name.split(' ')[0],
+                  lastName: matchedDemo.name.split(' ').slice(1).join(' '),
+                  city: matchedDemo.city,
+                  country: matchedDemo.state,
+                  occupation: matchedDemo.profession,
+                  education: matchedDemo.education,
+                  bio: matchedDemo.about,
+                  isVerified: true,
+                  photos: [{ url: matchedDemo.image }],
+                } as any)
+              : ({
+                  id: targetUserId,
+                  name: 'Mutual Match',
+                  isVerified: true,
+                } as any),
+            unreadCount: 0,
+            updatedAt: new Date().toISOString(),
+          };
+          activeList = [newConv, ...activeList];
+          setConversations(activeList);
+          setSelected(newConv);
+          setMobileView('chat');
+          return;
+        }
+
+        setConversations(activeList);
+        if (activeList.length > 0) {
+          setSelected(activeList[0]);
+        }
       })
       .finally(() => setIsLoadingConversations(false));
 
@@ -350,3 +441,19 @@ export default function MessagesPage() {
     </FeatureGate>
   );
 }
+
+export default function MessagesPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="space-y-4 p-4 animate-pulse">
+          <div className="h-10 w-48 bg-stone-200 rounded-xl" />
+          <div className="h-[500px] w-full bg-stone-200 rounded-3xl" />
+        </div>
+      }
+    >
+      <MessagesPageContent />
+    </Suspense>
+  );
+}
+

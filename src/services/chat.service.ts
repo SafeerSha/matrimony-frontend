@@ -251,6 +251,12 @@ class ChatService {
       await apiFetch(`/chat/conversations/${contactId}/read`, { method: "POST" }).catch(() => {});
     }
   }
+
+  async initiateChat(contactId: string): Promise<{ success: boolean; conversationId: string; contactId: string; partner?: any }> {
+    return apiFetch(`/chat/initiate/${contactId}`, {
+      method: "POST",
+    });
+  }
 }
 
 export const chatService = new ChatService();
