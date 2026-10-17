@@ -69,6 +69,26 @@ export function QuickRegisterSection() {
     }
   }, []);
 
+  useEffect(() => {
+    const handleCategorySelect = (e: Event) => {
+      const customEvent = e as CustomEvent<{ category: string }>;
+      if (customEvent.detail?.category) {
+        const cat = customEvent.detail.category;
+        const normalized =
+          cat === "Living-together" || cat === "living_together" ? "Living Together" : cat;
+        setProfileFor(normalized);
+        if (normalized === "Friendship" || normalized === "Living Together") {
+          setCreatedBy("Myself");
+        }
+      }
+    };
+
+    window.addEventListener("ishtam:select-category", handleCategorySelect);
+    return () => {
+      window.removeEventListener("ishtam:select-category", handleCategorySelect);
+    };
+  }, []);
+
   const isByLocked = profileFor === "Friendship" || profileFor === "Living Together";
 
   const handleProfileForChange = (value: string) => {

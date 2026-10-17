@@ -10,3 +10,4 @@ export { BotanicalBranch, type BotanicalBranchProps } from "./botanical-branch";
 export { BotanicalLeaf, type BotanicalLeafProps } from "./botanical-leaf";
 export { BotanicalCornerDecorations, type BotanicalCornerDecorationsProps } from "./botanical-corner-decorations";
 export { QuickRegisterSection } from "./quick-register-section";
+export { LookingForModal, type LookingForModalProps, type LookingForOption } from "./looking-for-modal";
