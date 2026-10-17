@@ -9,6 +9,7 @@ import { HeroProfileCard, type HeroProfile } from "./hero-profile-card";
 import { ConnectionBadge } from "./connection-badge";
 import { CinematicHeroImage, type HeroImageData } from "./cinematic-hero-image";
 import { BotanicalLayer } from "./botanical-layer";
+import { LookingForModal, type LookingForOption } from "./looking-for-modal";
 import { cn } from "@/lib/cn";
 
 export interface HeroSectionProps {
@@ -104,33 +105,54 @@ export function HeroSection({ className = "" }: HeroSectionProps) {
   const [hoveredProfile, setHoveredProfile] = useState<string | null>(null);
   const [activeSlideIndex, setActiveSlideIndex] = useState<number>(0);
   const [isHeroHovered, setIsHeroHovered] = useState<boolean>(false);
+  const [isLookingForOpen, setIsLookingForOpen] = useState<boolean>(false);
 
   // Automatically cycle through Marriage, Friendship, and Living Together every 4.5 seconds with smooth fade
   useEffect(() => {
-    if (hoveredProfile || isHeroHovered) return;
+    if (hoveredProfile || isHeroHovered || isLookingForOpen) return;
 
     const timer = setInterval(() => {
       setActiveSlideIndex((prev) => (prev + 1) % HERO_SLIDES.length);
     }, 4500);
 
     return () => clearInterval(timer);
-  }, [hoveredProfile, isHeroHovered]);
+  }, [hoveredProfile, isHeroHovered, isLookingForOpen]);
 
+  const handleOpenLookingFor = (e?: React.MouseEvent) => {
+    if (e) e.preventDefault();
+    setIsLookingForOpen(true);
+  };
 
-  const handleScrollToRegister = (e: React.MouseEvent) => {
-    e.preventDefault();
-    const el = document.getElementById("quick-register");
-    if (el) {
-      el.scrollIntoView({ behavior: "smooth", block: "start" });
-      const nameInput = el.querySelector<HTMLInputElement>('input[type="text"]');
-      if (nameInput) {
-        setTimeout(() => {
-          nameInput.focus({ preventScroll: true });
-        }, 450);
+  const handleSelectLookingForOption = (option: LookingForOption) => {
+    setIsLookingForOpen(false);
+
+    // Sync active slide in hero preview
+    const slideIdx = option === "Friendship" ? 1 : option === "Living-together" ? 2 : 0;
+    setActiveSlideIndex(slideIdx);
+
+    // Dispatch selection to QuickRegisterSection
+    const mappedCategory = option === "Living-together" ? "Living Together" : option;
+    window.dispatchEvent(
+      new CustomEvent("ishtam:select-category", {
+        detail: { category: mappedCategory },
+      })
+    );
+
+    // Smoothly scroll down to quick-register section and focus name input
+    setTimeout(() => {
+      const el = document.getElementById("quick-register");
+      if (el) {
+        el.scrollIntoView({ behavior: "smooth", block: "start" });
+        const nameInput = el.querySelector<HTMLInputElement>('input[type="text"]');
+        if (nameInput) {
+          setTimeout(() => {
+            nameInput.focus({ preventScroll: true });
+          }, 450);
+        }
+      } else {
+        window.location.hash = "quick-register";
       }
-    } else {
-      window.location.hash = "quick-register";
-    }
+    }, 120);
   };
 
   return (
@@ -238,8 +260,7 @@ export function HeroSection({ className = "" }: HeroSectionProps) {
               {/* Action Buttons */}
               <div className="flex flex-col gap-2.5 pt-1">
                 <Button
-                  href="#quick-register"
-                  onClick={handleScrollToRegister}
+                  onClick={handleOpenLookingFor}
                   variant="primary"
                   className="w-full min-h-12 text-sm font-bold shadow-[0_12px_28px_rgba(122,20,40,0.45)] bg-gradient-to-r from-[#7A1428] via-[#8C1D33] to-[#7A1428] hover:from-[#8C1D33] hover:to-[#6E1224] text-white border border-white/20 active:scale-[0.99] transition-all"
                   rightIcon={<IconArrowRight className="h-4 w-4" aria-hidden="true" />}
@@ -294,8 +315,7 @@ export function HeroSection({ className = "" }: HeroSectionProps) {
             {/* CTAs */}
             <div className="mt-8 flex flex-col sm:flex-row sm:flex-wrap items-stretch sm:items-center gap-3 sm:gap-3.5 sm:mt-10">
               <Button
-                href="#quick-register"
-                onClick={handleScrollToRegister}
+                onClick={handleOpenLookingFor}
                 variant="primary"
                 className="w-full sm:w-auto min-h-12 px-6 sm:px-8 text-sm sm:text-base font-semibold shadow-[0_14px_30px_var(--primary-shadow-strong)]"
                 rightIcon={<IconArrowRight className="h-4 w-4" aria-hidden="true" />}
@@ -441,6 +461,12 @@ export function HeroSection({ className = "" }: HeroSectionProps) {
           />
         </svg>
       </div>
+      {/* Looking For Glassmorphism Selection Modal */}
+      <LookingForModal
+        isOpen={isLookingForOpen}
+        onClose={() => setIsLookingForOpen(false)}
+        onSelectOption={handleSelectLookingForOption}
+      />
     </section>
   );
 }

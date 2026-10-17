@@ -41,6 +41,14 @@ button, input, textarea, select {
 .text-balance { text-wrap: balance; }
 
 /* Unified Modern Matchmaking Typography (MANROPE) */
+.font-luxury {
+  font-family: var(--font-playfair), "Playfair Display", Didot, "Bodoni MT", Georgia, serif;
+}
+
+.font-attractive {
+  font-family: var(--font-cormorant), "Cormorant Garamond", Garamond, Georgia, serif;
+}
+
 .font-editorial-title {
   font-family: var(--font-family-heading);
   letter-spacing: -0.02em;
