@@ -47,6 +47,27 @@ import type { Profile } from '@/lib/demo-data';
 export type DiscoveryViewMode = 'swipe' | 'grid';
 export type SortOption = 'recommended' | 'recent' | 'new' | 'nearby';
 
+export const HEIGHT_OPTIONS = [
+  "4'10\"", "4'11\"", "5'0\"", "5'1\"", "5'2\"", "5'3\"", "5'4\"", "5'5\"",
+  "5'6\"", "5'7\"", "5'8\"", "5'9\"", "5'10\"", "5'11\"", "6'0\"", "6'1\"",
+  "6'2\"", "6'3\"", "6'4\""
+];
+
+export const HEIGHT_SELECT_OPTIONS = HEIGHT_OPTIONS.map((h) => ({ value: h, label: h }));
+
+export function heightToInches(h?: string): number {
+  if (!h) return 0;
+  const match = h.match(/(\d+)'(\d+)/);
+  if (match) {
+    return parseInt(match[1], 10) * 12 + parseInt(match[2], 10);
+  }
+  const cmMatch = h.match(/(\d+)\s*cm/i);
+  if (cmMatch) {
+    return Math.round(parseInt(cmMatch[1], 10) / 2.54);
+  }
+  return 0;
+}
+
 export default function DiscoverPage() {
   const router = useRouter();
   // Discovery view mode: 'swipe' on mobile by default, 'grid' on desktop
@@ -70,6 +91,8 @@ export default function DiscoverPage() {
   const [city, setCity] = useState('All locations');
   const [minAge, setMinAge] = useState(21);
   const [maxAge, setMaxAge] = useState(35);
+  const [minHeight, setMinHeight] = useState<string>("4'10\"");
+  const [maxHeight, setMaxHeight] = useState<string>("6'4\"");
   const [selectedGender, setSelectedGender] = useState<'any' | 'women' | 'men'>('any');
   const [selectedReligion, setSelectedReligion] = useState<string>('Any');
   const [selectedCaste, setSelectedCaste] = useState<string>('Any');
@@ -79,6 +102,7 @@ export default function DiscoverPage() {
   const [selectedMaritalStatus, setSelectedMaritalStatus] = useState<string>('Any');
   const [selectedLanguage, setSelectedLanguage] = useState<string>('Any');
   const [selectedIntent, setSelectedIntent] = useState<string>('Any');
+  const [selectedDiet, setSelectedDiet] = useState<string>("Doesn't Matter");
 
   // Shortlist and Interest tracking sets
   const [shortlistedIds, setShortlistedIds] = useState<Set<string>>(new Set());
@@ -100,7 +124,7 @@ export default function DiscoverPage() {
     }
   }, []);
 
-  // Guard: Incomplete / Draft profiles are not allowed on Discover
+  // Guard: Incomplete / Draft profiles are not allowed on Discover, and prefill preferences
   useEffect(() => {
     profileService
       .getProfile('me')
@@ -112,6 +136,46 @@ export default function DiscoverPage() {
             'Please complete your profile details to unlock discovery.'
           );
           router.replace('/onboarding');
+          return;
+        }
+
+        // Initialize Discover filters with saved user preferences if present
+        if (profile.preferences) {
+          const p = profile.preferences;
+          if (p.minAge) setMinAge(Number(p.minAge));
+          if (p.maxAge) setMaxAge(Number(p.maxAge));
+          if (p.minHeight) setMinHeight(p.minHeight);
+          if (p.maxHeight) setMaxHeight(p.maxHeight);
+          if (p.diet) {
+            const d = Array.isArray(p.diet) ? p.diet[0] : p.diet;
+            if (d) setSelectedDiet(d);
+          }
+          if (p.gender) setSelectedGender(p.gender);
+          if (p.religions) {
+            const r = Array.isArray(p.religions) ? p.religions[0] : p.religions;
+            if (r && r !== 'Open to all communities') setSelectedReligion(r);
+          }
+          if (p.locations) {
+            const l = Array.isArray(p.locations) ? p.locations[0] : p.locations;
+            if (l && l !== 'Any location') setCity(l);
+          }
+          if (p.maritalStatus) {
+            const m = Array.isArray(p.maritalStatus) ? p.maritalStatus[0] : p.maritalStatus;
+            if (m && m !== 'Open to All') setSelectedMaritalStatus(m);
+          }
+          if (p.education) {
+            const e = Array.isArray(p.education) ? p.education[0] : p.education;
+            if (e && e !== 'Any qualification') setSelectedEducation(e);
+          }
+          if (p.professions) {
+            const pr = Array.isArray(p.professions) ? p.professions[0] : p.professions;
+            if (pr && pr !== 'Any profession') setSelectedProfession(pr);
+          }
+        } else if (profile.gender) {
+          // Smart default: target opposite gender
+          const g = profile.gender.toLowerCase();
+          if (g === 'male' || g === 'man') setSelectedGender('women');
+          else if (g === 'female' || g === 'woman') setSelectedGender('men');
         }
       })
       .catch(() => {});
@@ -152,6 +216,11 @@ export default function DiscoverPage() {
             online: idx % 2 === 0,
             about: u.bio || demoProfiles[idx % demoProfiles.length]?.about || '',
             height: u.height ? `${u.height}cm` : "5'5\"",
+            gender: u.gender || u.profile?.gender || (u.firstName?.toLowerCase().includes('menon') ? 'female' : ''),
+            caste: u.caste || u.profile?.caste || '',
+            diet: u.diet || u.profile?.diet || '',
+            income: u.income || u.profile?.income || '',
+            intent: u.intent || u.profile?.intent || '',
             maritalStatus: u.maritalStatus || 'Never married',
             religion: u.religion || 'Not specified',
             motherTongue: 'Malayalam',
@@ -180,38 +249,93 @@ export default function DiscoverPage() {
     return profiles
       .filter((p) => {
         const matchesQuery = query.trim()
-          ? `${p.id} ${p.name} ${p.city} ${p.profession} ${p.education}`
+          ? `${p.id} ${p.name} ${p.city} ${p.profession} ${p.education} ${p.about || ''}`
             .toLowerCase()
             .includes(query.toLowerCase())
           : true;
 
         const matchesCity = city === 'All locations' || p.city.toLowerCase() === city.toLowerCase();
         const matchesAge = p.age >= minAge && p.age <= maxAge;
+
+        // Gender match
+        const pGender = (p.gender || (p as any).sex || '').toLowerCase();
+        const matchesGender =
+          selectedGender === 'any' ||
+          (selectedGender === 'women' && (pGender.includes('female') || pGender.includes('woman') || pGender.includes('women'))) ||
+          (selectedGender === 'men' && (pGender.includes('male') || pGender.includes('man') || pGender.includes('men')));
+
         const matchesReligion =
           selectedReligion === 'Any' ||
           (p.religion && p.religion.toLowerCase() === selectedReligion.toLowerCase());
+
+        // Caste / Community match
+        const pCaste = ((p as any).caste || (p as any).community || '').toLowerCase();
+        const matchesCaste =
+          selectedCaste === 'Any' ||
+          selectedCaste === 'No Caste Bar' ||
+          pCaste.includes(selectedCaste.toLowerCase());
+
         const matchesMaritalStatus =
           selectedMaritalStatus === 'Any' ||
           (p.maritalStatus && p.maritalStatus.toLowerCase().includes(selectedMaritalStatus.toLowerCase()));
+
         const matchesProfession =
           selectedProfession === 'Any' ||
           p.profession.toLowerCase().includes(selectedProfession.toLowerCase());
+
         const matchesEducation =
           selectedEducation === 'Any' ||
           p.education.toLowerCase().includes(selectedEducation.toLowerCase());
+
         const matchesLanguage =
           selectedLanguage === 'Any' ||
           (p.motherTongue && p.motherTongue.toLowerCase() === selectedLanguage.toLowerCase());
+
+        // Income match
+        const pIncome = ((p as any).income || (p as any).annualIncome || '').toLowerCase();
+        const matchesIncome =
+          selectedIncome === 'Any' ||
+          !pIncome ||
+          pIncome.includes(selectedIncome.toLowerCase());
+
+        // Intent match
+        const pIntent = ((p as any).intent || (p as any).partnerIntent || (p as any).category || '').toLowerCase();
+        const matchesIntent =
+          selectedIntent === 'Any' ||
+          !pIntent ||
+          pIntent.includes(selectedIntent.toLowerCase());
+
+        // Height match
+        const pHeightInches = heightToInches(p.height);
+        const minHeightInches = heightToInches(minHeight);
+        const maxHeightInches = heightToInches(maxHeight);
+        const matchesHeight =
+          !pHeightInches ||
+          ((!minHeightInches || pHeightInches >= minHeightInches) &&
+           (!maxHeightInches || pHeightInches <= maxHeightInches));
+
+        // Diet match
+        const pDiet = ((p as any).diet || (p as any).dietaryHabits || (Array.isArray(p.lifestyle) ? p.lifestyle.join(' ') : '')).toLowerCase();
+        const matchesDiet =
+          selectedDiet === "Doesn't Matter" ||
+          selectedDiet === "Any" ||
+          pDiet.includes(selectedDiet.toLowerCase());
 
         return (
           matchesQuery &&
           matchesCity &&
           matchesAge &&
+          matchesGender &&
           matchesReligion &&
-          matchesMaritalStatus &&
-          matchesProfession &&
+          matchesCaste &&
           matchesEducation &&
-          matchesLanguage
+          matchesProfession &&
+          matchesIncome &&
+          matchesMaritalStatus &&
+          matchesLanguage &&
+          matchesIntent &&
+          matchesHeight &&
+          matchesDiet
         );
       })
       .sort((a, b) => {
@@ -226,11 +350,18 @@ export default function DiscoverPage() {
     city,
     minAge,
     maxAge,
+    selectedGender,
     selectedReligion,
+    selectedCaste,
     selectedMaritalStatus,
     selectedProfession,
     selectedEducation,
     selectedLanguage,
+    selectedIncome,
+    selectedIntent,
+    minHeight,
+    maxHeight,
+    selectedDiet,
     sortBy,
   ]);
 
@@ -239,6 +370,7 @@ export default function DiscoverPage() {
     let count = 0;
     if (city !== 'All locations') count++;
     if (minAge !== 21 || maxAge !== 35) count++;
+    if (minHeight !== "4'10\"" || maxHeight !== "6'4\"") count++;
     if (selectedGender !== 'any') count++;
     if (selectedReligion !== 'Any') count++;
     if (selectedCaste !== 'Any') count++;
@@ -248,11 +380,14 @@ export default function DiscoverPage() {
     if (selectedMaritalStatus !== 'Any') count++;
     if (selectedLanguage !== 'Any') count++;
     if (selectedIntent !== 'Any') count++;
+    if (selectedDiet !== "Doesn't Matter") count++;
     return count;
   }, [
     city,
     minAge,
     maxAge,
+    minHeight,
+    maxHeight,
     selectedGender,
     selectedReligion,
     selectedCaste,
@@ -262,6 +397,7 @@ export default function DiscoverPage() {
     selectedMaritalStatus,
     selectedLanguage,
     selectedIntent,
+    selectedDiet,
   ]);
 
   const handleResetFilters = () => {
@@ -269,6 +405,8 @@ export default function DiscoverPage() {
     setCity('All locations');
     setMinAge(21);
     setMaxAge(35);
+    setMinHeight("4'10\"");
+    setMaxHeight("6'4\"");
     setSelectedGender('any');
     setSelectedReligion('Any');
     setSelectedCaste('Any');
@@ -278,8 +416,38 @@ export default function DiscoverPage() {
     setSelectedMaritalStatus('Any');
     setSelectedLanguage('Any');
     setSelectedIntent('Any');
+    setSelectedDiet("Doesn't Matter");
     setIsFilterOpen(false);
     toast.info('Filters Reset', 'Showing all available matrimonial recommendations.');
+  };
+
+  const handleApplyFilters = async () => {
+    setIsFilterOpen(false);
+    toast.success('Filters Applied', `Showing ${filteredProfiles.length} matching profiles.`);
+
+    // Persist to backend preferences so user's partner preferences are safely saved
+    try {
+      const preferencesPayload: any = {
+        minAge,
+        maxAge,
+        minHeight,
+        maxHeight,
+        gender: selectedGender,
+        religions: selectedReligion !== 'Any' ? [selectedReligion] : ['Open to all communities'],
+        maritalStatus: selectedMaritalStatus !== 'Any' ? [selectedMaritalStatus] : ['Never Married'],
+        locations: city !== 'All locations' ? [city] : ['Any location'],
+        education: selectedEducation !== 'Any' ? [selectedEducation] : ['Any qualification'],
+        professions: selectedProfession !== 'Any' ? [selectedProfession] : ['Any profession'],
+        diet: selectedDiet !== "Doesn't Matter" ? [selectedDiet] : ["Doesn't Matter"],
+        caste: selectedCaste !== 'Any' ? selectedCaste : undefined,
+        income: selectedIncome !== 'Any' ? selectedIncome : undefined,
+        intent: selectedIntent !== 'Any' ? selectedIntent : undefined,
+        language: selectedLanguage !== 'Any' ? selectedLanguage : undefined,
+      };
+      await profileService.updatePreferences('me', preferencesPayload);
+    } catch (err) {
+      console.warn('Failed auto-saving preferences in background:', err);
+    }
   };
 
   const handleSendInterest = async (
@@ -916,10 +1084,7 @@ export default function DiscoverPage() {
             <Button
               variant="primary"
               size="md"
-              onClick={() => {
-                setIsFilterOpen(false);
-                toast.success('Filters Applied', `Showing ${filteredProfiles.length} matching profiles.`);
-              }}
+              onClick={handleApplyFilters}
               className="text-xs font-bold flex-1 max-w-xs shadow-md"
             >
               Apply Filters
@@ -1014,6 +1179,38 @@ export default function DiscoverPage() {
                   value={maxAge}
                   onChange={(e) => setMaxAge(Number(e.target.value))}
                   className="h-11 w-full rounded-xl border border-[var(--border)] bg-[var(--surface)] px-3 text-sm font-semibold outline-none focus:border-[var(--primary)]"
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* 1.5 Height Range */}
+          <div className="space-y-2">
+            <div className="flex justify-between items-center">
+              <label className="text-xs font-bold uppercase tracking-wider text-[var(--foreground)]">
+                Height Range
+              </label>
+              <span className="text-xs font-bold text-[var(--primary)]">
+                {minHeight} – {maxHeight}
+              </span>
+            </div>
+            <div className="grid grid-cols-2 gap-3 pt-1">
+              <div>
+                <ModernSelect
+                  label="Min Height"
+                  value={minHeight}
+                  onChange={(val) => setMinHeight(val)}
+                  options={HEIGHT_SELECT_OPTIONS}
+                  size="sm"
+                />
+              </div>
+              <div>
+                <ModernSelect
+                  label="Max Height"
+                  value={maxHeight}
+                  onChange={(val) => setMaxHeight(val)}
+                  options={HEIGHT_SELECT_OPTIONS}
+                  size="sm"
                 />
               </div>
             </div>
@@ -1253,6 +1450,26 @@ export default function DiscoverPage() {
                   interactive
                 >
                   {intent}
+                </Chip>
+              ))}
+            </div>
+          </div>
+
+          {/* 12. Diet Habits */}
+          <div className="space-y-2">
+            <label className="text-xs font-bold uppercase tracking-wider text-[var(--foreground)]">
+              Diet Habits
+            </label>
+            <div className="flex flex-wrap gap-2">
+              {["Doesn't Matter", 'Vegetarian', 'Eggetarian', 'Non-Vegetarian'].map((diet) => (
+                <Chip
+                  key={diet}
+                  size="sm"
+                  selected={selectedDiet === diet}
+                  onClick={() => setSelectedDiet(diet)}
+                  interactive
+                >
+                  {diet}
                 </Chip>
               ))}
             </div>

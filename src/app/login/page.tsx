@@ -10,6 +10,7 @@ import {
   IconEyeOff,
   IconLoader2,
   IconHeart,
+  IconHeartHandshake,
   IconMail,
   IconPhone,
   IconLock,
@@ -450,7 +451,7 @@ export default function LoginPage() {
                     </div>
                     <div className="flex-1 min-w-0">
                       <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-[#D89B65]/25 text-[#8C5D2C] text-[10px] font-bold uppercase tracking-wider mb-1.5">
-                        <IconSparkles className="h-3 w-3 text-[#D89B65]" />
+                        <IconHeartHandshake className="h-3 w-3 text-[#D89B65]" />
                         <span>New to IshtamChat?</span>
                       </div>
                       <h3 className="text-sm sm:text-base font-bold text-slate-900 leading-snug">
