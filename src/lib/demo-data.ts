@@ -1,6 +1,11 @@
 export type Profile = {
   id: string; profileId?: string; name: string; age: number; city: string; state: string; profession: string; education: string;
   employmentStatus?: string;
+  gender?: string;
+  caste?: string;
+  income?: string;
+  intent?: string;
+  diet?: string;
   image: string; compatibility: number; verified?: boolean; online?: boolean; status?: string;
   about: string; height: string; maritalStatus: string; religion: string; motherTongue: string;
   family: string; lifestyle: string[]; interests: string[]; lookingFor: string;

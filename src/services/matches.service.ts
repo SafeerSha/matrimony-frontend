@@ -7,6 +7,13 @@ export interface SearchFilters {
   religion?: string;
   city?: string;
   maritalStatus?: string;
+  gender?: string;
+  caste?: string;
+  diet?: string;
+  education?: string;
+  occupation?: string;
+  income?: string;
+  intent?: string;
   page?: number;
   limit?: number;
 }
@@ -19,7 +26,13 @@ export const matchesService = {
   },
 
   searchProfiles: (filters: SearchFilters) => {
-    const params = new URLSearchParams(filters as Record<string, string>).toString();
+    const cleanParams: Record<string, string> = {};
+    for (const [key, value] of Object.entries(filters)) {
+      if (value !== undefined && value !== null && value !== '') {
+        cleanParams[key] = String(value);
+      }
+    }
+    const params = new URLSearchParams(cleanParams).toString();
     return apiFetch<{ data: UserProfile[]; total: number }>(`/discovery/search?${params}`, {
       method: "GET",
     });
