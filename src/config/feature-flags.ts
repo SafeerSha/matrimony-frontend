@@ -50,7 +50,7 @@ export const FEATURE_FLAGS: FeatureFlags = {
     // Epic 5 Live Features
     matches: true,
     messages: false,
-    favorites: false,
+    favorites: true,
     interests: false,
     notifications: false,
     settings: false,

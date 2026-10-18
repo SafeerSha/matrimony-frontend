@@ -100,6 +100,32 @@ export default function DiscoverPage() {
     } catch {
       setHasSeenSwipeHint(false);
     }
+
+    try {
+      const localStored = JSON.parse(localStorage.getItem('ishtam_shortlisted_ids') || '[]');
+      if (Array.isArray(localStored) && localStored.length > 0) {
+        setShortlistedIds(new Set(localStored));
+      }
+    } catch {}
+
+    matchesService
+      .getShortlistedProfiles()
+      .then((serverProfiles) => {
+        if (Array.isArray(serverProfiles) && serverProfiles.length > 0) {
+          setShortlistedIds((prev) => {
+            const merged = new Set(prev);
+            serverProfiles.forEach((p) => {
+              if (p.id) merged.add(p.id);
+              if (p.profileId) merged.add(p.profileId);
+            });
+            try {
+              localStorage.setItem('ishtam_shortlisted_ids', JSON.stringify(Array.from(merged)));
+            } catch {}
+            return merged;
+          });
+        }
+      })
+      .catch(() => {});
   }, []);
 
   // Guard: Incomplete / Draft profiles are not allowed on Discover
@@ -314,27 +340,59 @@ export default function DiscoverPage() {
   };
 
   const handleShortlist = async (id: string, name: string) => {
-    const isShortlisted = shortlistedIds.has(id);
+    const isCurrentlyShortlisted = shortlistedIds.has(id);
+    const nextShortlisted = !isCurrentlyShortlisted;
+
+    // Optimistically update set
+    setShortlistedIds((prev) => {
+      const next = new Set(prev);
+      if (nextShortlisted) {
+        next.add(id);
+      } else {
+        next.delete(id);
+      }
+      return next;
+    });
+
+    // Optimistically update localStorage
     try {
-      await matchesService.shortlistProfile(id);
-      setShortlistedIds((prev) => {
-        const next = new Set(prev);
-        if (isShortlisted) next.delete(id);
-        else next.add(id);
-        return next;
-      });
+      const localStored = JSON.parse(localStorage.getItem('ishtam_shortlisted_ids') || '[]');
+      const updated = nextShortlisted
+        ? Array.from(new Set([...localStored, id]))
+        : localStored.filter((storedId: string) => storedId !== id);
+      localStorage.setItem('ishtam_shortlisted_ids', JSON.stringify(updated));
+    } catch {}
+
+    try {
+      if (nextShortlisted) {
+        await matchesService.shortlistProfile(id);
+      } else {
+        await matchesService.removeShortlist(id);
+      }
       toast.success(
-        isShortlisted ? 'Removed from Favorites' : 'Profile Favorited',
-        `${name} has been ${isShortlisted ? 'removed from' : 'added to'} your favorites.`
+        nextShortlisted ? 'Profile Favorited' : 'Removed from Favorites',
+        `${name} has been ${nextShortlisted ? 'added to' : 'removed from'} your favorites.`
       );
-    } catch {
+    } catch (err) {
+      console.error('Error toggling shortlist:', err);
+      // Rollback on error
       setShortlistedIds((prev) => {
         const next = new Set(prev);
-        if (isShortlisted) next.delete(id);
-        else next.add(id);
+        if (isCurrentlyShortlisted) {
+          next.add(id);
+        } else {
+          next.delete(id);
+        }
         return next;
       });
-      toast.success('Profile Favorited', `${name} added to your favorites.`);
+      try {
+        const localStored = JSON.parse(localStorage.getItem('ishtam_shortlisted_ids') || '[]');
+        const updated = isCurrentlyShortlisted
+          ? Array.from(new Set([...localStored, id]))
+          : localStored.filter((storedId: string) => storedId !== id);
+        localStorage.setItem('ishtam_shortlisted_ids', JSON.stringify(updated));
+      } catch {}
+      toast.error('Action Failed', `Could not update favorite for ${name}.`);
     }
   };
 

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { IconCircleCheck, IconHeart, IconMapPin, IconUsers } from '@tabler/icons-react';
 import { Badge } from '@/components/ui/badge';
@@ -13,21 +13,53 @@ export function ProfileCard({ profile, compact = false }: { profile: Profile; co
   const [isShortlisted, setIsShortlisted] = useState(false);
   const [isHovered, setIsHovered] = useState(false);
 
+  useEffect(() => {
+    try {
+      const stored = JSON.parse(localStorage.getItem('ishtam_shortlisted_ids') || '[]');
+      if (stored.includes(profile.id) || (profile.profileId && stored.includes(profile.profileId))) {
+        setIsShortlisted(true);
+      }
+    } catch {}
+  }, [profile.id, profile.profileId]);
+
   const handleShortlist = async (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
+    const nextState = !isShortlisted;
+    setIsShortlisted(nextState);
+
+    try {
+      const stored = JSON.parse(localStorage.getItem('ishtam_shortlisted_ids') || '[]');
+      const updated = nextState
+        ? Array.from(new Set([...stored, profile.id]))
+        : stored.filter((id: string) => id !== profile.id && id !== profile.profileId);
+      localStorage.setItem('ishtam_shortlisted_ids', JSON.stringify(updated));
+    } catch {}
+
     try {
       const { matchesService } = await import('@/services');
       const { toast } = await import('@/lib/toast');
-      await matchesService.shortlistProfile(profile.id);
-      setIsShortlisted(!isShortlisted);
+      if (nextState) {
+        await matchesService.shortlistProfile(profile.id);
+      } else {
+        await matchesService.removeShortlist(profile.id);
+      }
       toast.success(
-        isShortlisted ? "Removed from Favorites" : "Profile Favorited",
-        `${profile.name} has been ${isShortlisted ? 'removed from' : 'added to'} your favorites.`
+        nextState ? 'Profile Favorited' : 'Removed from Favorites',
+        `${profile.name} has been ${nextState ? 'added to' : 'removed from'} your favorites.`
       );
     } catch (error) {
+      // Rollback
+      setIsShortlisted(!nextState);
+      try {
+        const stored = JSON.parse(localStorage.getItem('ishtam_shortlisted_ids') || '[]');
+        const rollback = !nextState
+          ? Array.from(new Set([...stored, profile.id]))
+          : stored.filter((id: string) => id !== profile.id && id !== profile.profileId);
+        localStorage.setItem('ishtam_shortlisted_ids', JSON.stringify(rollback));
+      } catch {}
       const { toast } = await import('@/lib/toast');
-      toast.error("Action failed", "Could not update shortlist at this time.");
+      toast.error('Action failed', 'Could not update shortlist at this time.');
       console.error(error);
     }
   };

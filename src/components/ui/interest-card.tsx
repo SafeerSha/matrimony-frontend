@@ -15,6 +15,8 @@ import {
   IconShieldCheck,
   IconUsers,
   IconHeart,
+  IconTrash,
+  IconBookmark,
 } from '@tabler/icons-react';
 import { Avatar } from './avatar';
 import { Badge } from './badge';
@@ -47,6 +49,8 @@ export interface InterestCardProps {
   onAccept?: (id: string) => void;
   onDecline?: (id: string) => void;
   onChat?: (id: string) => void;
+  onRemove?: (id: string) => void;
+  isRemoving?: boolean;
   className?: string;
 }
 
@@ -55,6 +59,8 @@ export function InterestCard({
   type,
   onAccept,
   onDecline,
+  onRemove,
+  isRemoving,
   className,
 }: InterestCardProps) {
   const formattedId = getProfileUniqueId(profile);
@@ -301,20 +307,34 @@ export function InterestCard({
 
             {/* FAVORITE TAB ACTIONS: View Profile & Remove */}
             {type === 'favorite' && (
-              <div className="flex items-center justify-between w-full">
-                <span className="text-xs font-medium text-[var(--primary)] flex items-center gap-1.5">
-                  <IconHeart className="h-4 w-4 fill-current" />
-                  Saved in Favorites
+              <div className="flex flex-wrap items-center justify-between gap-2.5 w-full">
+                <span className="text-xs font-semibold text-[var(--primary)] flex items-center gap-1.5">
+                  <IconBookmark className="h-4 w-4 fill-current" />
+                  Saved in Shortlist
                 </span>
-                <Link href={`/app/profile?user=${profile.id}`} className="focus-ring">
-                  <Button
-                    variant="secondary"
-                    size="md"
-                    className="rounded-xl px-4 text-xs font-semibold"
-                  >
-                    View Profile
-                  </Button>
-                </Link>
+                <div className="flex items-center gap-2 ml-auto">
+                  {onRemove && (
+                    <Button
+                      variant="outline"
+                      size="md"
+                      onClick={() => onRemove(profile.id)}
+                      disabled={isRemoving}
+                      className="rounded-xl px-3.5 text-xs font-semibold text-rose-600 hover:text-rose-700 hover:border-rose-300 hover:bg-rose-50 active-press transition-colors"
+                      leftIcon={<IconTrash className="h-3.5 w-3.5" />}
+                    >
+                      {isRemoving ? 'Removing...' : 'Remove'}
+                    </Button>
+                  )}
+                  <Link href={`/app/profile?user=${profile.id}`} className="focus-ring">
+                    <Button
+                      variant="secondary"
+                      size="md"
+                      className="rounded-xl px-4 text-xs font-semibold"
+                    >
+                      View Profile
+                    </Button>
+                  </Link>
+                </div>
               </div>
             )}
           </div>

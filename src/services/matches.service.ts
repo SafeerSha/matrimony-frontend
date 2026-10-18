@@ -3,6 +3,9 @@ import type { UserProfile } from "./profile.service";
 import type { Profile } from "@/lib/demo-data";
 import {
   MatchesResponseSchema,
+  ShortlistedResponseSchema,
+  ShortlistActionResponseSchema,
+  type ShortlistActionResponse,
   InitiateChatResponseSchema,
   type InitiateChatResponse,
 } from "@/lib/validation/matches";
@@ -129,11 +132,16 @@ export const matchesService = {
       method: "GET",
     });
 
-    // Validate using Zod if type is matches
+    // Validate using Zod if type is matches or shortlisted
     if (type === "matches" && Array.isArray(res)) {
       const parsed = MatchesResponseSchema.safeParse(res);
       if (!parsed.success) {
         console.warn("Connections schema validation warning (using raw data):", parsed.error.issues);
+      }
+    } else if (type === "shortlisted" && Array.isArray(res)) {
+      const parsed = ShortlistedResponseSchema.safeParse(res);
+      if (!parsed.success) {
+        console.warn("Shortlisted connections schema validation warning:", parsed.error.issues);
       }
     }
 
@@ -147,6 +155,52 @@ export const matchesService = {
     const raw = await matchesService.getConnections("matches");
     const rawList = Array.isArray(raw) ? raw : (raw as any)?.data || [];
     return rawList.map((item: any, idx: number) => mapConnectionToProfile(item, idx));
+  },
+
+  /**
+   * Fetches active shortlisted profiles and normalizes them into ready-to-render Profile[] models
+   */
+  getShortlistedProfiles: async (): Promise<Profile[]> => {
+    const raw = await matchesService.getConnections("shortlisted");
+    const rawList = Array.isArray(raw) ? raw : (raw as any)?.data || [];
+    return rawList.map((item: any, idx: number) => mapConnectionToProfile(item, idx));
+  },
+
+  /**
+   * Removes a profile from the user's shortlist via live connections API
+   */
+  removeShortlist: async (userId: string): Promise<ShortlistActionResponse> => {
+    try {
+      const res = await apiFetch<any>(`/connections/shortlist/${userId}`, {
+        method: "DELETE",
+      });
+
+      const parsed = ShortlistActionResponseSchema.safeParse(res);
+      if (parsed.success) {
+        return parsed.data;
+      }
+
+      return {
+        success: true,
+        message: res?.message || "Profile removed from shortlist",
+        targetId: userId,
+      };
+    } catch (err: any) {
+      // Fallback attempt: POST remove-shortlist endpoint if DELETE is not supported by gateway
+      try {
+        const fallbackRes = await apiFetch<any>(`/connections/remove-shortlist/${userId}`, {
+          method: "POST",
+        });
+        return {
+          success: true,
+          message: fallbackRes?.message || "Profile removed from shortlist",
+          targetId: userId,
+        };
+      } catch {
+        // Re-throw original error to trigger proper failure handling and retry
+        throw err;
+      }
+    }
   },
 
   /**

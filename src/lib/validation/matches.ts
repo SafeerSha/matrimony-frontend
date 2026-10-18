@@ -69,6 +69,23 @@ export type LiveConnection = z.infer<typeof LiveConnectionSchema>;
 export const MatchesResponseSchema = z.array(LiveConnectionSchema);
 
 /**
+ * Zod schema for shortlisted response list
+ */
+export const ShortlistedResponseSchema = z.array(LiveConnectionSchema);
+
+/**
+ * Zod schema for shortlist action response (e.g. remove shortlist)
+ */
+export const ShortlistActionResponseSchema = z.object({
+  success: z.boolean(),
+  message: z.string().optional(),
+  id: z.string().optional(),
+  targetId: z.string().optional(),
+});
+
+export type ShortlistActionResponse = z.infer<typeof ShortlistActionResponseSchema>;
+
+/**
  * Zod schema for chat initialization endpoint response
  */
 export const InitiateChatResponseSchema = z.object({
