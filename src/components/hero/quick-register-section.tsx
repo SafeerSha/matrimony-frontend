@@ -33,6 +33,7 @@ const profileForOptions = [
 const lookingInOptions = [
   { value: "Kerala", label: "Kerala Community" },
   { value: "Telugu", label: "Telugu Community" },
+  { value: "Bharat", label: "Bharat (All India)" },
 ];
 
 const createdByOptions = [
@@ -71,7 +72,7 @@ export function QuickRegisterSection() {
 
   useEffect(() => {
     const handleCategorySelect = (e: Event) => {
-      const customEvent = e as CustomEvent<{ category: string }>;
+      const customEvent = e as CustomEvent<{ category: string; community?: string }>;
       if (customEvent.detail?.category) {
         const cat = customEvent.detail.category;
         const normalized =
@@ -80,6 +81,9 @@ export function QuickRegisterSection() {
         if (normalized === "Friendship" || normalized === "Living Together") {
           setCreatedBy("Myself");
         }
+      }
+      if (customEvent.detail?.community) {
+        setLookingIn(customEvent.detail.community);
       }
     };
 

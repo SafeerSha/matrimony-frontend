@@ -9,7 +9,7 @@ import { HeroProfileCard, type HeroProfile } from "./hero-profile-card";
 import { ConnectionBadge } from "./connection-badge";
 import { CinematicHeroImage, type HeroImageData } from "./cinematic-hero-image";
 import { BotanicalLayer } from "./botanical-layer";
-import { LookingForModal, type LookingForOption } from "./looking-for-modal";
+import { LookingForModal, type LookingForOption, type MatrimonyCommunityOption } from "./looking-for-modal";
 import { cn } from "@/lib/cn";
 
 export interface HeroSectionProps {
@@ -123,7 +123,10 @@ export function HeroSection({ className = "" }: HeroSectionProps) {
     setIsLookingForOpen(true);
   };
 
-  const handleSelectLookingForOption = (option: LookingForOption) => {
+  const handleSelectLookingForOption = (
+    option: LookingForOption,
+    community?: MatrimonyCommunityOption
+  ) => {
     setIsLookingForOpen(false);
 
     // Sync active slide in hero preview
@@ -134,7 +137,10 @@ export function HeroSection({ className = "" }: HeroSectionProps) {
     const mappedCategory = option === "Living-together" ? "Living Together" : option;
     window.dispatchEvent(
       new CustomEvent("ishtam:select-category", {
-        detail: { category: mappedCategory },
+        detail: {
+          category: mappedCategory,
+          community: community,
+        },
       })
     );
 

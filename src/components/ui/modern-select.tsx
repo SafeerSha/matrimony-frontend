@@ -21,6 +21,7 @@ export interface ModernSelectProps {
   className?: string;
   triggerClassName?: string;
   menuClassName?: string;
+  maxHeight?: string;
   icon?: React.ReactNode;
   label?: string;
   error?: string;
@@ -38,6 +39,7 @@ export function ModernSelect({
   className,
   triggerClassName,
   menuClassName,
+  maxHeight = "max-h-[175px]",
   icon,
   label,
   error,
@@ -151,7 +153,12 @@ export function ModernSelect({
               menuClassName
             )}
           >
-            <div className="max-h-60 overflow-y-auto space-y-0.5 custom-scrollbar">
+            <div
+              className={cn(
+                "modern-dropdown-scroll overflow-y-auto space-y-0.5 pr-1 overscroll-contain [scrollbar-width:thin] [scrollbar-color:#D8B28C_transparent] [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-[#D8B28C] hover:[&::-webkit-scrollbar-thumb]:bg-[#7A1835]",
+                maxHeight
+              )}
+            >
               {options.map((opt) => {
                 const optVal = String(opt.value);
                 const isSelected =

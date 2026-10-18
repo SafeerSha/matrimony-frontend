@@ -98,11 +98,14 @@ export const authService = {
     return res;
   },
 
-  sendOtp: async (phone: string) => {
+  sendOtp: async (phone: string, purpose?: "login" | "register" | string) => {
     try {
       return await apiFetch<{ message: string }>("/auth/send-otp", {
         method: "POST",
-        body: JSON.stringify({ phone }),
+        body: JSON.stringify({
+          phone,
+          ...(purpose ? { purpose } : {}),
+        }),
       });
     } catch (err: any) {
       // Re-throw registered account check failure so login UI can present direct registration link
@@ -117,6 +120,24 @@ export const authService = {
       }
       if (!err?.status) {
         // Fallback for offline mock/dev environment
+        if (purpose === "login") {
+          const knownPhones = ["+91 9876543210", "+91 9999999999", "+91 98765 43210"];
+          const cleanInput = phone.replace(/\D/g, "");
+          const storedDraft = typeof window !== "undefined" ? sessionStorage.getItem("shaadi_onboarding_draft") : null;
+          let draftPhone = "";
+          if (storedDraft) {
+            try {
+              draftPhone = JSON.parse(storedDraft).phone?.replace(/\D/g, "") || "";
+            } catch {}
+          }
+          const isKnown = knownPhones.some((p) => p.replace(/\D/g, "") === cleanInput) || (draftPhone && draftPhone === cleanInput);
+          if (!isKnown && cleanInput !== "9876543210") {
+            const notFoundErr: any = new Error("No account found with this mobile number. Please register first.");
+            notFoundErr.status = 404;
+            notFoundErr.code = "ACCOUNT_NOT_FOUND";
+            throw notFoundErr;
+          }
+        }
         return { message: "Verification code sent to " + phone };
       }
       throw err;

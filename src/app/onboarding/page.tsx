@@ -27,6 +27,9 @@ import {
   IconMapPin,
   IconSchool,
   IconCoffee,
+  IconWorld,
+  IconHomeHeart,
+  IconUsers,
 } from "@tabler/icons-react";
 import { Logo } from "@/components/layout/logo";
 import { cn } from "@/lib/cn";
@@ -96,6 +99,8 @@ export default function OnboardingPage() {
             email: parsed.email || prev.email || "",
             profileFor: parsed.profileFor || prev.profileFor || "Marriage",
             createdBy: parsed.createdBy || prev.createdBy || "",
+            category: parsed.category || parsed.profileFor || prev.category || "Marriage",
+            lookingIn: parsed.lookingIn || prev.lookingIn || "",
           }));
 
           if (parsed.preferences) {
@@ -557,6 +562,81 @@ export default function OnboardingPage() {
     await finalizeOnboarding("complete");
   };
 
+  // Determine active registration stream & community for onboarding badges & messaging
+  const getRegistrationBadge = () => {
+    const cat = String(
+      draftInfo?.category ||
+      draftInfo?.profileFor ||
+      profileData?.category ||
+      profileData?.profileFor ||
+      ""
+    ).toLowerCase();
+
+    const community = String(
+      draftInfo?.lookingIn ||
+      draftInfo?.community ||
+      profileData?.lookingIn ||
+      preferencesData?.location ||
+      ""
+    ).toLowerCase();
+
+    // Marriage variants
+    if (cat.includes("marriage") || cat === "") {
+      if (community.includes("kerala")) {
+        return {
+          label: "Kerala Matrimony",
+          colorClass: "bg-[#FDF2F4] border-[#F7C6CE] text-[#7A1835]",
+          icon: IconHeartHandshake,
+        };
+      }
+      if (community.includes("telugu")) {
+        return {
+          label: "Telugu Matrimony",
+          colorClass: "bg-[#FAF3EC] border-[#EAD8C7] text-[#8C5D2C]",
+          icon: IconSparkles,
+        };
+      }
+      if (community.includes("bharat")) {
+        return {
+          label: "Bharat Matrimony",
+          colorClass: "bg-[#F0F7F4] border-[#C8E4D6] text-[#1E7E52]",
+          icon: IconWorld,
+        };
+      }
+      return {
+        label: "Matrimony",
+        colorClass: "bg-[#FDF2F4] border-[#F7C6CE] text-[#7A1835]",
+        icon: IconHeartHandshake,
+      };
+    }
+
+    // Friendship
+    if (cat.includes("friend")) {
+      return {
+        label: "Friendship",
+        colorClass: "bg-[#FAF5FF] border-[#E9D5FF] text-[#7E22CE]",
+        icon: IconUsers,
+      };
+    }
+
+    // Living Together
+    if (cat.includes("living")) {
+      return {
+        label: "Living Together",
+        colorClass: "bg-[#F0FDF4] border-[#BBF7D0] text-[#15803D]",
+        icon: IconHomeHeart,
+      };
+    }
+
+    return {
+      label: "Matrimony",
+      colorClass: "bg-[#FDF2F4] border-[#F7C6CE] text-[#7A1835]",
+      icon: IconHeartHandshake,
+    };
+  };
+
+  const regBadge = getRegistrationBadge();
+  const RegIcon = regBadge.icon;
 
   return (
     <main className="relative min-h-screen w-full bg-[var(--background)] flex flex-col">
@@ -713,17 +793,32 @@ export default function OnboardingPage() {
             {step === 1 && (
               <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
                 <div className="mb-6">
-                  {draftInfo?.name && (
-                    <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#FAF3EC] border border-[#D89B65]/40 text-[#8C5D2C] text-xs font-bold mb-2.5">
-                      <IconHeartHandshake className="h-3.5 w-3.5 text-[#D89B65]" />
-                      <span>Welcome, {draftInfo.firstName || draftInfo.name}</span>
+                  <div className="flex flex-wrap items-center gap-2 mb-2.5">
+                    {draftInfo?.name && (
+                      <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#FAF3EC] border border-[#D89B65]/40 text-[#8C5D2C] text-xs font-bold shadow-2xs">
+                        <IconHeartHandshake className="h-3.5 w-3.5 text-[#D89B65]" />
+                        <span>Welcome, {draftInfo.firstName || draftInfo.name}</span>
+                      </div>
+                    )}
+                    <div
+                      className={cn(
+                        "inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold border shadow-2xs transition-all animate-in fade-in zoom-in-95 duration-200",
+                        regBadge.colorClass
+                      )}
+                    >
+                      <RegIcon className="h-3.5 w-3.5 shrink-0" />
+                      <span>{regBadge.label}</span>
                     </div>
-                  )}
+                  </div>
                   <h1 className="text-2xl sm:text-3xl font-bold text-[var(--foreground)] tracking-tight">
                     Personal & Contact Details
                   </h1>
                   <p className="mt-1.5 text-sm text-[var(--muted)] leading-relaxed">
-                    Please provide your primary email address and confirm your core profile information.
+                    Please complete your{" "}
+                    <span className="font-bold text-[#80132E]">
+                      {regBadge.label}
+                    </span>{" "}
+                    profile and confirm your core profile information.
                   </p>
                 </div>
 
