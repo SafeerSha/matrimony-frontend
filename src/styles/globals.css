@@ -413,3 +413,24 @@ button, input, textarea, select {
 .animate-hint-left {
   animation: swipe-hint-left-overlay 4.5s cubic-bezier(0.25, 1, 0.5, 1) forwards;
 }
+
+/* Sleek Luxury Dropdown Scrollbar */
+.modern-dropdown-scroll {
+  max-height: 175px;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: #D8B28C transparent;
+}
+.modern-dropdown-scroll::-webkit-scrollbar {
+  width: 5px;
+}
+.modern-dropdown-scroll::-webkit-scrollbar-track {
+  background: transparent;
+}
+.modern-dropdown-scroll::-webkit-scrollbar-thumb {
+  background: #D8B28C;
+  border-radius: 9999px;
+}
+.modern-dropdown-scroll::-webkit-scrollbar-thumb:hover {
+  background: #7A1835;
+}
