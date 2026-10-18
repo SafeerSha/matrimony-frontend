@@ -35,9 +35,9 @@ export function MutualMatchCard({
   match,
   currentUser = {
     name: 'You',
-    image: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=600&q=80',
+    image: '',
     verified: true,
-    city: 'Kochi',
+    city: '',
   },
   className,
 }: MutualMatchCardProps) {
@@ -77,12 +77,18 @@ export function MutualMatchCard({
           {/* Profile A: Current User */}
           <div className="flex flex-col items-center text-center">
             <div className="relative">
-              <div className="h-14 w-14 sm:h-16 sm:w-16 overflow-hidden rounded-full ring-4 ring-[#FAF3EC] border-2 border-[#D8B28C] shadow-sm bg-[var(--surface-muted)]">
-                <img
-                  src={currentUser.image || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=600&q=80'}
-                  alt={currentUser.name || 'You'}
-                  className="h-full w-full object-cover object-center"
-                />
+              <div className="h-14 w-14 sm:h-16 sm:w-16 overflow-hidden rounded-full ring-4 ring-[#FAF3EC] border-2 border-[#D8B28C] shadow-sm bg-[var(--surface-muted)] flex items-center justify-center">
+                {currentUser.image ? (
+                  <img
+                    src={currentUser.image}
+                    alt={currentUser.name || 'You'}
+                    className="h-full w-full object-cover object-center"
+                  />
+                ) : (
+                  <div className="h-full w-full bg-gradient-to-br from-[#7A1835] to-[#5C1027] text-white flex items-center justify-center font-bold text-base sm:text-lg">
+                    {currentUser.name?.charAt(0)?.toUpperCase() || 'Y'}
+                  </div>
+                )}
               </div>
               {currentUser.verified && (
                 <div className="absolute -bottom-1 -right-1">
@@ -119,11 +125,17 @@ export function MutualMatchCard({
               className="focus-ring relative rounded-full block group/avatar"
             >
               <div className="h-14 w-14 sm:h-16 sm:w-16 overflow-hidden rounded-full ring-4 ring-[#FAF3EC] border-2 border-[var(--primary)] shadow-sm bg-[var(--surface-muted)] transition-transform duration-300 group-hover/avatar:scale-105">
-                <img
-                  src={match.image}
-                  alt={match.name}
-                  className="h-full w-full object-cover object-center"
-                />
+                {match.image ? (
+                  <img
+                    src={match.image}
+                    alt={match.name}
+                    className="h-full w-full object-cover object-center"
+                  />
+                ) : (
+                  <div className="h-full w-full flex items-center justify-center bg-gradient-to-br from-[#FAF3EC] to-[#F5E6D8] text-[var(--primary)] font-editorial-title text-xl font-bold">
+                    {match.name.charAt(0).toUpperCase()}
+                  </div>
+                )}
               </div>
               {match.verified && (
                 <div className="absolute -bottom-1 -right-1">

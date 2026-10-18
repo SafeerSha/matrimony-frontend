@@ -41,12 +41,25 @@ export function ProfileCard({ profile, compact = false }: { profile: Profile; co
     >
       {/* Photo with Matrimonial Vignette Overlay */}
       <div className={cn("relative overflow-hidden bg-[var(--surface-muted)]", compact ? "h-52" : "h-72")}>
-        <img
-          src={profile.image}
-          alt={profile.name}
-          className="h-full w-full object-cover object-center transition-transform duration-700 ease-out group-hover:scale-[1.03]"
-          loading="lazy"
-        />
+        {profile.image ? (
+          <img
+            src={profile.image}
+            alt={profile.name}
+            className="h-full w-full object-cover object-center transition-transform duration-700 ease-out group-hover:scale-[1.03]"
+            loading="lazy"
+          />
+        ) : (
+          <div className="h-full w-full flex flex-col items-center justify-center bg-gradient-to-br from-[#2D121B] via-[#4A1828] to-[#1F0B13] p-4 text-center select-none">
+            <div className="grid h-20 w-20 place-items-center rounded-full bg-white/10 backdrop-blur-md text-white border border-white/20 shadow-xl mb-2">
+              <span className="font-editorial-title text-3xl font-bold">
+                {profile.name?.charAt(0)?.toUpperCase() || 'M'}
+              </span>
+            </div>
+            <p className="text-[11px] font-semibold uppercase tracking-wider text-white/60">
+              Photo not uploaded
+            </p>
+          </div>
+        )}
 
         {/* Ambient Warm Gradient for crisp text readability */}
         <div className="absolute inset-0 photo-overlay-warm" aria-hidden="true" />

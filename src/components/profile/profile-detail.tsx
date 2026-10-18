@@ -33,7 +33,8 @@ import {
   IconClock,
   IconAward,
 } from '@tabler/icons-react';
-import { profiles as demoProfiles, getProfileUniqueId } from '@/lib/demo-data';
+import { getProfileUniqueId } from '@/lib/demo-data';
+import { PageLoader } from '@/components/ui/page-loader';
 import { Avatar } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -47,16 +48,12 @@ import { cn } from '@/lib/cn';
 import type { Profile } from '@/lib/demo-data';
 
 export function ProfileDetail({ id }: { id?: string }) {
-  // Find profile from demoProfiles or fallback
-  const baseProfile = useMemo(() => {
-    return demoProfiles.find((p) => p.id === id) ?? demoProfiles[0];
-  }, [id]);
-
-  const [profile, setProfile] = useState<Profile>(baseProfile);
+  const [profile, setProfile] = useState<Profile | null>(null);
+  const [relatedProfiles, setRelatedProfiles] = useState<Profile[]>([]);
   const [activePhotoIdx, setActivePhotoIdx] = useState(0);
   const [isShortlisted, setIsShortlisted] = useState(false);
   const [isInterestSent, setIsInterestSent] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
   const [showFloatingDock, setShowFloatingDock] = useState(false);
   const inlineActionsRef = useRef<HTMLDivElement>(null);
 
@@ -75,83 +72,115 @@ export function ProfileDetail({ id }: { id?: string }) {
 
   // Sync state if id changes
   useEffect(() => {
-    const found = demoProfiles.find((p) => p.id === id) ?? demoProfiles[0];
-    setProfile(found);
+    setIsLoading(true);
     setActivePhotoIdx(0);
     setIsInterestSent(false);
 
-    // Optionally fetch live profile if id is present
-    if (id && id !== found.id) {
-      setIsLoading(true);
-      profileService
-        .getProfile(id)
-        .then((res: any) => {
-          if (res) {
-            setProfile((prev) => {
-              const calculatedAge =
-                res.age !== undefined && res.age !== null
-                  ? res.age
-                  : res.dateOfBirth
-                    ? Math.floor((new Date().getTime() - new Date(res.dateOfBirth).getTime()) / 31557600000)
-                    : prev.age;
+    const targetId = id || 'me';
+    profileService
+      .getProfile(targetId)
+      .then((res: any) => {
+        if (res) {
+          const calculatedAge =
+            res.age !== undefined && res.age !== null
+              ? res.age
+              : res.dateOfBirth
+                ? Math.floor((new Date().getTime() - new Date(res.dateOfBirth).getTime()) / 31557600000)
+                : 26;
 
-              const primaryImg =
-                res.photos?.find((p: any) => p.isPrimary)?.url ||
-                res.photos?.[0]?.url ||
-                prev.image;
+          const primaryImg =
+            res.photos?.find((p: any) => p.isPrimary)?.url ||
+            res.photos?.[0]?.url ||
+            res.avatarUrl ||
+            '';
 
-              return {
-                ...prev,
-                name: res.name || `${res.firstName || ''} ${res.lastName || ''}`.trim() || prev.name,
-                age: calculatedAge,
-                city: res.city || prev.city,
-                state: res.state || prev.state,
-                motherTongue: res.motherTongue || prev.motherTongue,
-                verified: res.isVerified ?? prev.verified,
-                profession: res.occupation || res.profession || prev.profession,
-                education: res.education || prev.education,
-                employmentStatus: res.employmentStatus || prev.employmentStatus,
-                about: res.bio || prev.about,
-                family: res.family || prev.family,
-                lookingFor: res.lookingFor || prev.lookingFor,
-                lifestyle: Array.isArray(res.lifestyle) ? res.lifestyle : prev.lifestyle,
-                interests: Array.isArray(res.interests) ? res.interests : prev.interests,
-                image: primaryImg,
-                photos: res.photos,
-              };
-            });
-          }
-        })
-        .catch(() => {
-          // Graceful fallback to demo profile
-        })
-        .finally(() => {
-          setIsLoading(false);
-        });
-    }
+          setProfile({
+            id: res.id || targetId,
+            profileId: res.profileId,
+            name: res.name || `${res.firstName || ''} ${res.lastName || ''}`.trim() || 'Member',
+            age: calculatedAge,
+            city: res.city || '',
+            state: res.state || '',
+            motherTongue: res.motherTongue || '',
+            verified: res.isVerified ?? true,
+            profession: res.occupation || res.profession || '',
+            education: res.education || '',
+            employmentStatus: res.employmentStatus || '',
+            about: res.bio || '',
+            family: res.family || '',
+            lookingFor: res.lookingFor || '',
+            lifestyle: Array.isArray(res.lifestyle) ? res.lifestyle : [],
+            interests: Array.isArray(res.interests) ? res.interests : [],
+            image: primaryImg,
+            photos: res.photos || [],
+            compatibility: 90,
+            height: res.height ? `${res.height}cm` : '',
+            maritalStatus: res.maritalStatus || '',
+            religion: res.religion || '',
+          });
+        } else {
+          setProfile(null);
+        }
+      })
+      .catch((err) => {
+        console.error('Error fetching profile:', err);
+        setProfile(null);
+      })
+      .finally(() => {
+        setIsLoading(false);
+      });
+
+    matchesService
+      .getRecommendations()
+      .then((recs: any) => {
+        const list = Array.isArray(recs) ? recs : recs?.data || [];
+        const mapped: Profile[] = list
+          .filter((u: any) => u.id !== targetId)
+          .map((u: any, idx: number) => {
+            const prof = u.profile || {};
+            const photos = u.photos || prof.photos || [];
+            return {
+              id: u.id || `rec-${idx}`,
+              name: u.name || `${u.firstName || ''} ${u.lastName || ''}`.trim() || 'Member',
+              age: u.dateOfBirth
+                ? Math.floor((new Date().getTime() - new Date(u.dateOfBirth).getTime()) / 31557600000)
+                : prof.age || u.age || 26,
+              city: prof.city || u.city || '',
+              state: prof.state || u.state || '',
+              profession: prof.occupation || prof.profession || u.occupation || u.profession || '',
+              education: prof.education || u.education || '',
+              image: photos?.[0]?.url || u.avatarUrl || prof.image || '',
+              compatibility: prof.compatibility || 88,
+              verified: Boolean(u.status === 'ACTIVE' || prof.isVerified || u.isVerified),
+              online: idx % 2 === 0,
+              about: prof.bio || prof.about || u.bio || '',
+              height: prof.height ? `${prof.height}cm` : '',
+              maritalStatus: prof.maritalStatus || u.maritalStatus || '',
+              religion: prof.religion || u.religion || '',
+              motherTongue: prof.motherTongue || u.motherTongue || '',
+              family: '',
+              lifestyle: Array.isArray(prof.lifestyle) ? prof.lifestyle : [],
+              interests: Array.isArray(prof.interests) ? prof.interests : [],
+              lookingFor: prof.lookingFor || '',
+            };
+          });
+        setRelatedProfiles(mapped);
+      })
+      .catch(() => setRelatedProfiles([]));
   }, [id]);
 
   // Gallery Photos (Multi-angle photos from backend with fallback)
   const galleryPhotos = useMemo(() => {
+    if (!profile) return [];
     if (profile.photos && profile.photos.length > 0) {
-      return profile.photos.map((p: any) => p.url);
+      return profile.photos.map((p: any) => p.url).filter(Boolean);
     }
-    const baseList = [
-      profile.image,
-      'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=900&q=85',
-      'https://images.unsplash.com/photo-1517841905240-472988babdf9?auto=format&fit=crop&w=900&q=85',
-      'https://images.unsplash.com/photo-1524504388940-b1c1722653e1?auto=format&fit=crop&w=900&q=85',
-    ];
-    return baseList;
-  }, [profile.image, profile.photos]);
-
-  // Related Profiles for bottom "You may also like" rail
-  const relatedProfiles = useMemo(() => {
-    return demoProfiles.filter((p) => p.id !== profile.id);
-  }, [profile.id]);
+    return profile.image ? [profile.image] : [];
+  }, [profile]);
 
   // Shortlist handler
   const handleToggleShortlist = async () => {
+    if (!profile) return;
     try {
       await matchesService.shortlistProfile(profile.id);
       setIsShortlisted(!isShortlisted);
@@ -170,7 +199,7 @@ export function ProfileDetail({ id }: { id?: string }) {
 
   // Interest handler
   const handleSendInterest = async () => {
-    if (isInterestSent) return;
+    if (!profile || isInterestSent) return;
     try {
       await matchesService.sendInterest(profile.id);
       setIsInterestSent(true);
@@ -188,6 +217,31 @@ export function ProfileDetail({ id }: { id?: string }) {
       toast.info('Link Copied', 'Profile link copied to clipboard.');
     }
   };
+
+  if (isLoading) {
+    return (
+      <div className="py-24 text-center">
+        <PageLoader text="Loading profile details..." />
+      </div>
+    );
+  }
+
+  if (!profile) {
+    return (
+      <div className="py-24 text-center max-w-md mx-auto px-4">
+        <div className="grid h-14 w-14 place-items-center rounded-2xl bg-[var(--surface-muted)] text-[var(--muted)] mx-auto mb-4 border border-[var(--border)]">
+          <IconShield className="h-7 w-7" />
+        </div>
+        <h2 className="text-xl font-bold text-[var(--foreground)] font-editorial-title">Profile Not Found</h2>
+        <p className="mt-2 text-sm text-[var(--muted)]">This profile may have been removed or is temporarily unavailable.</p>
+        <div className="mt-6">
+          <Link href="/app/discover">
+            <Button variant="primary">Return to Discover</Button>
+          </Link>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6 pb-40 md:pb-12">
@@ -227,11 +281,24 @@ export function ProfileDetail({ id }: { id?: string }) {
           <div className="lg:col-span-7 relative flex flex-col bg-[var(--surface-muted)]">
             {/* Active Hero Portrait Photo */}
             <div className="relative h-[420px] sm:h-[520px] lg:h-[580px] w-full overflow-hidden bg-stone-900">
-              <img
-                src={galleryPhotos[activePhotoIdx]}
-                alt={`${profile.name} - Photo ${activePhotoIdx + 1}`}
-                className="h-full w-full object-cover object-center transition-all duration-500 ease-out"
-              />
+              {galleryPhotos.length > 0 ? (
+                <img
+                  src={galleryPhotos[activePhotoIdx]}
+                  alt={`${profile.name} - Photo ${activePhotoIdx + 1}`}
+                  className="h-full w-full object-cover object-center transition-all duration-500 ease-out"
+                />
+              ) : (
+                <div className="h-full w-full flex flex-col items-center justify-center bg-gradient-to-br from-[#2D121B] via-[#4A1828] to-[#1F0B13] p-8 text-center select-none">
+                  <div className="grid h-36 w-36 place-items-center rounded-full bg-white/10 backdrop-blur-md text-white border border-white/20 shadow-2xl mb-4">
+                    <span className="font-editorial-title text-7xl font-bold">
+                      {profile.name?.charAt(0)?.toUpperCase() || 'M'}
+                    </span>
+                  </div>
+                  <p className="text-sm font-semibold uppercase tracking-wider text-white/60">
+                    Photo not uploaded
+                  </p>
+                </div>
+              )}
 
               {/* Ambient Warm Gradient Overlay */}
               <div className="absolute inset-0 photo-overlay-warm" aria-hidden="true" />
@@ -261,38 +328,44 @@ export function ProfileDetail({ id }: { id?: string }) {
               </div>
 
               {/* Gallery Counter Badge */}
-              <div className="absolute top-4 right-4 z-10">
-                <span className="rounded-full bg-black/40 backdrop-blur-md text-white text-[11px] font-semibold px-2.5 py-1">
-                  Photo {activePhotoIdx + 1} of {galleryPhotos.length}
-                </span>
-              </div>
+              {galleryPhotos.length > 1 && (
+                <div className="absolute top-4 right-4 z-10">
+                  <span className="rounded-full bg-black/40 backdrop-blur-md text-white text-[11px] font-semibold px-2.5 py-1">
+                    Photo {activePhotoIdx + 1} of {galleryPhotos.length}
+                  </span>
+                </div>
+              )}
 
               {/* Photo Navigation Chevrons */}
-              <button
-                type="button"
-                onClick={() =>
-                  setActivePhotoIdx((prev) =>
-                    prev > 0 ? prev - 1 : galleryPhotos.length - 1
-                  )
-                }
-                aria-label="Previous photo"
-                className="focus-ring absolute left-3 top-1/2 -translate-y-1/2 z-10 grid h-10 w-10 place-items-center rounded-full bg-black/35 text-white backdrop-blur-md hover:bg-black/60 transition active-press"
-              >
-                <IconChevronLeft className="h-5 w-5" />
-              </button>
+              {galleryPhotos.length > 1 && (
+                <>
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setActivePhotoIdx((prev) =>
+                        prev > 0 ? prev - 1 : galleryPhotos.length - 1
+                      )
+                    }
+                    aria-label="Previous photo"
+                    className="focus-ring absolute left-3 top-1/2 -translate-y-1/2 z-10 grid h-10 w-10 place-items-center rounded-full bg-black/35 text-white backdrop-blur-md hover:bg-black/60 transition active-press"
+                  >
+                    <IconChevronLeft className="h-5 w-5" />
+                  </button>
 
-              <button
-                type="button"
-                onClick={() =>
-                  setActivePhotoIdx((prev) =>
-                    prev < galleryPhotos.length - 1 ? prev + 1 : 0
-                  )
-                }
-                aria-label="Next photo"
-                className="focus-ring absolute right-3 top-1/2 -translate-y-1/2 z-10 grid h-10 w-10 place-items-center rounded-full bg-black/35 text-white backdrop-blur-md hover:bg-black/60 transition active-press"
-              >
-                <IconChevronRight className="h-5 w-5" />
-              </button>
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setActivePhotoIdx((prev) =>
+                        prev < galleryPhotos.length - 1 ? prev + 1 : 0
+                      )
+                    }
+                    aria-label="Next photo"
+                    className="focus-ring absolute right-3 top-1/2 -translate-y-1/2 z-10 grid h-10 w-10 place-items-center rounded-full bg-black/35 text-white backdrop-blur-md hover:bg-black/60 transition active-press"
+                  >
+                    <IconChevronRight className="h-5 w-5" />
+                  </button>
+                </>
+              )}
 
               {/* Photo Overlay IconInfo for Mobile/Hero */}
               <div className="absolute inset-x-0 bottom-0 p-5 sm:p-6 text-white z-10 lg:hidden">
@@ -302,44 +375,48 @@ export function ProfileDetail({ id }: { id?: string }) {
                   </h1>
                   {profile.verified && <VerificationBadge type="general" showIconOnly size="md" />}
                 </div>
-                <p className="mt-1 flex items-center gap-1.5 text-sm text-white/90">
-                  <IconMapPin className="h-4 w-4 text-[var(--accent)] shrink-0" />
-                  <span>
-                    {profile.city}, {profile.state}
-                  </span>
-                </p>
+                {(profile.city || profile.state) && (
+                  <p className="mt-1 flex items-center gap-1.5 text-sm text-white/90">
+                    <IconMapPin className="h-4 w-4 text-[var(--accent)] shrink-0" />
+                    <span>
+                      {[profile.city, profile.state].filter(Boolean).join(', ')}
+                    </span>
+                  </p>
+                )}
               </div>
             </div>
 
             {/* Gallery Thumbnails Strip */}
-            <div className="p-3 bg-white border-t border-[var(--border)] flex items-center gap-2.5 overflow-x-auto scrollbar-none">
-              {galleryPhotos.map((photo: string, idx: number) => (
-                <button
-                  key={idx}
-                  type="button"
-                  onClick={() => setActivePhotoIdx(idx)}
-                  aria-label={`View photo ${idx + 1}`}
-                  className={cn(
-                    'relative h-14 w-14 sm:h-16 sm:w-16 shrink-0 overflow-hidden rounded-xl border-2 transition-all active-press focus-ring',
-                    activePhotoIdx === idx
-                      ? 'border-[var(--primary)] ring-2 ring-[var(--primary)]/20 shadow-sm'
-                      : 'border-transparent opacity-70 hover:opacity-100'
-                  )}
-                >
-                  <img
-                    src={photo}
-                    alt=""
-                    className="h-full w-full object-cover object-center"
-                  />
-                  {activePhotoIdx === idx && (
-                    <div className="absolute inset-0 bg-[var(--primary)]/10" />
-                  )}
-                </button>
-              ))}
-              <div className="ml-auto pr-2 text-xs font-semibold text-[var(--muted)] hidden sm:block">
-                Click photo to change view
+            {galleryPhotos.length > 1 && (
+              <div className="p-3 bg-white border-t border-[var(--border)] flex items-center gap-2.5 overflow-x-auto scrollbar-none">
+                {galleryPhotos.map((photo: string, idx: number) => (
+                  <button
+                    key={idx}
+                    type="button"
+                    onClick={() => setActivePhotoIdx(idx)}
+                    aria-label={`View photo ${idx + 1}`}
+                    className={cn(
+                      'relative h-14 w-14 sm:h-16 sm:w-16 shrink-0 overflow-hidden rounded-xl border-2 transition-all active-press focus-ring',
+                      activePhotoIdx === idx
+                        ? 'border-[var(--primary)] ring-2 ring-[var(--primary)]/20 shadow-sm'
+                        : 'border-transparent opacity-70 hover:opacity-100'
+                    )}
+                  >
+                    <img
+                      src={photo}
+                      alt=""
+                      className="h-full w-full object-cover object-center"
+                    />
+                    {activePhotoIdx === idx && (
+                      <div className="absolute inset-0 bg-[var(--primary)]/10" />
+                    )}
+                  </button>
+                ))}
+                <div className="ml-auto pr-2 text-xs font-semibold text-[var(--muted)] hidden sm:block">
+                  Click photo to change view
+                </div>
               </div>
-            </div>
+            )}
           </div>
 
           {/* Profile Identity & Primary Actions (Desktop: 5 cols) */}
@@ -936,35 +1013,37 @@ export function ProfileDetail({ id }: { id?: string }) {
       {/* ======================================================== */}
       {/* 5. "YOU MAY ALSO LIKE" RELATED PROFILES RAIL             */}
       {/* ======================================================== */}
-      <div className="space-y-4 pt-6 border-t border-[var(--border)]">
-        <div className="flex items-end justify-between px-1">
-          <div>
-            <p className="text-xs font-bold uppercase tracking-wider text-[var(--primary)]">
-              Recommendations
-            </p>
-            <h2 className="font-editorial-title text-2xl font-bold text-[var(--foreground)] mt-0.5">
-              You may also like
-            </h2>
-            <p className="text-xs text-[var(--muted)] mt-0.5">
-              Similar verified profiles aligned with your partner preferences.
-            </p>
+      {relatedProfiles.length > 0 && (
+        <div className="space-y-4 pt-6 border-t border-[var(--border)]">
+          <div className="flex items-end justify-between px-1">
+            <div>
+              <p className="text-xs font-bold uppercase tracking-wider text-[var(--primary)]">
+                Recommendations
+              </p>
+              <h2 className="font-editorial-title text-2xl font-bold text-[var(--foreground)] mt-0.5">
+                You may also like
+              </h2>
+              <p className="text-xs text-[var(--muted)] mt-0.5">
+                Similar verified profiles aligned with your partner preferences.
+              </p>
+            </div>
+
+            <Link
+              href="/app/discover"
+              className="text-xs font-bold text-[var(--primary)] hover:underline hidden sm:inline-block"
+            >
+              Explore all profiles →
+            </Link>
           </div>
 
-          <Link
-            href="/app/discover"
-            className="text-xs font-bold text-[var(--primary)] hover:underline hidden sm:inline-block"
-          >
-            Explore all profiles →
-          </Link>
+          {/* Horizontal Profile Rail */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+            {relatedProfiles.slice(0, 4).map((relProfile: Profile) => (
+              <ProfileCard key={relProfile.id} profile={relProfile} compact />
+            ))}
+          </div>
         </div>
-
-        {/* Horizontal Profile Rail */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
-          {relatedProfiles.slice(0, 4).map((relProfile) => (
-            <ProfileCard key={relProfile.id} profile={relProfile} compact />
-          ))}
-        </div>
-      </div>
+      )}
 
       {/* MOBILE STICKY BOTTOM ACTION DOCK (Floating above bottom navigation dock, shown only once inline actions scroll past) */}
       <div

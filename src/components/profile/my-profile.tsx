@@ -328,7 +328,9 @@ export function MyProfile() {
   const primaryPhoto = photos.find((p) => p.isPrimary) || photos[0];
   const displayImage =
     primaryPhoto?.url ||
-    'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=900&q=85';
+    (profile as any).avatarUrl ||
+    (profile.user as any)?.avatarUrl ||
+    '';
 
   const matrimonyId =
     profile.profileId ||

@@ -10,57 +10,71 @@ import { Card } from '@/components/ui/card';
 import { MutualMatchCard } from '@/components/ui/mutual-match-card';
 import { EmptyState } from '@/components/ui/empty-state';
 import { FeatureGate } from '@/components/ui/under-development';
-import { matchesService } from '@/services';
-import { profiles as demoProfiles } from '@/lib/demo-data';
+import { matchesService, authService } from '@/services';
 import type { Profile } from '@/lib/demo-data';
 
 export default function MatchesPage() {
   const router = useRouter();
-  const [matches, setMatches] = useState<Profile[]>([
-    demoProfiles[0],
-    demoProfiles[1],
-  ]);
+  const [matches, setMatches] = useState<Profile[]>([]);
+  const [currentUserData, setCurrentUserData] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
     setIsLoading(true);
+    authService.getCurrentUser().then((u) => setCurrentUserData(u)).catch(() => {});
     matchesService
       .getConnections('matches')
       .then((res: any) => {
         const rawList = Array.isArray(res) ? res : res?.data || [];
         if (rawList.length > 0) {
-          const mapped: Profile[] = rawList.map((u: any, idx: number) => ({
-            id: u.id || `user-${idx}`,
-            name: u.name || `${u.firstName || ''} ${u.lastName || ''}`.trim() || 'Member',
-            age: u.dateOfBirth
-              ? Math.floor((new Date().getTime() - new Date(u.dateOfBirth).getTime()) / 31557600000)
-              : 26 + (idx % 6),
-            city: u.city || 'Kochi',
-            state: u.country || 'Kerala',
-            profession: u.occupation || 'Professional',
-            education: u.education || 'Graduate Degree',
-            image:
-              u.photos?.[0]?.url ||
-              demoProfiles[idx % demoProfiles.length]?.image ||
-              'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=900&q=85',
-            compatibility: Math.floor(Math.random() * 15) + 84,
-            verified: u.isVerified ?? true,
-            online: idx % 2 === 0,
-            about: u.bio || demoProfiles[idx % demoProfiles.length]?.about || '',
-            height: u.height ? `${u.height}cm` : "5'5\"",
-            maritalStatus: u.maritalStatus || 'Never married',
-            religion: u.religion || 'Not specified',
-            motherTongue: 'Malayalam',
-            family: 'Respectable, close-knit family based in South India.',
-            lifestyle: ['Non-smoker', 'Vegetarian'],
-            interests: ['Design', 'Travel', 'Music', 'Reading'],
-            lookingFor: 'A kind, emotionally mature partner.',
-          }));
+          const mapped: Profile[] = rawList.map((u: any, idx: number) => {
+            const user = u.partner || u.receiver || u.sender || u;
+            const prof = user.profile || u.profile || {};
+            const photos = user.photos || prof.photos || u.photos || [];
+
+            const firstName = user.firstName || prof.firstName || '';
+            const lastName = user.lastName || prof.lastName || '';
+            const fullName = user.name || `${firstName} ${lastName}`.trim() || 'Verified Member';
+
+            const birthDate = prof.dateOfBirth || user.dateOfBirth || u.dateOfBirth;
+            const age = birthDate
+              ? Math.floor((new Date().getTime() - new Date(birthDate).getTime()) / 31557600000)
+              : prof.age || user.age || 26;
+
+            const avatar = photos?.[0]?.url || prof.image || user.image || '';
+
+            return {
+              id: user.id || u.id || `user-${idx}`,
+              profileId: user.profileId || prof.profileId || u.profileId,
+              name: fullName,
+              age,
+              city: prof.city || user.city || 'Location not specified',
+              state: prof.state || user.state || prof.country || user.country || '',
+              profession: prof.occupation || prof.profession || user.occupation || user.profession || 'Career not specified',
+              education: prof.education || user.education || 'Education not specified',
+              image: avatar,
+              compatibility: prof.compatibility || 92,
+              verified: Boolean(user.status === 'ACTIVE' || prof.isVerified || user.isVerified),
+              online: false,
+              about: prof.bio || prof.about || '',
+              height: prof.height ? `${prof.height}cm` : '',
+              maritalStatus: prof.maritalStatus || '',
+              religion: prof.religion || '',
+              motherTongue: prof.motherTongue || '',
+              family: prof.family || '',
+              lifestyle: Array.isArray(prof.lifestyle) ? prof.lifestyle : [],
+              interests: Array.isArray(prof.interests) ? prof.interests : [],
+              lookingFor: prof.lookingFor || '',
+            };
+          });
           setMatches(mapped);
+        } else {
+          setMatches([]);
         }
       })
       .catch((err) => {
         console.error('Error fetching matches:', err);
+        setMatches([]);
       })
       .finally(() => {
         setIsLoading(false);
@@ -126,11 +140,10 @@ export default function MatchesPage() {
                 key={match.id}
                 match={match}
                 currentUser={{
-                  name: 'You',
-                  image:
-                    'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=600&q=80',
-                  verified: true,
-                  city: 'Kochi',
+                  name: currentUserData?.name || `${currentUserData?.firstName || ''} ${currentUserData?.lastName || ''}`.trim() || 'You',
+                  image: currentUserData?.avatarUrl || currentUserData?.photos?.[0]?.url || currentUserData?.profile?.photos?.[0]?.url || '',
+                  verified: Boolean(currentUserData?.isVerified ?? true),
+                  city: currentUserData?.profile?.city || currentUserData?.city || '',
                 }}
               />
             ))}

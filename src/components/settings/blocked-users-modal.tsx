@@ -14,22 +14,7 @@ interface BlockedUser {
   image: string;
 }
 
-const INITIAL_BLOCKED_USERS: BlockedUser[] = [
-  {
-    id: 'block-1',
-    name: 'Rahul Varma',
-    location: 'Ernakulam, Kerala',
-    blockedDate: 'Blocked on Sep 18, 2026',
-    image: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=300&q=80',
-  },
-  {
-    id: 'block-2',
-    name: 'Suresh Kumar',
-    location: 'Kottayam, Kerala',
-    blockedDate: 'Blocked on Aug 04, 2026',
-    image: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=300&q=80',
-  },
-];
+const INITIAL_BLOCKED_USERS: BlockedUser[] = [];
 
 interface BlockedUsersModalProps {
   isOpen: boolean;

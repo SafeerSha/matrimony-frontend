@@ -168,12 +168,25 @@ export function SwipeCard({
       >
         {/* Profile Image & Overlays */}
         <div className="relative h-full w-full bg-[var(--surface-muted)] overflow-hidden">
-          <img
-            src={profile.image}
-            alt={profile.name}
-            className="h-full w-full object-cover object-center pointer-events-none"
-            draggable={false}
-          />
+          {profile.image ? (
+            <img
+              src={profile.image}
+              alt={profile.name}
+              className="h-full w-full object-cover object-center pointer-events-none"
+              draggable={false}
+            />
+          ) : (
+            <div className="h-full w-full flex flex-col items-center justify-center bg-gradient-to-br from-[#2D121B] via-[#4A1828] to-[#1F0B13] p-8 text-center select-none">
+              <div className="grid h-32 w-32 place-items-center rounded-full bg-white/10 backdrop-blur-md text-white border border-white/20 shadow-2xl mb-4">
+                <span className="font-editorial-title text-6xl font-bold">
+                  {profile.name?.charAt(0)?.toUpperCase() || 'M'}
+                </span>
+              </div>
+              <p className="text-xs font-semibold uppercase tracking-wider text-white/60">
+                Photo not uploaded
+              </p>
+            </div>
+          )}
           <div className="absolute inset-0 photo-overlay-warm pointer-events-none" aria-hidden="true" />
 
           {/* ===== SWIPE ACTION OVERLAYS ===== */}
