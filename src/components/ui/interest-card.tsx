@@ -71,15 +71,31 @@ export function InterestCard({
       <div className="flex flex-col md:flex-row">
         {/* Large Profile Photography Section (3:4 ratio portrait or dominant square) */}
         <div className="relative h-64 sm:h-72 md:h-auto md:w-56 lg:w-64 shrink-0 overflow-hidden bg-[var(--surface-muted)]">
-          <img
-            src={profile.image}
-            alt={profile.name}
-            className="h-full w-full object-cover object-center transition-transform duration-700 ease-out group-hover:scale-[1.03]"
-            loading="lazy"
-          />
+          {profile.image ? (
+            <img
+              src={profile.image}
+              alt={profile.name}
+              className="h-full w-full object-cover object-center transition-transform duration-700 ease-out group-hover:scale-[1.03]"
+              loading="lazy"
+            />
+          ) : (
+            <div className="h-full w-full min-h-[16rem] flex flex-col items-center justify-center bg-gradient-to-br from-[#FAF3EC] via-[#FFF8F3] to-[#F5E6D8] p-6 text-center select-none">
+              <div className="grid h-20 w-20 place-items-center rounded-full bg-white shadow-md text-[#7A1835] border border-[#EAD8C7]">
+                <span className="font-editorial-title text-3xl font-bold">
+                  {profile.name?.charAt(0)?.toUpperCase() || 'M'}
+                </span>
+              </div>
+              <p className="mt-3 text-xs font-bold text-[#5C1027]">
+                {profile.name}
+              </p>
+              <p className="text-[10px] text-[var(--muted)] mt-0.5">
+                Photo not uploaded
+              </p>
+            </div>
+          )}
 
           {/* Ambient Warm Gradient */}
-          <div className="absolute inset-0 photo-overlay-warm" aria-hidden="true" />
+          {profile.image && <div className="absolute inset-0 photo-overlay-warm" aria-hidden="true" />}
 
           {/* Top Floating Badges */}
           <div className="absolute top-3 left-3 flex flex-wrap items-center gap-1.5 z-10">

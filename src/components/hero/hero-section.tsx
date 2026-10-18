@@ -1,11 +1,10 @@
 "use client";
 
-import { IconArrowRight, IconHeart, IconMessage, IconUsers, IconHomeHeart } from '@tabler/icons-react';
+import { IconArrowRight, IconHeart, IconMessage, IconUsers, IconHomeHeart, IconShieldCheck, IconLock } from '@tabler/icons-react';
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { TrustBadge } from "./trust-badge";
 import { TrustFeature } from "./trust-feature";
-import { HeroProfileCard, type HeroProfile } from "./hero-profile-card";
 import { ConnectionBadge } from "./connection-badge";
 import { CinematicHeroImage, type HeroImageData } from "./cinematic-hero-image";
 import { BotanicalLayer } from "./botanical-layer";
@@ -15,27 +14,6 @@ import { cn } from "@/lib/cn";
 export interface HeroSectionProps {
   className?: string;
 }
-
-const sampleProfiles: [HeroProfile, HeroProfile] = [
-  {
-    name: "Ananya M.",
-    age: 27,
-    profession: "Product Designer",
-    location: "Bangalore • Kerala roots",
-    image: "/images/profile-ananya.jpg",
-    matchScore: "94% Match",
-    verified: true,
-  },
-  {
-    name: "Rohan K.",
-    age: 29,
-    profession: "Architect & Partner",
-    location: "Kochi • Kerala",
-    image: "/images/profile-rohan.jpg",
-    matchScore: "91% Match",
-    verified: true,
-  },
-];
 
 const HERO_SLIDES = [
   {
@@ -89,34 +67,23 @@ const HERO_IMAGES: HeroImageData[] = [
     src: "/images/hero-living-together.jpg",
     alt: "Modern Indian couple in contemporary home representing Living Together",
   },
-  {
-    id: "hero-2",
-    src: "/images/hero-2.jpg",
-    alt: "Ananya in elegant traditional ivory and champagne gold silk saree in heritage courtyard",
-  },
-  {
-    id: "hero-3",
-    src: "/images/hero-3.jpg",
-    alt: "Rohan in dignified forest green Nehru jacket and cream kurta on palace veranda",
-  },
 ];
 
 export function HeroSection({ className = "" }: HeroSectionProps) {
-  const [hoveredProfile, setHoveredProfile] = useState<string | null>(null);
   const [activeSlideIndex, setActiveSlideIndex] = useState<number>(0);
   const [isHeroHovered, setIsHeroHovered] = useState<boolean>(false);
   const [isLookingForOpen, setIsLookingForOpen] = useState<boolean>(false);
 
   // Automatically cycle through Marriage, Friendship, and Living Together every 4.5 seconds with smooth fade
   useEffect(() => {
-    if (hoveredProfile || isHeroHovered || isLookingForOpen) return;
+    if (isHeroHovered || isLookingForOpen) return;
 
     const timer = setInterval(() => {
       setActiveSlideIndex((prev) => (prev + 1) % HERO_SLIDES.length);
     }, 4500);
 
     return () => clearInterval(timer);
-  }, [hoveredProfile, isHeroHovered, isLookingForOpen]);
+  }, [isHeroHovered, isLookingForOpen]);
 
   const handleOpenLookingFor = (e?: React.MouseEvent) => {
     if (e) e.preventDefault();
@@ -366,36 +333,35 @@ export function HeroSection({ className = "" }: HeroSectionProps) {
             {/* Main Couple Photo Container */}
             <CinematicHeroImage
               images={HERO_IMAGES}
-              hoveredProfile={hoveredProfile}
               activeSlideIndex={activeSlideIndex}
               onHoverChange={setIsHeroHovered}
               className="origin-center"
             />
 
-            {/* Floating Profile Card 1 - Top Left/Side */}
-            <div
-              className="absolute -top-4 -left-3 sm:-top-6 sm:-left-6 lg:-left-10 z-10 w-60 sm:w-68 cursor-pointer transition-transform duration-300 hover:scale-[1.02]"
-              onMouseEnter={() => setHoveredProfile("ananya")}
-              onMouseLeave={() => setHoveredProfile(null)}
-            >
-              <HeroProfileCard
-                profile={sampleProfiles[0]}
-                animationVariant="float-1"
-                className="scale-90 sm:scale-100 origin-top-left"
-              />
+            {/* Floating Trust Badge 1 - Top Left: 100% Verified Profiles */}
+            <div className="absolute -top-3 -left-3 sm:-top-5 sm:-left-6 lg:-left-8 z-10 transition-transform duration-300 hover:scale-[1.02]">
+              <div className="inline-flex items-center gap-3 rounded-2xl border border-white/80 bg-white/95 backdrop-blur-md px-4 py-3 shadow-[0_12px_28px_rgba(42,7,17,0.12)]">
+                <span className="grid h-9 w-9 place-items-center rounded-xl bg-emerald-50 text-emerald-600 ring-1 ring-emerald-200/80 shrink-0">
+                  <IconShieldCheck className="h-5 w-5" />
+                </span>
+                <div className="text-left">
+                  <p className="text-xs font-bold text-[var(--foreground)]">100% Verified Members</p>
+                  <p className="text-[11px] text-[var(--muted)]">Manual &amp; Document Screened</p>
+                </div>
+              </div>
             </div>
 
-            {/* Floating Profile Card 2 - Bottom Right/Side */}
-            <div
-              className="absolute -bottom-4 -right-3 sm:-bottom-6 sm:-right-6 lg:-right-8 z-10 w-60 sm:w-68 cursor-pointer transition-transform duration-300 hover:scale-[1.02]"
-              onMouseEnter={() => setHoveredProfile("rohan")}
-              onMouseLeave={() => setHoveredProfile(null)}
-            >
-              <HeroProfileCard
-                profile={sampleProfiles[1]}
-                animationVariant="float-2"
-                className="scale-90 sm:scale-100 origin-bottom-right"
-              />
+            {/* Floating Trust Badge 2 - Bottom Right: Privacy First */}
+            <div className="absolute -bottom-3 -right-3 sm:-bottom-5 sm:-right-6 lg:-right-6 z-10 transition-transform duration-300 hover:scale-[1.02]">
+              <div className="inline-flex items-center gap-3 rounded-2xl border border-white/80 bg-white/95 backdrop-blur-md px-4 py-3 shadow-[0_12px_28px_rgba(42,7,17,0.12)]">
+                <span className="grid h-9 w-9 place-items-center rounded-xl bg-rose-50 text-rose-600 ring-1 ring-rose-200/80 shrink-0">
+                  <IconLock className="h-5 w-5" />
+                </span>
+                <div className="text-left">
+                  <p className="text-xs font-bold text-[var(--foreground)]">Privacy-First Controls</p>
+                  <p className="text-[11px] text-[var(--muted)]">Encrypted &amp; Protected Sharing</p>
+                </div>
+              </div>
             </div>
 
             {/* Dynamic Category Card - Bottom Left (Changes with Marriage, Friendship, and Living Together) */}
@@ -405,26 +371,10 @@ export function HeroSection({ className = "" }: HeroSectionProps) {
               onMouseLeave={() => setIsHeroHovered(false)}
             >
               <ConnectionBadge
-                title={
-                  hoveredProfile === "ananya"
-                    ? "Chat with Ananya M."
-                    : hoveredProfile === "rohan"
-                      ? "Chat with Rohan K."
-                      : HERO_SLIDES[activeSlideIndex].title
-                }
-                subtitle={
-                  hoveredProfile === "ananya"
-                    ? "Product Designer • 94% Match"
-                    : hoveredProfile === "rohan"
-                      ? "Architect & Partner • 91% Match"
-                      : HERO_SLIDES[activeSlideIndex].subtitle
-                }
+                title={HERO_SLIDES[activeSlideIndex].title}
+                subtitle={HERO_SLIDES[activeSlideIndex].subtitle}
                 icon={
-                  hoveredProfile === "ananya" ? (
-                    <IconHeart className="h-5 w-5 fill-current" aria-hidden="true" />
-                  ) : hoveredProfile === "rohan" ? (
-                    <IconHeart className="h-5 w-5 fill-current" aria-hidden="true" />
-                  ) : activeSlideIndex === 0 ? (
+                  activeSlideIndex === 0 ? (
                     <IconHeart className="h-5 w-5 fill-current" aria-hidden="true" />
                   ) : activeSlideIndex === 1 ? (
                     <IconUsers className="h-5 w-5" aria-hidden="true" />
@@ -432,13 +382,7 @@ export function HeroSection({ className = "" }: HeroSectionProps) {
                     <IconHomeHeart className="h-5 w-5" aria-hidden="true" />
                   )
                 }
-                iconBoxClassName={
-                  hoveredProfile === "ananya"
-                    ? "bg-rose-50 text-rose-700 ring-rose-200/70"
-                    : hoveredProfile === "rohan"
-                      ? "bg-emerald-50 text-emerald-700 ring-emerald-200/70"
-                      : HERO_SLIDES[activeSlideIndex].iconBoxClass
-                }
+                iconBoxClassName={HERO_SLIDES[activeSlideIndex].iconBoxClass}
                 activeCategoryIndex={activeSlideIndex}
                 totalCategories={HERO_SLIDES.length}
                 onSelectCategory={(idx) => setActiveSlideIndex(idx)}

@@ -9,7 +9,7 @@ import { Button } from '@/components/ui/button';
 import { InterestCard } from '@/components/ui/interest-card';
 import { EmptyState } from '@/components/ui/empty-state';
 import { FeatureGate } from '@/components/ui/under-development';
-import { profiles as demoProfiles } from '@/lib/demo-data';
+import { matchesService } from '@/services';
 import type { Profile } from '@/lib/demo-data';
 
 export default function FavoritesPage() {
@@ -19,11 +19,59 @@ export default function FavoritesPage() {
 
   useEffect(() => {
     setIsLoading(true);
-    // Simulate fetching favorite profiles (just picking some from demo data)
-    setTimeout(() => {
-      setFavorites([demoProfiles[1], demoProfiles[3], demoProfiles[5]].filter(Boolean));
-      setIsLoading(false);
-    }, 600);
+    matchesService
+      .getConnections('shortlisted')
+      .then((res: any) => {
+        const list = Array.isArray(res) ? res : res?.data || [];
+        const mapped: Profile[] = list.map((u: any, idx: number) => {
+          const user = u.partner || u.receiver || u.sender || u;
+          const prof = user.profile || u.profile || {};
+          const photos = user.photos || prof.photos || u.photos || [];
+
+          const firstName = user.firstName || prof.firstName || '';
+          const lastName = user.lastName || prof.lastName || '';
+          const fullName = user.name || `${firstName} ${lastName}`.trim() || 'Verified Member';
+
+          const birthDate = prof.dateOfBirth || user.dateOfBirth || u.dateOfBirth;
+          const age = birthDate
+            ? Math.floor((new Date().getTime() - new Date(birthDate).getTime()) / 31557600000)
+            : prof.age || user.age || 26;
+
+          const avatar = photos?.[0]?.url || prof.image || user.image || '';
+
+          return {
+            id: user.id || u.id || `fav-${idx}`,
+            profileId: user.profileId || prof.profileId || u.profileId,
+            name: fullName,
+            age,
+            city: prof.city || user.city || 'Location not specified',
+            state: prof.state || user.state || prof.country || user.country || '',
+            profession: prof.occupation || prof.profession || user.occupation || user.profession || 'Career not specified',
+            education: prof.education || user.education || 'Education not specified',
+            image: avatar,
+            compatibility: prof.compatibility || 88,
+            verified: Boolean(user.status === 'ACTIVE' || prof.isVerified || user.isVerified),
+            online: false,
+            about: prof.bio || prof.about || '',
+            height: prof.height ? `${prof.height}cm` : '',
+            maritalStatus: prof.maritalStatus || '',
+            religion: prof.religion || '',
+            motherTongue: prof.motherTongue || '',
+            family: prof.family || '',
+            lifestyle: Array.isArray(prof.lifestyle) ? prof.lifestyle : [],
+            interests: Array.isArray(prof.interests) ? prof.interests : [],
+            lookingFor: prof.lookingFor || '',
+          };
+        });
+        setFavorites(mapped);
+      })
+      .catch((err) => {
+        console.error('Error fetching favorites:', err);
+        setFavorites([]);
+      })
+      .finally(() => {
+        setIsLoading(false);
+      });
   }, []);
 
   return (

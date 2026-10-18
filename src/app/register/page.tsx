@@ -51,12 +51,22 @@ export default function RegisterPage() {
     setIsLoading(true);
     setErrorMessage(null);
 
-    // Mock API call to send OTP
-    setTimeout(() => {
+    try {
+      if (phone) {
+        await authService.sendOtp(phone, "register");
+        toast.info("Verification code sent", `We've sent a 6-digit verification code to ${phone}`);
+      } else if (email) {
+        await authService.sendEmailOtp(email);
+        toast.info("Verification code sent", `We've sent a verification code to ${email}`);
+      }
+      setStep(2);
+    } catch (err: any) {
+      const msg = err.message || "Failed to send verification code. Please try again.";
+      setErrorMessage(msg);
+      toast.error("Verification failed", msg);
+    } finally {
       setIsLoading(false);
-      setStep(2); // Move to OTP verification
-      toast.info("Verification code sent", `We've sent a 6-digit code to ${email}`);
-    }, 800);
+    }
   };
 
   const handleStep2Submit = async (e: React.FormEvent) => {
@@ -64,20 +74,17 @@ export default function RegisterPage() {
     setIsLoading(true);
     setErrorMessage(null);
 
-    if (otp !== "123456") {
-      // Mock OTP check
-      setTimeout(() => {
-        setIsLoading(false);
-        const msg = "Invalid OTP. For this mock, please use 123456.";
-        setErrorMessage(msg);
-        toast.error("Verification failed", msg);
-      }, 600);
-      return;
-    }
-
     try {
       const [firstName, ...rest] = name.split(" ");
       const lastName = rest.join(" ");
+
+      if (phone) {
+        await authService.verifyRegistration({
+          phone,
+          phoneOtp: otp,
+          email: email || undefined,
+        });
+      }
 
       await authService.register({
         email,
@@ -96,7 +103,7 @@ export default function RegisterPage() {
         window.location.href = "/onboarding";
       }, 600);
     } catch (error: any) {
-      const msg = error.message || "Failed to create account. Email might already exist.";
+      const msg = error.message || "Failed to create account. Please check your verification code.";
       setErrorMessage(msg);
       toast.error("Registration failed", msg);
       setIsLoading(false);

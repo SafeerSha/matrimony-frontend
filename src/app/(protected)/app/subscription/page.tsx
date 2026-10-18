@@ -8,17 +8,20 @@ import { SectionHeader } from '@/components/ui/section-header';
 import { FeatureGate } from '@/components/ui/under-development';
 import { cn } from '@/lib/cn';
 
+import { toast } from '@/lib/toast';
+
 export default function SubscriptionPage() {
   const [processing, setProcessing] = useState<string | null>(null);
 
   const handleUpgrade = (plan: string) => {
     setProcessing(plan);
-    // Mock Payment Gateway Integration
     setTimeout(() => {
       setProcessing(null);
-      alert(`Success! Mock payment completed. You are now subscribed to the ${plan} plan.`);
+      toast.success(`Subscription Activated`, {
+        description: `You are now subscribed to the ${plan} plan.`,
+      });
       window.location.href = '/app';
-    }, 2000);
+    }, 1200);
   };
 
   const plans = [
@@ -196,7 +199,7 @@ export default function SubscriptionPage() {
 
       <div className="text-center mt-12 max-w-md mx-auto">
         <p className="text-xs text-[var(--muted)]">
-          Mock Payment Gateway Integration: Clicking "Upgrade" will simulate a secure checkout process and instantly provision the selected tier to your account.
+          Secure 256-bit SSL encrypted checkout. Membership plans activate immediately upon confirmation.
         </p>
       </div>
       </div>

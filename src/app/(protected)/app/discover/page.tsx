@@ -38,7 +38,6 @@ import { SectionHeader } from '@/components/ui/section-header';
 import { VerificationBadge } from '@/components/ui/verification-badge';
 import { ProfileCardSkeleton, SwipeCardSkeleton } from '@/components/ui/skeleton';
 import { matchesService, profileService, isDraftUser } from '@/services';
-import { profiles as demoProfiles } from '@/lib/demo-data';
 import { toast } from '@/lib/toast';
 import { cn } from '@/lib/cn';
 import { SwipeCard } from '@/components/discovery/swipe-card';
@@ -124,7 +123,7 @@ export default function DiscoverPage() {
     }
   }, []);
 
-  // Guard: Incomplete / Draft profiles are not allowed on Discover, and prefill preferences
+  // Guard: Incomplete / Draft profiles are not allowed on Discover
   useEffect(() => {
     profileService
       .getProfile('me')
@@ -137,45 +136,6 @@ export default function DiscoverPage() {
           );
           router.replace('/onboarding');
           return;
-        }
-
-        // Initialize Discover filters with saved user preferences if present
-        if (profile.preferences) {
-          const p = profile.preferences;
-          if (p.minAge) setMinAge(Number(p.minAge));
-          if (p.maxAge) setMaxAge(Number(p.maxAge));
-          if (p.minHeight) setMinHeight(p.minHeight);
-          if (p.maxHeight) setMaxHeight(p.maxHeight);
-          if (p.diet) {
-            const d = Array.isArray(p.diet) ? p.diet[0] : p.diet;
-            if (d) setSelectedDiet(d);
-          }
-          if (p.gender) setSelectedGender(p.gender);
-          if (p.religions) {
-            const r = Array.isArray(p.religions) ? p.religions[0] : p.religions;
-            if (r && r !== 'Open to all communities') setSelectedReligion(r);
-          }
-          if (p.locations) {
-            const l = Array.isArray(p.locations) ? p.locations[0] : p.locations;
-            if (l && l !== 'Any location') setCity(l);
-          }
-          if (p.maritalStatus) {
-            const m = Array.isArray(p.maritalStatus) ? p.maritalStatus[0] : p.maritalStatus;
-            if (m && m !== 'Open to All') setSelectedMaritalStatus(m);
-          }
-          if (p.education) {
-            const e = Array.isArray(p.education) ? p.education[0] : p.education;
-            if (e && e !== 'Any qualification') setSelectedEducation(e);
-          }
-          if (p.professions) {
-            const pr = Array.isArray(p.professions) ? p.professions[0] : p.professions;
-            if (pr && pr !== 'Any profession') setSelectedProfession(pr);
-          }
-        } else if (profile.gender) {
-          // Smart default: target opposite gender
-          const g = profile.gender.toLowerCase();
-          if (g === 'male' || g === 'man') setSelectedGender('women');
-          else if (g === 'female' || g === 'woman') setSelectedGender('men');
         }
       })
       .catch(() => {});
@@ -193,51 +153,73 @@ export default function DiscoverPage() {
         maritalStatus: selectedMaritalStatus === 'Any' ? undefined : selectedMaritalStatus,
       })
       .then((res: any) => {
-        const rawList = Array.isArray(res) ? res : res?.data || [];
+        const rawList = (Array.isArray(res) ? res : res?.data || []).filter(
+          (u: any) =>
+            u.id !== 'meera' &&
+            u.id !== 'ananya' &&
+            !u.email?.includes('demo.ishtamchat.com')
+        );
         if (rawList.length > 0) {
-          const mapped: Profile[] = rawList.map((u: any, idx: number) => ({
-            id: u.id || `profile-${idx}`,
-            name: u.name || `${u.firstName || ''} ${u.lastName || ''}`.trim() || 'Member',
-            age: u.dateOfBirth
-              ? Math.floor((new Date().getTime() - new Date(u.dateOfBirth).getTime()) / 31557600000)
-              : minAge + (idx % (maxAge - minAge + 1)),
-            city: u.city || 'Kochi',
-            state: u.country || 'Kerala',
-            profession: u.occupation || 'Professional',
-            education: u.education || 'Graduate',
-            image:
-              (u.photos?.[0]?.url) ||
-              (u.profile?.photos?.[0]?.url) ||
-              `https://i.pravatar.cc/800?u=${encodeURIComponent(
-                (u.firstName || u.lastName || u.email || u.id || `user-${idx}`).toString()
-              )}`,
-            compatibility: Math.floor(Math.random() * 18) + 82,
-            verified: u.isVerified ?? true,
-            online: idx % 2 === 0,
-            about: u.bio || demoProfiles[idx % demoProfiles.length]?.about || '',
-            height: u.height ? `${u.height}cm` : "5'5\"",
-            gender: u.gender || u.profile?.gender || (u.firstName?.toLowerCase().includes('menon') ? 'female' : ''),
-            caste: u.caste || u.profile?.caste || '',
-            diet: u.diet || u.profile?.diet || '',
-            income: u.income || u.profile?.income || '',
-            intent: u.intent || u.profile?.intent || '',
-            maritalStatus: u.maritalStatus || 'Never married',
-            religion: u.religion || 'Not specified',
-            motherTongue: 'Malayalam',
-            family: 'Close-knit family based in South India.',
-            lifestyle: ['Non-smoker', 'Vegetarian'],
-            interests: ['Design', 'Travel', 'Music', 'IconCoffee'],
-            lookingFor: 'A kind, emotionally mature partner.',
-          }));
+          const mapped: Profile[] = rawList.map((u: any, idx: number) => {
+            const prof = u.profile || {};
+            const photos = u.photos || prof.photos || [];
+            const firstName = u.firstName || prof.firstName || '';
+            const lastName = u.lastName || prof.lastName || '';
+            const fullName = u.name || `${firstName} ${lastName}`.trim() || 'Member';
+
+            const birthDate = prof.dateOfBirth || u.dateOfBirth;
+            const age = birthDate
+              ? Math.floor((new Date().getTime() - new Date(birthDate).getTime()) / 31557600000)
+              : prof.age || u.age || 26;
+
+            const cityVal = prof.city || u.city || '';
+            const stateVal = prof.state || prof.country || u.state || u.country || '';
+            const profVal = prof.occupation || prof.profession || u.occupation || u.profession || '';
+            const eduVal = prof.education || u.education || '';
+
+            const rawAvatar = photos?.[0]?.url || prof.image || u.image || '';
+            const avatar =
+              rawAvatar.includes('pravatar') || rawAvatar.includes('unsplash')
+                ? ''
+                : rawAvatar;
+
+            return {
+              id: u.id || `profile-${idx}`,
+              profileId: u.profileId || prof.profileId,
+              name: fullName,
+              age,
+              city: cityVal,
+              state: stateVal,
+              profession: profVal,
+              education: eduVal,
+              image: avatar,
+              compatibility: prof.compatibility || Math.floor(Math.random() * 10) + 88,
+              verified: Boolean(u.status === 'ACTIVE' || prof.isVerified || u.isVerified),
+              online: idx % 3 === 0,
+              about: prof.bio || u.bio || '',
+              height: prof.height ? `${prof.height}cm` : '',
+              gender: prof.gender || u.gender || '',
+              caste: prof.caste || u.caste || '',
+              diet: prof.diet || u.diet || '',
+              income: prof.annualIncome || prof.income || u.income || '',
+              intent: prof.lookingFor || prof.intent || u.intent || '',
+              maritalStatus: prof.maritalStatus || u.maritalStatus || '',
+              religion: prof.religion || u.religion || '',
+              motherTongue: prof.motherTongue || '',
+              family: prof.family || '',
+              lifestyle: Array.isArray(prof.lifestyle) ? prof.lifestyle : [],
+              interests: Array.isArray(prof.interests) ? prof.interests : [],
+              lookingFor: prof.lookingFor || '',
+            };
+          });
           setProfiles(mapped);
         } else {
-          // Graceful fallback to demoProfiles for rich visual testing
-          setProfiles(demoProfiles);
+          setProfiles([]);
         }
       })
       .catch((err) => {
         console.error('Error fetching profiles:', err);
-        setProfiles(demoProfiles);
+        setProfiles([]);
       })
       .finally(() => {
         setIsLoading(false);
@@ -532,18 +514,20 @@ export default function DiscoverPage() {
           )}
         </div>
 
-        <div className="flex items-center gap-2 text-[11px] sm:text-xs font-semibold text-white/90">
-          <span>{profile.education}</span>
-          <span>•</span>
-          <span>{profile.profession}</span>
-        </div>
+        {(profile.education || profile.profession) && (
+          <div className="flex items-center gap-2 text-[11px] sm:text-xs font-semibold text-white/90">
+            {[profile.profession, profile.education].filter(Boolean).join(' • ')}
+          </div>
+        )}
 
-        <p className="flex items-center gap-1.5 text-xs sm:text-sm text-white/90 font-medium">
-          <IconMapPin className="h-3.5 w-3.5 text-[var(--accent)] shrink-0" />
-          <span>
-            {profile.city}, {profile.state}
-          </span>
-        </p>
+        {(profile.city || profile.state) && (
+          <p className="flex items-center gap-1.5 text-xs sm:text-sm text-white/90 font-medium">
+            <IconMapPin className="h-3.5 w-3.5 text-[var(--accent)] shrink-0" />
+            <span>
+              {[profile.city, profile.state].filter(Boolean).join(', ')}
+            </span>
+          </p>
+        )}
 
         {/* Matrimonial Discovery Actions Floating in Overlay */}
         <div 
@@ -735,40 +719,6 @@ export default function DiscoverPage() {
         </div>
       </div>
 
-      {/* Active Filter Chips Summary bar (Moved up from old card) */}
-      {(activeFiltersCount > 0 || query) && (
-        <div className="flex flex-wrap items-center gap-2 pt-1 animate-content-appear stagger-2">
-          <span className="text-xs font-semibold text-[var(--muted)]">Active:</span>
-          {query && (
-            <Chip size="sm" onRemove={() => setQuery('')}>
-              Search: "{query}"
-            </Chip>
-          )}
-          {city !== 'All locations' && (
-            <Chip size="sm" onRemove={() => setCity('All locations')}>
-              {city}
-            </Chip>
-          )}
-          {(minAge !== 21 || maxAge !== 35) && (
-            <Chip size="sm" onRemove={() => { setMinAge(21); setMaxAge(35); }}>
-              {minAge}–{maxAge} yrs
-            </Chip>
-          )}
-          {selectedReligion !== 'Any' && (
-            <Chip size="sm" onRemove={() => setSelectedReligion('Any')}>
-              {selectedReligion}
-            </Chip>
-          )}
-          <button
-            type="button"
-            onClick={handleResetFilters}
-            className="text-[11px] font-bold text-[var(--primary)] hover:underline ml-2"
-          >
-            Reset all
-          </button>
-        </div>
-      )}
-
       {/* Profile Counts Status */}
       {/* <div className="flex items-center justify-between px-1 text-xs text-[var(--muted)] font-medium">
         <p>
@@ -923,15 +873,31 @@ export default function DiscoverPage() {
               >
                 {/* 3:4 Portrait Photography with Overlay */}
                 <div className="relative h-[570px] sm:h-[530px] w-full overflow-hidden bg-[var(--surface-muted)]">
-                  <img
-                    src={profile.image}
-                    alt={profile.name}
-                    className="h-full w-full object-cover object-center transition-transform duration-700 ease-out group-hover:scale-[1.03]"
-                    loading="lazy"
-                  />
+                  {profile.image ? (
+                    <img
+                      src={profile.image}
+                      alt={profile.name}
+                      className="h-full w-full object-cover object-center transition-transform duration-700 ease-out group-hover:scale-[1.03]"
+                      loading="lazy"
+                    />
+                  ) : (
+                    <div className="h-full w-full flex flex-col items-center justify-center bg-gradient-to-br from-[#2D121B] via-[#4A1828] to-[#1F0B13] p-6 text-center select-none">
+                      <div className="grid h-28 w-28 place-items-center rounded-full bg-white/10 backdrop-blur-md text-white border border-white/20 shadow-2xl">
+                        <span className="font-editorial-title text-5xl font-bold">
+                          {profile.name?.charAt(0)?.toUpperCase() || 'M'}
+                        </span>
+                      </div>
+                      <p className="mt-4 text-base font-bold text-white/90">
+                        {profile.name}
+                      </p>
+                      <p className="text-xs text-white/60 mt-0.5">
+                        Photo not uploaded
+                      </p>
+                    </div>
+                  )}
 
                   {/* Ambient Warm Gradient Overlay */}
-                  <div className="absolute inset-0 photo-overlay-warm" aria-hidden="true" />
+                  {profile.image && <div className="absolute inset-0 photo-overlay-warm" aria-hidden="true" />}
 
                   {/* Top Badges */}
                   <div className="absolute top-3 left-3 right-3 flex items-center justify-between gap-1.5 z-10">
@@ -963,16 +929,20 @@ export default function DiscoverPage() {
                       {profile.verified && <VerificationBadge type="general" showIconOnly size="sm" />}
                     </div>
 
-                    <p className="text-xs font-semibold text-white/90 truncate">
-                      {profile.profession} · {profile.education}
-                    </p>
+                    {(profile.profession || profile.education) && (
+                      <p className="text-xs font-semibold text-white/90 truncate">
+                        {[profile.profession, profile.education].filter(Boolean).join(' · ')}
+                      </p>
+                    )}
 
-                    <p className="flex items-center gap-1 text-xs text-white/85 truncate">
-                      <IconMapPin className="h-3.5 w-3.5 text-[var(--accent)] shrink-0" />
-                      <span>
-                        {profile.city}, {profile.state}
-                      </span>
-                    </p>
+                    {(profile.city || profile.state) && (
+                      <p className="flex items-center gap-1 text-xs text-white/85 truncate">
+                        <IconMapPin className="h-3.5 w-3.5 text-[var(--accent)] shrink-0" />
+                        <span>
+                          {[profile.city, profile.state].filter(Boolean).join(', ')}
+                        </span>
+                      </p>
+                    )}
 
                     {/* Matrimonial Discovery Actions Floating in Overlay */}
                     <div className="w-full pt-2.5 flex items-center justify-between md:justify-center gap-2 sm:gap-2.5 lg:gap-4 md:px-2">

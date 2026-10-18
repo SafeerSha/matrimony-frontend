@@ -20,7 +20,6 @@ import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Avatar } from '@/components/ui/avatar';
-import { profiles, getProfileUniqueId } from '@/lib/demo-data';
 
 type AdminRole = 'superuser' | 'moderator' | 'rm';
 
@@ -283,24 +282,8 @@ export default function AdminDashboard() {
             {/* Recent Subscriptions Card */}
             <Card className="p-4 sm:p-6 border-[var(--border)] shadow-sm mt-6">
               <h3 className="font-bold text-[var(--foreground)] text-sm sm:text-base mb-4">Recent Subscriptions</h3>
-              <div className="divide-y divide-[var(--border)]">
-                {[1, 2, 3, 4].map((i) => (
-                  <div key={i} className="py-3 sm:py-4 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
-                    <div className="flex items-center gap-3 min-w-0">
-                      <Avatar src={profiles[i].image} name={profiles[i].name} />
-                      <div className="min-w-0">
-                        <p className="text-xs sm:text-sm font-bold truncate">{profiles[i].name}</p>
-                        <p className="text-[11px] text-[var(--muted)]">ID: {getProfileUniqueId(profiles[i])}</p>
-                      </div>
-                    </div>
-                    <div className="flex items-center justify-between sm:justify-end gap-3 pl-11 sm:pl-0">
-                      <Badge tone={i % 2 === 0 ? "accent" : "default"}>
-                        {i % 2 === 0 ? "Gold Plan" : "Platinum Plan"}
-                      </Badge>
-                      <p className="text-xs text-[var(--muted)] font-medium">Today, 10:24 AM</p>
-                    </div>
-                  </div>
-                ))}
+              <div className="py-8 text-center">
+                <p className="text-xs text-[var(--muted)]">No recent subscription transactions recorded.</p>
               </div>
             </Card>
           </div>
@@ -321,49 +304,15 @@ export default function AdminDashboard() {
               </div>
             </header>
 
-            {/* Moderation Cards */}
-            <div className="grid grid-cols-1 xl:grid-cols-2 gap-4 sm:gap-6">
-              {profiles.slice(2, 6).map((p, idx) => (
-                <Card key={idx} className="p-0 overflow-hidden border-[var(--border)] shadow-sm flex flex-col">
-                  <div className="bg-[#FAF3EC] p-3 border-b border-[#E9DDE0] flex justify-between items-center">
-                    <Badge tone={idx === 0 ? "danger" : "default"}>
-                      {idx === 0 ? (
-                        <span className="flex items-center gap-1"><IconAlertTriangle className="h-3 w-3"/> User Reported</span>
-                      ) : (
-                        "KYC Pending"
-                      )}
-                    </Badge>
-                    <span className="text-xs text-[#766B6F] font-medium">ID: MAT-8X{idx}21</span>
-                  </div>
-                  <div className="flex flex-col sm:flex-row flex-1">
-                    <div className="h-44 sm:h-auto sm:w-44 shrink-0 bg-slate-100 relative group overflow-hidden">
-                      <img src={p.image} alt={p.name} className="h-full w-full object-cover" />
-                      {/* Privacy Overlay Indicator */}
-                      <div className="absolute inset-0 bg-black/60 hidden group-hover:flex items-center justify-center text-white text-xs text-center p-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                        <div>
-                          <IconEyeOff className="h-4 w-4 mb-1 mx-auto" />
-                          <span>Private Chat Logs Encrypted</span>
-                        </div>
-                      </div>
-                    </div>
-                    <div className="p-4 flex-1 flex flex-col justify-between">
-                      <div>
-                        <h3 className="font-bold text-[var(--foreground)] text-base sm:text-lg">{p.name}, {p.age}</h3>
-                        <p className="text-xs text-[var(--muted)] mt-0.5">{p.city}, {p.state}</p>
-                        <p className="text-xs sm:text-sm mt-2.5 line-clamp-2 text-[var(--muted-strong)] leading-relaxed">{p.about}</p>
-                      </div>
-                      <div className="flex gap-2 mt-4 pt-3 border-t border-[var(--border)]">
-                        <Button size="sm" className="flex-1 bg-green-600 hover:bg-green-700 text-white text-xs">
-                          <IconCircleCheck className="mr-1.5 h-3.5 w-3.5" /> Approve
-                        </Button>
-                        <Button size="sm" variant="outline" className="flex-1 text-[var(--primary)] hover:bg-[var(--primary-light)] hover:text-white border-[var(--primary)] text-xs">
-                          <IconCircleX className="mr-1.5 h-3.5 w-3.5" /> Reject
-                        </Button>
-                      </div>
-                    </div>
-                  </div>
-                </Card>
-              ))}
+            {/* Moderation Queue Empty State */}
+            <div className="rounded-2xl border border-dashed border-[var(--border)] bg-white p-12 text-center shadow-xs">
+              <div className="mx-auto grid h-12 w-12 place-items-center rounded-2xl bg-[var(--surface-muted)] text-[var(--muted)] mb-3 border border-[var(--border)]">
+                <IconShield className="h-6 w-6 text-emerald-600" />
+              </div>
+              <h3 className="text-base font-bold text-[var(--foreground)]">Moderation Queue is Clear</h3>
+              <p className="mt-1 text-xs sm:text-sm text-[var(--muted)] max-w-sm mx-auto">
+                No new profile registrations or KYC documents are awaiting review at this time.
+              </p>
             </div>
           </div>
         )}
@@ -431,7 +380,7 @@ export default function AdminDashboard() {
                     ].map((client, i) => (
                       <tr key={i} className="hover:bg-[var(--surface)] transition-colors">
                         <td className="p-3.5 sm:p-4 font-bold flex items-center gap-3">
-                          <Avatar src={profiles[i].image} name={client.name} />
+                          <Avatar name={client.name} />
                           <span className="truncate">{client.name}</span>
                         </td>
                         <td className="p-3.5 sm:p-4"><Badge tone={client.plan === 'Platinum' ? "accent" : "default"}>{client.plan}</Badge></td>
