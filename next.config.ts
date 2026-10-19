@@ -53,7 +53,7 @@ const nextConfig: NextConfig = {
     const backendTarget =
       process.env.BACKEND_API_URL ||
       (process.env.NODE_ENV === "development"
-        ? (process.env.NEXT_PUBLIC_API_URL?.replace(/\/api\/v1\/?$/, "") || "http://localhost:4000")
+        ? (process.env.NEXT_PUBLIC_API_URL?.replace(/\/api\/v1\/?$/, "") || "http://127.0.0.1:4000")
         : (process.env.NEXT_PUBLIC_API_URL?.replace(/\/api\/v1\/?$/, "") || "https://matrimony-backend-taupe.vercel.app"));
 
     return [

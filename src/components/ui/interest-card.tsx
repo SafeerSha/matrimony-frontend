@@ -45,11 +45,15 @@ export interface InterestProfileData {
 
 export interface InterestCardProps {
   profile: InterestProfileData;
-  type: 'received' | 'sent' | 'accepted' | 'declined' | 'favorite';
+  type: 'received' | 'sent' | 'accepted' | 'declined' | 'favorite' | 'shortlisted_you';
   onAccept?: (id: string) => void;
   onDecline?: (id: string) => void;
   onChat?: (id: string) => void;
   onRemove?: (id: string) => void;
+  onShortlist?: (id: string) => void;
+  isShortlisted?: boolean;
+  onSendInterest?: (id: string) => void;
+  isInterestSent?: boolean;
   isRemoving?: boolean;
   className?: string;
 }
@@ -60,6 +64,10 @@ export function InterestCard({
   onAccept,
   onDecline,
   onRemove,
+  onShortlist,
+  isShortlisted,
+  onSendInterest,
+  isInterestSent,
   isRemoving,
   className,
 }: InterestCardProps) {
@@ -330,6 +338,50 @@ export function InterestCard({
                       variant="secondary"
                       size="md"
                       className="rounded-xl px-4 text-xs font-semibold"
+                    >
+                      View Profile
+                    </Button>
+                  </Link>
+                </div>
+              </div>
+            )}
+
+            {/* SHORTLISTED YOU TAB ACTIONS: Shortlist Back, Send Interest, View Profile */}
+            {type === 'shortlisted_you' && (
+              <div className="flex flex-wrap items-center justify-between gap-2.5 w-full">
+                <span className="text-xs font-semibold text-[#8B5A2B] flex items-center gap-1.5">
+                  <IconBookmark className="h-4 w-4 text-[var(--accent)] fill-current" />
+                  Shortlisted Your Profile
+                </span>
+                <div className="flex flex-wrap items-center gap-2 ml-auto">
+                  {onShortlist && (
+                    <Button
+                      variant={isShortlisted ? 'primary' : 'outline'}
+                      size="md"
+                      onClick={() => onShortlist(profile.id)}
+                      className="rounded-xl px-3.5 text-xs font-semibold active-press"
+                      leftIcon={<IconBookmark className="h-3.5 w-3.5 fill-current" />}
+                    >
+                      {isShortlisted ? 'Shortlisted' : 'Shortlist Back'}
+                    </Button>
+                  )}
+                  {onSendInterest && (
+                    <Button
+                      variant="primary"
+                      size="md"
+                      disabled={isInterestSent}
+                      onClick={() => onSendInterest(profile.id)}
+                      className="rounded-xl px-3.5 text-xs font-semibold active-press"
+                      leftIcon={<IconHeart className="h-3.5 w-3.5 fill-current" />}
+                    >
+                      {isInterestSent ? 'Interest Sent' : 'Send Interest'}
+                    </Button>
+                  )}
+                  <Link href={`/app/profile?user=${profile.id}`} className="focus-ring">
+                    <Button
+                      variant="secondary"
+                      size="md"
+                      className="rounded-xl px-3.5 text-xs font-semibold"
                     >
                       View Profile
                     </Button>

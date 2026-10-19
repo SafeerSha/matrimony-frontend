@@ -127,7 +127,9 @@ export const matchesService = {
   /**
    * Fetch raw connections from the live endpoint with zod schema safe validation
    */
-  getConnections: async (type: "received" | "sent" | "matches" | "shortlisted") => {
+  getConnections: async (
+    type: "received" | "sent" | "matches" | "shortlisted" | "shortlisted_by_me" | "shortlisted_you"
+  ) => {
     const res = await apiFetch<any[]>(`/connections?type=${type}`, {
       method: "GET",
     });
@@ -138,7 +140,10 @@ export const matchesService = {
       if (!parsed.success) {
         console.warn("Connections schema validation warning (using raw data):", parsed.error.issues);
       }
-    } else if (type === "shortlisted" && Array.isArray(res)) {
+    } else if (
+      (type === "shortlisted" || type === "shortlisted_by_me" || type === "shortlisted_you") &&
+      Array.isArray(res)
+    ) {
       const parsed = ShortlistedResponseSchema.safeParse(res);
       if (!parsed.success) {
         console.warn("Shortlisted connections schema validation warning:", parsed.error.issues);
@@ -158,10 +163,13 @@ export const matchesService = {
   },
 
   /**
-   * Fetches active shortlisted profiles and normalizes them into ready-to-render Profile[] models
+   * Fetches active shortlisted profiles:
+   * - 'by_me': profiles shortlisted by the current user
+   * - 'by_them': profiles of users who shortlisted the current user
    */
-  getShortlistedProfiles: async (): Promise<Profile[]> => {
-    const raw = await matchesService.getConnections("shortlisted");
+  getShortlistedProfiles: async (role: "by_me" | "by_them" = "by_me"): Promise<Profile[]> => {
+    const endpointType = role === "by_them" ? "shortlisted_you" : "shortlisted_by_me";
+    const raw = await matchesService.getConnections(endpointType);
     const rawList = Array.isArray(raw) ? raw : (raw as any)?.data || [];
     return rawList.map((item: any, idx: number) => mapConnectionToProfile(item, idx));
   },

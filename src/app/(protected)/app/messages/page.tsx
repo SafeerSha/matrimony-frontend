@@ -18,6 +18,7 @@ import { authService } from '@/services/auth.service';
 import { toast } from '@/lib/toast';
 import { cn } from '@/lib/cn';
 import { FeatureGate } from '@/components/ui/under-development';
+import { profiles as demoProfiles, type Profile } from '@/lib/demo-data';
 
 function MessagesPageContent() {
   const searchParams = useSearchParams();
@@ -31,6 +32,8 @@ function MessagesPageContent() {
 
   const [isLoadingConversations, setIsLoadingConversations] = useState(true);
   const [isLoadingMessages, setIsLoadingMessages] = useState(false);
+
+  const demoFallbackRef = useRef<{ conversations: Conversation[] }>({ conversations: [] });
 
   // Mobile View Management: 'list' (shows conversations list) vs 'chat' (full-screen active chat)
   const [mobileView, setMobileView] = useState<'list' | 'chat'>('list');

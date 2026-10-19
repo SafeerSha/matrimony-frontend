@@ -83,6 +83,7 @@ export default function DiscoverPage() {
   const [selectedIntent, setSelectedIntent] = useState<string>('Any');
 
   // Shortlist and Interest tracking sets
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [shortlistedIds, setShortlistedIds] = useState<Set<string>>(new Set());
   const [sentInterestIds, setSentInterestIds] = useState<Set<string>>(new Set());
 
@@ -102,30 +103,8 @@ export default function DiscoverPage() {
     }
 
     try {
-      const localStored = JSON.parse(localStorage.getItem('ishtam_shortlisted_ids') || '[]');
-      if (Array.isArray(localStored) && localStored.length > 0) {
-        setShortlistedIds(new Set(localStored));
-      }
+      localStorage.removeItem('ishtam_shortlisted_ids');
     } catch {}
-
-    matchesService
-      .getShortlistedProfiles()
-      .then((serverProfiles) => {
-        if (Array.isArray(serverProfiles) && serverProfiles.length > 0) {
-          setShortlistedIds((prev) => {
-            const merged = new Set(prev);
-            serverProfiles.forEach((p) => {
-              if (p.id) merged.add(p.id);
-              if (p.profileId) merged.add(p.profileId);
-            });
-            try {
-              localStorage.setItem('ishtam_shortlisted_ids', JSON.stringify(Array.from(merged)));
-            } catch {}
-            return merged;
-          });
-        }
-      })
-      .catch(() => {});
   }, []);
 
   // Guard: Incomplete / Draft profiles are not allowed on Discover
@@ -134,6 +113,35 @@ export default function DiscoverPage() {
       .getProfile('me')
       .then((profile: any) => {
         if (!profile) return;
+        const uid = profile?.user?.id || profile?.userId || profile?.id;
+        if (uid) {
+          setCurrentUserId(uid);
+          const userStorageKey = `ishtam_shortlisted_${uid}_by_me`;
+          try {
+            const localStored = JSON.parse(localStorage.getItem(userStorageKey) || '[]');
+            if (Array.isArray(localStored) && localStored.length > 0) {
+              setShortlistedIds(new Set(localStored));
+            }
+          } catch {}
+
+          matchesService
+            .getShortlistedProfiles('by_me')
+            .then((serverProfiles) => {
+              if (Array.isArray(serverProfiles)) {
+                const idSet = new Set<string>();
+                serverProfiles.forEach((p) => {
+                  if (p.id) idSet.add(p.id);
+                  if (p.profileId) idSet.add(p.profileId);
+                });
+                setShortlistedIds(idSet);
+                try {
+                  localStorage.setItem(userStorageKey, JSON.stringify(Array.from(idSet)));
+                } catch {}
+              }
+            })
+            .catch(() => {});
+        }
+
         if (isDraftUser(profile)) {
           toast.warning(
             'Complete Profile Required',
@@ -354,14 +362,17 @@ export default function DiscoverPage() {
       return next;
     });
 
-    // Optimistically update localStorage
-    try {
-      const localStored = JSON.parse(localStorage.getItem('ishtam_shortlisted_ids') || '[]');
-      const updated = nextShortlisted
-        ? Array.from(new Set([...localStored, id]))
-        : localStored.filter((storedId: string) => storedId !== id);
-      localStorage.setItem('ishtam_shortlisted_ids', JSON.stringify(updated));
-    } catch {}
+    // Optimistically update localStorage if user is authenticated
+    const userStorageKey = currentUserId ? `ishtam_shortlisted_${currentUserId}_by_me` : null;
+    if (userStorageKey) {
+      try {
+        const localStored = JSON.parse(localStorage.getItem(userStorageKey) || '[]');
+        const updated = nextShortlisted
+          ? Array.from(new Set([...localStored, id]))
+          : localStored.filter((storedId: string) => storedId !== id);
+        localStorage.setItem(userStorageKey, JSON.stringify(updated));
+      } catch {}
+    }
 
     try {
       if (nextShortlisted) {
@@ -385,13 +396,15 @@ export default function DiscoverPage() {
         }
         return next;
       });
-      try {
-        const localStored = JSON.parse(localStorage.getItem('ishtam_shortlisted_ids') || '[]');
-        const updated = isCurrentlyShortlisted
-          ? Array.from(new Set([...localStored, id]))
-          : localStored.filter((storedId: string) => storedId !== id);
-        localStorage.setItem('ishtam_shortlisted_ids', JSON.stringify(updated));
-      } catch {}
+      if (userStorageKey) {
+        try {
+          const localStored = JSON.parse(localStorage.getItem(userStorageKey) || '[]');
+          const updated = isCurrentlyShortlisted
+            ? Array.from(new Set([...localStored, id]))
+            : localStored.filter((storedId: string) => storedId !== id);
+          localStorage.setItem(userStorageKey, JSON.stringify(updated));
+        } catch {}
+      }
       toast.error('Action Failed', `Could not update favorite for ${name}.`);
     }
   };

@@ -12,14 +12,27 @@ import type { Profile } from '@/lib/demo-data';
 export function ProfileCard({ profile, compact = false }: { profile: Profile; compact?: boolean }) {
   const [isShortlisted, setIsShortlisted] = useState(false);
   const [isHovered, setIsHovered] = useState(false);
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
 
   useEffect(() => {
-    try {
-      const stored = JSON.parse(localStorage.getItem('ishtam_shortlisted_ids') || '[]');
-      if (stored.includes(profile.id) || (profile.profileId && stored.includes(profile.profileId))) {
-        setIsShortlisted(true);
-      }
-    } catch {}
+    import('@/services').then(({ profileService }) => {
+      profileService
+        .getProfile('me')
+        .then((p: any) => {
+          const uid = p?.user?.id || p?.userId || p?.id;
+          if (uid) {
+            setCurrentUserId(uid);
+            const userStorageKey = `ishtam_shortlisted_${uid}_by_me`;
+            try {
+              const stored = JSON.parse(localStorage.getItem(userStorageKey) || '[]');
+              if (stored.includes(profile.id) || (profile.profileId && stored.includes(profile.profileId))) {
+                setIsShortlisted(true);
+              }
+            } catch {}
+          }
+        })
+        .catch(() => {});
+    });
   }, [profile.id, profile.profileId]);
 
   const handleShortlist = async (e: React.MouseEvent) => {
@@ -28,13 +41,16 @@ export function ProfileCard({ profile, compact = false }: { profile: Profile; co
     const nextState = !isShortlisted;
     setIsShortlisted(nextState);
 
-    try {
-      const stored = JSON.parse(localStorage.getItem('ishtam_shortlisted_ids') || '[]');
-      const updated = nextState
-        ? Array.from(new Set([...stored, profile.id]))
-        : stored.filter((id: string) => id !== profile.id && id !== profile.profileId);
-      localStorage.setItem('ishtam_shortlisted_ids', JSON.stringify(updated));
-    } catch {}
+    const userStorageKey = currentUserId ? `ishtam_shortlisted_${currentUserId}_by_me` : null;
+    if (userStorageKey) {
+      try {
+        const stored = JSON.parse(localStorage.getItem(userStorageKey) || '[]');
+        const updated = nextState
+          ? Array.from(new Set([...stored, profile.id]))
+          : stored.filter((id: string) => id !== profile.id && id !== profile.profileId);
+        localStorage.setItem(userStorageKey, JSON.stringify(updated));
+      } catch {}
+    }
 
     try {
       const { matchesService } = await import('@/services');
@@ -51,13 +67,15 @@ export function ProfileCard({ profile, compact = false }: { profile: Profile; co
     } catch (error) {
       // Rollback
       setIsShortlisted(!nextState);
-      try {
-        const stored = JSON.parse(localStorage.getItem('ishtam_shortlisted_ids') || '[]');
-        const rollback = !nextState
-          ? Array.from(new Set([...stored, profile.id]))
-          : stored.filter((id: string) => id !== profile.id && id !== profile.profileId);
-        localStorage.setItem('ishtam_shortlisted_ids', JSON.stringify(rollback));
-      } catch {}
+      if (userStorageKey) {
+        try {
+          const stored = JSON.parse(localStorage.getItem(userStorageKey) || '[]');
+          const rollback = !nextState
+            ? Array.from(new Set([...stored, profile.id]))
+            : stored.filter((id: string) => id !== profile.id && id !== profile.profileId);
+          localStorage.setItem(userStorageKey, JSON.stringify(rollback));
+        } catch {}
+      }
       const { toast } = await import('@/lib/toast');
       toast.error('Action failed', 'Could not update shortlist at this time.');
       console.error(error);
