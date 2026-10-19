@@ -40,7 +40,7 @@ export function CelebrationModal({
   match,
   currentUser = {
     name: 'You',
-    image: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=600&q=80',
+    image: '',
     verified: true,
     city: 'Kochi',
   },
@@ -88,12 +88,8 @@ export function CelebrationModal({
   if (!isOpen || !mounted || !match) return null;
 
   const partnerName = match.name || 'Your Match';
-  const partnerPhoto =
-    match.image ||
-    'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=600&q=80';
-  const currentUserPhoto =
-    currentUser.image ||
-    'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=600&q=80';
+  const partnerPhoto = match.image || '';
+  const currentUserPhoto = currentUser.image || '';
   const compatibilityScore = match.compatibility || 94;
 
   /**

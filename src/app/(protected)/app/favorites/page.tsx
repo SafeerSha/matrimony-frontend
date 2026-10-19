@@ -23,7 +23,7 @@ import { EmptyState } from '@/components/ui/empty-state';
 import { FeatureGate } from '@/components/ui/under-development';
 import { matchesService, profileService } from '@/services';
 import { toast } from '@/lib/toast';
-import { profiles as demoProfiles, type Profile } from '@/lib/demo-data';
+import type { Profile } from '@/lib/demo-data';
 import { useCelebration } from '@/context/celebration-context';
 import { cn } from '@/lib/cn';
 
@@ -103,21 +103,6 @@ function FavoritesContent() {
       // User-scoped cache merge for offline resilience
       const userStorageKey = uid ? `ishtam_shortlisted_${uid}_by_me` : null;
       const localIdSet = new Set<string>();
-
-      if (userStorageKey && typeof window !== 'undefined') {
-        try {
-          const localStored = JSON.parse(localStorage.getItem(userStorageKey) || '[]');
-          if (Array.isArray(localStored) && localStored.length > 0) {
-            localStored.forEach((id: string) => {
-              localIdSet.add(id);
-              if (!byMeList.some((p) => p.id === id || p.profileId === id)) {
-                const found = demoProfiles.find((p) => p.id === id || p.profileId === id);
-                if (found) byMeList.push(found);
-              }
-            });
-          }
-        } catch {}
-      }
 
       // Ensure localIdSet includes all live byMeList items
       byMeList.forEach((p) => {
@@ -225,8 +210,7 @@ function FavoritesContent() {
   const handleToggleShortlistBack = async (targetId: string) => {
     const isCurrentlyShortlisted = shortlistedIds.has(targetId);
     const targetProfile =
-      shortlistedYou.find((p) => p.id === targetId || p.profileId === targetId) ||
-      demoProfiles.find((p) => p.id === targetId);
+      shortlistedYou.find((p) => p.id === targetId || p.profileId === targetId);
 
     const targetName = targetProfile?.name || 'Member';
 
@@ -261,8 +245,7 @@ function FavoritesContent() {
 
   // Send Interest to profile in "Shortlisted You" tab
   const handleSendInterest = async (targetId: string) => {
-    const targetProfile =
-      shortlistedYou.find((p) => p.id === targetId) || demoProfiles.find((p) => p.id === targetId);
+    const targetProfile = shortlistedYou.find((p) => p.id === targetId);
     const targetName = targetProfile?.name || 'Member';
 
     setSentInterestIds((prev) => new Set(prev).add(targetId));

@@ -20,7 +20,7 @@ import { MutualMatchCard } from '@/components/ui/mutual-match-card';
 import { EmptyState } from '@/components/ui/empty-state';
 import { FeatureGate } from '@/components/ui/under-development';
 import { ProfileCardSkeleton } from '@/components/ui/skeleton';
-import { matchesService } from '@/services';
+import { matchesService, profileService } from '@/services';
 import { useCelebration } from '@/context/celebration-context';
 import type { Profile } from '@/lib/demo-data';
 
@@ -30,6 +30,7 @@ function MatchesContent() {
   const { celebrateMatch } = useCelebration();
 
   const [matches, setMatches] = useState<Profile[]>([]);
+  const [currentUser, setCurrentUser] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -37,16 +38,34 @@ function MatchesContent() {
     setIsLoading(true);
     setError(null);
     try {
-      const liveMatches = await matchesService.getMutualMatches();
-      setMatches(liveMatches);
+      const [liveMatches, meProfile] = await Promise.allSettled([
+        matchesService.getMutualMatches(),
+        profileService.getProfile('me'),
+      ]);
 
-      // Auto-trigger celebration if ?celebrate=ID query param is present
-      const celebrateId = searchParams.get('celebrate');
-      if (celebrateId) {
-        const target = liveMatches.find((m) => m.id === celebrateId);
-        if (target) {
-          celebrateMatch({ match: target });
+      if (liveMatches.status === 'fulfilled') {
+        setMatches(liveMatches.value);
+
+        // Auto-trigger celebration if ?celebrate=ID query param is present
+        const celebrateId = searchParams.get('celebrate');
+        if (celebrateId) {
+          const target = liveMatches.value.find((m) => m.id === celebrateId);
+          if (target) {
+            celebrateMatch({ match: target });
+          }
         }
+      }
+
+      if (meProfile.status === 'fulfilled' && meProfile.value) {
+        const p = meProfile.value as any;
+        const photos = p.photos || p.user?.photos || [];
+        const primary = photos.find((ph: any) => ph.isPrimary)?.url || photos[0]?.url || p.image;
+        setCurrentUser({
+          name: p.firstName ? `${p.firstName} ${p.lastName || ''}`.trim() : 'You',
+          image: primary || null,
+          city: p.city || p.profile?.city || '',
+          verified: p.isVerified ?? true,
+        });
       }
     } catch (err: any) {
       console.error('Error fetching live mutual matches:', err);
@@ -185,13 +204,14 @@ function MatchesContent() {
               key={match.id}
               match={match}
               onCelebrate={handleCelebrate}
-              currentUser={{
-                name: 'You',
-                image:
-                  'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=600&q=80',
-                verified: true,
-                city: 'Kochi',
-              }}
+              currentUser={
+                currentUser || {
+                  name: 'You',
+                  image: null,
+                  verified: true,
+                  city: '',
+                }
+              }
             />
           ))}
         </div>

@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useMemo, Suspense } from 'react';
+import React, { useState, useEffect, useCallback, useMemo, Suspense } from 'react';
 import Link from 'next/link';
 import { useSearchParams, useRouter } from 'next/navigation';
 import {
@@ -28,52 +28,62 @@ import { InterestCard } from '@/components/ui/interest-card';
 import { EmptyState } from '@/components/ui/empty-state';
 import { FeatureGate } from '@/components/ui/under-development';
 import { matchesService, profileService } from '@/services';
-import {
-  profiles as demoProfiles,
-  receivedInterests as demoReceived,
-  sentInterests as demoSent,
-} from '@/lib/demo-data';
 import { toast } from '@/lib/toast';
 import { cn } from '@/lib/cn';
-import { useCelebration } from '@/context/celebration-context';
 import type { Profile } from '@/lib/demo-data';
 
 export type InterestsTab = 'received' | 'sent' | 'declined';
 
 // Helper to map backend UserProfile to Profile UI model
-const mapProfile = (u: any, idx = 0): Profile => ({
-  id: u.id || `user-${idx}`,
-  profileId: u.profileId || u.user?.profileId,
-  name: u.name || `${u.firstName || ''} ${u.lastName || ''}`.trim() || 'Member',
-  age: u.dateOfBirth
-    ? Math.floor((new Date().getTime() - new Date(u.dateOfBirth).getTime()) / 31557600000)
-    : 26 + (idx % 6),
-  city: u.city || 'Kochi',
-  state: u.country || 'Kerala',
-  profession: u.occupation || 'Professional',
-  education: u.education || 'Graduate Degree',
-  image:
-    u.photos?.[0]?.url ||
-    demoProfiles[idx % demoProfiles.length]?.image ||
-    'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=900&q=85',
-  compatibility: Math.floor(Math.random() * 15) + 84,
-  verified: u.isVerified ?? true,
-  online: idx % 2 === 0,
-  about: u.bio || demoProfiles[idx % demoProfiles.length]?.about || '',
-  height: u.height ? `${u.height}cm` : "5'5\"",
-  maritalStatus: u.maritalStatus || 'Never married',
-  religion: u.religion || 'Not specified',
-  motherTongue: 'Malayalam',
-  family: 'Respectable, close-knit family based in South India.',
-  lifestyle: ['Non-smoker', 'Vegetarian'],
-  interests: ['Design', 'Travel', 'Music', 'Reading'],
-  lookingFor: 'A kind, emotionally mature partner.',
-});
+const mapProfile = (u: any, idx = 0): Profile => {
+  const user = u.sender || u.receiver || u.partner || u.user || u;
+  const prof = user.profile || u.profile || {};
+  const photos = user.photos || prof.photos || u.photos || [];
+
+  const firstName = user.firstName || prof.firstName || '';
+  const lastName = user.lastName || prof.lastName || '';
+  const fullName = user.name || `${firstName} ${lastName}`.trim() || 'Verified Member';
+
+  const birthDate = prof.dateOfBirth || user.dateOfBirth || u.dateOfBirth;
+  const age = birthDate
+    ? Math.floor((new Date().getTime() - new Date(birthDate).getTime()) / 31557600000)
+    : prof.age || user.age || 26;
+
+  const city = prof.city || user.city || '';
+  const state = prof.state || user.state || prof.country || user.country || '';
+  const profession = prof.occupation || prof.profession || user.occupation || user.profession || '';
+  const education = prof.education || user.education || '';
+
+  const avatar = photos?.[0]?.url || prof.image || user.image || '';
+
+  return {
+    id: user.id || u.id || `user-${idx}`,
+    profileId: user.profileId || prof.profileId || u.profileId,
+    name: fullName,
+    age,
+    city: city || 'Location not specified',
+    state,
+    profession: profession || 'Career not specified',
+    education: education || 'Education not specified',
+    image: avatar,
+    compatibility: u.compatibility ?? user.compatibility ?? prof.compatibility ?? 88,
+    verified: Boolean(user.status === 'ACTIVE' || prof.isVerified || user.isVerified),
+    online: false,
+    about: prof.bio || prof.about || '',
+    height: prof.height ? `${prof.height}cm` : '',
+    maritalStatus: prof.maritalStatus || '',
+    religion: prof.religion || '',
+    motherTongue: prof.motherTongue || '',
+    family: prof.family || '',
+    lifestyle: Array.isArray(prof.lifestyle) ? prof.lifestyle : [],
+    interests: Array.isArray(prof.interests) ? prof.interests : [],
+    lookingFor: prof.lookingFor || '',
+  };
+};
 
 function InterestsContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
-  const { celebrateMatch } = useCelebration();
 
   // Normalize initial tab from query param
   const initialTabParam = searchParams.get('tab');
@@ -88,10 +98,10 @@ function InterestsContent() {
   const [searchQuery, setSearchQuery] = useState('');
 
   // Tab Data States
-  const [receivedItems, setReceivedItems] = useState<Profile[]>(demoReceived);
-  const [sentItems, setSentItems] = useState<Profile[]>(demoSent);
+  const [receivedItems, setReceivedItems] = useState<Profile[]>([]);
+  const [sentItems, setSentItems] = useState<Profile[]>([]);
   const [declinedItems, setDeclinedItems] = useState<Profile[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
 
   // Sync state if URL param changes
   useEffect(() => {
@@ -108,40 +118,39 @@ function InterestsContent() {
     router.replace(`/app/interests?${params.toString()}`);
   };
 
-  // Fetch data on tab change
-  useEffect(() => {
+  // Fetch both received and sent connections simultaneously so both tab counts show immediately on load
+  const fetchConnections = useCallback(async () => {
     setIsLoading(true);
-    let type: 'received' | 'sent' | 'shortlisted' = 'received';
+    try {
+      const [recRes, sentRes] = await Promise.allSettled([
+        matchesService.getConnections('received'),
+        matchesService.getConnections('sent'),
+      ]);
 
-    if (tab === 'received') type = 'received';
-    else if (tab === 'sent') type = 'sent';
-    else {
-      // Declined is maintained in client session
+      if (recRes.status === 'fulfilled') {
+        const raw = Array.isArray(recRes.value) ? recRes.value : (recRes.value as any)?.data || [];
+        setReceivedItems(raw.map(mapProfile));
+      } else {
+        console.error('Error fetching received connections:', recRes.reason);
+      }
+
+      if (sentRes.status === 'fulfilled') {
+        const raw = Array.isArray(sentRes.value) ? sentRes.value : (sentRes.value as any)?.data || [];
+        setSentItems(raw.map(mapProfile));
+      } else {
+        console.error('Error fetching sent connections:', sentRes.reason);
+      }
+    } catch (err) {
+      console.error('Error fetching connections:', err);
+    } finally {
       setIsLoading(false);
-      return;
     }
+  }, []);
 
-    matchesService
-      .getConnections(type as any)
-      .then((res: any) => {
-        const rawList = Array.isArray(res) ? res : res?.data || [];
-        if (rawList.length > 0) {
-          const mapped = rawList.map(mapProfile);
-          if (tab === 'received') setReceivedItems(mapped);
-          else if (tab === 'sent') setSentItems(mapped);
-        } else {
-          // Keep rich demo fallbacks if empty
-          if (tab === 'received' && receivedItems.length === 0) setReceivedItems(demoReceived);
-          if (tab === 'sent' && sentItems.length === 0) setSentItems(demoSent);
-        }
-      })
-      .catch((err) => {
-        console.error('Error fetching connections:', err);
-      })
-      .finally(() => {
-        setIsLoading(false);
-      });
-  }, [tab]);
+  // Initial load
+  useEffect(() => {
+    fetchConnections();
+  }, [fetchConnections]);
 
   // Filter items by search query
   const filterList = (items: Profile[]) => {
@@ -159,12 +168,18 @@ function InterestsContent() {
       await matchesService.acceptInterest(id);
       setReceivedItems((prev) => prev.filter((p) => p.id !== id));
       if (item) {
-        celebrateMatch({ match: item });
+        toast.success(
+          'Interest Accepted!',
+          `You and ${item.name} are now connected. You can view them in Mutual Matches anytime.`
+        );
       }
     } catch {
       setReceivedItems((prev) => prev.filter((p) => p.id !== id));
       if (item) {
-        celebrateMatch({ match: item });
+        toast.success(
+          'Interest Accepted!',
+          `You and ${item.name} are now connected. You can view them in Mutual Matches anytime.`
+        );
       }
     }
   };
@@ -216,17 +231,30 @@ function InterestsContent() {
           </h1>
         </div>
 
-        {/* Quick Discovery CTA pill in same row at right end */}
-        <Link href="/app/discover" className="focus-ring shrink-0">
+        {/* Actions: Refresh and Quick Discovery CTA pill */}
+        <div className="flex items-center gap-2 shrink-0">
           <Button
             variant="secondary"
             size="md"
-            className="rounded-2xl text-xs font-bold gap-1 active-press h-9 sm:h-10 px-3 sm:px-4"
-            leftIcon={<IconCompass className="h-4 w-4 text-[var(--primary)] shrink-0" />}
+            onClick={() => fetchConnections()}
+            className="rounded-2xl text-xs font-bold gap-1 active-press h-9 sm:h-10 px-3 sm:px-3.5"
+            leftIcon={<IconRefresh className={cn("h-4 w-4 text-[var(--primary)] shrink-0", isLoading && "animate-spin")} />}
+            title="Refresh interests"
           >
-            <span className="whitespace-nowrap">Discover Profiles</span>
+            <span className="hidden sm:inline">Refresh</span>
           </Button>
-        </Link>
+
+          <Link href="/app/discover" className="focus-ring shrink-0">
+            <Button
+              variant="secondary"
+              size="md"
+              className="rounded-2xl text-xs font-bold gap-1 active-press h-9 sm:h-10 px-3 sm:px-4"
+              leftIcon={<IconCompass className="h-4 w-4 text-[var(--primary)] shrink-0" />}
+            >
+              <span className="whitespace-nowrap">Discover Profiles</span>
+            </Button>
+          </Link>
+        </div>
       </div>
 
       {/* ======================================================== */}
@@ -277,7 +305,14 @@ function InterestsContent() {
               <IconSend className="h-3.5 w-3.5" />
               <span>Sent</span>
               {sentItems.length > 0 && (
-                <span className="grid h-5 min-w-5 place-items-center rounded-full bg-stone-200 px-1.5 text-[10px] font-bold text-stone-700 leading-none">
+                <span
+                  className={cn(
+                    'grid h-5 min-w-5 place-items-center rounded-full px-1.5 text-[10px] font-bold leading-none',
+                    tab === 'sent'
+                      ? 'bg-[var(--primary)] text-white'
+                      : 'bg-stone-200 text-stone-700'
+                  )}
+                >
                   {sentItems.length}
                 </span>
               )}
@@ -297,7 +332,14 @@ function InterestsContent() {
               <IconBan className="h-3.5 w-3.5" />
               <span>Declined</span>
               {declinedItems.length > 0 && (
-                <span className="grid h-5 min-w-5 place-items-center rounded-full bg-stone-200 px-1.5 text-[10px] font-bold text-stone-700 leading-none">
+                <span
+                  className={cn(
+                    'grid h-5 min-w-5 place-items-center rounded-full px-1.5 text-[10px] font-bold leading-none',
+                    tab === 'declined'
+                      ? 'bg-[var(--primary)] text-white'
+                      : 'bg-stone-200 text-stone-700'
+                  )}
+                >
                   {declinedItems.length}
                 </span>
               )}
@@ -325,7 +367,12 @@ function InterestsContent() {
       {/* -------------------------------------------------------- */}
       {tab === 'received' && (
         <div className="space-y-4 animate-content-appear stagger-3">
-          {filteredReceived.length > 0 ? (
+          {isLoading && receivedItems.length === 0 ? (
+            <div className="space-y-4">
+              <div className="h-44 w-full bg-white rounded-3xl border border-[var(--border)] skeleton-shimmer" />
+              <div className="h-44 w-full bg-white rounded-3xl border border-[var(--border)] skeleton-shimmer" />
+            </div>
+          ) : filteredReceived.length > 0 ? (
             <div className="space-y-4">
               {filteredReceived.map((profile) => (
                 <InterestCard
@@ -362,7 +409,12 @@ function InterestsContent() {
       {/* -------------------------------------------------------- */}
       {tab === 'sent' && (
         <div className="space-y-4 animate-content-appear stagger-3">
-          {filteredSent.length > 0 ? (
+          {isLoading && sentItems.length === 0 ? (
+            <div className="space-y-4">
+              <div className="h-44 w-full bg-white rounded-3xl border border-[var(--border)] skeleton-shimmer" />
+              <div className="h-44 w-full bg-white rounded-3xl border border-[var(--border)] skeleton-shimmer" />
+            </div>
+          ) : filteredSent.length > 0 ? (
             <div className="space-y-4">
               {filteredSent.map((profile) => (
                 <InterestCard

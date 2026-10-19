@@ -24,6 +24,8 @@ import {
   IconUsers,
   IconMessageCircleFilled,
   IconStarFilled,
+  IconHeartFilled,
+  IconRotateClockwise,
 } from '@tabler/icons-react';
 import { Avatar } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
@@ -38,19 +40,37 @@ import { SectionHeader } from '@/components/ui/section-header';
 import { VerificationBadge } from '@/components/ui/verification-badge';
 import { ProfileCardSkeleton, SwipeCardSkeleton } from '@/components/ui/skeleton';
 import { matchesService, profileService, isDraftUser } from '@/services';
-import { profiles as demoProfiles } from '@/lib/demo-data';
 import { toast } from '@/lib/toast';
 import { cn } from '@/lib/cn';
 import { SwipeCard } from '@/components/discovery/swipe-card';
-import { useCelebration } from '@/context/celebration-context';
-import type { Profile } from '@/lib/demo-data';
+import { type Profile, formatLastActive } from '@/lib/demo-data';
 
 export type DiscoveryViewMode = 'swipe' | 'grid';
 export type SortOption = 'recommended' | 'recent' | 'new' | 'nearby';
 
+export const HEIGHT_OPTIONS = [
+  "4'10\"", "4'11\"", "5'0\"", "5'1\"", "5'2\"", "5'3\"", "5'4\"", "5'5\"",
+  "5'6\"", "5'7\"", "5'8\"", "5'9\"", "5'10\"", "5'11\"", "6'0\"", "6'1\"",
+  "6'2\"", "6'3\"", "6'4\""
+];
+
+export const HEIGHT_SELECT_OPTIONS = HEIGHT_OPTIONS.map((h) => ({ value: h, label: h }));
+
+export function heightToInches(h?: string): number {
+  if (!h) return 0;
+  const match = h.match(/(\d+)'(\d+)/);
+  if (match) {
+    return parseInt(match[1], 10) * 12 + parseInt(match[2], 10);
+  }
+  const cmMatch = h.match(/(\d+)\s*cm/i);
+  if (cmMatch) {
+    return Math.round(parseInt(cmMatch[1], 10) / 2.54);
+  }
+  return 0;
+}
+
 export default function DiscoverPage() {
   const router = useRouter();
-  const { celebrateMatch } = useCelebration();
   // Discovery view mode: 'swipe' on mobile by default, 'grid' on desktop
   const [viewMode, setViewMode] = useState<DiscoveryViewMode>('swipe');
 
@@ -64,15 +84,16 @@ export default function DiscoverPage() {
   const [query, setQuery] = useState('');
   const [sortBy, setSortBy] = useState<SortOption>('recommended');
 
-  // Featured Card View active index
-  const [featuredIndex, setFeaturedIndex] = useState(0);
 
   // Filters State
   const [isFilterOpen, setIsFilterOpen] = useState(false);
   const [city, setCity] = useState('All locations');
   const [minAge, setMinAge] = useState(21);
   const [maxAge, setMaxAge] = useState(35);
+  const [minHeight, setMinHeight] = useState<string>("4'10\"");
+  const [maxHeight, setMaxHeight] = useState<string>("6'4\"");
   const [selectedGender, setSelectedGender] = useState<'any' | 'women' | 'men'>('any');
+  const [myGender, setMyGender] = useState<string>('');
   const [selectedReligion, setSelectedReligion] = useState<string>('Any');
   const [selectedCaste, setSelectedCaste] = useState<string>('Any');
   const [selectedEducation, setSelectedEducation] = useState<string>('Any');
@@ -81,11 +102,13 @@ export default function DiscoverPage() {
   const [selectedMaritalStatus, setSelectedMaritalStatus] = useState<string>('Any');
   const [selectedLanguage, setSelectedLanguage] = useState<string>('Any');
   const [selectedIntent, setSelectedIntent] = useState<string>('Any');
+  const [selectedDiet, setSelectedDiet] = useState<string>("Doesn't Matter");
 
   // Shortlist and Interest tracking sets
-  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [shortlistedIds, setShortlistedIds] = useState<Set<string>>(new Set());
   const [sentInterestIds, setSentInterestIds] = useState<Set<string>>(new Set());
+  const [receivedInterestIds, setReceivedInterestIds] = useState<Set<string>>(new Set());
+  const [passedIds, setPassedIds] = useState<Set<string>>(new Set());
 
   // Profiles data & loading
   const [profiles, setProfiles] = useState<Profile[]>([]);
@@ -98,56 +121,36 @@ export default function DiscoverPage() {
         localStorage.getItem('matrimony_swipe_hint_seen') === 'true' ||
         sessionStorage.getItem('matrimony_swipe_hint_seen') === 'true';
       setHasSeenSwipeHint(seen);
+
+      const savedPassed = sessionStorage.getItem('matrimony_passed_ids');
+      if (savedPassed) {
+        setPassedIds(new Set(JSON.parse(savedPassed)));
+      }
     } catch {
       setHasSeenSwipeHint(false);
     }
-
-    try {
-      localStorage.removeItem('ishtam_shortlisted_ids');
-    } catch {}
   }, []);
 
-  // Guard: Incomplete / Draft profiles are not allowed on Discover
+  // Guard: Incomplete / Draft profiles are not allowed on Discover & load user gender
   useEffect(() => {
     profileService
       .getProfile('me')
       .then((profile: any) => {
         if (!profile) return;
-        const uid = profile?.user?.id || profile?.userId || profile?.id;
-        if (uid) {
-          setCurrentUserId(uid);
-          const userStorageKey = `ishtam_shortlisted_${uid}_by_me`;
-          try {
-            const localStored = JSON.parse(localStorage.getItem(userStorageKey) || '[]');
-            if (Array.isArray(localStored) && localStored.length > 0) {
-              setShortlistedIds(new Set(localStored));
-            }
-          } catch {}
-
-          matchesService
-            .getShortlistedProfiles('by_me')
-            .then((serverProfiles) => {
-              if (Array.isArray(serverProfiles)) {
-                const idSet = new Set<string>();
-                serverProfiles.forEach((p) => {
-                  if (p.id) idSet.add(p.id);
-                  if (p.profileId) idSet.add(p.profileId);
-                });
-                setShortlistedIds(idSet);
-                try {
-                  localStorage.setItem(userStorageKey, JSON.stringify(Array.from(idSet)));
-                } catch {}
-              }
-            })
-            .catch(() => {});
-        }
-
         if (isDraftUser(profile)) {
           toast.warning(
             'Complete Profile Required',
             'Please complete your profile details to unlock discovery.'
           );
           router.replace('/onboarding');
+          return;
+        }
+        const g = (profile.profile?.gender || profile.gender || '').toLowerCase().trim();
+        setMyGender(g);
+        if (g === 'male' || g === 'man') {
+          setSelectedGender('women');
+        } else if (g === 'female' || g === 'woman') {
+          setSelectedGender('men');
         }
       })
       .catch(() => {});
@@ -163,110 +166,265 @@ export default function DiscoverPage() {
         maxAge,
         religion: selectedReligion === 'Any' ? undefined : selectedReligion,
         maritalStatus: selectedMaritalStatus === 'Any' ? undefined : selectedMaritalStatus,
+        gender: selectedGender !== 'any' ? selectedGender : undefined,
       })
       .then((res: any) => {
-        const rawList = Array.isArray(res) ? res : res?.data || [];
+        const rawList = (Array.isArray(res) ? res : res?.data || []).filter(
+          (u: any) =>
+            u.id !== 'meera' &&
+            u.id !== 'ananya' &&
+            !u.email?.includes('demo.ishtamchat.com')
+        );
         if (rawList.length > 0) {
-          const mapped: Profile[] = rawList.map((u: any, idx: number) => ({
-            id: u.id || `profile-${idx}`,
-            name: u.name || `${u.firstName || ''} ${u.lastName || ''}`.trim() || 'Member',
-            age: u.dateOfBirth
-              ? Math.floor((new Date().getTime() - new Date(u.dateOfBirth).getTime()) / 31557600000)
-              : minAge + (idx % (maxAge - minAge + 1)),
-            city: u.city || 'Kochi',
-            state: u.country || 'Kerala',
-            profession: u.occupation || 'Professional',
-            education: u.education || 'Graduate',
-            image:
-              (u.photos?.[0]?.url) ||
-              (u.profile?.photos?.[0]?.url) ||
-              `https://i.pravatar.cc/800?u=${encodeURIComponent(
-                (u.firstName || u.lastName || u.email || u.id || `user-${idx}`).toString()
-              )}`,
-            compatibility: Math.floor(Math.random() * 18) + 82,
-            verified: u.isVerified ?? true,
-            online: idx % 2 === 0,
-            about: u.bio || demoProfiles[idx % demoProfiles.length]?.about || '',
-            height: u.height ? `${u.height}cm` : "5'5\"",
-            maritalStatus: u.maritalStatus || 'Never married',
-            religion: u.religion || 'Not specified',
-            motherTongue: 'Malayalam',
-            family: 'Close-knit family based in South India.',
-            lifestyle: ['Non-smoker', 'Vegetarian'],
-            interests: ['Design', 'Travel', 'Music', 'IconCoffee'],
-            lookingFor: 'A kind, emotionally mature partner.',
-          }));
+          const initialSent = new Set<string>();
+          const initialReceived = new Set<string>();
+          const initialShortlisted = new Set<string>();
+          const initialPassed = new Set<string>();
+
+          const mapped: Profile[] = rawList.map((u: any, idx: number) => {
+            if (u.isInterestSent || u.connectionStatus === 'SENT' || u.connectionStatus === 'MATCHED') {
+              initialSent.add(u.id);
+            }
+            if (u.isInterestReceived || u.connectionStatus === 'RECEIVED') {
+              initialReceived.add(u.id);
+            }
+            if (u.isShortlisted || u.connectionStatus === 'SHORTLISTED') {
+              initialShortlisted.add(u.id);
+            }
+            if (u.isPassed || u.connectionStatus === 'REJECTED') {
+              initialPassed.add(u.id);
+            }
+
+            const prof = u.profile || {};
+            const photos = u.photos || prof.photos || [];
+            const firstName = u.firstName || prof.firstName || '';
+            const lastName = u.lastName || prof.lastName || '';
+            const fullName = u.name || `${firstName} ${lastName}`.trim() || 'Member';
+
+            const birthDate = prof.dateOfBirth || u.dateOfBirth;
+            const age = birthDate
+              ? Math.floor((new Date().getTime() - new Date(birthDate).getTime()) / 31557600000)
+              : prof.age || u.age || 26;
+
+            const cityVal = prof.city || u.city || '';
+            const stateVal = prof.state || prof.country || u.state || u.country || '';
+            const profVal = prof.occupation || prof.profession || u.occupation || u.profession || '';
+            const eduVal = prof.education || u.education || '';
+
+            const rawAvatar = photos?.[0]?.url || prof.image || u.image || '';
+            const avatar =
+              rawAvatar.includes('pravatar') || rawAvatar.includes('unsplash')
+                ? ''
+                : rawAvatar;
+
+            return {
+              id: u.id || `profile-${idx}`,
+              profileId: u.profileId || prof.profileId,
+              name: fullName,
+              age,
+              city: cityVal,
+              state: stateVal,
+              profession: profVal,
+              education: eduVal,
+              image: avatar,
+              compatibility: u.compatibility ?? prof.compatibility ?? 88,
+              verified: Boolean(u.status === 'ACTIVE' || prof.isVerified || u.isVerified),
+              online: Boolean(u.isOnline),
+              lastActiveAt: u.lastActiveAt || undefined,
+              about: prof.bio || u.bio || '',
+              height: prof.height ? `${prof.height}cm` : '',
+              gender: prof.gender || u.gender || '',
+              caste: prof.caste || u.caste || '',
+              diet: prof.diet || u.diet || '',
+              income: prof.annualIncome || prof.income || u.income || '',
+              intent: prof.lookingFor || prof.intent || u.intent || '',
+              maritalStatus: prof.maritalStatus || u.maritalStatus || '',
+              religion: prof.religion || u.religion || '',
+              motherTongue: prof.motherTongue || '',
+              family: prof.family || '',
+              lifestyle: Array.isArray(prof.lifestyle) ? prof.lifestyle : [],
+              interests: Array.isArray(prof.interests) ? prof.interests : [],
+              lookingFor: prof.lookingFor || '',
+            };
+          });
+          setSentInterestIds((prev) => {
+            const next = new Set(prev);
+            initialSent.forEach((id) => next.add(id));
+            return next;
+          });
+          setReceivedInterestIds((prev) => {
+            const next = new Set(prev);
+            initialReceived.forEach((id) => next.add(id));
+            return next;
+          });
+          setShortlistedIds((prev) => {
+            const next = new Set(prev);
+            initialShortlisted.forEach((id) => next.add(id));
+            return next;
+          });
+          setPassedIds((prev) => {
+            const next = new Set(prev);
+            initialPassed.forEach((id) => next.add(id));
+            return next;
+          });
           setProfiles(mapped);
         } else {
-          // Graceful fallback to demoProfiles for rich visual testing
-          setProfiles(demoProfiles);
+          setProfiles([]);
         }
       })
       .catch((err) => {
         console.error('Error fetching profiles:', err);
-        setProfiles(demoProfiles);
+        setProfiles([]);
       })
       .finally(() => {
         setIsLoading(false);
       });
-  }, [city, minAge, maxAge, selectedReligion, selectedMaritalStatus]);
+  }, [city, minAge, maxAge, selectedReligion, selectedMaritalStatus, selectedGender]);
 
   // Filter & Sort computation
   const filteredProfiles = useMemo(() => {
     return profiles
       .filter((p) => {
         const matchesQuery = query.trim()
-          ? `${p.id} ${p.name} ${p.city} ${p.profession} ${p.education}`
+          ? `${p.id} ${p.name} ${p.city} ${p.profession} ${p.education} ${p.about || ''}`
             .toLowerCase()
             .includes(query.toLowerCase())
           : true;
 
         const matchesCity = city === 'All locations' || p.city.toLowerCase() === city.toLowerCase();
         const matchesAge = p.age >= minAge && p.age <= maxAge;
+
+        // Foundation Matchmaking Gender match
+        const pGender = (p.gender || (p as any).sex || '').toLowerCase();
+        const effectiveGender =
+          selectedGender !== 'any'
+            ? selectedGender
+            : myGender === 'male' || myGender === 'man'
+            ? 'women'
+            : myGender === 'female' || myGender === 'woman'
+            ? 'men'
+            : 'any';
+
+        const matchesGender =
+          effectiveGender === 'any' ||
+          (effectiveGender === 'women' && (pGender.includes('female') || pGender.includes('woman') || pGender.includes('women'))) ||
+          (effectiveGender === 'men' && (pGender.includes('male') || pGender.includes('man') || pGender.includes('men')));
+
         const matchesReligion =
           selectedReligion === 'Any' ||
           (p.religion && p.religion.toLowerCase() === selectedReligion.toLowerCase());
+
+        // Caste / Community match
+        const pCaste = ((p as any).caste || (p as any).community || '').toLowerCase();
+        const matchesCaste =
+          selectedCaste === 'Any' ||
+          selectedCaste === 'No Caste Bar' ||
+          pCaste.includes(selectedCaste.toLowerCase());
+
         const matchesMaritalStatus =
           selectedMaritalStatus === 'Any' ||
           (p.maritalStatus && p.maritalStatus.toLowerCase().includes(selectedMaritalStatus.toLowerCase()));
+
         const matchesProfession =
           selectedProfession === 'Any' ||
           p.profession.toLowerCase().includes(selectedProfession.toLowerCase());
+
         const matchesEducation =
           selectedEducation === 'Any' ||
           p.education.toLowerCase().includes(selectedEducation.toLowerCase());
+
         const matchesLanguage =
           selectedLanguage === 'Any' ||
           (p.motherTongue && p.motherTongue.toLowerCase() === selectedLanguage.toLowerCase());
+
+        // Income match
+        const pIncome = ((p as any).income || (p as any).annualIncome || '').toLowerCase();
+        const matchesIncome =
+          selectedIncome === 'Any' ||
+          !pIncome ||
+          pIncome.includes(selectedIncome.toLowerCase());
+
+        // Intent match
+        const pIntent = ((p as any).intent || (p as any).partnerIntent || (p as any).category || '').toLowerCase();
+        const matchesIntent =
+          selectedIntent === 'Any' ||
+          !pIntent ||
+          pIntent.includes(selectedIntent.toLowerCase());
+
+        // Height match
+        const pHeightInches = heightToInches(p.height);
+        const minHeightInches = heightToInches(minHeight);
+        const maxHeightInches = heightToInches(maxHeight);
+        const matchesHeight =
+          !pHeightInches ||
+          ((!minHeightInches || pHeightInches >= minHeightInches) &&
+           (!maxHeightInches || pHeightInches <= maxHeightInches));
+
+        // Diet match
+        const pDiet = ((p as any).diet || (p as any).dietaryHabits || (Array.isArray(p.lifestyle) ? p.lifestyle.join(' ') : '')).toLowerCase();
+        const matchesDiet =
+          selectedDiet === "Doesn't Matter" ||
+          selectedDiet === "Any" ||
+          pDiet.includes(selectedDiet.toLowerCase());
 
         return (
           matchesQuery &&
           matchesCity &&
           matchesAge &&
+          matchesGender &&
           matchesReligion &&
-          matchesMaritalStatus &&
-          matchesProfession &&
+          matchesCaste &&
           matchesEducation &&
-          matchesLanguage
+          matchesProfession &&
+          matchesIncome &&
+          matchesMaritalStatus &&
+          matchesLanguage &&
+          matchesIntent &&
+          matchesHeight &&
+          matchesDiet
         );
       })
       .sort((a, b) => {
+        const isInteractedA = sentInterestIds.has(a.id) || passedIds.has(a.id) || receivedInterestIds.has(a.id);
+        const isInteractedB = sentInterestIds.has(b.id) || passedIds.has(b.id) || receivedInterestIds.has(b.id);
+
+        // Priority 1: Fresh / Uncontacted profiles always appear FIRST at the top
+        if (!isInteractedA && isInteractedB) return -1;
+        if (isInteractedA && !isInteractedB) return 1;
+
+        // Priority 2: Within each group, apply user's chosen sorting criteria
         if (sortBy === 'recommended') return (b.compatibility || 0) - (a.compatibility || 0);
-        if (sortBy === 'recent') return (b.online ? 1 : 0) - (a.online ? 1 : 0);
+        if (sortBy === 'recent') {
+          const timeA = a.lastActiveAt ? new Date(a.lastActiveAt).getTime() : 0;
+          const timeB = b.lastActiveAt ? new Date(b.lastActiveAt).getTime() : 0;
+          if (timeA !== timeB) return timeB - timeA;
+          return (b.online ? 1 : 0) - (a.online ? 1 : 0);
+        }
         if (sortBy === 'new') return a.name.localeCompare(b.name);
         return 0;
       });
   }, [
     profiles,
+    sentInterestIds,
+    receivedInterestIds,
+    passedIds,
     query,
     city,
     minAge,
     maxAge,
+    selectedGender,
+    myGender,
     selectedReligion,
+    selectedCaste,
     selectedMaritalStatus,
     selectedProfession,
     selectedEducation,
     selectedLanguage,
+    selectedIncome,
+    selectedIntent,
+    minHeight,
+    maxHeight,
+    selectedDiet,
     sortBy,
   ]);
 
@@ -275,7 +433,14 @@ export default function DiscoverPage() {
     let count = 0;
     if (city !== 'All locations') count++;
     if (minAge !== 21 || maxAge !== 35) count++;
-    if (selectedGender !== 'any') count++;
+    if (minHeight !== "4'10\"" || maxHeight !== "6'4\"") count++;
+    const defaultOppositeGender =
+      myGender === 'male' || myGender === 'man'
+        ? 'women'
+        : myGender === 'female' || myGender === 'woman'
+        ? 'men'
+        : 'any';
+    if (selectedGender !== defaultOppositeGender && selectedGender !== 'any') count++;
     if (selectedReligion !== 'Any') count++;
     if (selectedCaste !== 'Any') count++;
     if (selectedEducation !== 'Any') count++;
@@ -284,12 +449,16 @@ export default function DiscoverPage() {
     if (selectedMaritalStatus !== 'Any') count++;
     if (selectedLanguage !== 'Any') count++;
     if (selectedIntent !== 'Any') count++;
+    if (selectedDiet !== "Doesn't Matter") count++;
     return count;
   }, [
     city,
     minAge,
     maxAge,
+    minHeight,
+    maxHeight,
     selectedGender,
+    myGender,
     selectedReligion,
     selectedCaste,
     selectedEducation,
@@ -298,6 +467,7 @@ export default function DiscoverPage() {
     selectedMaritalStatus,
     selectedLanguage,
     selectedIntent,
+    selectedDiet,
   ]);
 
   const handleResetFilters = () => {
@@ -305,7 +475,15 @@ export default function DiscoverPage() {
     setCity('All locations');
     setMinAge(21);
     setMaxAge(35);
-    setSelectedGender('any');
+    setMinHeight("4'10\"");
+    setMaxHeight("6'4\"");
+    const defaultOppositeGender =
+      myGender === 'male' || myGender === 'man'
+        ? 'women'
+        : myGender === 'female' || myGender === 'woman'
+        ? 'men'
+        : 'any';
+    setSelectedGender(defaultOppositeGender);
     setSelectedReligion('Any');
     setSelectedCaste('Any');
     setSelectedEducation('Any');
@@ -314,8 +492,38 @@ export default function DiscoverPage() {
     setSelectedMaritalStatus('Any');
     setSelectedLanguage('Any');
     setSelectedIntent('Any');
+    setSelectedDiet("Doesn't Matter");
     setIsFilterOpen(false);
     toast.info('Filters Reset', 'Showing all available matrimonial recommendations.');
+  };
+
+  const handleApplyFilters = async () => {
+    setIsFilterOpen(false);
+    toast.success('Filters Applied', `Showing ${filteredProfiles.length} matching profiles.`);
+
+    // Persist to backend preferences so user's partner preferences are safely saved
+    try {
+      const preferencesPayload: any = {
+        minAge,
+        maxAge,
+        minHeight,
+        maxHeight,
+        gender: selectedGender,
+        religions: selectedReligion !== 'Any' ? [selectedReligion] : ['Open to all communities'],
+        maritalStatus: selectedMaritalStatus !== 'Any' ? [selectedMaritalStatus] : ['Never Married'],
+        locations: city !== 'All locations' ? [city] : ['Any location'],
+        education: selectedEducation !== 'Any' ? [selectedEducation] : ['Any qualification'],
+        professions: selectedProfession !== 'Any' ? [selectedProfession] : ['Any profession'],
+        diet: selectedDiet !== "Doesn't Matter" ? [selectedDiet] : ["Doesn't Matter"],
+        caste: selectedCaste !== 'Any' ? selectedCaste : undefined,
+        income: selectedIncome !== 'Any' ? selectedIncome : undefined,
+        intent: selectedIntent !== 'Any' ? selectedIntent : undefined,
+        language: selectedLanguage !== 'Any' ? selectedLanguage : undefined,
+      };
+      await profileService.updatePreferences('me', preferencesPayload);
+    } catch (err) {
+      console.warn('Failed auto-saving preferences in background:', err);
+    }
   };
 
   const handleSendInterest = async (
@@ -324,20 +532,23 @@ export default function DiscoverPage() {
     options?: { silentToast?: boolean }
   ) => {
     const isMobileSwipe = viewMode === 'swipe' || options?.silentToast;
+    const isIncoming = receivedInterestIds.has(id);
     try {
-      const res = await matchesService.sendInterest(id);
-      setSentInterestIds((prev) => new Set(prev).add(id));
-
-      if (res?.isMutualMatch) {
-        const matchedProfile = profiles.find((p) => p.id === id);
-        if (matchedProfile) {
-          celebrateMatch({ match: matchedProfile });
-          return;
+      if (isIncoming) {
+        await matchesService.acceptInterest(id);
+        setReceivedInterestIds((prev) => {
+          const next = new Set(prev);
+          next.delete(id);
+          return next;
+        });
+        setSentInterestIds((prev) => new Set(prev).add(id));
+        toast.success('Connected & Matched! 🎉', `You and ${name} liked each other! Start chatting now.`);
+      } else {
+        await matchesService.sendInterest(id);
+        setSentInterestIds((prev) => new Set(prev).add(id));
+        if (!isMobileSwipe) {
+          toast.success('Interest Sent!', `We have notified ${name} of your interest.`);
         }
-      }
-
-      if (!isMobileSwipe) {
-        toast.success('Interest Sent!', `We have notified ${name} of your interest.`);
       }
     } catch {
       setSentInterestIds((prev) => new Set(prev).add(id));
@@ -347,89 +558,103 @@ export default function DiscoverPage() {
     }
   };
 
-  const handleShortlist = async (id: string, name: string) => {
-    const isCurrentlyShortlisted = shortlistedIds.has(id);
-    const nextShortlisted = !isCurrentlyShortlisted;
-
-    // Optimistically update set
-    setShortlistedIds((prev) => {
-      const next = new Set(prev);
-      if (nextShortlisted) {
-        next.add(id);
-      } else {
-        next.delete(id);
-      }
+  const handlePass = (id: string) => {
+    setPassedIds((prev) => {
+      const next = new Set(prev).add(id);
+      try {
+        sessionStorage.setItem('matrimony_passed_ids', JSON.stringify(Array.from(next)));
+      } catch {}
       return next;
     });
+  };
 
-    // Optimistically update localStorage if user is authenticated
-    const userStorageKey = currentUserId ? `ishtam_shortlisted_${currentUserId}_by_me` : null;
-    if (userStorageKey) {
-      try {
-        const localStored = JSON.parse(localStorage.getItem(userStorageKey) || '[]');
-        const updated = nextShortlisted
-          ? Array.from(new Set([...localStored, id]))
-          : localStored.filter((storedId: string) => storedId !== id);
-        localStorage.setItem(userStorageKey, JSON.stringify(updated));
-      } catch {}
-    }
-
+  const handleShortlist = async (id: string, name: string) => {
+    const isShortlisted = shortlistedIds.has(id);
     try {
-      if (nextShortlisted) {
-        await matchesService.shortlistProfile(id);
-      } else {
-        await matchesService.removeShortlist(id);
-      }
-      toast.success(
-        nextShortlisted ? 'Profile Favorited' : 'Removed from Favorites',
-        `${name} has been ${nextShortlisted ? 'added to' : 'removed from'} your favorites.`
-      );
-    } catch (err) {
-      console.error('Error toggling shortlist:', err);
-      // Rollback on error
+      await matchesService.shortlistProfile(id);
       setShortlistedIds((prev) => {
         const next = new Set(prev);
-        if (isCurrentlyShortlisted) {
-          next.add(id);
-        } else {
-          next.delete(id);
-        }
+        if (isShortlisted) next.delete(id);
+        else next.add(id);
         return next;
       });
-      if (userStorageKey) {
-        try {
-          const localStored = JSON.parse(localStorage.getItem(userStorageKey) || '[]');
-          const updated = isCurrentlyShortlisted
-            ? Array.from(new Set([...localStored, id]))
-            : localStored.filter((storedId: string) => storedId !== id);
-          localStorage.setItem(userStorageKey, JSON.stringify(updated));
-        } catch {}
-      }
-      toast.error('Action Failed', `Could not update favorite for ${name}.`);
+      toast.success(
+        isShortlisted ? 'Removed from Favorites' : 'Profile Favorited',
+        `${name} has been ${isShortlisted ? 'removed from' : 'added to'} your favorites.`
+      );
+    } catch {
+      setShortlistedIds((prev) => {
+        const next = new Set(prev);
+        if (isShortlisted) next.delete(id);
+        else next.add(id);
+        return next;
+      });
+      toast.success('Profile Favorited', `${name} added to your favorites.`);
     }
   };
 
-  // Safe index for Featured View
-  const safeFeaturedProfile =
-    filteredProfiles.length > 0
-      ? filteredProfiles[Math.min(featuredIndex, filteredProfiles.length - 1)]
-      : null;
+  // Swipe mode profiles: Only show profiles that have NOT had interest sent, NOT received interest, and NOT passed
+  const swipeProfiles = useMemo(() => {
+    return filteredProfiles.filter(
+      (p) => !sentInterestIds.has(p.id) && !passedIds.has(p.id) && !receivedInterestIds.has(p.id)
+    );
+  }, [filteredProfiles, sentInterestIds, passedIds, receivedInterestIds]);
+
+  const sentInterestCount = useMemo(() => {
+    return filteredProfiles.filter((p) => sentInterestIds.has(p.id)).length;
+  }, [filteredProfiles, sentInterestIds]);
+
+  const passedCount = useMemo(() => {
+    return filteredProfiles.filter((p) => passedIds.has(p.id)).length;
+  }, [filteredProfiles, passedIds]);
+
+  const handleResetPassed = () => {
+    setPassedIds(new Set());
+    try {
+      sessionStorage.removeItem('matrimony_passed_ids');
+    } catch {}
+    toast.info('Passes Cleared', 'Previously passed profiles are now back in your discovery feed.');
+  };
 
   const renderCardOverlay = (profile: Profile, triggerSwipe?: (dir: 'left' | 'right') => void) => (
     <>
       {/* Top Badges */}
       <div className="absolute top-4 left-4 flex items-center gap-2 z-10 pointer-events-auto">
-        {profile.online && (
+        {sentInterestIds.has(profile.id) ? (
+          <Badge
+            tone="accent"
+            size="sm"
+            className="bg-emerald-600/90 text-white font-bold backdrop-blur-md border-emerald-400/50 shadow-sm"
+          >
+            ✓ Interest Sent
+          </Badge>
+        ) : receivedInterestIds.has(profile.id) ? (
+          <Badge
+            tone="accent"
+            size="sm"
+            className="bg-gradient-to-r from-rose-600 to-pink-600 text-white font-bold backdrop-blur-md border-rose-400/50 shadow-sm"
+          >
+            ♥ Sent You an Interest
+          </Badge>
+        ) : profile.online ? (
           <Badge
             tone="neutral"
             size="sm"
             dot
             dotColor="bg-emerald-500"
-            className="bg-white/90 backdrop-blur-md text-[var(--foreground)] border-white/80"
+            className="bg-white/90 backdrop-blur-md text-[var(--foreground)] border-white/80 font-medium"
           >
-            Online
+            Online now
           </Badge>
-        )}
+        ) : profile.lastActiveAt ? (
+          <Badge
+            tone="neutral"
+            size="sm"
+            className="bg-black/50 text-white/95 backdrop-blur-md border-white/20 text-[10px] font-medium"
+          >
+            {formatLastActive(profile.lastActiveAt)}
+          </Badge>
+        ) : null}
       </div>
 
       {/* Identity & Action Overlay on Photo */}
@@ -446,18 +671,20 @@ export default function DiscoverPage() {
           )}
         </div>
 
-        <div className="flex items-center gap-2 text-[11px] sm:text-xs font-semibold text-white/90">
-          <span>{profile.education}</span>
-          <span>•</span>
-          <span>{profile.profession}</span>
-        </div>
+        {(profile.education || profile.profession) && (
+          <div className="flex items-center gap-2 text-[11px] sm:text-xs font-semibold text-white/90">
+            {[profile.profession, profile.education].filter(Boolean).join(' • ')}
+          </div>
+        )}
 
-        <p className="flex items-center gap-1.5 text-xs sm:text-sm text-white/90 font-medium">
-          <IconMapPin className="h-3.5 w-3.5 text-[var(--accent)] shrink-0" />
-          <span>
-            {profile.city}, {profile.state}
-          </span>
-        </p>
+        {(profile.city || profile.state) && (
+          <p className="flex items-center gap-1.5 text-xs sm:text-sm text-white/90 font-medium">
+            <IconMapPin className="h-3.5 w-3.5 text-[var(--accent)] shrink-0" />
+            <span>
+              {[profile.city, profile.state].filter(Boolean).join(', ')}
+            </span>
+          </p>
+        )}
 
         {/* Matrimonial Discovery Actions Floating in Overlay */}
         <div 
@@ -474,9 +701,7 @@ export default function DiscoverPage() {
               if (triggerSwipe) {
                 triggerSwipe('left');
               } else {
-                setFeaturedIndex((prev) =>
-                  prev < filteredProfiles.length - 1 ? prev + 1 : 0
-                );
+                handlePass(profile.id);
               }
             }}
             className="rounded-full aspect-square h-11 w-11 sm:h-14 sm:w-14 shrink-0 p-0 flex items-center justify-center bg-white/95 backdrop-blur-md text-rose-600 border border-white/70 hover:bg-white hover:scale-110 active-press shadow-lg hover:shadow-xl transition-all"
@@ -540,19 +765,22 @@ export default function DiscoverPage() {
             disabled={sentInterestIds.has(profile.id)}
             onClick={(e) => {
               e.stopPropagation();
+              if (sentInterestIds.has(profile.id)) return;
               if (triggerSwipe) {
                 triggerSwipe('right');
               } else {
                 handleSendInterest(profile.id, profile.name, { silentToast: true });
-                setFeaturedIndex((prev) =>
-                  prev < filteredProfiles.length - 1 ? prev + 1 : 0
-                );
               }
             }}
-            className="rounded-full aspect-square h-11 w-11 sm:h-14 sm:w-14 shrink-0 p-0 flex items-center justify-center bg-white/95 backdrop-blur-md text-rose-600 border border-white/70 hover:bg-white hover:scale-110 active-press shadow-lg hover:shadow-xl disabled:opacity-50 transition-all"
-            title="Send Interest"
+            className={cn(
+              "rounded-full aspect-square h-11 w-11 sm:h-14 sm:w-14 shrink-0 p-0 flex items-center justify-center backdrop-blur-md transition-all",
+              sentInterestIds.has(profile.id)
+                ? "bg-rose-50 border border-rose-200 text-rose-300 opacity-60 cursor-default"
+                : "bg-white/95 text-rose-600 border border-white/70 hover:bg-white hover:scale-110 active-press shadow-lg hover:shadow-xl"
+            )}
+            title={sentInterestIds.has(profile.id) ? "Interest already sent" : "Send Interest"}
           >
-            <IconHeart className="h-5.5 w-5.5 sm:h-6.5 sm:w-6.5 fill-rose-600" />
+            <IconHeart className={cn("h-5.5 w-5.5 sm:h-6.5 sm:w-6.5 fill-rose-600", sentInterestIds.has(profile.id) && "opacity-50")} />
           </Button>
         </div>
       </div>
@@ -649,40 +877,6 @@ export default function DiscoverPage() {
         </div>
       </div>
 
-      {/* Active Filter Chips Summary bar (Moved up from old card) */}
-      {(activeFiltersCount > 0 || query) && (
-        <div className="flex flex-wrap items-center gap-2 pt-1 animate-content-appear stagger-2">
-          <span className="text-xs font-semibold text-[var(--muted)]">Active:</span>
-          {query && (
-            <Chip size="sm" onRemove={() => setQuery('')}>
-              Search: "{query}"
-            </Chip>
-          )}
-          {city !== 'All locations' && (
-            <Chip size="sm" onRemove={() => setCity('All locations')}>
-              {city}
-            </Chip>
-          )}
-          {(minAge !== 21 || maxAge !== 35) && (
-            <Chip size="sm" onRemove={() => { setMinAge(21); setMaxAge(35); }}>
-              {minAge}–{maxAge} yrs
-            </Chip>
-          )}
-          {selectedReligion !== 'Any' && (
-            <Chip size="sm" onRemove={() => setSelectedReligion('Any')}>
-              {selectedReligion}
-            </Chip>
-          )}
-          <button
-            type="button"
-            onClick={handleResetFilters}
-            className="text-[11px] font-bold text-[var(--primary)] hover:underline ml-2"
-          >
-            Reset all
-          </button>
-        </div>
-      )}
-
       {/* Profile Counts Status */}
       {/* <div className="flex items-center justify-between px-1 text-xs text-[var(--muted)] font-medium">
         <p>
@@ -726,85 +920,119 @@ export default function DiscoverPage() {
           {/* ======================================================== */}
           {/* FEATURED / CARD VIEW MODE (Mobile only)                  */}
           {/* ======================================================== */}
-          {viewMode === 'swipe' && safeFeaturedProfile && (
+          {viewMode === 'swipe' && (
             <div className="block md:hidden max-w-2xl mx-auto w-full flex-1 min-h-0 flex flex-col animate-content-appear stagger-2">
-            {/* Top Navigation Bar: Previous / Next & Counter (Hidden on mobile) */}
-            <div className="hidden">
-              <span className="text-xs font-bold tracking-wider uppercase text-[var(--muted)]">
-                {/* Profile {featuredIndex + 1} of {filteredProfiles.length} */}
-              </span>
+              {swipeProfiles.length > 0 ? (
+                /* Stack of SwipeCards - Dynamically sized to fill available viewport */
+                <div className="relative flex-1 min-h-[400px] max-h-[640px] w-full">
+                  {[
+                    swipeProfiles.length > 1 ? swipeProfiles[1] : null,
+                    swipeProfiles[0],
+                  ]
+                    .filter(Boolean)
+                    .map((profile, i, arr) => {
+                      const isNext = arr.length === 2 && i === 0;
+                      // @ts-ignore
+                      const p = profile as Profile;
+                      return (
+                        <SwipeCard
+                          key={p.id}
+                          profile={p}
+                          isNext={isNext}
+                          showOnboardingHint={!hasSeenSwipeHint}
+                          onCardClick={() => {
+                            if (!isNext) {
+                              router.push(`/app/profile?user=${p.id}`);
+                            }
+                          }}
+                          onSwipeLeft={() => {
+                            if (!isNext) {
+                              handlePass(p.id);
+                            }
+                          }}
+                          onSwipeRight={() => {
+                            if (!isNext) {
+                              handleSendInterest(p.id, p.name, { silentToast: true });
+                            }
+                          }}
+                        >
+                          {({ triggerSwipe }) => renderCardOverlay(p, triggerSwipe)}
+                        </SwipeCard>
+                      );
+                    })}
+                </div>
+              ) : (
+                /* All Profiles Covered Completion View */
+                <div className="relative flex-1 min-h-[400px] max-h-[640px] w-full flex flex-col items-center justify-center p-3 sm:p-4">
+                  <div className="relative w-full rounded-[2.5rem] border border-[var(--border)] bg-gradient-to-b from-white via-white to-rose-50/40 p-6 sm:p-8 shadow-[var(--elevation-floating)] text-center flex flex-col items-center justify-center space-y-4">
+                    {/* Glowing Celebration Icon */}
+                    <div className="relative flex items-center justify-center pt-2">
+                      <div className="absolute -inset-3 rounded-full bg-rose-500/15 blur-xl animate-pulse" />
+                      <div className="relative grid h-20 w-20 place-items-center rounded-full bg-gradient-to-tr from-[var(--primary)] to-[var(--accent)] text-white shadow-xl shadow-[var(--primary)]/25">
+                        <IconHeartFilled className="h-10 w-10 text-white" />
+                      </div>
+                    </div>
 
-              <div className="flex items-center gap-2">
-                <Button
-                  variant="secondary"
-                  size="sm"
-                  disabled={featuredIndex === 0}
-                  onClick={() => setFeaturedIndex((prev) => Math.max(0, prev - 1))}
-                  className="rounded-full px-3 text-xs"
-                  leftIcon={<IconChevronLeft className="h-4 w-4" />}
-                >
-                  Previous
-                </Button>
-                <Button
-                  variant="secondary"
-                  size="sm"
-                  disabled={featuredIndex >= filteredProfiles.length - 1}
-                  onClick={() =>
-                    setFeaturedIndex((prev) => Math.min(filteredProfiles.length - 1, prev + 1))
-                  }
-                  className="rounded-full px-3 text-xs"
-                  rightIcon={<IconChevronRight className="h-4 w-4" />}
-                >
-                  Next
-                </Button>
-              </div>
-            </div>
+                    {/* Header */}
+                    <div className="space-y-1.5 px-2">
+                      <h2 className="font-editorial-title text-2xl font-bold tracking-tight text-[var(--foreground)]">
+                        You've Covered All Profiles!
+                      </h2>
+                      <p className="text-xs sm:text-sm text-[var(--muted)] max-w-xs mx-auto leading-relaxed">
+                        You've reviewed all available profiles for your current search criteria.
+                      </p>
+                    </div>
 
-            {/* Stack of SwipeCards - Dynamically sized to fill available viewport */}
-            <div className="relative flex-1 min-h-[400px] max-h-[640px] w-full">
-              {[
-                featuredIndex < filteredProfiles.length - 1 ? filteredProfiles[featuredIndex + 1] : null,
-                safeFeaturedProfile,
-              ]
-                .filter(Boolean)
-                .map((profile, i, arr) => {
-                  const isNext = arr.length === 2 && i === 0;
-                  // @ts-ignore
-                  const p = profile as Profile;
-                  return (
-                    <SwipeCard
-                      key={p.id}
-                      profile={p}
-                      isNext={isNext}
-                      showOnboardingHint={featuredIndex === 0 && !hasSeenSwipeHint}
-                      onCardClick={() => {
-                        if (!isNext) {
-                          router.push(`/app/profile?user=${p.id}`);
-                        }
-                      }}
-                      onSwipeLeft={() => {
-                        if (!isNext) {
-                          setFeaturedIndex((prev) =>
-                            prev < filteredProfiles.length - 1 ? prev + 1 : 0
-                          );
-                        }
-                      }}
-                      onSwipeRight={() => {
-                        if (!isNext) {
-                          handleSendInterest(p.id, p.name, { silentToast: true });
-                          setFeaturedIndex((prev) =>
-                            prev < filteredProfiles.length - 1 ? prev + 1 : 0
-                          );
-                        }
-                      }}
-                    >
-                      {({ triggerSwipe }) => renderCardOverlay(p, triggerSwipe)}
-                    </SwipeCard>
-                  );
-                })}
+                    {/* Stats Summary Pills */}
+                    <div className="flex flex-wrap items-center justify-center gap-2 pt-1">
+                      <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                        <IconHeart className="h-3.5 w-3.5 fill-emerald-600 text-emerald-600" />
+                        {sentInterestCount} {sentInterestCount === 1 ? 'Interest' : 'Interests'} Sent
+                      </span>
+                      {passedCount > 0 && (
+                        <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-semibold bg-stone-100 text-stone-700 border border-stone-200">
+                          <IconX className="h-3.5 w-3.5 text-stone-500" />
+                          {passedCount} Passed
+                        </span>
+                      )}
+                    </div>
+
+                    {/* Action Buttons */}
+                    <div className="w-full pt-2 space-y-2 max-w-xs">
+                      <Button
+                        variant="primary"
+                        className="w-full h-11 rounded-full font-bold text-sm shadow-md flex items-center justify-center gap-2 active-press"
+                        onClick={() => setViewMode('grid')}
+                        leftIcon={<IconLayoutGrid className="h-4 w-4" />}
+                      >
+                        <span>Explore in Grid View</span>
+                      </Button>
+
+                      {passedCount > 0 && (
+                        <Button
+                          variant="outline"
+                          className="w-full h-10 rounded-full font-semibold text-xs border-[var(--border)] bg-white hover:bg-stone-50 flex items-center justify-center gap-1.5 active-press"
+                          onClick={handleResetPassed}
+                          leftIcon={<IconRotateClockwise className="h-3.5 w-3.5 text-[var(--primary)]" />}
+                        >
+                          <span>Review Passed Profiles ({passedCount})</span>
+                        </Button>
+                      )}
+
+                      <Button
+                        variant="ghost"
+                        className="w-full h-9 rounded-full text-xs text-[var(--muted)] hover:text-[var(--foreground)] flex items-center justify-center gap-1.5"
+                        onClick={() => setIsFilterOpen(true)}
+                        leftIcon={<IconAdjustments className="h-3.5 w-3.5" />}
+                      >
+                        <span>Adjust Search Filters</span>
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
-          </div>
-        )}
+          )}
 
         {/* ======================================================== */}
         {/* GRID VIEW MODE (Default on desktop, mobile when chosen)   */}
@@ -818,6 +1046,7 @@ export default function DiscoverPage() {
           {filteredProfiles.map((profile) => {
             const isShortlisted = shortlistedIds.has(profile.id);
             const isInterestSent = sentInterestIds.has(profile.id);
+            const isInterestReceived = receivedInterestIds.has(profile.id);
 
             return (
               <Card
@@ -837,30 +1066,70 @@ export default function DiscoverPage() {
               >
                 {/* 3:4 Portrait Photography with Overlay */}
                 <div className="relative h-[570px] sm:h-[530px] w-full overflow-hidden bg-[var(--surface-muted)]">
-                  <img
-                    src={profile.image}
-                    alt={profile.name}
-                    className="h-full w-full object-cover object-center transition-transform duration-700 ease-out group-hover:scale-[1.03]"
-                    loading="lazy"
-                  />
+                  {profile.image ? (
+                    <img
+                      src={profile.image}
+                      alt={profile.name}
+                      className="h-full w-full object-cover object-center transition-transform duration-700 ease-out group-hover:scale-[1.03]"
+                      loading="lazy"
+                    />
+                  ) : (
+                    <div className="h-full w-full flex flex-col items-center justify-center bg-gradient-to-br from-[#2D121B] via-[#4A1828] to-[#1F0B13] p-6 text-center select-none">
+                      <div className="grid h-28 w-28 place-items-center rounded-full bg-white/10 backdrop-blur-md text-white border border-white/20 shadow-2xl">
+                        <span className="font-editorial-title text-5xl font-bold">
+                          {profile.name?.charAt(0)?.toUpperCase() || 'M'}
+                        </span>
+                      </div>
+                      <p className="mt-4 text-base font-bold text-white/90">
+                        {profile.name}
+                      </p>
+                      <p className="text-xs text-white/60 mt-0.5">
+                        Photo not uploaded
+                      </p>
+                    </div>
+                  )}
 
                   {/* Ambient Warm Gradient Overlay */}
-                  <div className="absolute inset-0 photo-overlay-warm" aria-hidden="true" />
+                  {profile.image && <div className="absolute inset-0 photo-overlay-warm" aria-hidden="true" />}
 
                   {/* Top Badges */}
                   <div className="absolute top-3 left-3 right-3 flex items-center justify-between gap-1.5 z-10">
                     <div className="flex items-center gap-1.5">
-                      {profile.online && (
+                      {isInterestSent ? (
+                        <Badge
+                          tone="accent"
+                          size="sm"
+                          className="bg-emerald-600/95 text-white font-bold backdrop-blur-md border-emerald-400/50 shadow-xs"
+                        >
+                          ✓ Interest Sent
+                        </Badge>
+                      ) : isInterestReceived ? (
+                        <Badge
+                          tone="accent"
+                          size="sm"
+                          className="bg-gradient-to-r from-rose-600 to-pink-600 text-white font-bold backdrop-blur-md border-rose-400/50 shadow-xs"
+                        >
+                          ♥ Sent You an Interest
+                        </Badge>
+                      ) : profile.online ? (
                         <Badge
                           tone="neutral"
                           size="sm"
                           dot
                           dotColor="bg-emerald-500"
-                          className="bg-white/90 backdrop-blur-md text-[var(--foreground)] border-white/80"
+                          className="bg-white/90 backdrop-blur-md text-[var(--foreground)] border-white/80 font-medium"
                         >
-                          Online
+                          Online now
                         </Badge>
-                      )}
+                      ) : profile.lastActiveAt ? (
+                        <Badge
+                          tone="neutral"
+                          size="sm"
+                          className="bg-black/50 text-white/95 backdrop-blur-md border-white/20 text-[10px] font-medium"
+                        >
+                          {formatLastActive(profile.lastActiveAt)}
+                        </Badge>
+                      ) : null}
                     </div>
 
                     <span className="inline-block rounded-full bg-white/85 backdrop-blur-md text-[var(--primary-deep)] px-2.5 py-0.5 text-[10px] font-semibold border border-white/60 shadow-xs">
@@ -877,16 +1146,20 @@ export default function DiscoverPage() {
                       {profile.verified && <VerificationBadge type="general" showIconOnly size="sm" />}
                     </div>
 
-                    <p className="text-xs font-semibold text-white/90 truncate">
-                      {profile.profession} · {profile.education}
-                    </p>
+                    {(profile.profession || profile.education) && (
+                      <p className="text-xs font-semibold text-white/90 truncate">
+                        {[profile.profession, profile.education].filter(Boolean).join(' · ')}
+                      </p>
+                    )}
 
-                    <p className="flex items-center gap-1 text-xs text-white/85 truncate">
-                      <IconMapPin className="h-3.5 w-3.5 text-[var(--accent)] shrink-0" />
-                      <span>
-                        {profile.city}, {profile.state}
-                      </span>
-                    </p>
+                    {(profile.city || profile.state) && (
+                      <p className="flex items-center gap-1 text-xs text-white/85 truncate">
+                        <IconMapPin className="h-3.5 w-3.5 text-[var(--accent)] shrink-0" />
+                        <span>
+                          {[profile.city, profile.state].filter(Boolean).join(', ')}
+                        </span>
+                      </p>
+                    )}
 
                     {/* Matrimonial Discovery Actions Floating in Overlay */}
                     <div className="w-full pt-2.5 flex items-center justify-between md:justify-center gap-2 sm:gap-2.5 lg:gap-4 md:px-2">
@@ -896,9 +1169,7 @@ export default function DiscoverPage() {
                         size="icon"
                         onClick={(e) => {
                           e.stopPropagation();
-                          setFeaturedIndex((prev) =>
-                            prev < filteredProfiles.length - 1 ? prev + 1 : 0
-                          );
+                          handlePass(profile.id);
                         }}
                         className="rounded-full aspect-square h-10 w-10 md:h-12 md:w-12 shrink-0 p-0 flex items-center justify-center bg-white/95 backdrop-blur-md text-rose-600 border border-white/70 hover:bg-white hover:scale-110 active-press shadow-lg hover:shadow-xl transition-all"
                         title="Pass"
@@ -958,12 +1229,35 @@ export default function DiscoverPage() {
                         disabled={isInterestSent}
                         onClick={(e) => {
                           e.stopPropagation();
+                          if (isInterestSent) return;
                           handleSendInterest(profile.id, profile.name);
                         }}
-                        className="rounded-full aspect-square h-10 w-10 md:h-12 md:w-12 shrink-0 p-0 flex items-center justify-center bg-white/95 backdrop-blur-md text-rose-600 border border-white/70 hover:bg-white hover:scale-110 active-press shadow-lg hover:shadow-xl disabled:opacity-50 transition-all"
-                        title="Send Interest"
+                        className={cn(
+                          "rounded-full aspect-square h-10 w-10 md:h-12 md:w-12 shrink-0 p-0 flex items-center justify-center backdrop-blur-md transition-all",
+                          isInterestSent
+                            ? "bg-rose-50 border border-rose-200 text-rose-300 opacity-60 cursor-default"
+                            : isInterestReceived
+                            ? "bg-gradient-to-tr from-rose-500 to-pink-600 text-white border border-rose-300 hover:scale-110 active-press shadow-lg hover:shadow-xl"
+                            : "bg-white/95 text-rose-600 border border-white/70 hover:bg-white hover:scale-110 active-press shadow-lg hover:shadow-xl"
+                        )}
+                        title={
+                          isInterestSent
+                            ? "Interest already sent"
+                            : isInterestReceived
+                            ? "Accept Interest & Connect"
+                            : "Send Interest"
+                        }
                       >
-                        <IconHeart className="h-5 w-5 md:h-6 md:w-6 fill-rose-600" />
+                        <IconHeart
+                          className={cn(
+                            "h-5 w-5 md:h-6 md:w-6",
+                            isInterestSent
+                              ? "fill-rose-600 opacity-50"
+                              : isInterestReceived
+                              ? "fill-white text-white"
+                              : "fill-rose-600"
+                          )}
+                        />
                       </Button>
                     </div>
                   </div>
@@ -998,10 +1292,7 @@ export default function DiscoverPage() {
             <Button
               variant="primary"
               size="md"
-              onClick={() => {
-                setIsFilterOpen(false);
-                toast.success('Filters Applied', `Showing ${filteredProfiles.length} matching profiles.`);
-              }}
+              onClick={handleApplyFilters}
               className="text-xs font-bold flex-1 max-w-xs shadow-md"
             >
               Apply Filters
@@ -1101,17 +1392,58 @@ export default function DiscoverPage() {
             </div>
           </div>
 
+          {/* 1.5 Height Range */}
+          <div className="space-y-2">
+            <div className="flex justify-between items-center">
+              <label className="text-xs font-bold uppercase tracking-wider text-[var(--foreground)]">
+                Height Range
+              </label>
+              <span className="text-xs font-bold text-[var(--primary)]">
+                {minHeight} – {maxHeight}
+              </span>
+            </div>
+            <div className="grid grid-cols-2 gap-3 pt-1">
+              <div>
+                <ModernSelect
+                  label="Min Height"
+                  value={minHeight}
+                  onChange={(val) => setMinHeight(val)}
+                  options={HEIGHT_SELECT_OPTIONS}
+                  size="sm"
+                />
+              </div>
+              <div>
+                <ModernSelect
+                  label="Max Height"
+                  value={maxHeight}
+                  onChange={(val) => setMaxHeight(val)}
+                  options={HEIGHT_SELECT_OPTIONS}
+                  size="sm"
+                />
+              </div>
+            </div>
+          </div>
+
           {/* 2. Gender Preference */}
           <div className="space-y-2">
-            <label className="text-xs font-bold uppercase tracking-wider text-[var(--foreground)]">
-              Looking for
-            </label>
+            <div className="flex items-center justify-between">
+              <label className="text-xs font-bold uppercase tracking-wider text-[var(--foreground)]">
+                Looking for
+              </label>
+              <span className="text-[10px] font-semibold text-[var(--accent)] bg-[var(--accent-light)]/20 px-2 py-0.5 rounded-full">
+                Foundation Matchmaking
+              </span>
+            </div>
             <div className="flex flex-wrap gap-2">
-              {[
-                { value: 'any', label: 'All Profiles' },
-                { value: 'women', label: 'Seeking Brides (Women)' },
-                { value: 'men', label: 'Seeking Grooms (Men)' },
-              ].map((g) => (
+              {(myGender === 'male' || myGender === 'man'
+                ? [{ value: 'women', label: 'Seeking Brides (Women)' }]
+                : myGender === 'female' || myGender === 'woman'
+                ? [{ value: 'men', label: 'Seeking Grooms (Men)' }]
+                : [
+                    { value: 'women', label: 'Seeking Brides (Women)' },
+                    { value: 'men', label: 'Seeking Grooms (Men)' },
+                  ]
+              ).map((g) => (
                 <Chip
                   key={g.value}
                   size="sm"
@@ -1335,6 +1667,26 @@ export default function DiscoverPage() {
                   interactive
                 >
                   {intent}
+                </Chip>
+              ))}
+            </div>
+          </div>
+
+          {/* 12. Diet Habits */}
+          <div className="space-y-2">
+            <label className="text-xs font-bold uppercase tracking-wider text-[var(--foreground)]">
+              Diet Habits
+            </label>
+            <div className="flex flex-wrap gap-2">
+              {["Doesn't Matter", 'Vegetarian', 'Eggetarian', 'Non-Vegetarian'].map((diet) => (
+                <Chip
+                  key={diet}
+                  size="sm"
+                  selected={selectedDiet === diet}
+                  onClick={() => setSelectedDiet(diet)}
+                  interactive
+                >
+                  {diet}
                 </Chip>
               ))}
             </div>

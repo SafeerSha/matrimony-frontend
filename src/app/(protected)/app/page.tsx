@@ -20,11 +20,6 @@ import {
   IconLoader2,
   IconCrown,
 } from '@tabler/icons-react';
-import {
-  profiles as demoProfiles,
-  conversations as demoConversations,
-  notifications as demoNotifications,
-} from '@/lib/demo-data';
 import { Avatar } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -36,7 +31,7 @@ import { Skeleton, ProfileCardSkeleton } from '@/components/ui/skeleton';
 import { matchesService, authService, chatService, profileService } from '@/services';
 import { toast } from '@/lib/toast';
 import { cn } from '@/lib/cn';
-import type { Profile } from '@/lib/demo-data';
+import { type Profile, formatLastActive } from '@/lib/demo-data';
 
 export default function DashboardPage() {
   const [currentUser, setCurrentUser] = useState<any>(null);
@@ -80,44 +75,95 @@ export default function DashboardPage() {
           const recRes: any = await matchesService.getRecommendations();
           const list = Array.isArray(recRes) ? recRes : recRes?.data || [];
           if (list.length > 0) {
-            const mapped = list.map((u: any, idx: number) => ({
-              id: u.id || `rec-${idx}`,
-              name: u.name || `${u.firstName || ''} ${u.lastName || ''}`.trim() || 'Member',
-              age: u.dateOfBirth
-                ? Math.floor((new Date().getTime() - new Date(u.dateOfBirth).getTime()) / 31557600000)
-                : 26,
-              city: u.city || 'Kochi',
-              state: u.country || 'Kerala',
-              profession: u.occupation || 'Professional',
-              education: u.education || 'Graduate',
-              image:
-                u.photos?.[0]?.url ||
-                demoProfiles[idx % demoProfiles.length]?.image ||
-                'https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=900&q=85',
-              compatibility: Math.floor(Math.random() * 15) + 84,
-              verified: u.isVerified ?? true,
-              online: idx % 2 === 0,
-              about: u.bio || demoProfiles[idx % demoProfiles.length]?.about || '',
-              height: u.height ? `${u.height}cm` : "5'5\"",
-              maritalStatus: u.maritalStatus || 'Never married',
-              religion: u.religion || 'Not specified',
-              motherTongue: 'Malayalam',
-              family: 'Respectable family',
-              lifestyle: ['Non-smoker', 'Vegetarian'],
-              interests: ['Travel', 'Music', 'Reading'],
-              lookingFor: 'A genuine and grounded partner.',
-            }));
+            const mapped = list.map((u: any, idx: number) => {
+              const prof = u.profile || {};
+              const photos = u.photos || prof.photos || [];
+              const birthDate = prof.dateOfBirth || u.dateOfBirth;
+              const age = birthDate
+                ? Math.floor((new Date().getTime() - new Date(birthDate).getTime()) / 31557600000)
+                : prof.age || u.age || 26;
+              const photoUrl = photos?.[0]?.url || u.avatarUrl || prof.image || '';
+
+              return {
+                id: u.id || `rec-${idx}`,
+                name: u.name || `${u.firstName || ''} ${u.lastName || ''}`.trim() || 'Member',
+                age,
+                city: prof.city || u.city || '',
+                state: prof.state || u.state || prof.country || u.country || '',
+                profession: prof.occupation || prof.profession || u.occupation || u.profession || '',
+                education: prof.education || u.education || '',
+                image: photoUrl,
+                compatibility: u.compatibility ?? prof.compatibility ?? 88,
+                verified: Boolean(u.status === 'ACTIVE' || prof.isVerified || u.isVerified),
+                online: Boolean(u.isOnline),
+                lastActiveAt: u.lastActiveAt || undefined,
+                about: prof.bio || prof.about || u.bio || '',
+                height: prof.height ? `${prof.height}cm` : '',
+                maritalStatus: prof.maritalStatus || u.maritalStatus || '',
+                religion: prof.religion || u.religion || '',
+                motherTongue: prof.motherTongue || u.motherTongue || '',
+                family: prof.familyType || '',
+                lifestyle: prof.diet ? [prof.diet] : [],
+                interests: Array.isArray(prof.interests) ? prof.interests : [],
+                lookingFor: prof.partnerExpectations || '',
+              };
+            });
             setRecommendations(mapped);
           } else {
-            setRecommendations(demoProfiles.slice(0, 3));
+            setRecommendations([]);
           }
         } catch {
-          setRecommendations(demoProfiles.slice(0, 3));
+          setRecommendations([]);
         }
 
-        // 3. Fallback/Curated lists for "New Profiles" and "Preferences"
-        setNewProfiles(demoProfiles);
-        setPreferenceProfiles(demoProfiles.slice(2, 6));
+        // 3. Live search for "New Profiles" and "Preferences"
+        try {
+          const searchRes: any = await matchesService.searchProfiles({ limit: 8 });
+          const searchList = Array.isArray(searchRes) ? searchRes : searchRes?.data || [];
+          if (searchList.length > 0) {
+            const mappedSearch = searchList.map((u: any, idx: number) => {
+              const prof = u.profile || {};
+              const photos = u.photos || prof.photos || [];
+              const birthDate = prof.dateOfBirth || u.dateOfBirth;
+              const age = birthDate
+                ? Math.floor((new Date().getTime() - new Date(birthDate).getTime()) / 31557600000)
+                : prof.age || u.age || 26;
+              const photoUrl = photos?.[0]?.url || u.avatarUrl || prof.image || '';
+
+              return {
+                id: u.id || `profile-${idx}`,
+                name: u.name || `${u.firstName || ''} ${u.lastName || ''}`.trim() || 'Member',
+                age,
+                city: prof.city || u.city || '',
+                state: prof.state || u.state || prof.country || u.country || '',
+                profession: prof.occupation || prof.profession || u.occupation || u.profession || '',
+                education: prof.education || u.education || '',
+                image: photoUrl,
+                compatibility: u.compatibility ?? prof.compatibility ?? 88,
+                verified: Boolean(u.status === 'ACTIVE' || prof.isVerified || u.isVerified),
+                online: Boolean(u.isOnline),
+                lastActiveAt: u.lastActiveAt || undefined,
+                about: prof.bio || prof.about || u.bio || '',
+                height: prof.height ? `${prof.height}cm` : '',
+                maritalStatus: prof.maritalStatus || u.maritalStatus || '',
+                religion: prof.religion || u.religion || '',
+                motherTongue: prof.motherTongue || u.motherTongue || '',
+                family: prof.familyType || '',
+                lifestyle: prof.diet ? [prof.diet] : [],
+                interests: Array.isArray(prof.interests) ? prof.interests : [],
+                lookingFor: prof.partnerExpectations || '',
+              };
+            });
+            setNewProfiles(mappedSearch);
+            setPreferenceProfiles(mappedSearch.slice(0, 4));
+          } else {
+            setNewProfiles([]);
+            setPreferenceProfiles([]);
+          }
+        } catch {
+          setNewProfiles([]);
+          setPreferenceProfiles([]);
+        }
 
         // 4. Fetch conversations
         try {
@@ -125,10 +171,10 @@ export default function DashboardPage() {
           if (Array.isArray(convos) && convos.length > 0) {
             setRecentConversations(convos.slice(0, 4));
           } else {
-            setRecentConversations(demoConversations);
+            setRecentConversations([]);
           }
         } catch {
-          setRecentConversations(demoConversations);
+          setRecentConversations([]);
         }
       } catch (err) {
         console.error('Error loading dashboard:', err);
@@ -278,6 +324,22 @@ export default function DashboardPage() {
             <ProfileCardSkeleton />
             <ProfileCardSkeleton />
           </div>
+        ) : recommendations.length === 0 ? (
+          <Card className="p-8 text-center rounded-3xl border-dashed border-[var(--border)] bg-[var(--surface-muted)]/40">
+            <div className="mx-auto grid h-12 w-12 place-items-center rounded-2xl bg-white text-[var(--muted)] border border-[var(--border)] shadow-xs">
+              <IconUsers className="h-6 w-6 text-[var(--primary)]" />
+            </div>
+            <h3 className="mt-3 text-base font-bold text-[var(--foreground)]">No recommendations yet</h3>
+            <p className="mt-1 text-xs sm:text-sm text-[var(--muted)] max-w-md mx-auto">
+              We are screening profiles that match your partner preferences. Broaden your criteria or explore all members on Discover.
+            </p>
+            <div className="mt-4">
+              <Link href="/app/discover" className="focus-ring inline-flex items-center gap-2 rounded-xl bg-[var(--primary)] px-4 py-2 text-xs font-bold text-white hover:bg-[var(--primary-deep)] transition">
+                <span>Browse Discover</span>
+                <IconArrowRight className="h-3.5 w-3.5" />
+              </Link>
+            </div>
+          </Card>
         ) : (
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {recommendations.slice(0, 3).map((profile, idx) => {
@@ -292,12 +354,18 @@ export default function DashboardPage() {
                 >
                   {/* Photo area with warm matrimonial overlay */}
                   <div className="relative h-72 sm:h-80 overflow-hidden bg-[var(--surface-muted)]">
-                    <img
-                      src={profile.image}
-                      alt={profile.name}
-                      className="h-full w-full object-cover object-center transition-transform duration-700 ease-out group-hover:scale-[1.03]"
-                      loading="lazy"
-                    />
+                      {profile.image ? (
+                        <img
+                          src={profile.image}
+                          alt={profile.name}
+                          className="h-full w-full object-cover object-center transition-transform duration-700 ease-out group-hover:scale-[1.03]"
+                          loading="lazy"
+                        />
+                      ) : (
+                        <div className="h-full w-full bg-[var(--border)] flex items-center justify-center text-[var(--muted)] text-xs">
+                          No Photo
+                        </div>
+                      )}
 
                     {/* Gradient overlay */}
                     <div className="absolute inset-0 photo-overlay-warm" aria-hidden="true" />
@@ -313,17 +381,25 @@ export default function DashboardPage() {
                         {profile.compatibility}% Match
                       </Badge>
 
-                      {profile.online && (
+                      {profile.online ? (
                         <Badge
                           tone="neutral"
                           size="sm"
                           dot
                           dotColor="bg-emerald-500"
-                          className="bg-white/90 backdrop-blur-md text-[var(--foreground)] border-white/80"
+                          className="bg-white/90 backdrop-blur-md text-[var(--foreground)] border-white/80 font-medium"
                         >
-                          Online
+                          Online now
                         </Badge>
-                      )}
+                      ) : profile.lastActiveAt ? (
+                        <Badge
+                          tone="neutral"
+                          size="sm"
+                          className="bg-black/50 text-white/95 backdrop-blur-md border-white/20 text-[10px] font-medium"
+                        >
+                          {formatLastActive(profile.lastActiveAt)}
+                        </Badge>
+                      ) : null}
                     </div>
 
                     {/* Shortlist IconHeart Button */}
@@ -462,53 +538,66 @@ export default function DashboardPage() {
 
         {/* Horizontal Rail */}
         <div className="w-full max-w-full min-w-0 overflow-hidden">
-          <div
-            ref={newProfilesScrollRef}
-            className="flex gap-3 sm:gap-4 overflow-x-auto pb-4 pt-1 scrollbar-none snap-x snap-mandatory min-w-0 max-w-full overscroll-x-contain"
-          >
-            {newProfiles.map((p) => (
-              <Link
-                key={p.id}
-                href={`/app/profile?user=${p.id}`}
-                className="focus-ring snap-start shrink-0 w-52 sm:w-64 group"
-              >
-                <Card
-                  variant="interactive"
-                  className="overflow-hidden p-0 rounded-2xl border-[var(--border)] bg-white shadow-xs"
+          {newProfiles.length === 0 ? (
+            <Card className="p-6 text-center rounded-2xl border-dashed border-[var(--border)] bg-[var(--surface-muted)]/40">
+              <p className="text-xs font-semibold text-[var(--foreground)]">No new member profiles today</p>
+              <p className="mt-1 text-[11px] text-[var(--muted)]">New profiles will appear here as members register and complete verification.</p>
+            </Card>
+          ) : (
+            <div
+              ref={newProfilesScrollRef}
+              className="flex gap-3 sm:gap-4 overflow-x-auto pb-4 pt-1 scrollbar-none snap-x snap-mandatory min-w-0 max-w-full overscroll-x-contain"
+            >
+              {newProfiles.map((p) => (
+                <Link
+                  key={p.id}
+                  href={`/app/profile?user=${p.id}`}
+                  className="focus-ring snap-start shrink-0 w-52 sm:w-64 group"
                 >
-                  <div className="relative h-60 sm:h-64 overflow-hidden bg-[var(--surface-muted)]">
-                    <img
-                      src={p.image}
-                      alt={p.name}
-                      className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-[1.03]"
-                      loading="lazy"
-                    />
-                    <div className="absolute inset-0 photo-overlay-warm" aria-hidden="true" />
+                  <Card
+                    variant="interactive"
+                    className="overflow-hidden p-0 rounded-2xl border-[var(--border)] bg-white shadow-xs"
+                  >
+                    <div className="relative h-60 sm:h-64 overflow-hidden bg-[var(--surface-muted)]">
+                      {p.image ? (
+                        <img
+                          src={p.image}
+                          alt={p.name}
+                          className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-[1.03]"
+                          loading="lazy"
+                        />
+                      ) : (
+                        <div className="h-full w-full bg-[var(--border)] flex items-center justify-center text-[var(--muted)] text-xs">
+                          No Photo
+                        </div>
+                      )}
+                      <div className="absolute inset-0 photo-overlay-warm" aria-hidden="true" />
 
-                    {/* Badges */}
-                    <div className="absolute top-2.5 left-2.5 z-10">
-                      <span className="rounded-full bg-black/40 backdrop-blur-md px-2.5 py-0.5 text-[10px] font-bold text-white tracking-wide border border-white/20">
-                        New Member
-                      </span>
-                    </div>
+                      {/* Badges */}
+                      <div className="absolute top-2.5 left-2.5 z-10">
+                        <span className="rounded-full bg-black/40 backdrop-blur-md px-2.5 py-0.5 text-[10px] font-bold text-white tracking-wide border border-white/20">
+                          New Member
+                        </span>
+                      </div>
 
-                    {/* Bottom details */}
-                    <div className="absolute inset-x-0 bottom-0 p-3.5 text-white z-10">
-                      <h3 className="font-editorial-title text-base sm:text-lg font-bold truncate">
-                        {p.name}, {p.age}
-                      </h3>
-                      <p className="text-[11px] text-white/90 truncate flex items-center gap-1 mt-0.5">
-                        <IconMapPin className="h-3 w-3 text-[var(--accent)] shrink-0" />
-                        <span>{p.city}</span>
-                        <span>·</span>
-                        <span className="truncate">{p.profession}</span>
-                      </p>
+                      {/* Bottom details */}
+                      <div className="absolute inset-x-0 bottom-0 p-3.5 text-white z-10">
+                        <h3 className="font-editorial-title text-base sm:text-lg font-bold truncate">
+                          {p.name}, {p.age}
+                        </h3>
+                        <p className="text-[11px] text-white/90 truncate flex items-center gap-1 mt-0.5">
+                          <IconMapPin className="h-3 w-3 text-[var(--accent)] shrink-0" />
+                          <span>{p.city}</span>
+                          <span>·</span>
+                          <span className="truncate">{p.profession}</span>
+                        </p>
+                      </div>
                     </div>
-                  </div>
-                </Card>
-              </Link>
-            ))}
-          </div>
+                  </Card>
+                </Link>
+              ))}
+            </div>
+          )}
         </div>
       </section>
 
@@ -533,66 +622,73 @@ export default function DashboardPage() {
           />
 
           <div className="space-y-3">
-            {preferenceProfiles.slice(0, 3).map((p) => (
-              <Card
-                key={p.id}
-                variant="interactive"
-                className="p-4 sm:p-5 rounded-2xl border-[var(--border)] bg-white flex flex-col sm:flex-row sm:items-center justify-between gap-4 min-w-0 w-full overflow-hidden"
-              >
-                <div className="flex items-center gap-3.5 min-w-0 flex-1">
-                  <Avatar
-                    src={p.image}
-                    name={p.name}
-                    size="lg"
-                    online={p.online}
-                    verified={p.verified}
-                    bordered
-                  />
-                  <div className="min-w-0 flex-1">
-                    <div className="flex items-center gap-2">
-                      <Link
-                        href={`/app/profile?user=${p.id}`}
-                        className="font-editorial-title text-base sm:text-lg font-bold text-[var(--foreground)] hover:text-[var(--primary)] transition-colors truncate"
-                      >
-                        {p.name}, {p.age}
-                      </Link>
-                      <Badge tone="accent" size="sm">
-                        {p.compatibility}%
-                      </Badge>
-                    </div>
+            {preferenceProfiles.length === 0 ? (
+              <Card className="p-6 text-center rounded-2xl border-dashed border-[var(--border)] bg-[var(--surface-muted)]/40">
+                <p className="text-xs font-semibold text-[var(--foreground)]">No matching profiles right now</p>
+                <p className="mt-1 text-[11px] text-[var(--muted)]">Try adjusting your partner preferences or explore all profiles on Discover.</p>
+              </Card>
+            ) : (
+              preferenceProfiles.slice(0, 3).map((p) => (
+                <Card
+                  key={p.id}
+                  variant="interactive"
+                  className="p-4 sm:p-5 rounded-2xl border-[var(--border)] bg-white flex flex-col sm:flex-row sm:items-center justify-between gap-4 min-w-0 w-full overflow-hidden"
+                >
+                  <div className="flex items-center gap-3.5 min-w-0 flex-1">
+                    <Avatar
+                      src={p.image}
+                      name={p.name}
+                      size="lg"
+                      online={p.online}
+                      verified={p.verified}
+                      bordered
+                    />
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center gap-2">
+                        <Link
+                          href={`/app/profile?user=${p.id}`}
+                          className="font-editorial-title text-base sm:text-lg font-bold text-[var(--foreground)] hover:text-[var(--primary)] transition-colors truncate"
+                        >
+                          {p.name}, {p.age}
+                        </Link>
+                        <Badge tone="accent" size="sm">
+                          {p.compatibility}%
+                        </Badge>
+                      </div>
 
-                    <p className="mt-0.5 text-xs text-[var(--muted)] truncate">
-                      {p.profession} · {p.city}
-                    </p>
+                      <p className="mt-0.5 text-xs text-[var(--muted)] truncate">
+                        {p.profession} · {p.city}
+                      </p>
 
-                    <div className="mt-2 flex flex-wrap gap-1">
-                      <span className="rounded-md bg-[var(--surface-muted)] px-2 py-0.5 text-[10px] font-medium text-[var(--muted-strong)]">
-                        {p.motherTongue}
-                      </span>
-                      <span className="rounded-md bg-[var(--surface-muted)] px-2 py-0.5 text-[10px] font-medium text-[var(--muted-strong)]">
-                        {p.education.split(',')[0]}
-                      </span>
+                      <div className="mt-2 flex flex-wrap gap-1">
+                        <span className="rounded-md bg-[var(--surface-muted)] px-2 py-0.5 text-[10px] font-medium text-[var(--muted-strong)]">
+                          {p.motherTongue}
+                        </span>
+                        <span className="rounded-md bg-[var(--surface-muted)] px-2 py-0.5 text-[10px] font-medium text-[var(--muted-strong)]">
+                          {p.education.split(',')[0]}
+                        </span>
+                      </div>
                     </div>
                   </div>
-                </div>
 
-                <div className="flex sm:flex-col gap-2 shrink-0">
-                  <Link href={`/app/profile?user=${p.id}`} className="flex-1 sm:flex-none">
-                    <Button variant="secondary" size="sm" className="w-full text-xs font-semibold">
-                      View
+                  <div className="flex sm:flex-col gap-2 shrink-0">
+                    <Link href={`/app/profile?user=${p.id}`} className="flex-1 sm:flex-none">
+                      <Button variant="secondary" size="sm" className="w-full text-xs font-semibold">
+                        View
+                      </Button>
+                    </Link>
+                    <Button
+                      variant="primary"
+                      size="sm"
+                      onClick={() => handleSendInterest(p.id, p.name)}
+                      className="flex-1 sm:flex-none text-xs font-bold"
+                    >
+                      Connect
                     </Button>
-                  </Link>
-                  <Button
-                    variant="primary"
-                    size="sm"
-                    onClick={() => handleSendInterest(p.id, p.name)}
-                    className="flex-1 sm:flex-none text-xs font-bold"
-                  >
-                    Connect
-                  </Button>
-                </div>
-              </Card>
-            ))}
+                  </div>
+                </Card>
+              ))
+            )}
           </div>
         </section>
 
@@ -613,37 +709,45 @@ export default function DashboardPage() {
           />
 
           <Card className="p-4 sm:p-5 rounded-2xl border-[var(--border)] bg-white divide-y divide-[var(--border)]/70 min-w-0 overflow-hidden">
-            {recentConversations.slice(0, 3).map((conv) => {
-              const pName = conv.profile?.name || conv.participant?.name || 'Member';
-              const pImage = conv.profile?.image || conv.participant?.photos?.[0]?.url;
-              const lastText = conv.last || conv.lastMessage?.content || 'Hello, I reviewed your profile.';
+            {recentConversations.length === 0 ? (
+              <div className="py-6 text-center">
+                <IconMessageCircle className="mx-auto h-8 w-8 text-[var(--muted)]/60" />
+                <p className="mt-2 text-xs font-semibold text-[var(--foreground)]">No active conversations yet</p>
+                <p className="mt-0.5 text-[11px] text-[var(--muted)]">Send an interest to start chatting once matched.</p>
+              </div>
+            ) : (
+              recentConversations.slice(0, 3).map((conv) => {
+                const pName = conv.profile?.name || conv.participant?.name || 'Member';
+                const pImage = conv.profile?.image || conv.participant?.photos?.[0]?.url;
+                const lastText = conv.last || conv.lastMessage?.content || 'Hello, I reviewed your profile.';
 
-              return (
-                <Link
-                  key={conv.id}
-                  href="/app/messages"
-                  className="focus-ring flex items-center gap-3.5 py-3.5 first:pt-0 last:pb-0 hover:bg-[var(--surface-muted)]/70 -mx-2 px-2 rounded-xl transition-colors"
-                >
-                  <Avatar src={pImage} name={pName} size="md" online={true} bordered />
+                return (
+                  <Link
+                    key={conv.id}
+                    href="/app/messages"
+                    className="focus-ring flex items-center gap-3.5 py-3.5 first:pt-0 last:pb-0 hover:bg-[var(--surface-muted)]/70 -mx-2 px-2 rounded-xl transition-colors"
+                  >
+                    <Avatar src={pImage} name={pName} size="md" online={true} bordered />
 
-                  <div className="min-w-0 flex-1">
-                    <div className="flex items-center justify-between">
-                      <p className="text-sm font-bold text-[var(--foreground)] truncate">{pName}</p>
-                      <span className="text-[10px] font-medium text-[var(--muted)]">
-                        {conv.time || 'Today'}
-                      </span>
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center justify-between">
+                        <p className="text-sm font-bold text-[var(--foreground)] truncate">{pName}</p>
+                        <span className="text-[10px] font-medium text-[var(--muted)]">
+                          {conv.time || 'Today'}
+                        </span>
+                      </div>
+                      <p className="mt-0.5 text-xs text-[var(--muted)] truncate">{lastText}</p>
                     </div>
-                    <p className="mt-0.5 text-xs text-[var(--muted)] truncate">{lastText}</p>
-                  </div>
 
-                  {conv.unread > 0 && (
-                    <span className="grid h-5 min-w-5 place-items-center rounded-full bg-[var(--primary)] px-1.5 text-[10px] font-bold text-white shrink-0">
-                      {conv.unread}
-                    </span>
-                  )}
-                </Link>
-              );
-            })}
+                    {conv.unread > 0 && (
+                      <span className="grid h-5 min-w-5 place-items-center rounded-full bg-[var(--primary)] px-1.5 text-[10px] font-bold text-white shrink-0">
+                        {conv.unread}
+                      </span>
+                    )}
+                  </Link>
+                );
+              })
+            )}
 
             {/* In-Card Safety & Trust Callout to Avoid Blank Space */}
             <div className="pt-4 mt-2">

@@ -24,7 +24,6 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { SectionHeader } from '@/components/ui/section-header';
 import { notificationService, NotificationItem } from '@/services';
-import { profiles as demoProfiles } from '@/lib/demo-data';
 import { toast } from '@/lib/toast';
 import { cn } from '@/lib/cn';
 import { FeatureGate } from '@/components/ui/under-development';
@@ -42,116 +41,6 @@ export interface NotificationDisplayItem {
   link?: string;
   actionLabel?: string;
 }
-
-const DEMO_ENRICHED_NOTIFICATIONS: NotificationDisplayItem[] = [
-  {
-    id: 'notif-1',
-    type: 'INTEREST',
-    title: 'New Interest Received',
-    text: 'Meera Nair expressed interest in your profile. Your profiles have 89% compatibility.',
-    time: '15 min ago',
-    timestamp: Date.now() - 1000 * 60 * 15,
-    group: 'today',
-    unread: true,
-    profile: {
-      id: demoProfiles[1].id,
-      name: demoProfiles[1].name,
-      image: demoProfiles[1].image,
-      age: demoProfiles[1].age,
-      city: demoProfiles[1].city,
-    },
-    link: '/app/interests?tab=received',
-    actionLabel: 'Respond to Interest',
-  },
-  {
-    id: 'notif-2',
-    type: 'ACCEPTED',
-    title: 'Mutual Match Confirmed!',
-    text: 'Ananya Menon accepted your interest. You can now begin a private conversation.',
-    time: '2 hours ago',
-    timestamp: Date.now() - 1000 * 60 * 120,
-    group: 'today',
-    unread: true,
-    profile: {
-      id: demoProfiles[0].id,
-      name: demoProfiles[0].name,
-      image: demoProfiles[0].image,
-      age: demoProfiles[0].age,
-      city: demoProfiles[0].city,
-    },
-    link: '/app/messages',
-    actionLabel: 'Open Chat',
-  },
-  {
-    id: 'notif-3',
-    type: 'MESSAGE',
-    title: 'New Message from Ananya',
-    text: '“That sounds lovely. I also enjoy quiet cafés. Have you been to Fort Kochi?”',
-    time: '3 hours ago',
-    timestamp: Date.now() - 1000 * 60 * 180,
-    group: 'today',
-    unread: false,
-    profile: {
-      id: demoProfiles[0].id,
-      name: demoProfiles[0].name,
-      image: demoProfiles[0].image,
-      age: demoProfiles[0].age,
-      city: demoProfiles[0].city,
-    },
-    link: '/app/messages',
-    actionLabel: 'Reply',
-  },
-  {
-    id: 'notif-4',
-    type: 'VIEW',
-    title: 'Profile Viewed',
-    text: 'Diya Krishnan (Finance Manager, Bengaluru) recently viewed your matrimonial profile.',
-    time: 'Yesterday at 4:30 PM',
-    timestamp: Date.now() - 1000 * 60 * 60 * 22,
-    group: 'yesterday',
-    unread: false,
-    profile: {
-      id: demoProfiles[2].id,
-      name: demoProfiles[2].name,
-      image: demoProfiles[2].image,
-      age: demoProfiles[2].age,
-      city: demoProfiles[2].city,
-    },
-    link: '/app/discover?view=diya',
-    actionLabel: 'View Profile',
-  },
-  {
-    id: 'notif-5',
-    type: 'MATCH',
-    title: 'New Recommended Match',
-    text: 'Farah Rahman matches 94% of your preferred partner criteria in Calicut.',
-    time: 'Yesterday at 11:15 AM',
-    timestamp: Date.now() - 1000 * 60 * 60 * 28,
-    group: 'yesterday',
-    unread: false,
-    profile: {
-      id: demoProfiles[3].id,
-      name: demoProfiles[3].name,
-      image: demoProfiles[3].image,
-      age: demoProfiles[3].age,
-      city: demoProfiles[3].city,
-    },
-    link: '/app/discover?view=farah',
-    actionLabel: 'IconCheck Match',
-  },
-  {
-    id: 'notif-6',
-    type: 'SYSTEM',
-    title: 'Profile Verification Complete',
-    text: 'Your phone number and photo selfie verification were confirmed by our Trust Team.',
-    time: '3 days ago',
-    timestamp: Date.now() - 1000 * 60 * 60 * 72,
-    group: 'earlier',
-    unread: false,
-    link: '/app/settings',
-    actionLabel: 'Security Settings',
-  },
-];
 
 function getCategoryIcon(type: NotificationDisplayItem['type']) {
   switch (type) {
@@ -171,7 +60,7 @@ function getCategoryIcon(type: NotificationDisplayItem['type']) {
 }
 
 export default function NotificationsPage() {
-  const [items, setItems] = useState<NotificationDisplayItem[]>(DEMO_ENRICHED_NOTIFICATIONS);
+  const [items, setItems] = useState<NotificationDisplayItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [isMarkingAll, setIsMarkingAll] = useState(false);
   const [filter, setFilter] = useState<'all' | 'unread' | 'interests' | 'matches'>('all');
@@ -181,7 +70,7 @@ export default function NotificationsPage() {
       try {
         const data = await notificationService.getNotifications();
         if (data && data.length > 0) {
-          const mapped: NotificationDisplayItem[] = data.map((n, idx) => {
+          const mapped: NotificationDisplayItem[] = data.map((n) => {
             const createdTime = new Date(n.createdAt).getTime();
             const now = Date.now();
             const diffHours = (now - createdTime) / (1000 * 60 * 60);
@@ -190,12 +79,12 @@ export default function NotificationsPage() {
             if (diffHours < 24) group = 'today';
             else if (diffHours < 48) group = 'yesterday';
 
-            const demoMatch = demoProfiles[idx % demoProfiles.length];
-
             let type: NotificationDisplayItem['type'] = 'SYSTEM';
             let title = 'System Notification';
             let link = '/app';
             let actionLabel = 'View';
+
+            let text = n.content;
 
             if (n.type.includes('INTEREST')) {
               type = 'INTEREST';
@@ -209,8 +98,14 @@ export default function NotificationsPage() {
               actionLabel = 'View Match';
             } else if (n.type.includes('MESSAGE')) {
               type = 'MESSAGE';
-              title = 'New Message';
-              link = '/app/messages';
+              let senderName = '';
+              const colonIdx = n.content.indexOf(': ');
+              if (colonIdx > -1) {
+                senderName = n.content.slice(0, colonIdx).trim();
+                text = n.content.slice(colonIdx + 2).trim();
+              }
+              title = senderName ? `Message from ${senderName}` : 'New Message';
+              link = n.referenceId ? `/app/messages?user=${n.referenceId}` : '/app/messages';
               actionLabel = 'Open Chat';
             }
 
@@ -218,28 +113,31 @@ export default function NotificationsPage() {
               id: n.id,
               type,
               title,
-              text: n.content,
+              text,
               time: diffHours < 1 ? 'Just now' : `${Math.floor(diffHours)}h ago`,
               timestamp: createdTime,
               group,
               unread: !n.isRead,
-              profile: {
-                id: demoMatch.id,
-                name: demoMatch.name,
-                image: demoMatch.image,
-                age: demoMatch.age,
-                city: demoMatch.city,
-              },
               link,
               actionLabel,
             };
           });
-          setItems(mapped);
+
+          // Distinct message notifications by sender so each user has only one latest notification card
+          const distinctMap = new Map<string, NotificationDisplayItem>();
+          for (const item of mapped) {
+            const key = item.type === 'MESSAGE' && item.link ? item.link : item.id;
+            if (!distinctMap.has(key)) {
+              distinctMap.set(key, item);
+            }
+          }
+
+          setItems(Array.from(distinctMap.values()));
         } else {
-          setItems(DEMO_ENRICHED_NOTIFICATIONS);
+          setItems([]);
         }
       } catch {
-        setItems(DEMO_ENRICHED_NOTIFICATIONS);
+        setItems([]);
       } finally {
         setLoading(false);
       }

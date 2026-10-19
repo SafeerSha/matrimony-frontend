@@ -16,6 +16,13 @@ export interface SearchFilters {
   religion?: string;
   city?: string;
   maritalStatus?: string;
+  gender?: string;
+  caste?: string;
+  diet?: string;
+  education?: string;
+  occupation?: string;
+  income?: string;
+  intent?: string;
   page?: number;
   limit?: number;
 }
@@ -53,7 +60,7 @@ export function mapConnectionToProfile(u: any, idx = 0): Profile {
     primaryPhoto ||
     partner.image ||
     profile?.image ||
-    `https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=900&q=85`;
+    "";
 
   return {
     id,

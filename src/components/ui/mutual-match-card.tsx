@@ -37,9 +37,9 @@ export function MutualMatchCard({
   match,
   currentUser = {
     name: 'You',
-    image: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=600&q=80',
+    image: '',
     verified: true,
-    city: 'Kochi',
+    city: '',
   },
   onCelebrate,
   className,
@@ -82,7 +82,7 @@ export function MutualMatchCard({
             <div className="relative">
               <div className="h-14 w-14 sm:h-16 sm:w-16 overflow-hidden rounded-full ring-4 ring-[#FAF3EC] border-2 border-[#D8B28C] shadow-sm bg-[var(--surface-muted)]">
                 <img
-                  src={currentUser.image || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=600&q=80'}
+                  src={currentUser.image || ''}
                   alt={currentUser.name || 'You'}
                   className="h-full w-full object-cover object-center"
                 />

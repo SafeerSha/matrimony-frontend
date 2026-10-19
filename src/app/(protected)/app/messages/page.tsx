@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useRef, useMemo, Suspense } from 'react';
+import React, { useState, useEffect, useRef, Suspense } from 'react';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import {
@@ -14,17 +14,16 @@ import { ChatConversationList } from '@/components/chat/chat-conversation-list';
 import { ChatWindow } from '@/components/chat/chat-window';
 import { ChatProfilePanel } from '@/components/chat/chat-profile-panel';
 import { chatService, Conversation, Message } from '@/services/chat.service';
+import { profileService } from '@/services/profile.service';
 import { authService } from '@/services/auth.service';
 import { toast } from '@/lib/toast';
 import { cn } from '@/lib/cn';
 import { FeatureGate } from '@/components/ui/under-development';
-import { profiles as demoProfiles, type Profile } from '@/lib/demo-data';
 
-function MessagesPageContent() {
+function MessagesContent() {
   const searchParams = useSearchParams();
-  const targetUserId = searchParams.get('user');
+  const targetUserId = searchParams.get('user') || searchParams.get('userId');
 
-  const [isSubscribed, setIsSubscribed] = useState(true); // Default true for demo
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [selected, setSelected] = useState<Conversation | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
@@ -33,14 +32,79 @@ function MessagesPageContent() {
   const [isLoadingConversations, setIsLoadingConversations] = useState(true);
   const [isLoadingMessages, setIsLoadingMessages] = useState(false);
 
-  const demoFallbackRef = useRef<{ conversations: Conversation[] }>({ conversations: [] });
-
   // Mobile View Management: 'list' (shows conversations list) vs 'chat' (full-screen active chat)
   const [mobileView, setMobileView] = useState<'list' | 'chat'>('list');
   const [isMobileProfileOpen, setIsMobileProfileOpen] = useState(false);
 
   const selectedRef = useRef<Conversation | null>(null);
   selectedRef.current = selected;
+
+  const mobileViewRef = useRef<'list' | 'chat'>('list');
+  mobileViewRef.current = mobileView;
+
+  const isFocusedRef = useRef<boolean>(true);
+
+  // Mark a conversation as read and synchronize unread counters
+  const markConversationAsRead = (contactId: string) => {
+    if (!contactId) return;
+
+    chatService.markAsRead(contactId).catch(() => {});
+
+    setConversations((prev) => {
+      const updated = prev.map((c) =>
+        c.id === contactId || c.participantId === contactId
+          ? { ...c, unreadCount: 0 }
+          : c
+      );
+      const totalUnread = updated.reduce((sum, c) => sum + (c.unreadCount || 0), 0);
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(
+          new CustomEvent('chat:unread-changed', { detail: { totalUnread } })
+        );
+      }
+      return updated;
+    });
+  };
+
+  // Check if currently active chat should be marked as read upon window focus or interaction
+  const checkAndMarkActiveChat = () => {
+    const active = selectedRef.current;
+    if (!active) return;
+    const contactId = active.participantId || active.id;
+    if (!contactId) return;
+
+    const isMobile = typeof window !== 'undefined' && window.innerWidth < 768;
+    const isChatVisible = !isMobile || mobileViewRef.current === 'chat';
+    const hasFocus =
+      typeof document !== 'undefined' &&
+      document.visibilityState === 'visible' &&
+      document.hasFocus();
+
+    if (isChatVisible && hasFocus && (active.unreadCount || 0) > 0) {
+      markConversationAsRead(contactId);
+    }
+  };
+
+  // Track window focus/blur so background windows do not consume read receipts
+  useEffect(() => {
+    const handleFocus = () => {
+      isFocusedRef.current = true;
+      checkAndMarkActiveChat();
+    };
+    const handleBlur = () => {
+      isFocusedRef.current = false;
+    };
+
+    window.addEventListener('focus', handleFocus);
+    window.addEventListener('blur', handleBlur);
+    document.addEventListener('visibilitychange', handleFocus);
+
+    return () => {
+      window.removeEventListener('focus', handleFocus);
+      window.removeEventListener('blur', handleBlur);
+      document.removeEventListener('visibilitychange', handleFocus);
+    };
+  }, []);
 
   // 1. Fetch current logged in user & initialize chat websocket
   useEffect(() => {
@@ -61,105 +125,125 @@ function MessagesPageContent() {
     // Fetch live conversations (mutual matches from backend)
     chatService
       .getConversations()
-      .then((res) => {
-        const data = Array.isArray(res) ? res : ((res as any)?.data || []);
-        let activeList = data.length > 0 ? data : demoFallbackRef.current.conversations;
+      .then(async (data) => {
+        const list = Array.isArray(data) ? [...data] : [];
+        setConversations(list);
 
-        // If targetUserId query param is passed, ensure it is selected
-        if (targetUserId) {
-          const existing = activeList.find(
-            (c: any) => c.participantId === targetUserId || c.participant?.id === targetUserId
+        const initialTotalUnread = list.reduce((sum, c) => sum + (c.unreadCount || 0), 0);
+        if (typeof window !== 'undefined') {
+          window.dispatchEvent(
+            new CustomEvent('chat:unread-changed', { detail: { totalUnread: initialTotalUnread } })
           );
-          if (existing) {
-            setConversations(activeList);
-            setSelected(existing);
-            setMobileView('chat');
-            return;
-          }
-
-          // Not in active list yet: create a conversation entry for this matched partner
-          const matchedDemo = demoProfiles.find((p) => p.id === targetUserId);
-          const newConv: Conversation = {
-            id: `conv-${targetUserId}`,
-            participantId: targetUserId,
-            participant: matchedDemo
-              ? ({
-                  id: matchedDemo.id,
-                  name: matchedDemo.name,
-                  firstName: matchedDemo.name.split(' ')[0],
-                  lastName: matchedDemo.name.split(' ').slice(1).join(' '),
-                  city: matchedDemo.city,
-                  country: matchedDemo.state,
-                  occupation: matchedDemo.profession,
-                  education: matchedDemo.education,
-                  bio: matchedDemo.about,
-                  isVerified: true,
-                  photos: [{ url: matchedDemo.image }],
-                } as any)
-              : ({
-                  id: targetUserId,
-                  name: 'Mutual Match',
-                  isVerified: true,
-                } as any),
-            unreadCount: 0,
-            updatedAt: new Date().toISOString(),
-          };
-
-          activeList = [newConv, ...activeList.filter((c: any) => c.id !== newConv.id)];
-          setConversations(activeList);
-          setSelected(newConv);
-          setMobileView('chat');
-          return;
         }
 
-        setConversations(activeList);
-        if (activeList.length > 0) {
-          setSelected(activeList[0]);
+        if (targetUserId) {
+          // Check if target user is already in conversations list
+          const existing = list.find(
+            (c) =>
+              c.participantId === targetUserId ||
+              c.id === targetUserId ||
+              c.participant?.userId === targetUserId ||
+              c.participant?.id === targetUserId ||
+              c.participant?.profileId === targetUserId
+          );
+
+          if (existing) {
+            setSelected(existing);
+            const isMobile = typeof window !== 'undefined' && window.innerWidth < 768;
+            if (isMobile) {
+              setMobileView('chat');
+            }
+            if (typeof document !== 'undefined' && document.hasFocus() && document.visibilityState === 'visible') {
+              markConversationAsRead(targetUserId);
+            }
+          } else {
+            // Target user not in list yet; load profile to initiate new chat
+            try {
+              const prof = await profileService.getProfile(targetUserId);
+              const pUser = (prof as any)?.user;
+              const participantId = pUser?.id || prof?.userId || prof?.id || targetUserId;
+              const fullName =
+                prof?.name ||
+                `${prof?.firstName || pUser?.firstName || ''} ${prof?.lastName || pUser?.lastName || ''}`.trim() ||
+                'Member';
+
+              const photos = prof?.photos || (pUser?.photos ? pUser.photos : []);
+              const avatarUrl = photos?.[0]?.url || (prof as any)?.image;
+              const formattedPhotos = photos.length
+                ? photos
+                : avatarUrl
+                ? [{ id: 'p1', url: avatarUrl }]
+                : [];
+
+              const provisionalConv: Conversation = {
+                id: participantId,
+                participantId,
+                participant: {
+                  id: participantId,
+                  userId: participantId,
+                  profileId: prof?.profileId || pUser?.profileId,
+                  name: fullName,
+                  firstName: prof?.firstName || pUser?.firstName || fullName.split(' ')[0],
+                  lastName: prof?.lastName || pUser?.lastName || '',
+                  city: prof?.city || '',
+                  country: prof?.country || prof?.state || '',
+                  occupation: prof?.occupation || prof?.profession || '',
+                  education: prof?.education || '',
+                  bio: prof?.bio || '',
+                  isVerified: Boolean(prof?.isVerified ?? true),
+                  photos: formattedPhotos,
+                },
+                unreadCount: 0,
+                updatedAt: new Date().toISOString(),
+                online: Boolean((prof as any).isOnline),
+                isOnline: Boolean((prof as any).isOnline),
+                lastActiveAt: (prof as any).lastActiveAt,
+              } as any;
+
+              setConversations([provisionalConv, ...list.filter((c) => c.participantId !== participantId)]);
+              setSelected(provisionalConv);
+              const isMobile = typeof window !== 'undefined' && window.innerWidth < 768;
+              if (isMobile) {
+                setMobileView('chat');
+              }
+            } catch (err) {
+              console.warn('Could not fetch target profile, creating provisional conversation:', err);
+              const fallbackConv: Conversation = {
+                id: targetUserId,
+                participantId: targetUserId,
+                participant: {
+                  id: targetUserId,
+                  userId: targetUserId,
+                  name: 'Member',
+                  firstName: 'Member',
+                  lastName: '',
+                  photos: [],
+                  isVerified: true,
+                },
+                unreadCount: 0,
+                updatedAt: new Date().toISOString(),
+              };
+              setConversations([fallbackConv, ...list.filter((c) => c.participantId !== targetUserId)]);
+              setSelected(fallbackConv);
+              const isMobile = typeof window !== 'undefined' && window.innerWidth < 768;
+              if (isMobile) {
+                setMobileView('chat');
+              }
+            }
+          }
+        } else {
+          // No target user query param; on desktop default-select first conversation
+          if (list.length > 0) {
+            setSelected(list[0]);
+          } else {
+            setSelected(null);
+          }
         }
       })
       .catch((err) => {
         console.error('ChatService getConversations error:', err);
-        const { conversations: initialConvs } = demoFallbackRef.current;
-        let activeList = initialConvs;
-
-        if (targetUserId) {
-          const matchedDemo = demoProfiles.find((p) => p.id === targetUserId);
-          const newConv: Conversation = {
-            id: `conv-${targetUserId}`,
-            participantId: targetUserId,
-            participant: matchedDemo
-              ? ({
-                  id: matchedDemo.id,
-                  name: matchedDemo.name,
-                  firstName: matchedDemo.name.split(' ')[0],
-                  lastName: matchedDemo.name.split(' ').slice(1).join(' '),
-                  city: matchedDemo.city,
-                  country: matchedDemo.state,
-                  occupation: matchedDemo.profession,
-                  education: matchedDemo.education,
-                  bio: matchedDemo.about,
-                  isVerified: true,
-                  photos: [{ url: matchedDemo.image }],
-                } as any)
-              : ({
-                  id: targetUserId,
-                  name: 'Mutual Match',
-                  isVerified: true,
-                } as any),
-            unreadCount: 0,
-            updatedAt: new Date().toISOString(),
-          };
-          activeList = [newConv, ...activeList];
-          setConversations(activeList);
-          setSelected(newConv);
-          setMobileView('chat');
-          return;
-        }
-
-        setConversations(activeList);
-        if (activeList.length > 0) {
-          setSelected(activeList[0]);
-        }
+        setConversations([]);
+        setSelected(null);
       })
       .finally(() => setIsLoadingConversations(false));
 
@@ -168,13 +252,23 @@ function MessagesPageContent() {
       const activeSelected = selectedRef.current;
       const partnerId = activeSelected?.participantId || activeSelected?.id;
 
-      // If message belongs to active open chat, append immediately
-      if (
-        partnerId &&
+      const isForActiveConversation =
+        Boolean(partnerId) &&
         (msg.senderId === partnerId ||
           msg.receiverId === partnerId ||
-          msg.conversationId === activeSelected?.id)
-      ) {
+          msg.conversationId === activeSelected?.id);
+
+      const isMobile = typeof window !== 'undefined' && window.innerWidth < 768;
+      const isChatVisible = !isMobile || mobileViewRef.current === 'chat';
+      const isFocused =
+        typeof document !== 'undefined' &&
+        document.visibilityState === 'visible' &&
+        document.hasFocus();
+
+      const isActivelyViewed = isForActiveConversation && isChatVisible && isFocused;
+
+      // If message belongs to active open chat, append immediately
+      if (isForActiveConversation) {
         setMessages((prev) => {
           if (!prev.find((m) => m.id === msg.id)) {
             return [...prev, msg];
@@ -182,36 +276,44 @@ function MessagesPageContent() {
           return prev;
         });
 
-        // Mark as read in backend
-        chatService.markAsRead(partnerId).catch(() => {});
+        if (isActivelyViewed && partnerId) {
+          chatService.markAsRead(partnerId).catch(() => {});
+        }
       }
 
       // Update conversation list preview & unread count
-      setConversations((prev) =>
-        prev.map((c) => {
+      setConversations((prev) => {
+        const updated = prev.map((c) => {
           const isThisConv =
             c.id === msg.conversationId ||
             c.participantId === msg.senderId ||
             c.participantId === msg.receiverId;
 
           if (isThisConv) {
-            const isCurrentlyActive = partnerId === c.participantId;
             return {
               ...c,
               lastMessage: msg,
-              unreadCount: isCurrentlyActive ? 0 : (c.unreadCount || 0) + 1,
+              unreadCount: isActivelyViewed ? 0 : (c.unreadCount || 0) + 1,
             };
           }
           return c;
-        })
-      );
+        });
+
+        const totalUnread = updated.reduce((sum, c) => sum + (c.unreadCount || 0), 0);
+        if (typeof window !== 'undefined') {
+          window.dispatchEvent(
+            new CustomEvent('chat:unread-changed', { detail: { totalUnread } })
+          );
+        }
+        return updated;
+      });
     });
 
     return () => {
       unsubscribe();
       chatService.disconnect();
     };
-  }, []);
+  }, [targetUserId]);
 
   // 2. Fetch chat history when selected conversation changes
   useEffect(() => {
@@ -232,25 +334,19 @@ function MessagesPageContent() {
             )
           : [];
         setMessages(sorted);
-
-        // Mark as read in backend
-        chatService.markAsRead(contactId).catch(() => {});
-
-        // Clear unread count locally for this conversation
-        setConversations((prev) =>
-          prev.map((c) => (c.id === selected.id ? { ...c, unreadCount: 0 } : c))
-        );
       })
       .catch((err) => {
         console.error('Failed to get chat messages:', err);
         setMessages([]);
       })
       .finally(() => setIsLoadingMessages(false));
-  }, [selected?.id]);
+  }, [selected?.id, selected?.participantId]);
 
   const handleSelectConversation = (conv: Conversation) => {
     setSelected(conv);
     setMobileView('chat');
+    const contactId = conv.participantId || conv.id;
+    markConversationAsRead(contactId);
   };
 
   // 3. Send message via ChatService
@@ -258,6 +354,7 @@ function MessagesPageContent() {
     if (!selected) return;
 
     const participantId = selected.participantId || selected.id;
+    markConversationAsRead(participantId);
     const tempId = `temp-${Date.now()}`;
     const optimisticMsg: Message = {
       id: tempId,
@@ -274,7 +371,11 @@ function MessagesPageContent() {
 
     // Update conversation list preview
     setConversations((prev) =>
-      prev.map((c) => (c.id === selected.id ? { ...c, lastMessage: optimisticMsg } : c))
+      prev.map((c) =>
+        c.id === selected.id || c.participantId === participantId
+          ? { ...c, lastMessage: optimisticMsg }
+          : c
+      )
     );
 
     try {
@@ -291,172 +392,172 @@ function MessagesPageContent() {
   };
 
   return (
-    <FeatureGate page="messages" title="Messages & Chat">
+    <div
+      className={cn(
+        'transition-all',
+        mobileView === 'chat'
+          ? 'fixed inset-0 z-[100] bg-[#FFFDFB] m-0 p-0 flex flex-col h-[100dvh] w-screen md:relative md:inset-auto md:z-auto md:h-auto md:w-auto md:space-y-6 md:pb-6 md:bg-transparent'
+          : 'space-y-4 sm:space-y-6 pb-6'
+      )}
+    >
+      {/* Global overrides for immersive mobile chat */}
+      {mobileView === 'chat' && (
+        <style
+          dangerouslySetInnerHTML={{
+            __html: `
+          @media (max-width: 767px) {
+            [aria-label="Mobile navigation"] { 
+              display: none !important; 
+            }
+            header.sticky { 
+              display: none !important; 
+            }
+            #main-content { 
+              transform: none !important; 
+              animation: none !important; 
+              filter: none !important;
+              perspective: none !important;
+              contain: none !important;
+              padding: 0 !important; 
+              margin: 0 !important; 
+            }
+            div:has(> #main-content) {
+              padding: 0 !important;
+              margin: 0 !important;
+              gap: 0 !important;
+              max-width: 100% !important;
+            }
+          }
+        `,
+          }}
+        />
+      )}
+
+      {/* Top Section Header */}
       <div
         className={cn(
-          'transition-all',
-          mobileView === 'chat'
-            ? 'fixed inset-0 z-[100] bg-[#FFFDFB] m-0 p-0 flex flex-col h-[100dvh] w-screen lg:relative lg:inset-auto lg:z-auto lg:h-auto lg:w-auto lg:space-y-6 lg:pb-6 lg:bg-transparent'
-            : 'space-y-4 sm:space-y-6 pb-6'
+          'flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between animate-content-appear stagger-1',
+          mobileView === 'chat' && 'hidden md:flex'
         )}
       >
-        {/* Global overrides for immersive mobile chat */}
-        {mobileView === 'chat' && (
-          <style
-            dangerouslySetInnerHTML={{
-              __html: `
-            @media (max-width: 1023px) {
-              [aria-label="Mobile navigation"] { 
-                display: none !important; 
-              }
-              header.sticky { 
-                display: none !important; 
-              }
-              #main-content { 
-                transform: none !important; 
-                animation: none !important; 
-                filter: none !important;
-                perspective: none !important;
-                contain: none !important;
-                padding: 0 !important; 
-                margin: 0 !important; 
-              }
-              div:has(> #main-content) {
-                padding: 0 !important;
-                margin: 0 !important;
-                gap: 0 !important;
-                max-width: 100% !important;
-              }
-            }
-          `,
-            }}
+        <div>
+          <SectionHeader
+            eyebrow="Connections & Chat"
+            title="Messages"
           />
-        )}
-
-        {/* Top Section Header */}
-        <div
-          className={cn(
-            'flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between animate-content-appear stagger-1',
-            mobileView === 'chat' && 'hidden lg:flex'
-          )}
-        >
-          <div>
-            <SectionHeader
-              eyebrow="Connections & Chat"
-              title="Messages"
-            />
-          </div>
-
-          <div className="flex items-center gap-2 self-start sm:self-auto shrink-0">
-            <Link href="/app/discover">
-              <Button
-                variant="secondary"
-                size="sm"
-                className="rounded-xl text-xs font-bold gap-1.5 border-[#E9DDE0]"
-                leftIcon={<IconCompass className="h-3.5 w-3.5 text-[#7A1835]" />}
-              >
-                <span>Discover Profiles</span>
-              </Button>
-            </Link>
-          </div>
         </div>
 
-        {/* TWO-COLUMN DESKTOP / FULL-SCREEN MOBILE CONTAINER */}
-        <div
-          className={cn(
-            'relative bg-[#FFFDFB] overflow-hidden flex transition-all',
-            mobileView === 'chat'
-              ? 'h-full w-full rounded-none border-0 shadow-none lg:rounded-3xl lg:border lg:border-[#E9DDE0] lg:h-[calc(100vh-185px)] lg:min-h-[620px] lg:max-h-[820px] lg:shadow-xs'
-              : 'border border-[#E9DDE0] rounded-2xl sm:rounded-3xl shadow-xs h-[calc(100dvh-135px)] md:h-[calc(100vh-185px)] min-h-[460px] md:min-h-[620px] max-h-[820px] animate-content-appear stagger-2'
-          )}
-        >
-          {/* COLUMN 1: LEFT CONVERSATION LIST */}
-          <aside
-            className={cn(
-              'w-full lg:w-[320px] xl:w-[350px] shrink-0 border-r border-[#E9DDE0] bg-[#FFFDFB] flex flex-col transition-all',
-              mobileView === 'chat' ? 'hidden lg:flex' : 'flex'
-            )}
-          >
-            <ChatConversationList
-              conversations={conversations}
-              selectedId={selected?.id || null}
-              onSelect={handleSelectConversation}
-              isLoading={isLoadingConversations}
-            />
-          </aside>
-
-          {/* COLUMN 2: CENTER ACTIVE CHAT WINDOW */}
-          <main
-            className={cn(
-              'flex-1 flex flex-col min-w-0 bg-[#FFFDFB] relative',
-              mobileView === 'list' ? 'hidden lg:flex' : 'flex'
-            )}
-          >
-            {selected ? (
-              <ChatWindow
-                conversation={selected}
-                messages={messages}
-                isLoadingMessages={isLoadingMessages}
-                onSendMessage={handleSendMessage}
-                onBack={() => setMobileView('list')}
-                onOpenProfile={() => setIsMobileProfileOpen(true)}
-              />
-            ) : (
-              <div className="flex-1 flex flex-col items-center justify-center p-8 text-center bg-[#FFF9F6]/40">
-                <div className="h-16 w-16 rounded-3xl bg-[#FAF3EC] border border-[#EAD8C7] flex items-center justify-center text-[#7A1835] mb-4">
-                  <IconMessageCircle className="h-8 w-8" />
-                </div>
-                <h3 className="font-editorial-title text-xl font-bold text-[#211B1E] mb-2">
-                  Your Matrimonial Conversations
-                </h3>
-                <p className="text-xs text-[#766B6F] max-w-sm leading-relaxed mb-6">
-                  When you connect with mutual matches, you can start meaningful, private
-                  conversations with verified members right here.
-                </p>
-                <Link href="/app/discover">
-                  <Button
-                    size="md"
-                    className="rounded-2xl bg-[#7A1835] text-white hover:bg-[#5C1027] text-xs font-bold"
-                  >
-                    Discover Matches
-                  </Button>
-                </Link>
-              </div>
-            )}
-          </main>
+        <div className="flex items-center gap-2 self-start sm:self-auto shrink-0">
+          <Link href="/app/discover">
+            <Button
+              variant="secondary"
+              size="sm"
+              className="rounded-xl text-xs font-bold gap-1.5 border-[#E9DDE0]"
+              leftIcon={<IconCompass className="h-3.5 w-3.5 text-[#7A1835]" />}
+            >
+              <span>Discover Profiles</span>
+            </Button>
+          </Link>
         </div>
-
-        {/* MOBILE PROFILE BOTTOM SHEET */}
-        {selected && (
-          <BottomSheet
-            isOpen={isMobileProfileOpen}
-            onClose={() => setIsMobileProfileOpen(false)}
-            title="Member Profile"
-            description="Matrimonial connection overview"
-          >
-            <ChatProfilePanel
-              participant={selected.participant}
-              onClose={() => setIsMobileProfileOpen(false)}
-            />
-          </BottomSheet>
-        )}
       </div>
-    </FeatureGate>
+
+      {/* TWO-COLUMN DESKTOP / FULL-SCREEN MOBILE CONTAINER */}
+      <div
+        className={cn(
+          'relative bg-[#FFFDFB] overflow-hidden flex transition-all',
+          mobileView === 'chat'
+            ? 'h-full w-full rounded-none border-0 shadow-none md:rounded-3xl md:border md:border-[#E9DDE0] md:h-[calc(100vh-185px)] md:min-h-[620px] md:max-h-[820px] md:shadow-xs'
+            : 'border border-[#E9DDE0] rounded-2xl sm:rounded-3xl shadow-xs h-[calc(100dvh-135px)] md:h-[calc(100vh-185px)] min-h-[460px] md:min-h-[620px] max-h-[820px] animate-content-appear stagger-2'
+        )}
+      >
+        {/* COLUMN 1: LEFT CONVERSATION LIST */}
+        <aside
+          className={cn(
+            'w-full md:w-[300px] lg:w-[320px] xl:w-[350px] shrink-0 border-r border-[#E9DDE0] bg-[#FFFDFB] flex flex-col transition-all',
+            mobileView === 'chat' ? 'hidden md:flex' : 'flex'
+          )}
+        >
+          <ChatConversationList
+            conversations={conversations}
+            selectedId={selected?.id || null}
+            onSelect={handleSelectConversation}
+            isLoading={isLoadingConversations}
+          />
+        </aside>
+
+        {/* COLUMN 2: CENTER ACTIVE CHAT WINDOW */}
+        <main
+          className={cn(
+            'flex-1 flex flex-col min-w-0 bg-[#FFFDFB] relative',
+            mobileView === 'list' ? 'hidden md:flex' : 'flex'
+          )}
+        >
+          {selected ? (
+            <ChatWindow
+              conversation={selected}
+              messages={messages}
+              isLoadingMessages={isLoadingMessages}
+              onSendMessage={handleSendMessage}
+              onBack={() => setMobileView('list')}
+              onOpenProfile={() => setIsMobileProfileOpen(true)}
+              onMarkRead={() => markConversationAsRead(selected.participantId || selected.id)}
+            />
+          ) : (
+            <div className="flex-1 flex flex-col items-center justify-center p-8 text-center bg-[#FFF9F6]/40">
+              <div className="h-16 w-16 rounded-3xl bg-[#FAF3EC] border border-[#EAD8C7] flex items-center justify-center text-[#7A1835] mb-4">
+                <IconMessageCircle className="h-8 w-8" />
+              </div>
+              <h3 className="font-editorial-title text-xl font-bold text-[#211B1E] mb-2">
+                Your Matrimonial Conversations
+              </h3>
+              <p className="text-xs text-[#766B6F] max-w-sm leading-relaxed mb-6">
+                When you connect with mutual matches, you can start meaningful, private
+                conversations with verified members right here.
+              </p>
+              <Link href="/app/discover">
+                <Button
+                  size="md"
+                  className="rounded-2xl bg-[#7A1835] text-white hover:bg-[#5C1027] text-xs font-bold"
+                >
+                  Discover Matches
+                </Button>
+              </Link>
+            </div>
+          )}
+        </main>
+      </div>
+
+      {/* MOBILE PROFILE BOTTOM SHEET */}
+      {selected && (
+        <BottomSheet
+          isOpen={isMobileProfileOpen}
+          onClose={() => setIsMobileProfileOpen(false)}
+          title="Member Profile"
+          description="Matrimonial connection overview"
+        >
+          <ChatProfilePanel
+            participant={selected.participant}
+            onClose={() => setIsMobileProfileOpen(false)}
+          />
+        </BottomSheet>
+      )}
+    </div>
   );
 }
 
 export default function MessagesPage() {
   return (
-    <Suspense
-      fallback={
-        <div className="space-y-4 p-4 animate-pulse">
-          <div className="h-10 w-48 bg-stone-200 rounded-xl" />
-          <div className="h-[500px] w-full bg-stone-200 rounded-3xl" />
-        </div>
-      }
-    >
-      <MessagesPageContent />
-    </Suspense>
+    <FeatureGate page="messages" title="Messages & Chat">
+      <Suspense
+        fallback={
+          <div className="space-y-6">
+            <div className="h-12 w-1/3 bg-[var(--surface-muted)] rounded-2xl skeleton-shimmer" />
+            <div className="h-[600px] w-full bg-[var(--surface-muted)] rounded-3xl skeleton-shimmer" />
+          </div>
+        }
+      >
+        <MessagesContent />
+      </Suspense>
+    </FeatureGate>
   );
 }
-
