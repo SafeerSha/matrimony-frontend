@@ -11,7 +11,6 @@ import {
   IconCircleCheck,
   IconHeart,
   IconHeartHandshake,
-  IconSparkles,
   IconShieldCheck,
   IconLock,
   IconEye,
@@ -30,6 +29,7 @@ import {
   IconWorld,
   IconHomeHeart,
   IconUsers,
+  IconSparkles,
 } from "@tabler/icons-react";
 import { Logo } from "@/components/layout/logo";
 import { cn } from "@/lib/cn";
@@ -593,7 +593,7 @@ export default function OnboardingPage() {
         return {
           label: "Telugu Matrimony",
           colorClass: "bg-[#FAF3EC] border-[#EAD8C7] text-[#8C5D2C]",
-          icon: IconSparkles,
+          icon: IconHeartHandshake,
         };
       }
       if (community.includes("bharat")) {
@@ -1051,7 +1051,7 @@ export default function OnboardingPage() {
                       <div className="p-5 sm:p-6 rounded-2xl bg-white/80 border border-[var(--border)] shadow-xs space-y-3">
                         <div className="flex items-center justify-between pb-2 border-b border-[var(--border)]/60">
                           <div className="flex items-center gap-2">
-                            <IconSparkles className="w-5 h-5 text-[#80132E]" />
+                            <IconShieldCheck className="w-5 h-5 text-[#80132E]" />
                             <h2 className="text-sm font-bold uppercase tracking-wider text-[var(--foreground)]">
                               About You & Family Background
                             </h2>
@@ -1236,7 +1236,7 @@ export default function OnboardingPage() {
                       onClick={() => setStep(4)}
                       className="inline-flex items-center gap-1.5 text-xs font-semibold text-[var(--muted)] hover:text-[#80132E] transition cursor-pointer"
                     >
-                      <IconSparkles className="h-3.5 w-3.5 text-[#D89B65]" />
+                      <IconShieldCheck className="h-3.5 w-3.5 text-[#D89B65]" />
                       <span>Skip to Album Photos (Step 4) →</span>
                     </button>
                     <p className="text-[11px] text-slate-400 mt-1">

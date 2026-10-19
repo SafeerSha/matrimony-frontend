@@ -50,6 +50,11 @@ export interface UserProfile {
   lookingFor?: string;
   photos?: ProfilePhoto[];
   preferences?: any;
+  connectionStatus?: 'SENT' | 'RECEIVED' | 'MATCHED' | 'SHORTLISTED' | 'REJECTED' | null;
+  isMatched?: boolean;
+  isInterestSent?: boolean;
+  isInterestReceived?: boolean;
+  isShortlisted?: boolean;
 }
 
 export const profileService = {

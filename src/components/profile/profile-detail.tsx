@@ -33,7 +33,7 @@ import {
   IconClock,
   IconAward,
 } from '@tabler/icons-react';
-import { getProfileUniqueId } from '@/lib/demo-data';
+import { getProfileUniqueId, formatLastActive } from '@/lib/demo-data';
 import { PageLoader } from '@/components/ui/page-loader';
 import { Avatar } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
@@ -53,6 +53,8 @@ export function ProfileDetail({ id }: { id?: string }) {
   const [activePhotoIdx, setActivePhotoIdx] = useState(0);
   const [isShortlisted, setIsShortlisted] = useState(false);
   const [isInterestSent, setIsInterestSent] = useState(false);
+  const [isMatched, setIsMatched] = useState(false);
+  const [isInterestReceived, setIsInterestReceived] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [showFloatingDock, setShowFloatingDock] = useState(false);
   const inlineActionsRef = useRef<HTMLDivElement>(null);
@@ -75,6 +77,9 @@ export function ProfileDetail({ id }: { id?: string }) {
     setIsLoading(true);
     setActivePhotoIdx(0);
     setIsInterestSent(false);
+    setIsMatched(false);
+    setIsInterestReceived(false);
+    setIsShortlisted(false);
 
     const targetId = id || 'me';
     profileService
@@ -93,6 +98,12 @@ export function ProfileDetail({ id }: { id?: string }) {
             res.photos?.[0]?.url ||
             res.avatarUrl ||
             '';
+
+          const isMutual = Boolean(res.isMatched || res.connectionStatus === 'MATCHED');
+          setIsMatched(isMutual);
+          setIsInterestSent(Boolean(res.isInterestSent || isMutual || res.connectionStatus === 'SENT'));
+          setIsInterestReceived(Boolean(res.isInterestReceived || res.connectionStatus === 'RECEIVED'));
+          setIsShortlisted(Boolean(res.isShortlisted || res.connectionStatus === 'SHORTLISTED'));
 
           setProfile({
             id: res.id || targetId,
@@ -113,7 +124,7 @@ export function ProfileDetail({ id }: { id?: string }) {
             interests: Array.isArray(res.interests) ? res.interests : [],
             image: primaryImg,
             photos: res.photos || [],
-            compatibility: 90,
+            compatibility: (res as any).compatibility ?? (res as any).profile?.compatibility ?? 88,
             height: res.height ? `${res.height}cm` : '',
             maritalStatus: res.maritalStatus || '',
             religion: res.religion || '',
@@ -129,6 +140,23 @@ export function ProfileDetail({ id }: { id?: string }) {
       .finally(() => {
         setIsLoading(false);
       });
+
+    // Also cross-verify against mutual matches list
+    matchesService
+      .getConnections('matches')
+      .then((matchesRes: any) => {
+        const matchesList = Array.isArray(matchesRes) ? matchesRes : matchesRes?.data || [];
+        const isMutual = matchesList.some((m: any) => {
+          const partnerId = m.partner?.id || m.receiverId || m.senderId || m.id || m.participantId || m.profile?.userId;
+          const partnerProfId = m.profileId || m.partner?.profileId || m.receiver?.profileId || m.sender?.profileId;
+          return partnerId === targetId || partnerProfId === targetId;
+        });
+        if (isMutual) {
+          setIsMatched(true);
+          setIsInterestSent(true);
+        }
+      })
+      .catch(() => {});
 
     matchesService
       .getRecommendations()
@@ -150,9 +178,10 @@ export function ProfileDetail({ id }: { id?: string }) {
               profession: prof.occupation || prof.profession || u.occupation || u.profession || '',
               education: prof.education || u.education || '',
               image: photos?.[0]?.url || u.avatarUrl || prof.image || '',
-              compatibility: prof.compatibility || 88,
+              compatibility: u.compatibility ?? prof.compatibility ?? 88,
               verified: Boolean(u.status === 'ACTIVE' || prof.isVerified || u.isVerified),
-              online: idx % 2 === 0,
+              online: Boolean(u.isOnline),
+              lastActiveAt: u.lastActiveAt || undefined,
               about: prof.bio || prof.about || u.bio || '',
               height: prof.height ? `${prof.height}cm` : '',
               maritalStatus: prof.maritalStatus || u.maritalStatus || '',
@@ -199,14 +228,36 @@ export function ProfileDetail({ id }: { id?: string }) {
 
   // Interest handler
   const handleSendInterest = async () => {
-    if (!profile || isInterestSent) return;
+    if (!profile || isInterestSent || isMatched) return;
     try {
-      await matchesService.sendInterest(profile.id);
+      const res: any = await matchesService.sendInterest(profile.id);
       setIsInterestSent(true);
-      toast.success('Interest Sent!', `We have notified ${profile.name} of your interest.`);
+      if (res?.isMatch || res?.status === 'ACCEPTED') {
+        setIsMatched(true);
+        toast.success("It's a Match!", `You and ${profile.name} are now mutually connected!`);
+      } else {
+        toast.success('Interest Sent!', `We have notified ${profile.name} of your interest.`);
+      }
+    } catch (err: any) {
+      if (err?.message?.includes('already exists') || err?.status === 400) {
+        setIsInterestSent(true);
+      }
+      toast.info('Interest updated', `Your interest with ${profile.name} has been processed.`);
+    }
+  };
+
+  // Accept interest handler
+  const handleAcceptInterest = async () => {
+    if (!profile) return;
+    try {
+      await matchesService.acceptInterest(profile.id);
+      setIsMatched(true);
+      setIsInterestSent(true);
+      setIsInterestReceived(false);
+      toast.success("Interest Accepted!", `You and ${profile.name} are now mutually connected!`);
     } catch {
-      setIsInterestSent(true);
-      toast.success('Interest Sent!', `We have notified ${profile.name} of your interest.`);
+      setIsMatched(true);
+      toast.success("Connected!", `You and ${profile.name} are now connected.`);
     }
   };
 
@@ -311,10 +362,10 @@ export function ProfileDetail({ id }: { id?: string }) {
                   icon={<IconUsers className="h-3 w-3 fill-current" />}
                   className="backdrop-blur-md shadow-xs text-xs font-bold"
                 >
-                  {profile.compatibility}% Compatibility
+                  {profile.compatibility}% Matches
                 </Badge>
 
-                {profile.online && (
+                {profile.online ? (
                   <Badge
                     tone="neutral"
                     size="sm"
@@ -324,7 +375,15 @@ export function ProfileDetail({ id }: { id?: string }) {
                   >
                     Active Now
                   </Badge>
-                )}
+                ) : profile.lastActiveAt ? (
+                  <Badge
+                    tone="neutral"
+                    size="sm"
+                    className="bg-black/50 text-white/95 backdrop-blur-md border-white/20 text-[10px] font-medium"
+                  >
+                    {formatLastActive(profile.lastActiveAt)}
+                  </Badge>
+                ) : null}
               </div>
 
               {/* Gallery Counter Badge */}
@@ -510,64 +569,159 @@ export function ProfileDetail({ id }: { id?: string }) {
 
             {/* Primary Matrimonial Actions */}
             <div ref={inlineActionsRef} className="space-y-3 pt-4 border-t border-[var(--border)]">
-              <div className="flex items-center gap-3">
-                {/* Send Interest (Burgundy primary) */}
-                <Button
-                  variant={isInterestSent ? 'blush' : 'primary'}
-                  size="lg"
-                  disabled={isInterestSent}
-                  onClick={handleSendInterest}
-                  className="flex-1 font-bold shadow-md rounded-2xl text-sm h-13 active-press"
-                  leftIcon={
-                    isInterestSent ? (
-                      <IconCheck className="h-4 w-4" />
-                    ) : (
-                      <IconHeart className="h-4 w-4 fill-white" />
-                    )
-                  }
-                >
-                  {isInterestSent ? 'Interest Sent' : 'Send Interest'}
-                </Button>
+              {isMatched ? (
+                <>
+                  {/* Mutual Connection Celebratory Banner */}
+                  <div className="flex items-center justify-between p-3.5 rounded-2xl bg-gradient-to-r from-emerald-50 to-teal-50/70 border border-emerald-200/80 text-emerald-900 shadow-2xs">
+                    <div className="flex items-center gap-2.5">
+                      <span className="grid h-8 w-8 place-items-center rounded-xl bg-emerald-600 text-white shadow-xs">
+                        <IconUsers className="h-4.5 w-4.5" />
+                      </span>
+                      <div>
+                        <p className="text-xs font-bold leading-tight text-emerald-950">Mutual Match Connected</p>
+                        <p className="text-[11px] text-emerald-700">You and {profile.name.split(' ')[0]} share mutual interest</p>
+                      </div>
+                    </div>
+                    <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold bg-white text-emerald-700 border border-emerald-200/80 shadow-2xs">
+                      <IconCheck className="h-3 w-3 stroke-[2.5]" /> Connected
+                    </span>
+                  </div>
 
-                {/* Favorite Button */}
-                <Button
-                  variant={isShortlisted ? 'primary' : 'outline'}
-                  size="lg"
-                  onClick={handleToggleShortlist}
-                  aria-label={isShortlisted ? 'Favorited' : 'Favorite'}
-                  title={isShortlisted ? 'Favorited' : `Add ${profile.name} to favorites`}
-                  className={cn(
-                    'h-13 px-4 sm:px-5 rounded-2xl shrink-0 active-press transition-all font-bold text-sm',
-                    isShortlisted
-                      ? 'bg-[var(--primary)] text-white border-transparent'
-                      : 'border-[var(--border)] text-[var(--foreground)] hover:border-[var(--primary)] hover:text-[var(--primary)]'
-                  )}
-                  leftIcon={
-                    isShortlisted ? (
-                      <IconStarFilled className="h-4.5 w-4.5 text-white shrink-0" />
-                    ) : (
-                      <IconStar className="h-4.5 w-4.5 text-[var(--primary)] shrink-0" />
-                    )
-                  }
-                >
-                  <span>{isShortlisted ? 'Favorited' : 'Favorite'}</span>
-                </Button>
-              </div>
+                  <div className="flex items-center gap-3">
+                    {/* Chat action is the primary prominent button! */}
+                    <Link
+                      href={`/app/messages?user=${profile.id}`}
+                      className="focus-ring flex-1"
+                    >
+                      <Button
+                        variant="primary"
+                        size="lg"
+                        className="w-full font-bold shadow-md rounded-2xl text-sm h-13 active-press bg-gradient-to-r from-[var(--primary)] to-[#8E1B3E] hover:brightness-105"
+                        leftIcon={<IconMessageCircle className="h-5 w-5" />}
+                      >
+                        <span>Chat with {profile.name.split(' ')[0]}</span>
+                      </Button>
+                    </Link>
 
-              {/* Chat action with Premium link */}
-              <Link
-                href={`/app/messages?user=${profile.id}`}
-                className="focus-ring block w-full"
-              >
-                <Button
-                  variant="secondary"
-                  size="md"
-                  className="w-full rounded-2xl text-xs font-bold h-11 text-[var(--foreground)] hover:border-[var(--primary)]"
-                  leftIcon={<IconMessageCircle className="h-4 w-4 text-[var(--primary)]" />}
-                >
-                  Chat with {profile.name.split(' ')[0]}
-                </Button>
-              </Link>
+                    {/* Favorite Button */}
+                    <Button
+                      variant={isShortlisted ? 'primary' : 'outline'}
+                      size="lg"
+                      onClick={handleToggleShortlist}
+                      aria-label={isShortlisted ? 'Favorited' : 'Favorite'}
+                      title={isShortlisted ? 'Favorited' : `Add ${profile.name} to favorites`}
+                      className={cn(
+                        'h-13 px-4 sm:px-5 rounded-2xl shrink-0 active-press transition-all font-bold text-sm',
+                        isShortlisted
+                          ? 'bg-[var(--primary)] text-white border-transparent'
+                          : 'border-[var(--border)] text-[var(--foreground)] hover:border-[var(--primary)] hover:text-[var(--primary)]'
+                      )}
+                      leftIcon={
+                        isShortlisted ? (
+                          <IconStarFilled className="h-4.5 w-4.5 text-white shrink-0" />
+                        ) : (
+                          <IconStar className="h-4.5 w-4.5 text-[var(--primary)] shrink-0" />
+                        )
+                      }
+                    >
+                      <span>{isShortlisted ? 'Favorited' : 'Favorite'}</span>
+                    </Button>
+                  </div>
+                </>
+              ) : isInterestReceived ? (
+                <div className="flex items-center gap-3">
+                  <Button
+                    variant="primary"
+                    size="lg"
+                    onClick={handleAcceptInterest}
+                    className="flex-1 font-bold shadow-md rounded-2xl text-sm h-13 active-press bg-emerald-600 hover:bg-emerald-700 text-white"
+                    leftIcon={<IconCheck className="h-4 w-4" />}
+                  >
+                    Accept Interest
+                  </Button>
+                  <Button
+                    variant={isShortlisted ? 'primary' : 'outline'}
+                    size="lg"
+                    onClick={handleToggleShortlist}
+                    className={cn(
+                      'h-13 px-4 sm:px-5 rounded-2xl shrink-0 active-press transition-all font-bold text-sm',
+                      isShortlisted
+                        ? 'bg-[var(--primary)] text-white border-transparent'
+                        : 'border-[var(--border)] text-[var(--foreground)] hover:border-[var(--primary)] hover:text-[var(--primary)]'
+                    )}
+                    leftIcon={
+                      isShortlisted ? (
+                        <IconStarFilled className="h-4.5 w-4.5 text-white shrink-0" />
+                      ) : (
+                        <IconStar className="h-4.5 w-4.5 text-[var(--primary)] shrink-0" />
+                      )
+                    }
+                  >
+                    <span>{isShortlisted ? 'Favorited' : 'Favorite'}</span>
+                  </Button>
+                </div>
+              ) : (
+                <>
+                  <div className="flex items-center gap-3">
+                    {/* Send Interest (Burgundy primary) */}
+                    <Button
+                      variant={isInterestSent ? 'blush' : 'primary'}
+                      size="lg"
+                      disabled={isInterestSent}
+                      onClick={handleSendInterest}
+                      className="flex-1 font-bold shadow-md rounded-2xl text-sm h-13 active-press"
+                      leftIcon={
+                        isInterestSent ? (
+                          <IconCheck className="h-4 w-4" />
+                        ) : (
+                          <IconHeart className="h-4 w-4 fill-white" />
+                        )
+                      }
+                    >
+                      {isInterestSent ? 'Interest Sent' : 'Send Interest'}
+                    </Button>
+
+                    {/* Favorite Button */}
+                    <Button
+                      variant={isShortlisted ? 'primary' : 'outline'}
+                      size="lg"
+                      onClick={handleToggleShortlist}
+                      aria-label={isShortlisted ? 'Favorited' : 'Favorite'}
+                      title={isShortlisted ? 'Favorited' : `Add ${profile.name} to favorites`}
+                      className={cn(
+                        'h-13 px-4 sm:px-5 rounded-2xl shrink-0 active-press transition-all font-bold text-sm',
+                        isShortlisted
+                          ? 'bg-[var(--primary)] text-white border-transparent'
+                          : 'border-[var(--border)] text-[var(--foreground)] hover:border-[var(--primary)] hover:text-[var(--primary)]'
+                      )}
+                      leftIcon={
+                        isShortlisted ? (
+                          <IconStarFilled className="h-4.5 w-4.5 text-white shrink-0" />
+                        ) : (
+                          <IconStar className="h-4.5 w-4.5 text-[var(--primary)] shrink-0" />
+                        )
+                      }
+                    >
+                      <span>{isShortlisted ? 'Favorited' : 'Favorite'}</span>
+                    </Button>
+                  </div>
+
+                  {/* Chat action with Premium link */}
+                  <Link
+                    href={`/app/messages?user=${profile.id}`}
+                    className="focus-ring block w-full"
+                  >
+                    <Button
+                      variant="secondary"
+                      size="md"
+                      className="w-full rounded-2xl text-xs font-bold h-11 text-[var(--foreground)] hover:border-[var(--primary)]"
+                      leftIcon={<IconMessageCircle className="h-4 w-4 text-[var(--primary)]" />}
+                    >
+                      Chat with {profile.name.split(' ')[0]}
+                    </Button>
+                  </Link>
+                </>
+              )}
             </div>
           </div>
         </div>
@@ -1055,16 +1209,39 @@ export function ProfileDetail({ id }: { id?: string }) {
         )}
       >
         <div className="w-full max-w-[420px] p-2 rounded-[2rem] bg-white/90 backdrop-blur-2xl border border-white/70 shadow-[0_12px_36px_rgba(33,27,30,0.14)] pointer-events-auto flex items-center gap-2">
-          <Button
-            variant={isInterestSent ? 'blush' : 'primary'}
-            size="md"
-            disabled={isInterestSent}
-            onClick={handleSendInterest}
-            className="flex-1 font-bold rounded-2xl text-xs h-11 shadow-sm active-press"
-            leftIcon={isInterestSent ? <IconCheck className="h-4 w-4" /> : <IconHeart className="h-4 w-4 fill-white" />}
-          >
-            {isInterestSent ? 'Interest Sent' : 'Send Interest'}
-          </Button>
+          {isMatched ? (
+            <Link href={`/app/messages?user=${profile.id}`} className="flex-1">
+              <Button
+                variant="primary"
+                size="md"
+                className="w-full font-bold rounded-2xl text-xs h-11 shadow-sm active-press bg-gradient-to-r from-[var(--primary)] to-[#8E1B3E]"
+                leftIcon={<IconMessageCircle className="h-4 w-4" />}
+              >
+                Chat with {profile.name.split(' ')[0]}
+              </Button>
+            </Link>
+          ) : isInterestReceived ? (
+            <Button
+              variant="primary"
+              size="md"
+              onClick={handleAcceptInterest}
+              className="flex-1 font-bold rounded-2xl text-xs h-11 shadow-sm active-press bg-emerald-600 text-white"
+              leftIcon={<IconCheck className="h-4 w-4" />}
+            >
+              Accept Interest
+            </Button>
+          ) : (
+            <Button
+              variant={isInterestSent ? 'blush' : 'primary'}
+              size="md"
+              disabled={isInterestSent}
+              onClick={handleSendInterest}
+              className="flex-1 font-bold rounded-2xl text-xs h-11 shadow-sm active-press"
+              leftIcon={isInterestSent ? <IconCheck className="h-4 w-4" /> : <IconHeart className="h-4 w-4 fill-white" />}
+            >
+              {isInterestSent ? 'Interest Sent' : 'Send Interest'}
+            </Button>
+          )}
 
           <Button
             variant={isShortlisted ? 'primary' : 'outline'}
@@ -1087,17 +1264,19 @@ export function ProfileDetail({ id }: { id?: string }) {
             <span>{isShortlisted ? 'Favorited' : 'Favorite'}</span>
           </Button>
 
-          <Link href={`/app/messages?user=${profile.id}`} className="shrink-0">
-            <Button
-              variant="secondary"
-              size="md"
-              className="h-11 w-11 p-0 rounded-2xl text-xs font-bold border-[var(--border)] flex items-center justify-center active-press"
-              aria-label="Chat"
-              title="Chat"
-            >
-              <IconMessageCircle className="h-4.5 w-4.5 text-[var(--primary)]" />
-            </Button>
-          </Link>
+          {!isMatched && (
+            <Link href={`/app/messages?user=${profile.id}`} className="shrink-0">
+              <Button
+                variant="secondary"
+                size="md"
+                className="h-11 w-11 p-0 rounded-2xl text-xs font-bold border-[var(--border)] flex items-center justify-center active-press"
+                aria-label="Chat"
+                title="Chat"
+              >
+                <IconMessageCircle className="h-4.5 w-4.5 text-[var(--primary)]" />
+              </Button>
+            </Link>
+          )}
         </div>
       </div>
     </div>

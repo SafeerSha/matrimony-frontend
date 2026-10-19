@@ -63,7 +63,7 @@ export function MutualMatchCard({
         <div className="flex items-center gap-2">
           {match.compatibility && (
             <Badge tone="accent" size="sm" className="font-bold text-[10px]">
-              {match.compatibility}% Compatibility
+              {match.compatibility}% Matches
             </Badge>
           )}
         </div>

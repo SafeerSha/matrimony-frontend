@@ -24,6 +24,8 @@ import {
   IconUsers,
   IconMessageCircleFilled,
   IconStarFilled,
+  IconHeartFilled,
+  IconRotateClockwise,
 } from '@tabler/icons-react';
 import { Avatar } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
@@ -41,7 +43,7 @@ import { matchesService, profileService, isDraftUser } from '@/services';
 import { toast } from '@/lib/toast';
 import { cn } from '@/lib/cn';
 import { SwipeCard } from '@/components/discovery/swipe-card';
-import type { Profile } from '@/lib/demo-data';
+import { type Profile, formatLastActive } from '@/lib/demo-data';
 
 export type DiscoveryViewMode = 'swipe' | 'grid';
 export type SortOption = 'recommended' | 'recent' | 'new' | 'nearby';
@@ -82,8 +84,6 @@ export default function DiscoverPage() {
   const [query, setQuery] = useState('');
   const [sortBy, setSortBy] = useState<SortOption>('recommended');
 
-  // Featured Card View active index
-  const [featuredIndex, setFeaturedIndex] = useState(0);
 
   // Filters State
   const [isFilterOpen, setIsFilterOpen] = useState(false);
@@ -93,6 +93,7 @@ export default function DiscoverPage() {
   const [minHeight, setMinHeight] = useState<string>("4'10\"");
   const [maxHeight, setMaxHeight] = useState<string>("6'4\"");
   const [selectedGender, setSelectedGender] = useState<'any' | 'women' | 'men'>('any');
+  const [myGender, setMyGender] = useState<string>('');
   const [selectedReligion, setSelectedReligion] = useState<string>('Any');
   const [selectedCaste, setSelectedCaste] = useState<string>('Any');
   const [selectedEducation, setSelectedEducation] = useState<string>('Any');
@@ -106,6 +107,8 @@ export default function DiscoverPage() {
   // Shortlist and Interest tracking sets
   const [shortlistedIds, setShortlistedIds] = useState<Set<string>>(new Set());
   const [sentInterestIds, setSentInterestIds] = useState<Set<string>>(new Set());
+  const [receivedInterestIds, setReceivedInterestIds] = useState<Set<string>>(new Set());
+  const [passedIds, setPassedIds] = useState<Set<string>>(new Set());
 
   // Profiles data & loading
   const [profiles, setProfiles] = useState<Profile[]>([]);
@@ -118,12 +121,17 @@ export default function DiscoverPage() {
         localStorage.getItem('matrimony_swipe_hint_seen') === 'true' ||
         sessionStorage.getItem('matrimony_swipe_hint_seen') === 'true';
       setHasSeenSwipeHint(seen);
+
+      const savedPassed = sessionStorage.getItem('matrimony_passed_ids');
+      if (savedPassed) {
+        setPassedIds(new Set(JSON.parse(savedPassed)));
+      }
     } catch {
       setHasSeenSwipeHint(false);
     }
   }, []);
 
-  // Guard: Incomplete / Draft profiles are not allowed on Discover
+  // Guard: Incomplete / Draft profiles are not allowed on Discover & load user gender
   useEffect(() => {
     profileService
       .getProfile('me')
@@ -136,6 +144,13 @@ export default function DiscoverPage() {
           );
           router.replace('/onboarding');
           return;
+        }
+        const g = (profile.profile?.gender || profile.gender || '').toLowerCase().trim();
+        setMyGender(g);
+        if (g === 'male' || g === 'man') {
+          setSelectedGender('women');
+        } else if (g === 'female' || g === 'woman') {
+          setSelectedGender('men');
         }
       })
       .catch(() => {});
@@ -151,6 +166,7 @@ export default function DiscoverPage() {
         maxAge,
         religion: selectedReligion === 'Any' ? undefined : selectedReligion,
         maritalStatus: selectedMaritalStatus === 'Any' ? undefined : selectedMaritalStatus,
+        gender: selectedGender !== 'any' ? selectedGender : undefined,
       })
       .then((res: any) => {
         const rawList = (Array.isArray(res) ? res : res?.data || []).filter(
@@ -160,7 +176,25 @@ export default function DiscoverPage() {
             !u.email?.includes('demo.ishtamchat.com')
         );
         if (rawList.length > 0) {
+          const initialSent = new Set<string>();
+          const initialReceived = new Set<string>();
+          const initialShortlisted = new Set<string>();
+          const initialPassed = new Set<string>();
+
           const mapped: Profile[] = rawList.map((u: any, idx: number) => {
+            if (u.isInterestSent || u.connectionStatus === 'SENT' || u.connectionStatus === 'MATCHED') {
+              initialSent.add(u.id);
+            }
+            if (u.isInterestReceived || u.connectionStatus === 'RECEIVED') {
+              initialReceived.add(u.id);
+            }
+            if (u.isShortlisted || u.connectionStatus === 'SHORTLISTED') {
+              initialShortlisted.add(u.id);
+            }
+            if (u.isPassed || u.connectionStatus === 'REJECTED') {
+              initialPassed.add(u.id);
+            }
+
             const prof = u.profile || {};
             const photos = u.photos || prof.photos || [];
             const firstName = u.firstName || prof.firstName || '';
@@ -193,9 +227,10 @@ export default function DiscoverPage() {
               profession: profVal,
               education: eduVal,
               image: avatar,
-              compatibility: prof.compatibility || Math.floor(Math.random() * 10) + 88,
+              compatibility: u.compatibility ?? prof.compatibility ?? 88,
               verified: Boolean(u.status === 'ACTIVE' || prof.isVerified || u.isVerified),
-              online: idx % 3 === 0,
+              online: Boolean(u.isOnline),
+              lastActiveAt: u.lastActiveAt || undefined,
               about: prof.bio || u.bio || '',
               height: prof.height ? `${prof.height}cm` : '',
               gender: prof.gender || u.gender || '',
@@ -212,6 +247,26 @@ export default function DiscoverPage() {
               lookingFor: prof.lookingFor || '',
             };
           });
+          setSentInterestIds((prev) => {
+            const next = new Set(prev);
+            initialSent.forEach((id) => next.add(id));
+            return next;
+          });
+          setReceivedInterestIds((prev) => {
+            const next = new Set(prev);
+            initialReceived.forEach((id) => next.add(id));
+            return next;
+          });
+          setShortlistedIds((prev) => {
+            const next = new Set(prev);
+            initialShortlisted.forEach((id) => next.add(id));
+            return next;
+          });
+          setPassedIds((prev) => {
+            const next = new Set(prev);
+            initialPassed.forEach((id) => next.add(id));
+            return next;
+          });
           setProfiles(mapped);
         } else {
           setProfiles([]);
@@ -224,7 +279,7 @@ export default function DiscoverPage() {
       .finally(() => {
         setIsLoading(false);
       });
-  }, [city, minAge, maxAge, selectedReligion, selectedMaritalStatus]);
+  }, [city, minAge, maxAge, selectedReligion, selectedMaritalStatus, selectedGender]);
 
   // Filter & Sort computation
   const filteredProfiles = useMemo(() => {
@@ -239,12 +294,21 @@ export default function DiscoverPage() {
         const matchesCity = city === 'All locations' || p.city.toLowerCase() === city.toLowerCase();
         const matchesAge = p.age >= minAge && p.age <= maxAge;
 
-        // Gender match
+        // Foundation Matchmaking Gender match
         const pGender = (p.gender || (p as any).sex || '').toLowerCase();
+        const effectiveGender =
+          selectedGender !== 'any'
+            ? selectedGender
+            : myGender === 'male' || myGender === 'man'
+            ? 'women'
+            : myGender === 'female' || myGender === 'woman'
+            ? 'men'
+            : 'any';
+
         const matchesGender =
-          selectedGender === 'any' ||
-          (selectedGender === 'women' && (pGender.includes('female') || pGender.includes('woman') || pGender.includes('women'))) ||
-          (selectedGender === 'men' && (pGender.includes('male') || pGender.includes('man') || pGender.includes('men')));
+          effectiveGender === 'any' ||
+          (effectiveGender === 'women' && (pGender.includes('female') || pGender.includes('woman') || pGender.includes('women'))) ||
+          (effectiveGender === 'men' && (pGender.includes('male') || pGender.includes('man') || pGender.includes('men')));
 
         const matchesReligion =
           selectedReligion === 'Any' ||
@@ -321,18 +385,35 @@ export default function DiscoverPage() {
         );
       })
       .sort((a, b) => {
+        const isInteractedA = sentInterestIds.has(a.id) || passedIds.has(a.id) || receivedInterestIds.has(a.id);
+        const isInteractedB = sentInterestIds.has(b.id) || passedIds.has(b.id) || receivedInterestIds.has(b.id);
+
+        // Priority 1: Fresh / Uncontacted profiles always appear FIRST at the top
+        if (!isInteractedA && isInteractedB) return -1;
+        if (isInteractedA && !isInteractedB) return 1;
+
+        // Priority 2: Within each group, apply user's chosen sorting criteria
         if (sortBy === 'recommended') return (b.compatibility || 0) - (a.compatibility || 0);
-        if (sortBy === 'recent') return (b.online ? 1 : 0) - (a.online ? 1 : 0);
+        if (sortBy === 'recent') {
+          const timeA = a.lastActiveAt ? new Date(a.lastActiveAt).getTime() : 0;
+          const timeB = b.lastActiveAt ? new Date(b.lastActiveAt).getTime() : 0;
+          if (timeA !== timeB) return timeB - timeA;
+          return (b.online ? 1 : 0) - (a.online ? 1 : 0);
+        }
         if (sortBy === 'new') return a.name.localeCompare(b.name);
         return 0;
       });
   }, [
     profiles,
+    sentInterestIds,
+    receivedInterestIds,
+    passedIds,
     query,
     city,
     minAge,
     maxAge,
     selectedGender,
+    myGender,
     selectedReligion,
     selectedCaste,
     selectedMaritalStatus,
@@ -353,7 +434,13 @@ export default function DiscoverPage() {
     if (city !== 'All locations') count++;
     if (minAge !== 21 || maxAge !== 35) count++;
     if (minHeight !== "4'10\"" || maxHeight !== "6'4\"") count++;
-    if (selectedGender !== 'any') count++;
+    const defaultOppositeGender =
+      myGender === 'male' || myGender === 'man'
+        ? 'women'
+        : myGender === 'female' || myGender === 'woman'
+        ? 'men'
+        : 'any';
+    if (selectedGender !== defaultOppositeGender && selectedGender !== 'any') count++;
     if (selectedReligion !== 'Any') count++;
     if (selectedCaste !== 'Any') count++;
     if (selectedEducation !== 'Any') count++;
@@ -371,6 +458,7 @@ export default function DiscoverPage() {
     minHeight,
     maxHeight,
     selectedGender,
+    myGender,
     selectedReligion,
     selectedCaste,
     selectedEducation,
@@ -389,7 +477,13 @@ export default function DiscoverPage() {
     setMaxAge(35);
     setMinHeight("4'10\"");
     setMaxHeight("6'4\"");
-    setSelectedGender('any');
+    const defaultOppositeGender =
+      myGender === 'male' || myGender === 'man'
+        ? 'women'
+        : myGender === 'female' || myGender === 'woman'
+        ? 'men'
+        : 'any';
+    setSelectedGender(defaultOppositeGender);
     setSelectedReligion('Any');
     setSelectedCaste('Any');
     setSelectedEducation('Any');
@@ -438,11 +532,23 @@ export default function DiscoverPage() {
     options?: { silentToast?: boolean }
   ) => {
     const isMobileSwipe = viewMode === 'swipe' || options?.silentToast;
+    const isIncoming = receivedInterestIds.has(id);
     try {
-      await matchesService.sendInterest(id);
-      setSentInterestIds((prev) => new Set(prev).add(id));
-      if (!isMobileSwipe) {
-        toast.success('Interest Sent!', `We have notified ${name} of your interest.`);
+      if (isIncoming) {
+        await matchesService.acceptInterest(id);
+        setReceivedInterestIds((prev) => {
+          const next = new Set(prev);
+          next.delete(id);
+          return next;
+        });
+        setSentInterestIds((prev) => new Set(prev).add(id));
+        toast.success('Connected & Matched! 🎉', `You and ${name} liked each other! Start chatting now.`);
+      } else {
+        await matchesService.sendInterest(id);
+        setSentInterestIds((prev) => new Set(prev).add(id));
+        if (!isMobileSwipe) {
+          toast.success('Interest Sent!', `We have notified ${name} of your interest.`);
+        }
       }
     } catch {
       setSentInterestIds((prev) => new Set(prev).add(id));
@@ -450,6 +556,16 @@ export default function DiscoverPage() {
         toast.success('Interest Sent!', `We have notified ${name} of your interest.`);
       }
     }
+  };
+
+  const handlePass = (id: string) => {
+    setPassedIds((prev) => {
+      const next = new Set(prev).add(id);
+      try {
+        sessionStorage.setItem('matrimony_passed_ids', JSON.stringify(Array.from(next)));
+      } catch {}
+      return next;
+    });
   };
 
   const handleShortlist = async (id: string, name: string) => {
@@ -477,27 +593,68 @@ export default function DiscoverPage() {
     }
   };
 
-  // Safe index for Featured View
-  const safeFeaturedProfile =
-    filteredProfiles.length > 0
-      ? filteredProfiles[Math.min(featuredIndex, filteredProfiles.length - 1)]
-      : null;
+  // Swipe mode profiles: Only show profiles that have NOT had interest sent, NOT received interest, and NOT passed
+  const swipeProfiles = useMemo(() => {
+    return filteredProfiles.filter(
+      (p) => !sentInterestIds.has(p.id) && !passedIds.has(p.id) && !receivedInterestIds.has(p.id)
+    );
+  }, [filteredProfiles, sentInterestIds, passedIds, receivedInterestIds]);
+
+  const sentInterestCount = useMemo(() => {
+    return filteredProfiles.filter((p) => sentInterestIds.has(p.id)).length;
+  }, [filteredProfiles, sentInterestIds]);
+
+  const passedCount = useMemo(() => {
+    return filteredProfiles.filter((p) => passedIds.has(p.id)).length;
+  }, [filteredProfiles, passedIds]);
+
+  const handleResetPassed = () => {
+    setPassedIds(new Set());
+    try {
+      sessionStorage.removeItem('matrimony_passed_ids');
+    } catch {}
+    toast.info('Passes Cleared', 'Previously passed profiles are now back in your discovery feed.');
+  };
 
   const renderCardOverlay = (profile: Profile, triggerSwipe?: (dir: 'left' | 'right') => void) => (
     <>
       {/* Top Badges */}
       <div className="absolute top-4 left-4 flex items-center gap-2 z-10 pointer-events-auto">
-        {profile.online && (
+        {sentInterestIds.has(profile.id) ? (
+          <Badge
+            tone="accent"
+            size="sm"
+            className="bg-emerald-600/90 text-white font-bold backdrop-blur-md border-emerald-400/50 shadow-sm"
+          >
+            ✓ Interest Sent
+          </Badge>
+        ) : receivedInterestIds.has(profile.id) ? (
+          <Badge
+            tone="accent"
+            size="sm"
+            className="bg-gradient-to-r from-rose-600 to-pink-600 text-white font-bold backdrop-blur-md border-rose-400/50 shadow-sm"
+          >
+            ♥ Sent You an Interest
+          </Badge>
+        ) : profile.online ? (
           <Badge
             tone="neutral"
             size="sm"
             dot
             dotColor="bg-emerald-500"
-            className="bg-white/90 backdrop-blur-md text-[var(--foreground)] border-white/80"
+            className="bg-white/90 backdrop-blur-md text-[var(--foreground)] border-white/80 font-medium"
           >
-            Online
+            Online now
           </Badge>
-        )}
+        ) : profile.lastActiveAt ? (
+          <Badge
+            tone="neutral"
+            size="sm"
+            className="bg-black/50 text-white/95 backdrop-blur-md border-white/20 text-[10px] font-medium"
+          >
+            {formatLastActive(profile.lastActiveAt)}
+          </Badge>
+        ) : null}
       </div>
 
       {/* Identity & Action Overlay on Photo */}
@@ -544,9 +701,7 @@ export default function DiscoverPage() {
               if (triggerSwipe) {
                 triggerSwipe('left');
               } else {
-                setFeaturedIndex((prev) =>
-                  prev < filteredProfiles.length - 1 ? prev + 1 : 0
-                );
+                handlePass(profile.id);
               }
             }}
             className="rounded-full aspect-square h-11 w-11 sm:h-14 sm:w-14 shrink-0 p-0 flex items-center justify-center bg-white/95 backdrop-blur-md text-rose-600 border border-white/70 hover:bg-white hover:scale-110 active-press shadow-lg hover:shadow-xl transition-all"
@@ -610,19 +765,22 @@ export default function DiscoverPage() {
             disabled={sentInterestIds.has(profile.id)}
             onClick={(e) => {
               e.stopPropagation();
+              if (sentInterestIds.has(profile.id)) return;
               if (triggerSwipe) {
                 triggerSwipe('right');
               } else {
                 handleSendInterest(profile.id, profile.name, { silentToast: true });
-                setFeaturedIndex((prev) =>
-                  prev < filteredProfiles.length - 1 ? prev + 1 : 0
-                );
               }
             }}
-            className="rounded-full aspect-square h-11 w-11 sm:h-14 sm:w-14 shrink-0 p-0 flex items-center justify-center bg-white/95 backdrop-blur-md text-rose-600 border border-white/70 hover:bg-white hover:scale-110 active-press shadow-lg hover:shadow-xl disabled:opacity-50 transition-all"
-            title="Send Interest"
+            className={cn(
+              "rounded-full aspect-square h-11 w-11 sm:h-14 sm:w-14 shrink-0 p-0 flex items-center justify-center backdrop-blur-md transition-all",
+              sentInterestIds.has(profile.id)
+                ? "bg-rose-50 border border-rose-200 text-rose-300 opacity-60 cursor-default"
+                : "bg-white/95 text-rose-600 border border-white/70 hover:bg-white hover:scale-110 active-press shadow-lg hover:shadow-xl"
+            )}
+            title={sentInterestIds.has(profile.id) ? "Interest already sent" : "Send Interest"}
           >
-            <IconHeart className="h-5.5 w-5.5 sm:h-6.5 sm:w-6.5 fill-rose-600" />
+            <IconHeart className={cn("h-5.5 w-5.5 sm:h-6.5 sm:w-6.5 fill-rose-600", sentInterestIds.has(profile.id) && "opacity-50")} />
           </Button>
         </div>
       </div>
@@ -762,85 +920,119 @@ export default function DiscoverPage() {
           {/* ======================================================== */}
           {/* FEATURED / CARD VIEW MODE (Mobile only)                  */}
           {/* ======================================================== */}
-          {viewMode === 'swipe' && safeFeaturedProfile && (
+          {viewMode === 'swipe' && (
             <div className="block md:hidden max-w-2xl mx-auto w-full flex-1 min-h-0 flex flex-col animate-content-appear stagger-2">
-            {/* Top Navigation Bar: Previous / Next & Counter (Hidden on mobile) */}
-            <div className="hidden">
-              <span className="text-xs font-bold tracking-wider uppercase text-[var(--muted)]">
-                {/* Profile {featuredIndex + 1} of {filteredProfiles.length} */}
-              </span>
+              {swipeProfiles.length > 0 ? (
+                /* Stack of SwipeCards - Dynamically sized to fill available viewport */
+                <div className="relative flex-1 min-h-[400px] max-h-[640px] w-full">
+                  {[
+                    swipeProfiles.length > 1 ? swipeProfiles[1] : null,
+                    swipeProfiles[0],
+                  ]
+                    .filter(Boolean)
+                    .map((profile, i, arr) => {
+                      const isNext = arr.length === 2 && i === 0;
+                      // @ts-ignore
+                      const p = profile as Profile;
+                      return (
+                        <SwipeCard
+                          key={p.id}
+                          profile={p}
+                          isNext={isNext}
+                          showOnboardingHint={!hasSeenSwipeHint}
+                          onCardClick={() => {
+                            if (!isNext) {
+                              router.push(`/app/profile?user=${p.id}`);
+                            }
+                          }}
+                          onSwipeLeft={() => {
+                            if (!isNext) {
+                              handlePass(p.id);
+                            }
+                          }}
+                          onSwipeRight={() => {
+                            if (!isNext) {
+                              handleSendInterest(p.id, p.name, { silentToast: true });
+                            }
+                          }}
+                        >
+                          {({ triggerSwipe }) => renderCardOverlay(p, triggerSwipe)}
+                        </SwipeCard>
+                      );
+                    })}
+                </div>
+              ) : (
+                /* All Profiles Covered Completion View */
+                <div className="relative flex-1 min-h-[400px] max-h-[640px] w-full flex flex-col items-center justify-center p-3 sm:p-4">
+                  <div className="relative w-full rounded-[2.5rem] border border-[var(--border)] bg-gradient-to-b from-white via-white to-rose-50/40 p-6 sm:p-8 shadow-[var(--elevation-floating)] text-center flex flex-col items-center justify-center space-y-4">
+                    {/* Glowing Celebration Icon */}
+                    <div className="relative flex items-center justify-center pt-2">
+                      <div className="absolute -inset-3 rounded-full bg-rose-500/15 blur-xl animate-pulse" />
+                      <div className="relative grid h-20 w-20 place-items-center rounded-full bg-gradient-to-tr from-[var(--primary)] to-[var(--accent)] text-white shadow-xl shadow-[var(--primary)]/25">
+                        <IconHeartFilled className="h-10 w-10 text-white" />
+                      </div>
+                    </div>
 
-              <div className="flex items-center gap-2">
-                <Button
-                  variant="secondary"
-                  size="sm"
-                  disabled={featuredIndex === 0}
-                  onClick={() => setFeaturedIndex((prev) => Math.max(0, prev - 1))}
-                  className="rounded-full px-3 text-xs"
-                  leftIcon={<IconChevronLeft className="h-4 w-4" />}
-                >
-                  Previous
-                </Button>
-                <Button
-                  variant="secondary"
-                  size="sm"
-                  disabled={featuredIndex >= filteredProfiles.length - 1}
-                  onClick={() =>
-                    setFeaturedIndex((prev) => Math.min(filteredProfiles.length - 1, prev + 1))
-                  }
-                  className="rounded-full px-3 text-xs"
-                  rightIcon={<IconChevronRight className="h-4 w-4" />}
-                >
-                  Next
-                </Button>
-              </div>
-            </div>
+                    {/* Header */}
+                    <div className="space-y-1.5 px-2">
+                      <h2 className="font-editorial-title text-2xl font-bold tracking-tight text-[var(--foreground)]">
+                        You've Covered All Profiles!
+                      </h2>
+                      <p className="text-xs sm:text-sm text-[var(--muted)] max-w-xs mx-auto leading-relaxed">
+                        You've reviewed all available profiles for your current search criteria.
+                      </p>
+                    </div>
 
-            {/* Stack of SwipeCards - Dynamically sized to fill available viewport */}
-            <div className="relative flex-1 min-h-[400px] max-h-[640px] w-full">
-              {[
-                featuredIndex < filteredProfiles.length - 1 ? filteredProfiles[featuredIndex + 1] : null,
-                safeFeaturedProfile,
-              ]
-                .filter(Boolean)
-                .map((profile, i, arr) => {
-                  const isNext = arr.length === 2 && i === 0;
-                  // @ts-ignore
-                  const p = profile as Profile;
-                  return (
-                    <SwipeCard
-                      key={p.id}
-                      profile={p}
-                      isNext={isNext}
-                      showOnboardingHint={featuredIndex === 0 && !hasSeenSwipeHint}
-                      onCardClick={() => {
-                        if (!isNext) {
-                          router.push(`/app/profile?user=${p.id}`);
-                        }
-                      }}
-                      onSwipeLeft={() => {
-                        if (!isNext) {
-                          setFeaturedIndex((prev) =>
-                            prev < filteredProfiles.length - 1 ? prev + 1 : 0
-                          );
-                        }
-                      }}
-                      onSwipeRight={() => {
-                        if (!isNext) {
-                          handleSendInterest(p.id, p.name, { silentToast: true });
-                          setFeaturedIndex((prev) =>
-                            prev < filteredProfiles.length - 1 ? prev + 1 : 0
-                          );
-                        }
-                      }}
-                    >
-                      {({ triggerSwipe }) => renderCardOverlay(p, triggerSwipe)}
-                    </SwipeCard>
-                  );
-                })}
+                    {/* Stats Summary Pills */}
+                    <div className="flex flex-wrap items-center justify-center gap-2 pt-1">
+                      <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                        <IconHeart className="h-3.5 w-3.5 fill-emerald-600 text-emerald-600" />
+                        {sentInterestCount} {sentInterestCount === 1 ? 'Interest' : 'Interests'} Sent
+                      </span>
+                      {passedCount > 0 && (
+                        <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-semibold bg-stone-100 text-stone-700 border border-stone-200">
+                          <IconX className="h-3.5 w-3.5 text-stone-500" />
+                          {passedCount} Passed
+                        </span>
+                      )}
+                    </div>
+
+                    {/* Action Buttons */}
+                    <div className="w-full pt-2 space-y-2 max-w-xs">
+                      <Button
+                        variant="primary"
+                        className="w-full h-11 rounded-full font-bold text-sm shadow-md flex items-center justify-center gap-2 active-press"
+                        onClick={() => setViewMode('grid')}
+                        leftIcon={<IconLayoutGrid className="h-4 w-4" />}
+                      >
+                        <span>Explore in Grid View</span>
+                      </Button>
+
+                      {passedCount > 0 && (
+                        <Button
+                          variant="outline"
+                          className="w-full h-10 rounded-full font-semibold text-xs border-[var(--border)] bg-white hover:bg-stone-50 flex items-center justify-center gap-1.5 active-press"
+                          onClick={handleResetPassed}
+                          leftIcon={<IconRotateClockwise className="h-3.5 w-3.5 text-[var(--primary)]" />}
+                        >
+                          <span>Review Passed Profiles ({passedCount})</span>
+                        </Button>
+                      )}
+
+                      <Button
+                        variant="ghost"
+                        className="w-full h-9 rounded-full text-xs text-[var(--muted)] hover:text-[var(--foreground)] flex items-center justify-center gap-1.5"
+                        onClick={() => setIsFilterOpen(true)}
+                        leftIcon={<IconAdjustments className="h-3.5 w-3.5" />}
+                      >
+                        <span>Adjust Search Filters</span>
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
-          </div>
-        )}
+          )}
 
         {/* ======================================================== */}
         {/* GRID VIEW MODE (Default on desktop, mobile when chosen)   */}
@@ -854,6 +1046,7 @@ export default function DiscoverPage() {
           {filteredProfiles.map((profile) => {
             const isShortlisted = shortlistedIds.has(profile.id);
             const isInterestSent = sentInterestIds.has(profile.id);
+            const isInterestReceived = receivedInterestIds.has(profile.id);
 
             return (
               <Card
@@ -902,17 +1095,41 @@ export default function DiscoverPage() {
                   {/* Top Badges */}
                   <div className="absolute top-3 left-3 right-3 flex items-center justify-between gap-1.5 z-10">
                     <div className="flex items-center gap-1.5">
-                      {profile.online && (
+                      {isInterestSent ? (
+                        <Badge
+                          tone="accent"
+                          size="sm"
+                          className="bg-emerald-600/95 text-white font-bold backdrop-blur-md border-emerald-400/50 shadow-xs"
+                        >
+                          ✓ Interest Sent
+                        </Badge>
+                      ) : isInterestReceived ? (
+                        <Badge
+                          tone="accent"
+                          size="sm"
+                          className="bg-gradient-to-r from-rose-600 to-pink-600 text-white font-bold backdrop-blur-md border-rose-400/50 shadow-xs"
+                        >
+                          ♥ Sent You an Interest
+                        </Badge>
+                      ) : profile.online ? (
                         <Badge
                           tone="neutral"
                           size="sm"
                           dot
                           dotColor="bg-emerald-500"
-                          className="bg-white/90 backdrop-blur-md text-[var(--foreground)] border-white/80"
+                          className="bg-white/90 backdrop-blur-md text-[var(--foreground)] border-white/80 font-medium"
                         >
-                          Online
+                          Online now
                         </Badge>
-                      )}
+                      ) : profile.lastActiveAt ? (
+                        <Badge
+                          tone="neutral"
+                          size="sm"
+                          className="bg-black/50 text-white/95 backdrop-blur-md border-white/20 text-[10px] font-medium"
+                        >
+                          {formatLastActive(profile.lastActiveAt)}
+                        </Badge>
+                      ) : null}
                     </div>
 
                     <span className="inline-block rounded-full bg-white/85 backdrop-blur-md text-[var(--primary-deep)] px-2.5 py-0.5 text-[10px] font-semibold border border-white/60 shadow-xs">
@@ -952,9 +1169,7 @@ export default function DiscoverPage() {
                         size="icon"
                         onClick={(e) => {
                           e.stopPropagation();
-                          setFeaturedIndex((prev) =>
-                            prev < filteredProfiles.length - 1 ? prev + 1 : 0
-                          );
+                          handlePass(profile.id);
                         }}
                         className="rounded-full aspect-square h-10 w-10 md:h-12 md:w-12 shrink-0 p-0 flex items-center justify-center bg-white/95 backdrop-blur-md text-rose-600 border border-white/70 hover:bg-white hover:scale-110 active-press shadow-lg hover:shadow-xl transition-all"
                         title="Pass"
@@ -1014,12 +1229,35 @@ export default function DiscoverPage() {
                         disabled={isInterestSent}
                         onClick={(e) => {
                           e.stopPropagation();
+                          if (isInterestSent) return;
                           handleSendInterest(profile.id, profile.name);
                         }}
-                        className="rounded-full aspect-square h-10 w-10 md:h-12 md:w-12 shrink-0 p-0 flex items-center justify-center bg-white/95 backdrop-blur-md text-rose-600 border border-white/70 hover:bg-white hover:scale-110 active-press shadow-lg hover:shadow-xl disabled:opacity-50 transition-all"
-                        title="Send Interest"
+                        className={cn(
+                          "rounded-full aspect-square h-10 w-10 md:h-12 md:w-12 shrink-0 p-0 flex items-center justify-center backdrop-blur-md transition-all",
+                          isInterestSent
+                            ? "bg-rose-50 border border-rose-200 text-rose-300 opacity-60 cursor-default"
+                            : isInterestReceived
+                            ? "bg-gradient-to-tr from-rose-500 to-pink-600 text-white border border-rose-300 hover:scale-110 active-press shadow-lg hover:shadow-xl"
+                            : "bg-white/95 text-rose-600 border border-white/70 hover:bg-white hover:scale-110 active-press shadow-lg hover:shadow-xl"
+                        )}
+                        title={
+                          isInterestSent
+                            ? "Interest already sent"
+                            : isInterestReceived
+                            ? "Accept Interest & Connect"
+                            : "Send Interest"
+                        }
                       >
-                        <IconHeart className="h-5 w-5 md:h-6 md:w-6 fill-rose-600" />
+                        <IconHeart
+                          className={cn(
+                            "h-5 w-5 md:h-6 md:w-6",
+                            isInterestSent
+                              ? "fill-rose-600 opacity-50"
+                              : isInterestReceived
+                              ? "fill-white text-white"
+                              : "fill-rose-600"
+                          )}
+                        />
                       </Button>
                     </div>
                   </div>
@@ -1188,15 +1426,24 @@ export default function DiscoverPage() {
 
           {/* 2. Gender Preference */}
           <div className="space-y-2">
-            <label className="text-xs font-bold uppercase tracking-wider text-[var(--foreground)]">
-              Looking for
-            </label>
+            <div className="flex items-center justify-between">
+              <label className="text-xs font-bold uppercase tracking-wider text-[var(--foreground)]">
+                Looking for
+              </label>
+              <span className="text-[10px] font-semibold text-[var(--accent)] bg-[var(--accent-light)]/20 px-2 py-0.5 rounded-full">
+                Foundation Matchmaking
+              </span>
+            </div>
             <div className="flex flex-wrap gap-2">
-              {[
-                { value: 'any', label: 'All Profiles' },
-                { value: 'women', label: 'Seeking Brides (Women)' },
-                { value: 'men', label: 'Seeking Grooms (Men)' },
-              ].map((g) => (
+              {(myGender === 'male' || myGender === 'man'
+                ? [{ value: 'women', label: 'Seeking Brides (Women)' }]
+                : myGender === 'female' || myGender === 'woman'
+                ? [{ value: 'men', label: 'Seeking Grooms (Men)' }]
+                : [
+                    { value: 'women', label: 'Seeking Brides (Women)' },
+                    { value: 'men', label: 'Seeking Grooms (Men)' },
+                  ]
+              ).map((g) => (
                 <Chip
                   key={g.value}
                   size="sm"

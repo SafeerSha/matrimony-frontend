@@ -18,7 +18,6 @@ import {
   IconDeviceMobile,
   IconKey,
   IconUserPlus,
-  IconSparkles,
 } from "@tabler/icons-react";
 import { Logo } from "@/components/layout/logo";
 import { cn } from "@/lib/cn";

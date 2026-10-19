@@ -54,7 +54,7 @@ export function AppShell({ children }: AppShellProps) {
       })
       .catch(() => {});
 
-    // 3. Messages count
+    // 3. Messages count initial load
     chatService
       .getConversations()
       .then((convos) => {
@@ -64,7 +64,44 @@ export function AppShell({ children }: AppShellProps) {
         }
       })
       .catch(() => {});
-  }, []);
+
+    // Listen to real-time chat unread changes from messages page
+    const handleUnreadChanged = (e: any) => {
+      if (typeof e.detail?.totalUnread === "number") {
+        setUnreadMessagesCount(e.detail.totalUnread);
+      }
+    };
+    window.addEventListener("chat:unread-changed", handleUnreadChanged);
+
+    // Listen to incoming messages across any page
+    const unsubscribeChat = chatService.onMessage(() => {
+      if (!pathname.startsWith("/app/messages")) {
+        setUnreadMessagesCount((prev) => prev + 1);
+      }
+    });
+
+    // 4. Live Presence Heartbeat (Every 60s & when tab becomes visible)
+    authService.heartbeat();
+    const heartbeatInterval = setInterval(() => {
+      if (typeof document !== "undefined" && document.visibilityState === "visible") {
+        authService.heartbeat();
+      }
+    }, 60000);
+
+    const handleVisibilityChange = () => {
+      if (typeof document !== "undefined" && document.visibilityState === "visible") {
+        authService.heartbeat();
+      }
+    };
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+
+    return () => {
+      window.removeEventListener("chat:unread-changed", handleUnreadChanged);
+      unsubscribeChat();
+      clearInterval(heartbeatInterval);
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+    };
+  }, [pathname]);
 
   return (
     <div className="relative min-h-screen bg-transparent flex flex-col antialiased selection:bg-[var(--primary-light)] selection:text-[var(--primary-deep)]">

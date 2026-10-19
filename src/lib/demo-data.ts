@@ -7,10 +7,26 @@ export type Profile = {
   intent?: string;
   diet?: string;
   image: string; compatibility: number; verified?: boolean; online?: boolean; status?: string;
+  lastActiveAt?: string;
   about: string; height: string; maritalStatus: string; religion: string; motherTongue: string;
   family: string; lifestyle: string[]; interests: string[]; lookingFor: string;
   photos?: any[];
 };
+
+export function formatLastActive(dateStr?: string): string {
+  if (!dateStr) return '';
+  const diffMs = Date.now() - new Date(dateStr).getTime();
+  if (isNaN(diffMs) || diffMs < 0) return 'Online now';
+  const diffMin = Math.floor(diffMs / 60000);
+  if (diffMin < 5) return 'Online now';
+  if (diffMin < 60) return `Active ${diffMin}m ago`;
+  const diffHours = Math.floor(diffMin / 60);
+  if (diffHours < 24) return `Active ${diffHours}h ago`;
+  const diffDays = Math.floor(diffHours / 24);
+  if (diffDays === 1) return 'Active yesterday';
+  if (diffDays < 7) return `Active ${diffDays}d ago`;
+  return 'Active recently';
+}
 
 export const getProfileUniqueId = (profile?: { id?: string; profileId?: string } | null): string => {
   if (!profile) return 'MAT-10001';

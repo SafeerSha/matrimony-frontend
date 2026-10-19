@@ -32,8 +32,9 @@ import { Button } from '@/components/ui/button';
 import { VerificationBadge } from '@/components/ui/verification-badge';
 import { toast } from '@/lib/toast';
 import { cn } from '@/lib/cn';
-import type { Conversation, Message } from '@/services/chat.service';
+import { chatService, type Conversation, type Message } from '@/services/chat.service';
 import { matchesService } from '@/services/matches.service';
+import { formatLastActive } from '@/lib/demo-data';
 
 interface ChatWindowProps {
   conversation: Conversation;
@@ -43,6 +44,7 @@ interface ChatWindowProps {
   onSendMessage: (text: string) => Promise<void>;
   onBack?: () => void;
   onOpenProfile?: () => void;
+  onMarkRead?: () => void;
   className?: string;
 }
 
@@ -54,6 +56,7 @@ export function ChatWindow({
   onSendMessage,
   onBack,
   onOpenProfile,
+  onMarkRead,
   className,
 }: ChatWindowProps) {
   const [text, setText] = useState('');
@@ -66,7 +69,10 @@ export function ChatWindow({
   const [hoveredMessageId, setHoveredMessageId] = useState<string | null>(null);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const messagesContainerRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const isInitialLoadRef = useRef(true);
+  const prevConvIdRef = useRef(conversation.participantId || conversation.id);
 
   const participantName =
     conversation.participant?.name ||
@@ -81,7 +87,30 @@ export function ChatWindow({
   const participantPhoto = conversation.participant?.photos?.[0]?.url;
 
   const isVerified = conversation.participant?.isVerified ?? true;
-  const isOnline = (conversation as any).online ?? true;
+  const [isOnline, setIsOnline] = useState<boolean>(
+    Boolean((conversation as any).online || (conversation as any).isOnline)
+  );
+  const [lastActiveAt, setLastActiveAt] = useState<string | undefined>(
+    (conversation as any).lastActiveAt
+  );
+
+  useEffect(() => {
+    setIsOnline(Boolean((conversation as any).online || (conversation as any).isOnline));
+    setLastActiveAt((conversation as any).lastActiveAt);
+
+    const cleanup = chatService.onPresence((data) => {
+      const targetId = conversation.participantId || conversation.id;
+      if (data.userId === targetId) {
+        setIsOnline(Boolean(data.isOnline));
+        if (data.lastActiveAt) {
+          setLastActiveAt(data.lastActiveAt);
+        }
+      }
+    });
+
+    return cleanup;
+  }, [conversation.participantId, conversation.id, (conversation as any).online, (conversation as any).lastActiveAt]);
+
   const matchPercentage = (conversation.participant as any)?.compatibility || 92;
 
   // Categorized Kerala matrimonial initiator hook sentences
@@ -144,9 +173,55 @@ export function ChatWindow({
     });
   };
 
-  // Auto-scroll to bottom
+  // Reliable scroll-to-bottom helper that controls both the container and end anchor
+  const scrollToBottom = (behavior: ScrollBehavior = 'auto') => {
+    if (messagesContainerRef.current) {
+      const container = messagesContainerRef.current;
+      container.scrollTo({
+        top: container.scrollHeight,
+        behavior,
+      });
+    }
+    if (messagesEndRef.current) {
+      messagesEndRef.current.scrollIntoView({ behavior, block: 'end' });
+    }
+  };
+
+  // Reset initial load flag when conversation switches
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    const currentId = conversation.participantId || conversation.id;
+    if (prevConvIdRef.current !== currentId) {
+      prevConvIdRef.current = currentId;
+      isInitialLoadRef.current = true;
+      scrollToBottom('auto');
+    }
+  }, [conversation.participantId, conversation.id]);
+
+  // Auto-scroll to bottom on message load and whenever new messages arrive
+  useEffect(() => {
+    if (isLoadingMessages) return;
+
+    if (isInitialLoadRef.current) {
+      // Instant scroll on initial chat open with retries for late-loading images / card layout
+      scrollToBottom('auto');
+      const t1 = setTimeout(() => scrollToBottom('auto'), 40);
+      const t2 = setTimeout(() => scrollToBottom('auto'), 120);
+      const t3 = setTimeout(() => {
+        scrollToBottom('auto');
+        isInitialLoadRef.current = false;
+      }, 250);
+
+      return () => {
+        clearTimeout(t1);
+        clearTimeout(t2);
+        clearTimeout(t3);
+      };
+    } else {
+      // Smooth scroll for subsequent incoming / sent messages
+      scrollToBottom('smooth');
+      const t = setTimeout(() => scrollToBottom('smooth'), 50);
+      return () => clearTimeout(t);
+    }
   }, [messages, isLoadingMessages]);
 
   const handleSend = async () => {
@@ -154,8 +229,10 @@ export function ChatWindow({
     const current = text.trim();
     setText('');
     setIsSending(true);
+    scrollToBottom('smooth');
     try {
       await onSendMessage(current);
+      setTimeout(() => scrollToBottom('smooth'), 60);
     } catch {
       setText(current);
     } finally {
@@ -223,7 +300,7 @@ export function ChatWindow({
             <button
               onClick={onBack}
               aria-label="Back to conversations"
-              className="lg:hidden grid h-9 w-9 place-items-center rounded-xl text-[#766B6F] hover:bg-[#FAF3EC] hover:text-[#7A1835] active:scale-95 transition-all -ml-1 shrink-0"
+              className="md:hidden grid h-9 w-9 place-items-center rounded-xl text-[#766B6F] hover:bg-[#FAF3EC] hover:text-[#7A1835] active:scale-95 transition-all -ml-1 shrink-0"
             >
               <IconArrowLeft className="h-5 w-5" />
             </button>
@@ -271,10 +348,16 @@ export function ChatWindow({
               )}
             </div>
             <div className="flex items-center gap-1.5 sm:gap-2 text-[11px] sm:text-xs text-[#766B6F] font-medium truncate mt-0.5">
-              <span className="inline-flex items-center gap-1 text-emerald-700 font-semibold shrink-0">
-                <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                Active now
-              </span>
+              {isOnline ? (
+                <span className="inline-flex items-center gap-1 text-emerald-700 font-semibold shrink-0">
+                  <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                  Active now
+                </span>
+              ) : (
+                <span className="text-[#8C8286] shrink-0 font-medium">
+                  {formatLastActive(lastActiveAt)}
+                </span>
+              )}
               <span className="text-[#D8B28C] shrink-0">•</span>
               <span className="text-[#7A1835] font-bold bg-[#FAF3EC] px-1.5 py-0.2 rounded-full text-[10px] shrink-0">
                 {matchPercentage}% Match
@@ -430,7 +513,10 @@ export function ChatWindow({
           <div className="absolute bottom-10 left-1/4 h-72 w-72 rounded-full bg-[radial-gradient(circle,rgba(122,24,53,0.06)_0%,transparent_70%)] blur-3xl pointer-events-none" />
 
           {/* Messages Scroll Area */}
-          <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-4 bg-gradient-to-b from-[#FFFDFB] via-[#FFF9F6]/80 to-[#FAF4EE]/90 relative z-10">
+          <div
+            ref={messagesContainerRef}
+            className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-4 bg-gradient-to-b from-[#FFFDFB] via-[#FFF9F6]/80 to-[#FAF4EE]/90 relative z-10"
+          >
             {/* Celebratory Mutual Connection Card */}
             <div className="mx-auto max-w-sm my-2 p-5 sm:p-6 rounded-3xl border border-[#EAD8C7]/90 bg-gradient-to-b from-white/95 via-[#FFFDFB]/95 to-[#FAF3EC]/90 backdrop-blur-xl shadow-[0_12px_36px_rgba(122,24,53,0.07)] text-center relative overflow-hidden group">
               {/* Soft decorative glow */}
@@ -581,11 +667,6 @@ export function ChatWindow({
                               : 'rounded-2xl rounded-bl-xs bg-white/95 border border-[#EAD8C7]/90 text-[#211B1E] shadow-[0_4px_16px_rgba(40,10,20,0.04)] backdrop-blur-sm'
                           )}
                         >
-                          {!isOurs && (
-                            <span className="text-[10px] font-bold text-[#7A1835] block mb-0.5">
-                              {firstName}
-                            </span>
-                          )}
                           <p className="whitespace-pre-wrap break-words">{m.content}</p>
                         </div>
 
@@ -613,10 +694,17 @@ export function ChatWindow({
                     >
                       <span>{timeString}</span>
                       {isOurs && (
-                        <span className="inline-flex -space-x-1 text-[#7A1835]" title="Delivered & Read">
-                          <IconCheck className="h-3 w-3 stroke-[2.5]" />
-                          <IconCheck className="h-3 w-3 stroke-[2.5]" />
-                        </span>
+                        m.isRead ? (
+                          <span className="inline-flex -space-x-1 text-[#7A1835]" title="Read">
+                            <IconCheck className="h-3 w-3 stroke-[2.5]" />
+                            <IconCheck className="h-3 w-3 stroke-[2.5]" />
+                          </span>
+                        ) : (
+                          <span className="inline-flex -space-x-1 text-[#A89DA2]" title="Delivered">
+                            <IconCheck className="h-3 w-3 stroke-[2.5]" />
+                            <IconCheck className="h-3 w-3 stroke-[2.5]" />
+                          </span>
+                        )
                       )}
                     </div>
                   </div>
@@ -732,6 +820,8 @@ export function ChatWindow({
                 value={text}
                 onChange={handleTextareaChange}
                 onKeyDown={handleKeyDown}
+                onFocus={() => onMarkRead?.()}
+                onClick={() => onMarkRead?.()}
                 placeholder={`Message ${firstName}...`}
                 rows={1}
                 className="w-full resize-none bg-transparent py-2 px-1 text-xs sm:text-sm text-[#211B1E] placeholder:text-[#766B6F]/70 outline-none max-h-28 scrollbar-none font-sans"

@@ -53,7 +53,7 @@ export default function MatchesPage() {
               profession: prof.occupation || prof.profession || user.occupation || user.profession || 'Career not specified',
               education: prof.education || user.education || 'Education not specified',
               image: avatar,
-              compatibility: prof.compatibility || 92,
+              compatibility: u.compatibility ?? user.compatibility ?? prof.compatibility ?? 88,
               verified: Boolean(user.status === 'ACTIVE' || prof.isVerified || user.isVerified),
               online: false,
               about: prof.bio || prof.about || '',

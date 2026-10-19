@@ -26,6 +26,7 @@ export interface Conversation {
 class ChatService {
   private socket: Socket | null = null;
   private messageHandlers: Set<(msg: Message) => void> = new Set();
+  private readReceiptHandlers: Set<(data: { readerId: string; contactId: string }) => void> = new Set();
 
   /**
    * Connect to backend WebSocket gateway
@@ -71,6 +72,11 @@ class ChatService {
       this.messageHandlers.forEach((handler) => handler(message));
     });
 
+    // Backend ChatGateway emits 'messages_read' when recipient opens messages
+    this.socket.on("messages_read", (data: any) => {
+      this.readReceiptHandlers.forEach((handler) => handler(data));
+    });
+
     this.socket.on("disconnect", (reason) => {
       console.log("[ChatService] Disconnected from chat server:", reason);
     });
@@ -87,10 +93,34 @@ class ChatService {
     }
   }
 
+  getSocket(): Socket | null {
+    if (!this.socket) {
+      this.connect();
+    }
+    return this.socket;
+  }
+
+  onPresence(handler: (data: { userId: string; isOnline: boolean; lastActiveAt?: string }) => void) {
+    if (!this.socket) {
+      this.connect();
+    }
+    this.socket?.on("user_presence", handler);
+    return () => {
+      this.socket?.off("user_presence", handler);
+    };
+  }
+
   onMessage(handler: (msg: Message) => void) {
     this.messageHandlers.add(handler);
     return () => {
       this.messageHandlers.delete(handler);
+    };
+  }
+
+  onMessagesRead(handler: (data: { readerId: string; contactId: string }) => void) {
+    this.readReceiptHandlers.add(handler);
+    return () => {
+      this.readReceiptHandlers.delete(handler);
     };
   }
 
@@ -99,20 +129,20 @@ class ChatService {
    * established between mutual accepted connections (/connections?type=matches).
    */
   async getConversations(): Promise<Conversation[]> {
-    // 1. Check if backend implements dedicated /chat/conversations
+    // 1. Primary: dedicated backend /chat/conversations endpoint
     try {
       const data = await apiFetch<Conversation[]>("/chat/conversations", { method: "GET" });
-      if (Array.isArray(data) && data.length > 0) {
+      if (Array.isArray(data)) {
         return data;
       }
-    } catch {
-      // Expected if /chat/conversations is not implemented on backend
+    } catch (err: any) {
+      console.warn("[ChatService] /chat/conversations fallback to matches:", err?.message || err);
     }
 
-    // 2. Query mutual matches from /connections?type=matches
+    // 2. Fallback: query mutual matches from /connections?type=matches
     try {
       const currentUserId = (await authService.getCurrentUser().catch(() => null))?.id;
-      const res = await apiFetch<any>("/connections?type=matches", { method: "GET" });
+      const res = await apiFetch<any>("/connections?type=matches", { method: "GET" }).catch(() => []);
       const rawList = Array.isArray(res) ? res : res?.data || [];
 
       if (!Array.isArray(rawList) || rawList.length === 0) {
@@ -182,14 +212,14 @@ class ChatService {
         conversationId: m.conversationId || contactId,
       }));
     } catch (err: any) {
-      if (err?.status === 404) {
+      if (err?.status === 404 || err?.status === 403) {
         const fallbackRes = await apiFetch<Message[]>(
           `/chat/conversations/${contactId}/messages`,
           { method: "GET" }
         ).catch(() => []);
         return Array.isArray(fallbackRes) ? fallbackRes : (fallbackRes as any)?.data || [];
       }
-      throw err;
+      return [];
     }
   }
 
@@ -242,9 +272,12 @@ class ChatService {
   }
 
   /**
-   * Mark messages as read via PUT /chat/read/:contactId
+   * Mark messages as read via WebSocket + PUT /chat/read/:contactId
    */
   async markAsRead(contactId: string): Promise<void> {
+    if (this.socket && this.socket.connected) {
+      this.socket.emit("mark_read", { contactId });
+    }
     try {
       await apiFetch(`/chat/read/${contactId}`, { method: "PUT" });
     } catch {

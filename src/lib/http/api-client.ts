@@ -28,13 +28,23 @@ export async function apiFetch<T>(
 ): Promise<T> {
   const { schema, ...init } = options;
   const isFormData = typeof FormData !== "undefined" && init.body instanceof FormData;
-  
+  const authHeaders: Record<string, string> = {};
+  if (typeof window !== "undefined") {
+    const token =
+      sessionStorage.getItem("accessToken") ||
+      localStorage.getItem("accessToken");
+    if (token && !(init.headers as any)?.["Authorization"] && !(init.headers as any)?.["authorization"]) {
+      authHeaders["Authorization"] = `Bearer ${token.replace(/^Bearer\s+/i, "")}`;
+    }
+  }
+
   const response = await fetch(`${API_URL}${path}`, {
     ...init,
     credentials: "include", // Relies on HttpOnly cookies sent automatically by the browser
     headers: {
       Accept: "application/json",
       ...(init.body && !isFormData ? { "Content-Type": "application/json" } : {}),
+      ...authHeaders,
       ...init.headers,
     },
   });
