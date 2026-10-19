@@ -10,7 +10,7 @@ import {
   IconUpload,
   IconCircleCheck,
   IconHeart,
-  IconSparkles,
+  IconHeartHandshake,
   IconShieldCheck,
   IconLock,
   IconEye,
@@ -26,6 +26,10 @@ import {
   IconMapPin,
   IconSchool,
   IconCoffee,
+  IconWorld,
+  IconHomeHeart,
+  IconUsers,
+  IconSparkles,
 } from "@tabler/icons-react";
 import { Logo } from "@/components/layout/logo";
 import { cn } from "@/lib/cn";
@@ -39,84 +43,15 @@ import {
   ModernSelect,
 } from "@/components/ui";
 
-const AGE_OPTIONS = Array.from({ length: 48 }, (_, i) => {
-  const age = (18 + i).toString();
-  return { value: age, label: `${age} yrs` };
-});
-
-const HEIGHT_OPTIONS = [
-  "4'10\"", "4'11\"", "5'0\"", "5'1\"", "5'2\"", "5'3\"", "5'4\"", "5'5\"",
-  "5'6\"", "5'7\"", "5'8\"", "5'9\"", "5'10\"", "5'11\"", "6'0\"", "6'1\"",
-  "6'2\"", "6'3\"", "6'4\""
-];
-
-const HEIGHT_SELECT_OPTIONS = HEIGHT_OPTIONS.map((h) => ({ value: h, label: h }));
-
-const MARITAL_STATUS_OPTIONS = [
-  'Never Married',
-  'Divorced',
-  'Awaiting Divorce',
-  'Widowed',
-  'Open to All',
-];
-
-const RELIGION_OPTIONS = [
-  'Open to all communities',
-  'Hindu',
-  'Muslim',
-  'Christian',
-  'Jain',
-  'Sikh',
-  'Buddhist',
-  'Spiritual / Non-religious',
-];
-
-const LOCATION_OPTIONS = [
-  'Kerala',
-  'Bengaluru',
-  'Chennai',
-  'Mumbai',
-  'Hyderabad',
-  'Delhi NCR',
-  'UAE / Gulf',
-  'Abroad (US/UK/EU)',
-  'Any location',
-];
-
-const EDUCATION_OPTIONS = [
-  'Any qualification',
-  'Graduate Degree',
-  'Postgraduate / Masters',
-  'Doctorate / PhD',
-  'Professional (CA/MBBS/LLB/MBA)',
-];
-
-const PROFESSION_OPTIONS = [
-  'Any profession',
-  'Software / IT',
-  'Healthcare / Medical',
-  'Finance & Banking',
-  'Government / Civil Services',
-  'Business & Entrepreneurship',
-];
-
-const DIET_OPTIONS = [
-  "Doesn't Matter",
-  'Vegetarian',
-  'Eggetarian',
-  'Non-Vegetarian',
-];
-
 const STEPS = [
   { id: 1, label: "Personal", fullLabel: "Personal Details", isRequired: true },
-  { id: 2, label: "Preferences", fullLabel: "Partner Preferences", isRequired: true },
-  { id: 3, label: "Photo", fullLabel: "Profile Picture", isRequired: false },
-  { id: 4, label: "Security", fullLabel: "Account Password", isRequired: false },
-  { id: 5, label: "Album", fullLabel: "Album Photos", isRequired: true },
+  { id: 2, label: "Photo", fullLabel: "Profile Picture", isRequired: false },
+  { id: 3, label: "Security", fullLabel: "Account Password", isRequired: false },
+  { id: 4, label: "Album", fullLabel: "Album Photos", isRequired: true },
 ];
 
 export default function OnboardingPage() {
-  const [step, setStep] = useState<1 | 2 | 3 | 4 | 5>(1);
+  const [step, setStep] = useState<1 | 2 | 3 | 4>(1);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [emailError, setEmailError] = useState<string | null>(null);
@@ -125,24 +60,14 @@ export default function OnboardingPage() {
   const [draftInfo, setDraftInfo] = useState<any>(null);
   const [selectedCategories, setSelectedCategories] = useState<string[]>(["marriage"]);
   const [profileData, setProfileData] = useState<any>({});
-  const [preferencesData, setPreferencesData] = useState<any>({
-    minAge: 21,
-    maxAge: 32,
-    minHeight: "5'0\"",
-    maxHeight: "6'0\"",
-    maritalStatus: ["Never Married"],
-    religions: ["Open to all communities"],
-    locations: ["Kerala", "Bengaluru"],
-    education: ["Graduate Degree", "Postgraduate / Masters"],
-    professions: ["Any profession"],
-    diet: ["Doesn't Matter"],
-  });
+  const [preferencesData, setPreferencesData] = useState<any>({});
 
-  // Photo States (Step 3: Profile DP is Optional, Step 5: Album Photos is REQUIRED)
+  // Photo States (Step 3: Profile DP is Optional, Step 4: Album Photos is REQUIRED)
   const [primaryPhoto, setPrimaryPhoto] = useState<File | null>(null);
   const [uploadedPhotoId, setUploadedPhotoId] = useState<string | null>(null);
   const [uploadedPhotoUrl, setUploadedPhotoUrl] = useState<string | null>(null);
   const [albumPhotos, setAlbumPhotos] = useState<File[]>([]);
+  const [albumValidationError, setAlbumValidationError] = useState(false);
 
   // Optional Password Setup State (Step 4)
   const [password, setPassword] = useState("");
@@ -174,6 +99,8 @@ export default function OnboardingPage() {
             email: parsed.email || prev.email || "",
             profileFor: parsed.profileFor || prev.profileFor || "Marriage",
             createdBy: parsed.createdBy || prev.createdBy || "",
+            category: parsed.category || parsed.profileFor || prev.category || "Marriage",
+            lookingIn: parsed.lookingIn || prev.lookingIn || "",
           }));
 
           if (parsed.preferences) {
@@ -225,7 +152,7 @@ export default function OnboardingPage() {
               setPreferencesData((prev: any) => ({ ...prev, ...profile.preferences }));
             }
             if (profile.onboardingStep && profile.onboardingStep >= 1) {
-              const safeStep = Math.min(profile.onboardingStep, 5) as 1 | 2 | 3 | 4 | 5;
+              const safeStep = Math.min(profile.onboardingStep, 4) as 1 | 2 | 3 | 4;
               setStep(safeStep);
             }
           }
@@ -235,51 +162,6 @@ export default function OnboardingPage() {
         });
     }
   }, []);
-
-  const togglePreferenceArrayItem = (key: string, item: string, defaultAllItem?: string) => {
-    setPreferencesData((prev: any) => {
-      const raw = prev[key];
-      const currentList: string[] = Array.isArray(raw)
-        ? raw
-        : typeof raw === "string" && raw.length > 0
-        ? raw.split(",").map((s) => s.trim())
-        : [];
-
-      let updatedList: string[];
-
-      if (defaultAllItem && item === defaultAllItem) {
-        // If clicking "Open to all" / "Doesn't Matter" / "Any location", reset to just that
-        updatedList = [defaultAllItem];
-      } else {
-        // If defaultAllItem is currently selected and another is clicked, remove defaultAllItem
-        const filtered = defaultAllItem ? currentList.filter((x) => x !== defaultAllItem) : currentList;
-        if (filtered.includes(item)) {
-          updatedList = filtered.filter((x) => x !== item);
-          if (updatedList.length === 0 && defaultAllItem) {
-            updatedList = [defaultAllItem];
-          }
-        } else {
-          updatedList = [...filtered, item];
-        }
-      }
-
-      return {
-        ...prev,
-        [key]: updatedList,
-      };
-    });
-  };
-
-  const isPreferenceItemSelected = (key: string, item: string) => {
-    const raw = preferencesData[key];
-    if (Array.isArray(raw)) {
-      return raw.includes(item);
-    }
-    if (typeof raw === "string") {
-      return raw.split(",").map((s) => s.trim()).includes(item);
-    }
-    return false;
-  };
 
   const handleNext = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -375,69 +257,6 @@ export default function OnboardingPage() {
       } finally {
         setIsLoading(false);
       }
-    } else if (step === 2) {
-      setError(null);
-      const minAge = Number(preferencesData.minAge) || 21;
-      const maxAge = Number(preferencesData.maxAge) || 32;
-
-      if (minAge > maxAge) {
-        setError("Minimum age cannot be greater than maximum age.");
-        return;
-      }
-
-      const locationsList = Array.isArray(preferencesData.locations) && preferencesData.locations.length > 0
-        ? preferencesData.locations
-        : (preferencesData.location ? [preferencesData.location] : ["Any location"]);
-
-      const religionsList = Array.isArray(preferencesData.religions) && preferencesData.religions.length > 0
-        ? preferencesData.religions
-        : ["Open to all communities"];
-
-      const maritalStatusList = Array.isArray(preferencesData.maritalStatus) && preferencesData.maritalStatus.length > 0
-        ? preferencesData.maritalStatus
-        : ["Never Married"];
-
-      const educationList = Array.isArray(preferencesData.education) && preferencesData.education.length > 0
-        ? preferencesData.education
-        : ["Any qualification"];
-
-      const professionsList = Array.isArray(preferencesData.professions) && preferencesData.professions.length > 0
-        ? preferencesData.professions
-        : ["Any profession"];
-
-      const dietList = Array.isArray(preferencesData.diet) && preferencesData.diet.length > 0
-        ? preferencesData.diet
-        : ["Doesn't Matter"];
-
-      updatedPreferences = {
-        ...updatedPreferences,
-        ...preferencesData,
-        minAge,
-        maxAge,
-        minHeight: preferencesData.minHeight || "5'0\"",
-        maxHeight: preferencesData.maxHeight || "6'0\"",
-        maritalStatus: maritalStatusList,
-        religions: religionsList,
-        locations: locationsList,
-        education: educationList,
-        professions: professionsList,
-        diet: dietList,
-        location: locationsList.join(", "),
-        religion: religionsList.join(", "),
-      };
-
-      setPreferencesData(updatedPreferences);
-
-      setIsLoading(true);
-      try {
-        await profileService.updatePreferences("me", updatedPreferences).catch(() => {});
-        await profileService.updateProfile("me", {
-          ...updatedProfile,
-          preferences: updatedPreferences,
-        }).catch(() => {});
-      } finally {
-        setIsLoading(false);
-      }
     }
 
     // Auto-save step progress in background for subsequent steps
@@ -460,8 +279,8 @@ export default function OnboardingPage() {
       }
     }
 
-    if (step < 5) {
-      setStep((prev) => (prev + 1) as 1 | 2 | 3 | 4 | 5);
+    if (step < 4) {
+      setStep((prev) => (prev + 1) as 1 | 2 | 3 | 4);
     }
   };
 
@@ -481,7 +300,7 @@ export default function OnboardingPage() {
 
   const handleBack = () => {
     if (step > 1) {
-      setStep((prev) => (prev - 1) as 1 | 2 | 3 | 4 | 5);
+      setStep((prev) => (prev - 1) as 1 | 2 | 3 | 4);
     }
   };
 
@@ -498,7 +317,7 @@ export default function OnboardingPage() {
     }
   };
 
-  // Step 5: Required Album Photos Handler
+  // Step 4: Required Album Photos Handler
   const handleAlbumPhotoSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files.length > 0) {
       const selected = Array.from(e.target.files);
@@ -516,6 +335,7 @@ export default function OnboardingPage() {
 
       setAlbumPhotos((prev) => [...prev, ...renamed].slice(0, 6));
       setError(null);
+      setAlbumValidationError(false);
       if (albumInputRef.current) {
         albumInputRef.current.value = "";
       }
@@ -531,10 +351,11 @@ export default function OnboardingPage() {
     setIsLoading(true);
     setError(null);
 
-    // Step 5 requires at least 1 album photo
+    // Step 4 requires at least 1 album photo
     if (source === "complete" && albumPhotos.length === 0) {
-      setError("Please upload at least one album photo to activate your profile.");
-      toast.error("Album Photo Required", "At least one album photo is required to complete profile setup.");
+      setAlbumValidationError(true);
+      setError("At least one album photo is mandatory to complete profile setup.");
+      toast.error("Album Photo Mandatory", "At least one album photo is mandatory to complete your profile setup.");
       setIsLoading(false);
       return;
     }
@@ -544,7 +365,7 @@ export default function OnboardingPage() {
       let primaryPhotoUrl = uploadedPhotoUrl;
       let primaryPhotoIdVal = uploadedPhotoId;
 
-      // 1. Upload primary profile photo if selected in Step 3
+      // 1. Upload primary profile photo if selected in Step 2
       if (primaryPhoto && !uploadedPhotoId) {
         try {
           const uploadRes = await mediaService.uploadPhoto(primaryPhoto, true);
@@ -563,8 +384,8 @@ export default function OnboardingPage() {
         hasPrimarySet = true;
       }
 
-      // 2. Upload album photos (Step 5)
-      // Note: If Step 3 was skipped without a DP, the FIRST album photo becomes Primary DP!
+      // 2. Upload album photos (Step 4)
+      // Note: If Step 2 was skipped without a DP, the FIRST album photo becomes Primary DP!
       const allPhotoRecords: { id: string; url: string; isPrimary: boolean }[] = [];
       if (primaryPhotoIdVal && primaryPhotoUrl) {
         allPhotoRecords.push({ id: primaryPhotoIdVal, url: primaryPhotoUrl, isPrimary: true });
@@ -677,20 +498,20 @@ export default function OnboardingPage() {
     await finalizeOnboarding("skip_to_finish");
   };
 
-  // Skip a single optional step to advance to next (Steps 3, 4)
+  // Skip a single optional step to advance to next (Steps 2, 3)
   const handleSkipSingleStep = () => {
     setError(null);
-    if (step < 5) {
-      setStep((prev) => (prev + 1) as 1 | 2 | 3 | 4 | 5);
+    if (step < 4) {
+      setStep((prev) => (prev + 1) as 1 | 2 | 3 | 4);
       toast.info("Step skipped", "You can always configure this section later in your profile settings.");
     } else {
-      // Step 5 cannot be skipped because at least 1 album photo is required
+      // Step 4 cannot be skipped because at least 1 album photo is required
       setError("Please upload at least one album photo to activate your profile.");
       toast.error("Album Photo Required", "At least one album photo is required.");
     }
   };
 
-  // Step 4: Save Optional Password
+  // Step 3: Save Optional Password
   const handleSavePassword = async (e: React.FormEvent) => {
     e.preventDefault();
     setPasswordError(null);
@@ -712,7 +533,7 @@ export default function OnboardingPage() {
         "Password saved",
         "You can now also sign in using your email/phone and password!"
       );
-      setStep(5);
+      setStep(4);
     } catch (err: any) {
       const msg = err.message || "Failed to set password. You can still skip this step.";
       setPasswordError(msg);
@@ -722,19 +543,100 @@ export default function OnboardingPage() {
     }
   };
 
-  // Step 4: Skip Password Setup
+  // Step 3: Skip Password Setup
   const handleSkipPassword = () => {
     setPasswordError(null);
     toast.info("Step skipped", "You can continue signing in anytime using Mobile OTP.");
-    setStep(5);
+    setStep(4);
   };
 
-  // Step 5: Final Complete (delegates to finalizeOnboarding)
+  // Step 4: Final Complete (delegates to finalizeOnboarding)
   const handleComplete = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (albumPhotos.length === 0) {
+      setAlbumValidationError(true);
+      setError("At least one album photo is mandatory to complete profile setup.");
+      toast.error("Album Photo Mandatory", "At least one album photo is mandatory to complete your profile setup.");
+      return;
+    }
     await finalizeOnboarding("complete");
   };
 
+  // Determine active registration stream & community for onboarding badges & messaging
+  const getRegistrationBadge = () => {
+    const cat = String(
+      draftInfo?.category ||
+      draftInfo?.profileFor ||
+      profileData?.category ||
+      profileData?.profileFor ||
+      ""
+    ).toLowerCase();
+
+    const community = String(
+      draftInfo?.lookingIn ||
+      draftInfo?.community ||
+      profileData?.lookingIn ||
+      preferencesData?.location ||
+      ""
+    ).toLowerCase();
+
+    // Marriage variants
+    if (cat.includes("marriage") || cat === "") {
+      if (community.includes("kerala")) {
+        return {
+          label: "Kerala Matrimony",
+          colorClass: "bg-[#FDF2F4] border-[#F7C6CE] text-[#7A1835]",
+          icon: IconHeartHandshake,
+        };
+      }
+      if (community.includes("telugu")) {
+        return {
+          label: "Telugu Matrimony",
+          colorClass: "bg-[#FAF3EC] border-[#EAD8C7] text-[#8C5D2C]",
+          icon: IconHeartHandshake,
+        };
+      }
+      if (community.includes("bharat")) {
+        return {
+          label: "Bharat Matrimony",
+          colorClass: "bg-[#F0F7F4] border-[#C8E4D6] text-[#1E7E52]",
+          icon: IconWorld,
+        };
+      }
+      return {
+        label: "Matrimony",
+        colorClass: "bg-[#FDF2F4] border-[#F7C6CE] text-[#7A1835]",
+        icon: IconHeartHandshake,
+      };
+    }
+
+    // Friendship
+    if (cat.includes("friend")) {
+      return {
+        label: "Friendship",
+        colorClass: "bg-[#FAF5FF] border-[#E9D5FF] text-[#7E22CE]",
+        icon: IconUsers,
+      };
+    }
+
+    // Living Together
+    if (cat.includes("living")) {
+      return {
+        label: "Living Together",
+        colorClass: "bg-[#F0FDF4] border-[#BBF7D0] text-[#15803D]",
+        icon: IconHomeHeart,
+      };
+    }
+
+    return {
+      label: "Matrimony",
+      colorClass: "bg-[#FDF2F4] border-[#F7C6CE] text-[#7A1835]",
+      icon: IconHeartHandshake,
+    };
+  };
+
+  const regBadge = getRegistrationBadge();
+  const RegIcon = regBadge.icon;
 
   return (
     <main className="relative min-h-screen w-full bg-[var(--background)] flex flex-col">
@@ -774,7 +676,7 @@ export default function OnboardingPage() {
       <header className="sticky top-0 z-40 border-b border-[var(--border)]/80 bg-white/90 backdrop-blur-xl">
         <div className={cn(
           "mx-auto flex h-16 sm:h-20 items-center justify-between px-4 sm:px-6 transition-all duration-300",
-          step <= 2 ? "max-w-5xl xl:max-w-6xl" : "max-w-5xl"
+          step === 1 ? "max-w-5xl xl:max-w-6xl" : "max-w-5xl"
         )}>
           <Logo href="#" />
 
@@ -829,13 +731,13 @@ export default function OnboardingPage() {
           <div className="flex items-center gap-2">
             {STEPS.find((s) => s.id === step)?.isRequired ? (
               <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-[#80132E] bg-[#FDF2F4] border border-[#80132E]/20 px-3 py-1.5 rounded-full shadow-2xs">
-                <span>Step {step} of 5</span>
+                <span>Step {step} of 4</span>
                 <span className="w-1 h-1 rounded-full bg-[#80132E]" />
                 <span className="font-bold">Required</span>
               </span>
             ) : (
               <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-slate-700 bg-slate-100 border border-slate-200 px-3 py-1.5 rounded-full shadow-2xs">
-                <span>Step {step} of 5</span>
+                <span>Step {step} of 4</span>
                 <span className="w-1 h-1 rounded-full bg-slate-400" />
                 <span>Optional</span>
               </span>
@@ -845,8 +747,8 @@ export default function OnboardingPage() {
 
         {/* Multi-Segmented Luxury Progress Track */}
         <div className={cn(
-          "grid grid-cols-5 gap-1 w-full px-4 sm:px-6 pb-2 pt-0.5 mx-auto transition-all duration-300",
-          step <= 2 ? "max-w-5xl xl:max-w-6xl" : "max-w-5xl"
+          "grid grid-cols-4 gap-1.5 w-full px-4 sm:px-6 pb-2 pt-0.5 mx-auto transition-all duration-300",
+          step === 1 ? "max-w-5xl xl:max-w-6xl" : "max-w-5xl"
         )}>
           {STEPS.map((s) => {
             const isCompleted = step > s.id;
@@ -873,10 +775,10 @@ export default function OnboardingPage() {
       <div className="relative z-10 flex-1 flex items-center justify-center p-4 sm:p-6 lg:p-8">
         <div className={cn(
           "w-full bg-white/95 backdrop-blur-xl rounded-3xl border border-[var(--border)] shadow-[0_24px_70px_rgba(92,16,39,0.08)] overflow-hidden transition-all duration-300",
-          step <= 2 ? "max-w-5xl xl:max-w-6xl" : "max-w-2xl"
+          step === 1 ? "max-w-5xl xl:max-w-6xl" : "max-w-2xl"
         )}>
           <div className="p-6 sm:p-8 lg:p-10">
-            {error && (
+            {error && step === 1 && (
               <div
                 role="alert"
                 className="mb-5 rounded-xl border border-red-200 bg-red-50/80 p-3.5 text-sm text-red-700 animate-in fade-in"
@@ -891,17 +793,32 @@ export default function OnboardingPage() {
             {step === 1 && (
               <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
                 <div className="mb-6">
-                  {draftInfo?.name && (
-                    <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#FAF3EC] border border-[#D89B65]/40 text-[#8C5D2C] text-xs font-bold mb-2.5">
-                      <IconSparkles className="h-3.5 w-3.5 text-[#D89B65]" />
-                      <span>Welcome, {draftInfo.firstName || draftInfo.name}</span>
+                  <div className="flex flex-wrap items-center gap-2 mb-2.5">
+                    {draftInfo?.name && (
+                      <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#FAF3EC] border border-[#D89B65]/40 text-[#8C5D2C] text-xs font-bold shadow-2xs">
+                        <IconHeartHandshake className="h-3.5 w-3.5 text-[#D89B65]" />
+                        <span>Welcome, {draftInfo.firstName || draftInfo.name}</span>
+                      </div>
+                    )}
+                    <div
+                      className={cn(
+                        "inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold border shadow-2xs transition-all animate-in fade-in zoom-in-95 duration-200",
+                        regBadge.colorClass
+                      )}
+                    >
+                      <RegIcon className="h-3.5 w-3.5 shrink-0" />
+                      <span>{regBadge.label}</span>
                     </div>
-                  )}
+                  </div>
                   <h1 className="text-2xl sm:text-3xl font-bold text-[var(--foreground)] tracking-tight">
                     Personal & Contact Details
                   </h1>
                   <p className="mt-1.5 text-sm text-[var(--muted)] leading-relaxed">
-                    Please provide your primary email address and confirm your core profile information.
+                    Please complete your{" "}
+                    <span className="font-bold text-[#80132E]">
+                      {regBadge.label}
+                    </span>{" "}
+                    profile and confirm your core profile information.
                   </p>
                 </div>
 
@@ -910,7 +827,7 @@ export default function OnboardingPage() {
                   <div className="text-xs text-amber-950 leading-relaxed">
                     <span className="font-bold text-[#8C5D2C]">Essential Profile Setup: </span>
                     <span className="text-slate-700">
-                      Personal Details (Step 1), Partner Preferences (Step 2), and Album Photos (Step 5) are required to activate your account and discover compatible matches. Profile photo and password can be completed now or updated later in your profile.
+                      Personal Details (Step 1) and Album Photos (Step 4) are required to activate your account and discover compatible matches. Profile photo and password can be completed now or updated later in your profile. Partner preferences can be customized anytime directly on the Discover page.
                     </span>
                   </div>
                 </div>
@@ -1134,7 +1051,7 @@ export default function OnboardingPage() {
                       <div className="p-5 sm:p-6 rounded-2xl bg-white/80 border border-[var(--border)] shadow-xs space-y-3">
                         <div className="flex items-center justify-between pb-2 border-b border-[var(--border)]/60">
                           <div className="flex items-center gap-2">
-                            <IconSparkles className="w-5 h-5 text-[#80132E]" />
+                            <IconShieldCheck className="w-5 h-5 text-[#80132E]" />
                             <h2 className="text-sm font-bold uppercase tracking-wider text-[var(--foreground)]">
                               About You & Family Background
                             </h2>
@@ -1165,7 +1082,7 @@ export default function OnboardingPage() {
                       type="submit"
                       className="focus-ring inline-flex h-12 w-full sm:w-auto items-center justify-center gap-2 rounded-xl bg-[var(--primary)] px-8 text-sm font-semibold text-white shadow-md hover:bg-[var(--primary-deep)] transition-all cursor-pointer active-press"
                     >
-                      <span>Continue to Preferences</span>
+                      <span>Continue to Profile Photo</span>
                       <IconArrowRight className="h-4 w-4" />
                     </button>
                   </div>
@@ -1174,353 +1091,13 @@ export default function OnboardingPage() {
             )}
 
             {/* ========================================================================= */}
-            {/* Step 2: Partner Preferences (REQUIRED)                                    */}
+            {/* Step 2: Primary Photo Upload (OPTIONAL / SKIPPABLE)                       */}
             {/* ========================================================================= */}
             {step === 2 && (
               <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
                 <div className="mb-6">
-                  <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#FDF2F4] text-[#80132E] text-xs font-semibold mb-2.5 border border-[#80132E]/20 shadow-2xs">
-                    <span>Step 2 of 5</span>
-                    <span className="w-1 h-1 rounded-full bg-[#80132E]" />
-                    <span className="font-bold">Required</span>
-                  </div>
-                  <h1 className="text-2xl sm:text-3xl font-bold text-[var(--foreground)] tracking-tight">
-                    Partner Preferences
-                  </h1>
-                  <p className="mt-1.5 text-sm text-[var(--muted)]">
-                    Define your partner criteria. These matchmaking parameters ensure you discover compatible matches aligned with your life expectations.
-                  </p>
-                </div>
-
-                {error && (
-                  <div className="mb-6 p-4 rounded-xl bg-red-50 border border-red-200 text-red-700 text-sm flex items-center gap-3">
-                    <span className="w-2 h-2 rounded-full bg-red-500 flex-shrink-0" />
-                    <span>{error}</span>
-                  </div>
-                )}
-
-                <form onSubmit={handleNext} className="space-y-6">
-                  {/* Two-Column Responsive Layout for Desktop Mode */}
-                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 lg:gap-6 items-start">
-                    {/* Left Column: Demographics, Status, Community & Lifestyle */}
-                    <div className="space-y-5 lg:space-y-6">
-                      {/* 1. Age & Height Range */}
-                      <div className="p-5 sm:p-6 rounded-2xl bg-white/80 border border-[var(--border)] shadow-xs space-y-5">
-                        <div className="flex items-center gap-2 pb-2 border-b border-[var(--border)]/60">
-                          <IconCalendar className="w-5 h-5 text-[#80132E]" />
-                          <h2 className="text-sm font-bold uppercase tracking-wider text-[var(--foreground)]">
-                            Age & Height Range
-                          </h2>
-                        </div>
-
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                          {/* Age Range */}
-                          <div>
-                            <label className="block text-xs font-semibold uppercase tracking-wider text-[var(--muted-strong)] mb-2">
-                              Age Range
-                            </label>
-                            <div className="grid grid-cols-2 gap-2 sm:gap-3 items-center">
-                              <ModernSelect
-                                label="Min Age"
-                                value={String(preferencesData.minAge ?? 21)}
-                                onChange={(val) =>
-                                  setPreferencesData((prev: any) => ({ ...prev, minAge: Number(val) }))
-                                }
-                                options={AGE_OPTIONS}
-                              />
-                              <ModernSelect
-                                label="Max Age"
-                                value={String(preferencesData.maxAge ?? 32)}
-                                onChange={(val) =>
-                                  setPreferencesData((prev: any) => ({ ...prev, maxAge: Number(val) }))
-                                }
-                                options={AGE_OPTIONS}
-                              />
-                            </div>
-                          </div>
-
-                          {/* Height Range */}
-                          <div>
-                            <label className="block text-xs font-semibold uppercase tracking-wider text-[var(--muted-strong)] mb-2">
-                              Height Range
-                            </label>
-                            <div className="grid grid-cols-2 gap-2 sm:gap-3 items-center">
-                              <ModernSelect
-                                label="Min Height"
-                                value={preferencesData.minHeight ?? "5'0\""}
-                                onChange={(val) =>
-                                  setPreferencesData((prev: any) => ({ ...prev, minHeight: val }))
-                                }
-                                options={HEIGHT_SELECT_OPTIONS}
-                              />
-                              <ModernSelect
-                                label="Max Height"
-                                value={preferencesData.maxHeight ?? "6'0\""}
-                                onChange={(val) =>
-                                  setPreferencesData((prev: any) => ({ ...prev, maxHeight: val }))
-                                }
-                                options={HEIGHT_SELECT_OPTIONS}
-                              />
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* 2. Marital Status */}
-                      <div className="p-5 sm:p-6 rounded-2xl bg-white/80 border border-[var(--border)] shadow-xs space-y-3">
-                        <div className="flex items-center justify-between pb-2 border-b border-[var(--border)]/60">
-                          <div className="flex items-center gap-2">
-                            <IconHeart className="w-5 h-5 text-[#80132E]" />
-                            <h2 className="text-sm font-bold uppercase tracking-wider text-[var(--foreground)]">
-                              Marital Status
-                            </h2>
-                          </div>
-                          <span className="text-[11px] text-[var(--muted)]">Tap to select</span>
-                        </div>
-                        <div className="flex flex-wrap gap-2 pt-1">
-                          {MARITAL_STATUS_OPTIONS.map((opt) => {
-                            const isSelected = isPreferenceItemSelected("maritalStatus", opt);
-                            return (
-                              <button
-                                key={opt}
-                                type="button"
-                                onClick={() => togglePreferenceArrayItem("maritalStatus", opt, "Open to All")}
-                                className={cn(
-                                  "inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs sm:text-sm font-medium border transition-all cursor-pointer active-press",
-                                  isSelected
-                                    ? "bg-[#80132E] text-white border-[#80132E] shadow-xs font-semibold ring-2 ring-[#D89B65]/30"
-                                    : "bg-white text-slate-700 border-slate-200/90 hover:border-slate-300 hover:bg-slate-50"
-                                )}
-                              >
-                                {isSelected && <IconCheck className="w-3.5 h-3.5 text-[#D89B65] stroke-[3]" />}
-                                <span>{opt}</span>
-                              </button>
-                            );
-                          })}
-                        </div>
-                      </div>
-
-                      {/* 3. Religion / Community */}
-                      <div className="p-5 sm:p-6 rounded-2xl bg-white/80 border border-[var(--border)] shadow-xs space-y-3">
-                        <div className="flex items-center justify-between pb-2 border-b border-[var(--border)]/60">
-                          <div className="flex items-center gap-2">
-                            <IconSparkles className="w-5 h-5 text-[#80132E]" />
-                            <h2 className="text-sm font-bold uppercase tracking-wider text-[var(--foreground)]">
-                              Religion / Community
-                            </h2>
-                          </div>
-                          <span className="text-[11px] text-[var(--muted)]">Multi-choice supported</span>
-                        </div>
-                        <div className="flex flex-wrap gap-2 pt-1">
-                          {RELIGION_OPTIONS.map((opt) => {
-                            const isSelected = isPreferenceItemSelected("religions", opt);
-                            return (
-                              <button
-                                key={opt}
-                                type="button"
-                                onClick={() =>
-                                  togglePreferenceArrayItem("religions", opt, "Open to all communities")
-                                }
-                                className={cn(
-                                  "inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs sm:text-sm font-medium border transition-all cursor-pointer active-press",
-                                  isSelected
-                                    ? "bg-[#80132E] text-white border-[#80132E] shadow-xs font-semibold ring-2 ring-[#D89B65]/30"
-                                    : "bg-white text-slate-700 border-slate-200/90 hover:border-slate-300 hover:bg-slate-50"
-                                )}
-                              >
-                                {isSelected && <IconCheck className="w-3.5 h-3.5 text-[#D89B65] stroke-[3]" />}
-                                <span>{opt}</span>
-                              </button>
-                            );
-                          })}
-                        </div>
-                      </div>
-
-                      {/* 6. Diet Preference */}
-                      <div className="p-5 sm:p-6 rounded-2xl bg-white/80 border border-[var(--border)] shadow-xs space-y-3">
-                        <div className="flex items-center justify-between pb-2 border-b border-[var(--border)]/60">
-                          <div className="flex items-center gap-2">
-                            <IconCoffee className="w-5 h-5 text-[#80132E]" />
-                            <h2 className="text-sm font-bold uppercase tracking-wider text-[var(--foreground)]">
-                              Diet Preference
-                            </h2>
-                          </div>
-                          <span className="text-[11px] text-[var(--muted)]">Lifestyle choice</span>
-                        </div>
-                        <div className="flex flex-wrap gap-2 pt-1">
-                          {DIET_OPTIONS.map((opt) => {
-                            const isSelected = isPreferenceItemSelected("diet", opt);
-                            return (
-                              <button
-                                key={opt}
-                                type="button"
-                                onClick={() => togglePreferenceArrayItem("diet", opt, "Doesn't Matter")}
-                                className={cn(
-                                  "inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs sm:text-sm font-medium border transition-all cursor-pointer active-press",
-                                  isSelected
-                                    ? "bg-[#80132E] text-white border-[#80132E] shadow-xs font-semibold ring-2 ring-[#D89B65]/30"
-                                    : "bg-white text-slate-700 border-slate-200/90 hover:border-slate-300 hover:bg-slate-50"
-                                )}
-                              >
-                                {isSelected && <IconCheck className="w-3.5 h-3.5 text-[#D89B65] stroke-[3]" />}
-                                <span>{opt}</span>
-                              </button>
-                            );
-                          })}
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Right Column: Location & Education/Career Background */}
-                    <div className="space-y-5 lg:space-y-6">
-                      {/* 4. Preferred Locations */}
-                      <div className="p-5 sm:p-6 rounded-2xl bg-white/80 border border-[var(--border)] shadow-xs space-y-3">
-                        <div className="flex items-center justify-between pb-2 border-b border-[var(--border)]/60">
-                          <div className="flex items-center gap-2">
-                            <IconMapPin className="w-5 h-5 text-[#80132E]" />
-                            <h2 className="text-sm font-bold uppercase tracking-wider text-[var(--foreground)]">
-                              Preferred Locations
-                            </h2>
-                          </div>
-                          <span className="text-[11px] text-[var(--muted)]">State / City / Region</span>
-                        </div>
-                        <div className="flex flex-wrap gap-2 pt-1">
-                          {LOCATION_OPTIONS.map((opt) => {
-                            const isSelected = isPreferenceItemSelected("locations", opt);
-                            return (
-                              <button
-                                key={opt}
-                                type="button"
-                                onClick={() => togglePreferenceArrayItem("locations", opt, "Any location")}
-                                className={cn(
-                                  "inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs sm:text-sm font-medium border transition-all cursor-pointer active-press",
-                                  isSelected
-                                    ? "bg-[#80132E] text-white border-[#80132E] shadow-xs font-semibold ring-2 ring-[#D89B65]/30"
-                                    : "bg-white text-slate-700 border-slate-200/90 hover:border-slate-300 hover:bg-slate-50"
-                                )}
-                              >
-                                {isSelected && <IconCheck className="w-3.5 h-3.5 text-[#D89B65] stroke-[3]" />}
-                                <span>{opt}</span>
-                              </button>
-                            );
-                          })}
-                        </div>
-                      </div>
-
-                      {/* 5. Education & Profession */}
-                      <div className="p-5 sm:p-6 rounded-2xl bg-white/80 border border-[var(--border)] shadow-xs space-y-5">
-                        <div className="flex items-center gap-2 pb-2 border-b border-[var(--border)]/60">
-                          <IconSchool className="w-5 h-5 text-[#80132E]" />
-                          <h2 className="text-sm font-bold uppercase tracking-wider text-[var(--foreground)]">
-                            Education & Career Background
-                          </h2>
-                        </div>
-
-                        <div className="space-y-4">
-                          <div>
-                            <label className="block text-xs font-semibold uppercase tracking-wider text-[var(--muted-strong)] mb-2">
-                              Education Level
-                            </label>
-                            <div className="flex flex-wrap gap-2">
-                              {EDUCATION_OPTIONS.map((opt) => {
-                                const isSelected = isPreferenceItemSelected("education", opt);
-                                return (
-                                  <button
-                                    key={opt}
-                                    type="button"
-                                    onClick={() =>
-                                      togglePreferenceArrayItem("education", opt, "Any qualification")
-                                    }
-                                    className={cn(
-                                      "inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs sm:text-sm font-medium border transition-all cursor-pointer active-press",
-                                      isSelected
-                                        ? "bg-[#80132E] text-white border-[#80132E] shadow-xs font-semibold ring-2 ring-[#D89B65]/30"
-                                        : "bg-white text-slate-700 border-slate-200/90 hover:border-slate-300 hover:bg-slate-50"
-                                    )}
-                                  >
-                                    {isSelected && <IconCheck className="w-3.5 h-3.5 text-[#D89B65] stroke-[3]" />}
-                                    <span>{opt}</span>
-                                  </button>
-                                );
-                              })}
-                            </div>
-                          </div>
-
-                          <div>
-                            <label className="block text-xs font-semibold uppercase tracking-wider text-[var(--muted-strong)] mb-2">
-                              Profession / Sector
-                            </label>
-                            <div className="flex flex-wrap gap-2">
-                              {PROFESSION_OPTIONS.map((opt) => {
-                                const isSelected = isPreferenceItemSelected("professions", opt);
-                                return (
-                                  <button
-                                    key={opt}
-                                    type="button"
-                                    onClick={() =>
-                                      togglePreferenceArrayItem("professions", opt, "Any profession")
-                                    }
-                                    className={cn(
-                                      "inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs sm:text-sm font-medium border transition-all cursor-pointer active-press",
-                                      isSelected
-                                        ? "bg-[#80132E] text-white border-[#80132E] shadow-xs font-semibold ring-2 ring-[#D89B65]/30"
-                                        : "bg-white text-slate-700 border-slate-200/90 hover:border-slate-300 hover:bg-slate-50"
-                                    )}
-                                  >
-                                    {isSelected && <IconCheck className="w-3.5 h-3.5 text-[#D89B65] stroke-[3]" />}
-                                    <span>{opt}</span>
-                                  </button>
-                                );
-                              })}
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Actions: Back & Save & Continue (No skip here since Step 2 is Required) */}
-                  <div className="pt-6 flex flex-col sm:flex-row items-center justify-between gap-3 border-t border-[var(--border)]/70">
-                    <button
-                      type="button"
-                      onClick={handleBack}
-                      className="focus-ring inline-flex h-12 w-full sm:w-auto items-center justify-center gap-2 rounded-xl bg-[var(--surface-muted)] px-5 text-sm font-semibold text-[var(--foreground)] hover:bg-[var(--border)] transition-all order-2 sm:order-1 cursor-pointer"
-                    >
-                      <IconArrowLeft className="h-4 w-4" /> Back to Personal Details
-                    </button>
-
-                    <div className="flex items-center gap-3 w-full sm:w-auto justify-end order-1 sm:order-2">
-                      <button
-                        type="submit"
-                        disabled={isLoading}
-                        className="focus-ring inline-flex h-12 w-full sm:w-auto items-center justify-center gap-2 rounded-xl bg-[var(--primary)] px-8 text-sm font-semibold text-white shadow-md hover:bg-[var(--primary-deep)] transition-all cursor-pointer active-press disabled:opacity-50"
-                      >
-                        {isLoading ? (
-                          <>
-                            <IconLoader2 className="h-4 w-4 animate-spin" />
-                            <span>Saving Preferences...</span>
-                          </>
-                        ) : (
-                          <>
-                            <span>Save & Continue</span>
-                            <IconArrowRight className="h-4 w-4" />
-                          </>
-                        )}
-                      </button>
-                    </div>
-                  </div>
-                </form>
-              </div>
-            )}
-
-            {/* ========================================================================= */}
-            {/* Step 3: Primary Photo Upload (OPTIONAL / SKIPPABLE)                       */}
-            {/* ========================================================================= */}
-            {step === 3 && (
-              <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
-                <div className="mb-6">
                   <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-slate-100 text-slate-700 text-xs font-semibold mb-2.5 border border-slate-200">
-                    <span>Optional Step 3 of 5</span>
+                    <span>Optional Step 2 of 4</span>
                     <span className="w-1 h-1 rounded-full bg-slate-400" />
                     <span className="text-emerald-700 font-semibold">Optional</span>
                   </div>
@@ -1528,7 +1105,7 @@ export default function OnboardingPage() {
                     Profile Picture (Optional)
                   </h1>
                   <p className="mt-1.5 text-sm text-[var(--muted)]">
-                    You can upload a main display photo now, or skip this step and add photos directly to your album in Step 5.
+                    You can upload a main display photo now, or skip this step and add photos directly to your album in Step 4.
                   </p>
                 </div>
 
@@ -1592,7 +1169,7 @@ export default function OnboardingPage() {
                       <h3 className="text-sm font-semibold text-[var(--foreground)]">
                         Click to upload your display picture (Optional)
                       </h3>
-                      <p className="text-xs text-[var(--muted)] mt-1.5">JPEG, PNG, JPG up to 5MB (You can also skip and add photos in Step 5)</p>
+                      <p className="text-xs text-[var(--muted)] mt-1.5">JPEG, PNG, JPG up to 5MB (You can also skip and add photos in Step 4)</p>
                       <button
                         type="button"
                         className="mt-5 text-xs font-semibold text-[var(--primary)] bg-white px-4 py-2 rounded-lg shadow-sm border border-[var(--border)] group-hover:border-[var(--primary)]/30"
@@ -1622,7 +1199,7 @@ export default function OnboardingPage() {
                       onClick={handleBack}
                       className="focus-ring inline-flex h-12 w-full sm:w-auto items-center justify-center gap-2 rounded-xl bg-[var(--surface-muted)] px-5 text-sm font-semibold text-[var(--foreground)] hover:bg-[var(--border)] transition-all order-2 sm:order-1 cursor-pointer"
                     >
-                      <IconArrowLeft className="h-4 w-4" /> Back to Preferences
+                      <IconArrowLeft className="h-4 w-4" /> Back to Personal Details
                     </button>
 
                     <div className="flex items-center gap-3 w-full sm:w-auto justify-end order-1 sm:order-2">
@@ -1645,7 +1222,7 @@ export default function OnboardingPage() {
                           </>
                         ) : (
                           <>
-                            <span>{primaryPhoto ? "Save Photo & Continue" : "Skip Photo & Continue"}</span>
+                            <span>{primaryPhoto ? "Save Photo & Continue" : "Continue"}</span>
                             <IconArrowRight className="h-4 w-4" />
                           </>
                         )}
@@ -1653,32 +1230,32 @@ export default function OnboardingPage() {
                     </div>
                   </div>
 
-                  <div className="pt-2 text-center">
+                  {/* <div className="pt-2 text-center">
                     <button
                       type="button"
-                      onClick={() => setStep(5)}
+                      onClick={() => setStep(4)}
                       className="inline-flex items-center gap-1.5 text-xs font-semibold text-[var(--muted)] hover:text-[#80132E] transition cursor-pointer"
                     >
-                      <IconSparkles className="h-3.5 w-3.5 text-[#D89B65]" />
-                      <span>Skip to Album Photos (Step 5) →</span>
+                      <IconShieldCheck className="h-3.5 w-3.5 text-[#D89B65]" />
+                      <span>Skip to Album Photos (Step 4) →</span>
                     </button>
                     <p className="text-[11px] text-slate-400 mt-1">
-                      Profile picture is optional. You will add at least 1 photo to your album in Step 5.
+                      Profile picture is optional. You will add at least 1 photo to your album in Step 4.
                     </p>
-                  </div>
+                  </div> */}
                 </form>
               </div>
             )}
 
             {/* ========================================================================= */}
-            {/* Step 4: Account Security / Optional Password (OPTIONAL / SKIPPABLE)        */}
+            {/* Step 3: Account Security / Optional Password (OPTIONAL / SKIPPABLE)        */}
             {/* ========================================================================= */}
-            {step === 4 && (
+            {step === 3 && (
               <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
                 <div className="mb-6">
                   <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-semibold mb-2.5">
                     <IconShieldCheck className="h-3.5 w-3.5 text-emerald-600" />
-                    <span>Optional Step 4 of 5 • Security</span>
+                    <span>Optional Step 3 of 4 • Security</span>
                   </div>
                   <h1 className="text-2xl sm:text-3xl font-bold text-[var(--foreground)] tracking-tight">
                     Set a Login Password
@@ -1771,7 +1348,7 @@ export default function OnboardingPage() {
                       onClick={handleBack}
                       className="focus-ring inline-flex h-12 w-full sm:w-auto items-center justify-center gap-2 rounded-xl bg-[var(--surface-muted)] px-5 text-sm font-semibold text-[var(--foreground)] hover:bg-[var(--border)] transition-all order-2 sm:order-1 cursor-pointer"
                     >
-                      <IconArrowLeft className="h-4 w-4" /> Back
+                      <IconArrowLeft className="h-4 w-4" /> Back to Profile Photo
                     </button>
 
                     <div className="flex items-center gap-3 w-full sm:w-auto justify-end order-1 sm:order-2">
@@ -1802,37 +1379,34 @@ export default function OnboardingPage() {
                     </div>
                   </div>
 
-                  <div className="pt-2 text-center">
+                  {/* <div className="pt-2 text-center">
                     <button
                       type="button"
                       onClick={() => {
                         if (albumPhotos.length > 0) {
                           handleSkipToFinish();
                         } else {
-                          setStep(5);
+                          setStep(4);
                           toast.info("Album Photo Required", "Please upload at least one album photo to complete your profile.");
                         }
                       }}
                       className="inline-flex items-center gap-1.5 text-xs font-semibold text-[var(--muted)] hover:text-[#80132E] transition cursor-pointer"
                     >
-                      <span>Continue to Album Photos (Step 5) →</span>
+                      <span>Continue to Album Photos (Step 4) →</span>
                     </button>
-                  </div>
+                  </div> */}
                 </form>
               </div>
             )}
 
             {/* ========================================================================= */}
-            {/* Step 5: Album Photos (REQUIRED: At least 1 photo)                          */}
+            {/* Step 4: Album Photos (REQUIRED: At least 1 photo)                          */}
             {/* ========================================================================= */}
-            {step === 5 && (
+            {step === 4 && (
               <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
                 <div className="mb-6 text-center">
-                  <div className="mx-auto h-16 w-16 bg-[#FAF3EC] border border-[#D89B65]/40 rounded-full flex items-center justify-center mb-4 shadow-sm">
-                    <IconCamera className="h-8 w-8 text-[#80132E]" />
-                  </div>
                   <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#FDF2F4] text-[#80132E] text-xs font-semibold mb-2.5 border border-[#80132E]/20 shadow-2xs">
-                    <span>Step 5 of 5</span>
+                    <span>Step 4 of 4</span>
                     <span className="w-1 h-1 rounded-full bg-[#80132E]" />
                     <span className="font-bold">Required</span>
                   </div>
@@ -1840,7 +1414,7 @@ export default function OnboardingPage() {
                     Album Photos
                   </h1>
                   <p className="mt-1.5 text-sm text-[var(--muted)] max-w-md mx-auto">
-                    Upload at least 1 clear photo to your profile album to activate your profile and start discovering compatible matches.
+                    Upload clear photos to your profile album to activate your profile and start discovering compatible matches.
                   </p>
                 </div>
 
@@ -1857,40 +1431,23 @@ export default function OnboardingPage() {
                       <label className="block text-xs font-bold uppercase tracking-wider text-[var(--muted-strong)]">
                         Album Photos <span className="text-rose-500">* (At least 1 required)</span>
                       </label>
-                      <span className="text-xs text-slate-500 font-medium">
+                      {/* <span className="text-xs text-slate-500 font-medium">
                         {albumPhotos.length} of 6 photos selected
-                      </span>
+                      </span> */}
                     </div>
 
-                    {albumPhotos.length === 0 ? (
-                      <div
-                        onClick={() => albumInputRef.current?.click()}
-                        className="flex flex-col items-center justify-center border-2 border-dashed border-[var(--border)] rounded-2xl bg-[var(--surface-muted)] p-10 sm:p-12 text-center hover:bg-[var(--primary)]/5 hover:border-[var(--primary)]/30 transition-colors cursor-pointer group"
-                      >
-                        <div className="h-16 w-16 rounded-full bg-white shadow-sm flex items-center justify-center mb-4 text-[var(--primary)] group-hover:scale-105 transition-transform">
-                          <IconUpload className="h-8 w-8" />
-                        </div>
-                        <h3 className="text-sm font-semibold text-[var(--foreground)]">
-                          Click to upload album photos <span className="text-rose-500">*</span>
-                        </h3>
-                        <p className="text-xs text-[var(--muted)] mt-1.5">
-                          Select one or multiple photos (JPEG, PNG up to 5MB each)
-                        </p>
-                        <button
-                          type="button"
-                          className="mt-5 text-xs font-semibold text-[var(--primary)] bg-white px-4 py-2 rounded-lg shadow-sm border border-[var(--border)] group-hover:border-[var(--primary)]/30"
-                        >
-                          Browse Files
-                        </button>
-                      </div>
-                    ) : (
-                      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3.5">
-                        {albumPhotos.map((file, idx) => {
-                          const isFirstAndNoDp = !primaryPhoto && idx === 0;
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-3.5">
+                      {Array.from({ length: Math.max(4, Math.min(albumPhotos.length + 1, 6)) }).map((_, idx) => {
+                        const file = albumPhotos[idx];
+                        const isFirstSlot = idx === 0;
+                        const isFirstAndNoDp = !primaryPhoto && isFirstSlot;
+                        const hasPhoto = Boolean(file);
+
+                        if (hasPhoto && file) {
                           return (
                             <div
                               key={idx}
-                              className="relative group aspect-square rounded-2xl overflow-hidden border-2 border-slate-200 bg-slate-100 shadow-xs flex flex-col justify-between p-2.5"
+                              className="relative group aspect-square rounded-2xl overflow-hidden border-2 border-slate-200 bg-slate-100 shadow-xs flex flex-col justify-between p-2.5 transition-all"
                             >
                               <img
                                 src={URL.createObjectURL(file)}
@@ -1923,24 +1480,70 @@ export default function OnboardingPage() {
                               </div>
                             </div>
                           );
-                        })}
+                        }
 
-                        {albumPhotos.length < 6 && (
+                        // Empty Placeholder Slot
+                        const isFirstEmptyPlaceholder = isFirstSlot && albumPhotos.length === 0;
+                        const isHighlightRed = isFirstEmptyPlaceholder && albumValidationError;
+
+                        return (
                           <div
+                            key={idx}
                             onClick={() => albumInputRef.current?.click()}
-                            className="aspect-square border-2 border-dashed border-[var(--border)] rounded-2xl bg-[var(--surface-muted)] flex flex-col items-center justify-center hover:bg-[var(--primary)]/5 hover:border-[var(--primary)]/40 cursor-pointer transition-all text-[var(--muted)] group p-4 text-center"
+                            className={cn(
+                              "aspect-square rounded-2xl flex flex-col items-center justify-center p-3 sm:p-4 text-center cursor-pointer transition-all group relative",
+                              isHighlightRed
+                                ? "border-2 border-dashed border-rose-500 bg-rose-50/80 ring-4 ring-rose-400/30 shadow-md animate-pulse"
+                                : isFirstEmptyPlaceholder
+                                ? "border-2 border-dashed border-[#D89B65]/70 hover:border-[#80132E] bg-[#FAF3EC]/60 hover:bg-[#FAF3EC] shadow-2xs"
+                                : "border-2 border-dashed border-[var(--border)] hover:border-[var(--primary)]/50 bg-[var(--surface-muted)] hover:bg-[var(--primary)]/5"
+                            )}
                           >
-                            <div className="h-10 w-10 rounded-full bg-white shadow-2xs flex items-center justify-center text-[var(--primary)] group-hover:scale-110 transition-transform mb-2">
+                            <div
+                              className={cn(
+                                "h-10 w-10 rounded-full shadow-2xs flex items-center justify-center transition-transform group-hover:scale-110 mb-2",
+                                isHighlightRed
+                                  ? "bg-rose-100 text-rose-600 ring-2 ring-rose-300"
+                                  : isFirstEmptyPlaceholder
+                                  ? "bg-white text-[#80132E]"
+                                  : "bg-white text-slate-400 group-hover:text-[var(--primary)]"
+                              )}
+                            >
                               <IconUpload className="h-5 w-5" />
                             </div>
-                            <span className="text-xs font-semibold text-slate-700 group-hover:text-[var(--primary)]">
-                              + Add More
+
+                            <span
+                              className={cn(
+                                "text-xs font-bold leading-tight",
+                                isHighlightRed
+                                  ? "text-rose-600"
+                                  : isFirstEmptyPlaceholder
+                                  ? "text-[#80132E]"
+                                  : "text-slate-700 group-hover:text-[var(--primary)]"
+                              )}
+                            >
+                              {idx === albumPhotos.length && albumPhotos.length > 0
+                                ? "+ Add Photo"
+                                : `Photo ${idx + 1}`}
                             </span>
-                            <span className="text-[10px] text-slate-400 mt-0.5">Up to 6 photos</span>
+
+                            <span className="text-[10px] mt-1.5 font-medium">
+                              {isHighlightRed ? (
+                                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-rose-100 text-rose-700 border border-rose-300 text-[10px] font-bold">
+                                  Mandatory *
+                                </span>
+                              ) : isFirstEmptyPlaceholder ? (
+                                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-amber-100/80 text-amber-900 border border-amber-300 text-[10px] font-semibold">
+                                  Mandatory *
+                                </span>
+                              ) : (
+                                <span className="text-slate-400">Optional</span>
+                              )}
+                            </span>
                           </div>
-                        )}
-                      </div>
-                    )}
+                        );
+                      })}
+                    </div>
 
                     <input
                       type="file"
@@ -1976,8 +1579,8 @@ export default function OnboardingPage() {
                     </button>
                     <button
                       type="submit"
-                      disabled={isLoading || albumPhotos.length === 0}
-                      className="focus-ring inline-flex h-12 w-full sm:w-auto items-center justify-center gap-2 rounded-xl bg-[var(--primary)] px-8 text-sm font-bold text-white shadow-md hover:bg-[var(--primary-deep)] transition-all disabled:opacity-50 disabled:cursor-not-allowed order-1 sm:order-2 cursor-pointer active-press"
+                      disabled={isLoading}
+                      className="focus-ring inline-flex h-12 w-full sm:w-auto items-center justify-center gap-2 rounded-xl bg-[var(--primary)] px-8 text-sm font-bold text-white shadow-md hover:bg-[var(--primary-deep)] transition-all disabled:opacity-50 order-1 sm:order-2 cursor-pointer active-press"
                     >
                       {isLoading ? (
                         <>
@@ -1986,7 +1589,7 @@ export default function OnboardingPage() {
                         </>
                       ) : (
                         <>
-                          <IconSparkles className="h-4 w-4 text-[#F9E2B2]" />
+                          <IconHeartHandshake className="h-4 w-4 text-[#F9E2B2]" />
                           <span>Complete & Explore Matches</span>
                           <IconArrowRight className="h-4 w-4" />
                         </>

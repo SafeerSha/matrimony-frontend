@@ -98,11 +98,14 @@ export const authService = {
     return res;
   },
 
-  sendOtp: async (phone: string) => {
+  sendOtp: async (phone: string, purpose?: "login" | "register" | string) => {
     try {
       return await apiFetch<{ message: string }>("/auth/send-otp", {
         method: "POST",
-        body: JSON.stringify({ phone }),
+        body: JSON.stringify({
+          phone,
+          ...(purpose ? { purpose } : {}),
+        }),
       });
     } catch (err: any) {
       // Re-throw registered account check failure so login UI can present direct registration link
@@ -115,46 +118,19 @@ export const authService = {
       ) {
         throw err;
       }
-      if (!err?.status) {
-        // Fallback for offline mock/dev environment
-        return { message: "Verification code sent to " + phone };
-      }
       throw err;
     }
   },
 
   verifyOtp: async (phone: string, otp: string) => {
-    try {
-      const res = await apiFetch<AuthResponse>("/auth/verify-otp", {
-        method: "POST",
-        body: JSON.stringify({ phone, otp }),
-      });
-      if (res?.accessToken) {
-        authService.setAccessToken(res.accessToken);
-      }
-      return res;
-    } catch (err: any) {
-      if (
-        err?.status === 404 &&
-        (err?.details?.code === "ACCOUNT_NOT_FOUND" ||
-          err?.code === "ACCOUNT_NOT_FOUND" ||
-          err?.message?.toLowerCase().includes("no account found") ||
-          err?.message?.toLowerCase().includes("register first"))
-      ) {
-        throw err;
-      }
-      if (!err?.status) {
-        // Fallback for offline mock/dev environment
-        if (otp === "123456" || otp.length === 6) {
-          return {
-            accessToken: "mock-jwt-session-token",
-            user: { id: "mock-user-1", email: "", phone, role: "USER" },
-          };
-        }
-        throw new Error("Invalid verification code. Please enter 123456.");
-      }
-      throw err;
+    const res = await apiFetch<AuthResponse>("/auth/verify-otp", {
+      method: "POST",
+      body: JSON.stringify({ phone, otp }),
+    });
+    if (res?.accessToken) {
+      authService.setAccessToken(res.accessToken);
     }
+    return res;
   },
 
 
@@ -178,35 +154,14 @@ export const authService = {
     email?: string;
     emailOtp?: string;
   }) => {
-    try {
-      const res = await apiFetch<AuthResponse>("/auth/verify-registration", {
-        method: "POST",
-        body: JSON.stringify(payload),
-      });
-      if (res?.accessToken) {
-        authService.setAccessToken(res.accessToken);
-      }
-      return res;
-    } catch (err: any) {
-      if (err?.status === 404 || !err?.status) {
-        // Fallback for mock/dev environment
-        const phoneValid = payload.phoneOtp === "123456" || payload.phoneOtp.length === 6;
-        const emailValid = !payload.emailOtp || payload.emailOtp === "123456" || payload.emailOtp.length === 6;
-        if (phoneValid && emailValid) {
-          return {
-            accessToken: "mock-jwt-session-token",
-            user: {
-              id: "mock-user-1",
-              email: payload.email || "",
-              phone: payload.phone,
-              role: "USER",
-            },
-          };
-        }
-        throw new Error("Invalid verification code. Please use 123456 for testing.");
-      }
-      throw err;
+    const res = await apiFetch<AuthResponse>("/auth/verify-registration", {
+      method: "POST",
+      body: JSON.stringify(payload),
+    });
+    if (res?.accessToken) {
+      authService.setAccessToken(res.accessToken);
     }
+    return res;
   },
 
   setPassword: async (password: string) => {
@@ -327,31 +282,7 @@ export const authService = {
       });
     } catch (err: any) {
       if (err?.status === 404 || !err?.status) {
-        // Fallback mock devices for dev/offline testing
-        return [
-          {
-            id: "sess-1",
-            deviceName: "Chrome on Windows 11",
-            deviceType: "DESKTOP",
-            browser: "Chrome",
-            os: "Windows 11",
-            location: "Kochi, Kerala (Current Device)",
-            isCurrent: true,
-            lastActiveAt: new Date().toISOString(),
-            createdAt: new Date(Date.now() - 86400000 * 3).toISOString(),
-          },
-          {
-            id: "sess-2",
-            deviceName: "IshtamChat iOS Mobile App",
-            deviceType: "MOBILE",
-            browser: "IshtamChat App",
-            os: "iOS",
-            location: "iPhone 15 Pro • Kochi",
-            isCurrent: false,
-            lastActiveAt: new Date(Date.now() - 3600000 * 2).toISOString(),
-            createdAt: new Date(Date.now() - 86400000 * 7).toISOString(),
-          },
-        ];
+        return [];
       }
       throw err;
     }
@@ -398,6 +329,16 @@ export const authService = {
         return { success: true, message: "Device session terminated." };
       }
       throw err;
+    }
+  },
+
+  heartbeat: async (): Promise<{ success: boolean; timestamp?: string } | null> => {
+    try {
+      return await apiFetch<{ success: boolean; timestamp?: string }>("/auth/heartbeat", {
+        method: "POST",
+      });
+    } catch {
+      return null;
     }
   },
 };

@@ -21,7 +21,6 @@ export interface CinematicHeroImageProps {
 export function CinematicHeroImage({
   images,
   className = "",
-  hoveredProfile = null,
   activeSlideIndex,
   onHoverChange,
 }: CinematicHeroImageProps) {
@@ -64,19 +63,17 @@ export function CinematicHeroImage({
   // Automatically cycle through category images if not controlled by parent
   useEffect(() => {
     if (activeSlideIndex !== undefined) return;
-    if (isHeroHovered || Boolean(hoveredProfile)) return;
+    if (isHeroHovered) return;
 
     const timer = setInterval(() => {
       setAutoIndex((prev) => (prev + 1) % 3);
     }, 4500);
 
     return () => clearInterval(timer);
-  }, [activeSlideIndex, isHeroHovered, hoveredProfile]);
+  }, [activeSlideIndex, isHeroHovered]);
 
-  // Determine which image should be target based on user hover state or active category
+  // Determine which image should be target based on active category
   const targetId = (() => {
-    if (hoveredProfile === "ananya") return "hero-2";
-    if (hoveredProfile === "rohan") return "hero-3";
     const selectedIdx = activeSlideIndex !== undefined ? activeSlideIndex : autoIndex;
     return images[selectedIdx]?.id || images[0]?.id || "hero-1";
   })();
@@ -132,7 +129,7 @@ export function CinematicHeroImage({
     setActiveId(images[nextIndex].id);
   };
 
-  const isInteracting = isHeroHovered || Boolean(hoveredProfile);
+  const isInteracting = isHeroHovered;
 
   return (
     <div

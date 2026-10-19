@@ -41,6 +41,14 @@ button, input, textarea, select {
 .text-balance { text-wrap: balance; }
 
 /* Unified Modern Matchmaking Typography (MANROPE) */
+.font-luxury {
+  font-family: var(--font-playfair), "Playfair Display", Didot, "Bodoni MT", Georgia, serif;
+}
+
+.font-attractive {
+  font-family: var(--font-cormorant), "Cormorant Garamond", Garamond, Georgia, serif;
+}
+
 .font-editorial-title {
   font-family: var(--font-family-heading);
   letter-spacing: -0.02em;
@@ -404,4 +412,25 @@ button, input, textarea, select {
 }
 .animate-hint-left {
   animation: swipe-hint-left-overlay 4.5s cubic-bezier(0.25, 1, 0.5, 1) forwards;
+}
+
+/* Sleek Luxury Dropdown Scrollbar */
+.modern-dropdown-scroll {
+  max-height: 175px;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: #D8B28C transparent;
+}
+.modern-dropdown-scroll::-webkit-scrollbar {
+  width: 5px;
+}
+.modern-dropdown-scroll::-webkit-scrollbar-track {
+  background: transparent;
+}
+.modern-dropdown-scroll::-webkit-scrollbar-thumb {
+  background: #D8B28C;
+  border-radius: 9999px;
+}
+.modern-dropdown-scroll::-webkit-scrollbar-thumb:hover {
+  background: #7A1835;
 }

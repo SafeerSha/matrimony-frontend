@@ -6,7 +6,6 @@ import { IconBell, IconCheck, IconHeart, IconMessageCircle, IconShieldCheck, Ico
 import { Avatar } from "@/components/ui/avatar";
 import { cn } from "@/lib/cn";
 import { notificationService, NotificationItem } from "@/services";
-import { notifications as demoNotifications } from "@/lib/demo-data";
 import { toast } from "@/lib/toast";
 
 export interface NotificationsPopoverProps {
@@ -41,29 +40,11 @@ export function NotificationsPopover({ className }: NotificationsPopoverProps) {
             }))
           );
         } else {
-          setItems(
-            demoNotifications.slice(0, 4).map((d) => ({
-              id: d.id,
-              type: d.type,
-              title: d.title,
-              text: d.text,
-              unread: d.unread,
-              profile: d.profile,
-            }))
-          );
+          setItems([]);
         }
       })
       .catch(() => {
-        setItems(
-          demoNotifications.slice(0, 4).map((d) => ({
-            id: d.id,
-            type: d.type,
-            title: d.title,
-            text: d.text,
-            unread: d.unread,
-            profile: d.profile,
-          }))
-        );
+        setItems([]);
       });
   }, []);
 

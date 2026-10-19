@@ -33,6 +33,7 @@ const profileForOptions = [
 const lookingInOptions = [
   { value: "Kerala", label: "Kerala Community" },
   { value: "Telugu", label: "Telugu Community" },
+  { value: "Bharat", label: "Bharat (All India)" },
 ];
 
 const createdByOptions = [
@@ -67,6 +68,29 @@ export function QuickRegisterSection() {
       if (qPhone) setPhone(qPhone);
       if (qName) setName(qName);
     }
+  }, []);
+
+  useEffect(() => {
+    const handleCategorySelect = (e: Event) => {
+      const customEvent = e as CustomEvent<{ category: string; community?: string }>;
+      if (customEvent.detail?.category) {
+        const cat = customEvent.detail.category;
+        const normalized =
+          cat === "Living-together" || cat === "living_together" ? "Living Together" : cat;
+        setProfileFor(normalized);
+        if (normalized === "Friendship" || normalized === "Living Together") {
+          setCreatedBy("Myself");
+        }
+      }
+      if (customEvent.detail?.community) {
+        setLookingIn(customEvent.detail.community);
+      }
+    };
+
+    window.addEventListener("ishtam:select-category", handleCategorySelect);
+    return () => {
+      window.removeEventListener("ishtam:select-category", handleCategorySelect);
+    };
   }, []);
 
   const isByLocked = profileFor === "Friendship" || profileFor === "Living Together";

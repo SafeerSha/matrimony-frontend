@@ -1,40 +1,19 @@
 "use client";
 
-import { IconArrowRight, IconHeart, IconMessage, IconUsers, IconHomeHeart } from '@tabler/icons-react';
+import { IconArrowRight, IconHeart, IconMessage, IconUsers, IconHomeHeart, IconShieldCheck, IconLock } from '@tabler/icons-react';
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { TrustBadge } from "./trust-badge";
 import { TrustFeature } from "./trust-feature";
-import { HeroProfileCard, type HeroProfile } from "./hero-profile-card";
 import { ConnectionBadge } from "./connection-badge";
 import { CinematicHeroImage, type HeroImageData } from "./cinematic-hero-image";
 import { BotanicalLayer } from "./botanical-layer";
+import { LookingForModal, type LookingForOption, type MatrimonyCommunityOption } from "./looking-for-modal";
 import { cn } from "@/lib/cn";
 
 export interface HeroSectionProps {
   className?: string;
 }
-
-const sampleProfiles: [HeroProfile, HeroProfile] = [
-  {
-    name: "Ananya M.",
-    age: 27,
-    profession: "Product Designer",
-    location: "Bangalore • Kerala roots",
-    image: "/images/profile-ananya.jpg",
-    matchScore: "94% Match",
-    verified: true,
-  },
-  {
-    name: "Rohan K.",
-    age: 29,
-    profession: "Architect & Partner",
-    location: "Kochi • Kerala",
-    image: "/images/profile-rohan.jpg",
-    matchScore: "91% Match",
-    verified: true,
-  },
-];
 
 const HERO_SLIDES = [
   {
@@ -88,49 +67,65 @@ const HERO_IMAGES: HeroImageData[] = [
     src: "/images/hero-living-together.jpg",
     alt: "Modern Indian couple in contemporary home representing Living Together",
   },
-  {
-    id: "hero-2",
-    src: "/images/hero-2.jpg",
-    alt: "Ananya in elegant traditional ivory and champagne gold silk saree in heritage courtyard",
-  },
-  {
-    id: "hero-3",
-    src: "/images/hero-3.jpg",
-    alt: "Rohan in dignified forest green Nehru jacket and cream kurta on palace veranda",
-  },
 ];
 
 export function HeroSection({ className = "" }: HeroSectionProps) {
-  const [hoveredProfile, setHoveredProfile] = useState<string | null>(null);
   const [activeSlideIndex, setActiveSlideIndex] = useState<number>(0);
   const [isHeroHovered, setIsHeroHovered] = useState<boolean>(false);
+  const [isLookingForOpen, setIsLookingForOpen] = useState<boolean>(false);
 
   // Automatically cycle through Marriage, Friendship, and Living Together every 4.5 seconds with smooth fade
   useEffect(() => {
-    if (hoveredProfile || isHeroHovered) return;
+    if (isHeroHovered || isLookingForOpen) return;
 
     const timer = setInterval(() => {
       setActiveSlideIndex((prev) => (prev + 1) % HERO_SLIDES.length);
     }, 4500);
 
     return () => clearInterval(timer);
-  }, [hoveredProfile, isHeroHovered]);
+  }, [isHeroHovered, isLookingForOpen]);
 
+  const handleOpenLookingFor = (e?: React.MouseEvent) => {
+    if (e) e.preventDefault();
+    setIsLookingForOpen(true);
+  };
 
-  const handleScrollToRegister = (e: React.MouseEvent) => {
-    e.preventDefault();
-    const el = document.getElementById("quick-register");
-    if (el) {
-      el.scrollIntoView({ behavior: "smooth", block: "start" });
-      const nameInput = el.querySelector<HTMLInputElement>('input[type="text"]');
-      if (nameInput) {
-        setTimeout(() => {
-          nameInput.focus({ preventScroll: true });
-        }, 450);
+  const handleSelectLookingForOption = (
+    option: LookingForOption,
+    community?: MatrimonyCommunityOption
+  ) => {
+    setIsLookingForOpen(false);
+
+    // Sync active slide in hero preview
+    const slideIdx = option === "Friendship" ? 1 : option === "Living-together" ? 2 : 0;
+    setActiveSlideIndex(slideIdx);
+
+    // Dispatch selection to QuickRegisterSection
+    const mappedCategory = option === "Living-together" ? "Living Together" : option;
+    window.dispatchEvent(
+      new CustomEvent("ishtam:select-category", {
+        detail: {
+          category: mappedCategory,
+          community: community,
+        },
+      })
+    );
+
+    // Smoothly scroll down to quick-register section and focus name input
+    setTimeout(() => {
+      const el = document.getElementById("quick-register");
+      if (el) {
+        el.scrollIntoView({ behavior: "smooth", block: "start" });
+        const nameInput = el.querySelector<HTMLInputElement>('input[type="text"]');
+        if (nameInput) {
+          setTimeout(() => {
+            nameInput.focus({ preventScroll: true });
+          }, 450);
+        }
+      } else {
+        window.location.hash = "quick-register";
       }
-    } else {
-      window.location.hash = "quick-register";
-    }
+    }, 120);
   };
 
   return (
@@ -238,8 +233,7 @@ export function HeroSection({ className = "" }: HeroSectionProps) {
               {/* Action Buttons */}
               <div className="flex flex-col gap-2.5 pt-1">
                 <Button
-                  href="#quick-register"
-                  onClick={handleScrollToRegister}
+                  onClick={handleOpenLookingFor}
                   variant="primary"
                   className="w-full min-h-12 text-sm font-bold shadow-[0_12px_28px_rgba(122,20,40,0.45)] bg-gradient-to-r from-[#7A1428] via-[#8C1D33] to-[#7A1428] hover:from-[#8C1D33] hover:to-[#6E1224] text-white border border-white/20 active:scale-[0.99] transition-all"
                   rightIcon={<IconArrowRight className="h-4 w-4" aria-hidden="true" />}
@@ -294,8 +288,7 @@ export function HeroSection({ className = "" }: HeroSectionProps) {
             {/* CTAs */}
             <div className="mt-8 flex flex-col sm:flex-row sm:flex-wrap items-stretch sm:items-center gap-3 sm:gap-3.5 sm:mt-10">
               <Button
-                href="#quick-register"
-                onClick={handleScrollToRegister}
+                onClick={handleOpenLookingFor}
                 variant="primary"
                 className="w-full sm:w-auto min-h-12 px-6 sm:px-8 text-sm sm:text-base font-semibold shadow-[0_14px_30px_var(--primary-shadow-strong)]"
                 rightIcon={<IconArrowRight className="h-4 w-4" aria-hidden="true" />}
@@ -340,36 +333,35 @@ export function HeroSection({ className = "" }: HeroSectionProps) {
             {/* Main Couple Photo Container */}
             <CinematicHeroImage
               images={HERO_IMAGES}
-              hoveredProfile={hoveredProfile}
               activeSlideIndex={activeSlideIndex}
               onHoverChange={setIsHeroHovered}
               className="origin-center"
             />
 
-            {/* Floating Profile Card 1 - Top Left/Side */}
-            <div
-              className="absolute -top-4 -left-3 sm:-top-6 sm:-left-6 lg:-left-10 z-10 w-60 sm:w-68 cursor-pointer transition-transform duration-300 hover:scale-[1.02]"
-              onMouseEnter={() => setHoveredProfile("ananya")}
-              onMouseLeave={() => setHoveredProfile(null)}
-            >
-              <HeroProfileCard
-                profile={sampleProfiles[0]}
-                animationVariant="float-1"
-                className="scale-90 sm:scale-100 origin-top-left"
-              />
+            {/* Floating Trust Badge 1 - Top Left: 100% Verified Profiles */}
+            <div className="absolute -top-3 -left-3 sm:-top-5 sm:-left-6 lg:-left-8 z-10 transition-transform duration-300 hover:scale-[1.02]">
+              <div className="inline-flex items-center gap-3 rounded-2xl border border-white/80 bg-white/95 backdrop-blur-md px-4 py-3 shadow-[0_12px_28px_rgba(42,7,17,0.12)]">
+                <span className="grid h-9 w-9 place-items-center rounded-xl bg-emerald-50 text-emerald-600 ring-1 ring-emerald-200/80 shrink-0">
+                  <IconShieldCheck className="h-5 w-5" />
+                </span>
+                <div className="text-left">
+                  <p className="text-xs font-bold text-[var(--foreground)]">100% Verified Members</p>
+                  <p className="text-[11px] text-[var(--muted)]">Manual &amp; Document Screened</p>
+                </div>
+              </div>
             </div>
 
-            {/* Floating Profile Card 2 - Bottom Right/Side */}
-            <div
-              className="absolute -bottom-4 -right-3 sm:-bottom-6 sm:-right-6 lg:-right-8 z-10 w-60 sm:w-68 cursor-pointer transition-transform duration-300 hover:scale-[1.02]"
-              onMouseEnter={() => setHoveredProfile("rohan")}
-              onMouseLeave={() => setHoveredProfile(null)}
-            >
-              <HeroProfileCard
-                profile={sampleProfiles[1]}
-                animationVariant="float-2"
-                className="scale-90 sm:scale-100 origin-bottom-right"
-              />
+            {/* Floating Trust Badge 2 - Bottom Right: Privacy First */}
+            <div className="absolute -bottom-3 -right-3 sm:-bottom-5 sm:-right-6 lg:-right-6 z-10 transition-transform duration-300 hover:scale-[1.02]">
+              <div className="inline-flex items-center gap-3 rounded-2xl border border-white/80 bg-white/95 backdrop-blur-md px-4 py-3 shadow-[0_12px_28px_rgba(42,7,17,0.12)]">
+                <span className="grid h-9 w-9 place-items-center rounded-xl bg-rose-50 text-rose-600 ring-1 ring-rose-200/80 shrink-0">
+                  <IconLock className="h-5 w-5" />
+                </span>
+                <div className="text-left">
+                  <p className="text-xs font-bold text-[var(--foreground)]">Privacy-First Controls</p>
+                  <p className="text-[11px] text-[var(--muted)]">Encrypted &amp; Protected Sharing</p>
+                </div>
+              </div>
             </div>
 
             {/* Dynamic Category Card - Bottom Left (Changes with Marriage, Friendship, and Living Together) */}
@@ -379,26 +371,10 @@ export function HeroSection({ className = "" }: HeroSectionProps) {
               onMouseLeave={() => setIsHeroHovered(false)}
             >
               <ConnectionBadge
-                title={
-                  hoveredProfile === "ananya"
-                    ? "Chat with Ananya M."
-                    : hoveredProfile === "rohan"
-                      ? "Chat with Rohan K."
-                      : HERO_SLIDES[activeSlideIndex].title
-                }
-                subtitle={
-                  hoveredProfile === "ananya"
-                    ? "Product Designer • 94% Match"
-                    : hoveredProfile === "rohan"
-                      ? "Architect & Partner • 91% Match"
-                      : HERO_SLIDES[activeSlideIndex].subtitle
-                }
+                title={HERO_SLIDES[activeSlideIndex].title}
+                subtitle={HERO_SLIDES[activeSlideIndex].subtitle}
                 icon={
-                  hoveredProfile === "ananya" ? (
-                    <IconHeart className="h-5 w-5 fill-current" aria-hidden="true" />
-                  ) : hoveredProfile === "rohan" ? (
-                    <IconHeart className="h-5 w-5 fill-current" aria-hidden="true" />
-                  ) : activeSlideIndex === 0 ? (
+                  activeSlideIndex === 0 ? (
                     <IconHeart className="h-5 w-5 fill-current" aria-hidden="true" />
                   ) : activeSlideIndex === 1 ? (
                     <IconUsers className="h-5 w-5" aria-hidden="true" />
@@ -406,13 +382,7 @@ export function HeroSection({ className = "" }: HeroSectionProps) {
                     <IconHomeHeart className="h-5 w-5" aria-hidden="true" />
                   )
                 }
-                iconBoxClassName={
-                  hoveredProfile === "ananya"
-                    ? "bg-rose-50 text-rose-700 ring-rose-200/70"
-                    : hoveredProfile === "rohan"
-                      ? "bg-emerald-50 text-emerald-700 ring-emerald-200/70"
-                      : HERO_SLIDES[activeSlideIndex].iconBoxClass
-                }
+                iconBoxClassName={HERO_SLIDES[activeSlideIndex].iconBoxClass}
                 activeCategoryIndex={activeSlideIndex}
                 totalCategories={HERO_SLIDES.length}
                 onSelectCategory={(idx) => setActiveSlideIndex(idx)}
@@ -441,6 +411,12 @@ export function HeroSection({ className = "" }: HeroSectionProps) {
           />
         </svg>
       </div>
+      {/* Looking For Glassmorphism Selection Modal */}
+      <LookingForModal
+        isOpen={isLookingForOpen}
+        onClose={() => setIsLookingForOpen(false)}
+        onSelectOption={handleSelectLookingForOption}
+      />
     </section>
   );
 }

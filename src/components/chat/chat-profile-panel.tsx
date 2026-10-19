@@ -75,7 +75,7 @@ export function ChatProfilePanel({
   const bio =
     participant?.bio ||
     'Looking forward to meaningful conversations and building a life based on mutual respect and shared values.';
-  const compatibility = 92;
+  const compatibility = (participant as any)?.compatibility || 92;
   const isVerified = participant?.isVerified ?? true;
   const profileId = participant?.id || '';
 

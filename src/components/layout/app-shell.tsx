@@ -122,11 +122,28 @@ export function AppShell({ children }: AppShellProps) {
       });
     });
 
+    // 4. Live Presence Heartbeat (Every 60s & when tab becomes visible)
+    authService.heartbeat();
+    const heartbeatInterval = setInterval(() => {
+      if (typeof document !== "undefined" && document.visibilityState === "visible") {
+        authService.heartbeat();
+      }
+    }, 60000);
+
+    const handleVisibilityChange = () => {
+      if (typeof document !== "undefined" && document.visibilityState === "visible") {
+        authService.heartbeat();
+      }
+    };
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+
     return () => {
       window.removeEventListener("chat:unread-changed", handleUnreadChanged);
       unsubMessage();
+      clearInterval(heartbeatInterval);
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
     };
-  }, [currentUser?.id]);
+  }, [currentUser?.id, pathname]);
 
   return (
     <CelebrationProvider>

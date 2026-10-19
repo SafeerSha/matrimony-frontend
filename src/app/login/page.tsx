@@ -10,6 +10,7 @@ import {
   IconEyeOff,
   IconLoader2,
   IconHeart,
+  IconHeartHandshake,
   IconMail,
   IconPhone,
   IconLock,
@@ -17,15 +18,16 @@ import {
   IconDeviceMobile,
   IconKey,
   IconUserPlus,
-  IconSparkles,
 } from "@tabler/icons-react";
 import { Logo } from "@/components/layout/logo";
 import { cn } from "@/lib/cn";
 import { authService, profileService } from "@/services";
 import { toast } from "@/lib/toast";
 import { resolvePostAuthRoute } from "@/lib/auth/auth-utils";
+import { LookingForModal } from "@/components/hero";
 
 export default function LoginPage() {
+  const [isRegisterModalOpen, setIsRegisterModalOpen] = useState(false);
   const [authMethod, setAuthMethod] = useState<"otp" | "password">("otp");
   const [otpStep, setOtpStep] = useState<"phone" | "code">("phone");
   const [phone, setPhone] = useState("");
@@ -92,7 +94,7 @@ export default function LoginPage() {
     const cleanPhone = `+91 ${cleanDigits}`;
 
     try {
-      await authService.sendOtp(cleanPhone);
+      await authService.sendOtp(cleanPhone, "login");
       setOtpStep("code");
       toast.info("Verification code sent", `We've sent a 6-digit OTP to ${cleanPhone}`);
     } catch (err: any) {
@@ -450,7 +452,7 @@ export default function LoginPage() {
                     </div>
                     <div className="flex-1 min-w-0">
                       <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-[#D89B65]/25 text-[#8C5D2C] text-[10px] font-bold uppercase tracking-wider mb-1.5">
-                        <IconSparkles className="h-3 w-3 text-[#D89B65]" />
+                        <IconHeartHandshake className="h-3 w-3 text-[#D89B65]" />
                         <span>New to IshtamChat?</span>
                       </div>
                       <h3 className="text-sm sm:text-base font-bold text-slate-900 leading-snug">
@@ -462,14 +464,15 @@ export default function LoginPage() {
                       </p>
 
                       <div className="mt-4 flex flex-col sm:flex-row sm:items-center gap-2.5">
-                        <Link
-                          href={`/register?${notRegisteredAccount.type === "email" ? "email" : "phone"}=${encodeURIComponent(notRegisteredAccount.identifier)}`}
-                          className="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-gradient-to-r from-[#80132E] via-[#741129] to-[#5C0D20] text-xs sm:text-sm font-bold text-white shadow-md hover:brightness-105 active:scale-95 transition-all text-center"
+                        <button
+                          type="button"
+                          onClick={() => setIsRegisterModalOpen(true)}
+                          className="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-gradient-to-r from-[#80132E] via-[#741129] to-[#5C0D20] text-xs sm:text-sm font-bold text-white shadow-md hover:brightness-105 active:scale-95 transition-all text-center cursor-pointer"
                         >
                           <IconUserPlus className="h-4 w-4" />
                           <span>Create Free Profile Now</span>
                           <IconArrowRight className="h-4 w-4" />
-                        </Link>
+                        </button>
 
                         <button
                           type="button"
@@ -815,16 +818,24 @@ export default function LoginPage() {
             {/* Bottom Create Account Switcher */}
             <div className="mt-5 sm:mt-8 pt-3.5 sm:pt-5 border-t border-[var(--border)] text-center text-xs sm:text-sm text-[var(--muted)]">
               <span>New to IshtamChat? </span>
-              <Link
-                href="/#quick-register"
-                className="font-semibold text-[var(--primary)] hover:text-[var(--primary-deep)] hover:underline focus-ring rounded"
+              <button
+                type="button"
+                onClick={() => setIsRegisterModalOpen(true)}
+                className="font-semibold text-[var(--primary)] hover:text-[var(--primary-deep)] hover:underline focus-ring rounded cursor-pointer"
               >
-                Create an profile
-              </Link>
+                Create a profile
+              </button>
             </div>
           </div>
         </div>
       </div>
+
+      {/* Quick Registration Popup Modal */}
+      <LookingForModal
+        isOpen={isRegisterModalOpen}
+        onClose={() => setIsRegisterModalOpen(false)}
+        initialPhone={notRegisteredAccount?.type === "phone" ? notRegisteredAccount.identifier : phone}
+      />
     </main>
   );
 }
