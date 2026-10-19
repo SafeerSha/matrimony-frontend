@@ -124,6 +124,16 @@ class ChatService {
     };
   }
 
+  onMatchCelebration(handler: (data: { notificationId?: string; partner: any }) => void) {
+    if (!this.socket) {
+      this.connect();
+    }
+    this.socket?.on("match_celebration", handler);
+    return () => {
+      this.socket?.off("match_celebration", handler);
+    };
+  }
+
   /**
    * Fetch conversations. In this matrimony platform, active conversations are
    * established between mutual accepted connections (/connections?type=matches).
