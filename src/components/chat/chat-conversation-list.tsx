@@ -1,10 +1,10 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { IconSearch, IconLoader2, IconCheck } from '@tabler/icons-react';
 import { Avatar } from '@/components/ui/avatar';
 import { cn } from '@/lib/cn';
-import type { Conversation } from '@/services/chat.service';
+import { chatService, type Conversation } from '@/services/chat.service';
 
 interface ChatConversationListProps {
   conversations: Conversation[];
@@ -23,6 +23,17 @@ export function ChatConversationList({
 }: ChatConversationListProps) {
   const [searchQuery, setSearchQuery] = useState('');
   const [filterType, setFilterType] = useState<'all' | 'unread'>('all');
+  const [livePresence, setLivePresence] = useState<Record<string, boolean>>({});
+
+  useEffect(() => {
+    const cleanup = chatService.onPresence((data) => {
+      setLivePresence((prev) => ({
+        ...prev,
+        [data.userId]: Boolean(data.isOnline),
+      }));
+    });
+    return cleanup;
+  }, []);
 
   const formatTime = (isoString?: string) => {
     if (!isoString) return '';
@@ -59,6 +70,8 @@ export function ChatConversationList({
     return true;
   });
 
+  const totalUnread = conversations.reduce((sum, c) => sum + (c.unreadCount || 0), 0);
+
   return (
     <div className={cn('flex flex-col h-full bg-[#FFFDFB] text-[#211B1E]', className)}>
       {/* Search Header */}
@@ -89,13 +102,18 @@ export function ChatConversationList({
             <button
               onClick={() => setFilterType('unread')}
               className={cn(
-                'px-2.5 py-1 rounded-md transition-colors',
+                'px-2.5 py-1 rounded-md transition-colors flex items-center gap-1.5',
                 filterType === 'unread'
                   ? 'bg-white text-[#7A1835] shadow-2xs font-bold'
                   : 'text-[#766B6F] hover:text-[#211B1E]'
               )}
             >
-              Unread
+              <span>Unread</span>
+              {totalUnread > 0 && (
+                <span className="inline-flex items-center justify-center h-4 min-w-[16px] px-1 rounded-full bg-[#7A1835] text-[10px] font-bold text-white leading-none">
+                  {totalUnread}
+                </span>
+              )}
             </button>
           </div>
         </div>
@@ -141,7 +159,8 @@ export function ChatConversationList({
             const pPhoto = c.participant?.photos?.[0]?.url;
             const unread = c.unreadCount || 0;
             const timeStr = formatTime(c.lastMessage?.createdAt || c.updatedAt);
-            const isOnline = (c as any).online ?? true;
+            const targetId = c.participantId || c.id;
+            const isOnline = livePresence[targetId] ?? Boolean((c as any).online || (c as any).isOnline);
 
             return (
               <button
@@ -151,6 +170,8 @@ export function ChatConversationList({
                   'w-full text-left p-3.5 sm:p-4 flex items-center gap-3 transition-all relative border-l-4',
                   isSelected
                     ? 'bg-[#7A1835]/5 border-l-[#7A1835]'
+                    : unread > 0
+                    ? 'border-l-[#7A1835] bg-[#FFF9F6] hover:bg-[#FFF3EC]'
                     : 'border-l-transparent hover:bg-[#FFF9F6]'
                 )}
               >
@@ -182,16 +203,16 @@ export function ChatConversationList({
                   <div className="flex items-center justify-between gap-1 mb-1">
                     <span
                       className={cn(
-                        'truncate text-xs font-semibold leading-tight',
-                        isSelected ? 'text-[#7A1835]' : 'text-[#211B1E]'
+                        'truncate text-xs leading-tight',
+                        unread > 0 ? 'font-bold text-[#211B1E]' : isSelected ? 'text-[#7A1835] font-semibold' : 'text-[#211B1E] font-medium'
                       )}
                     >
                       {pName}
                     </span>
                     <span
                       className={cn(
-                        'text-[10px] shrink-0 font-normal',
-                        unread > 0 ? 'text-[#7A1835] font-semibold' : 'text-[#766B6F]'
+                        'text-[10px] shrink-0',
+                        unread > 0 ? 'text-[#7A1835] font-bold' : 'text-[#766B6F] font-normal'
                       )}
                     >
                       {timeStr}
@@ -203,7 +224,7 @@ export function ChatConversationList({
                       className={cn(
                         'truncate text-[11px] leading-relaxed',
                         unread > 0
-                          ? 'font-medium text-[#211B1E]'
+                          ? 'font-semibold text-[#211B1E]'
                           : 'font-normal text-[#766B6F]'
                       )}
                     >
@@ -211,7 +232,7 @@ export function ChatConversationList({
                     </p>
 
                     {unread > 0 && (
-                      <span className="grid h-4.5 min-w-4.5 shrink-0 place-items-center rounded-full bg-[#7A1835] px-1.5 text-[10px] font-bold text-white shadow-xs">
+                      <span className="flex h-5 min-w-[20px] shrink-0 items-center justify-center rounded-full bg-[#7A1835] px-1.5 text-[11px] font-bold text-white shadow-xs">
                         {unread}
                       </span>
                     )}

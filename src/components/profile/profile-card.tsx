@@ -7,7 +7,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { cn } from '@/lib/cn';
-import type { Profile } from '@/lib/demo-data';
+import { type Profile, formatLastActive } from '@/lib/demo-data';
 
 export function ProfileCard({ profile, compact = false }: { profile: Profile; compact?: boolean }) {
   const [isShortlisted, setIsShortlisted] = useState(false);
@@ -77,17 +77,25 @@ export function ProfileCard({ profile, compact = false }: { profile: Profile; co
             </Badge>
           )}
 
-          {profile.online && (
+          {profile.online ? (
             <Badge
               tone="neutral"
               size="sm"
               dot
               dotColor="bg-emerald-500"
-              className="bg-white/90 backdrop-blur-md text-[var(--foreground)] border-white/80"
+              className="bg-white/90 backdrop-blur-md text-[var(--foreground)] border-white/80 font-medium"
             >
-              Online
+              Online now
             </Badge>
-          )}
+          ) : profile.lastActiveAt ? (
+            <Badge
+              tone="neutral"
+              size="sm"
+              className="bg-black/50 text-white/95 backdrop-blur-md border-white/20 text-[10px] font-medium"
+            >
+              {formatLastActive(profile.lastActiveAt)}
+            </Badge>
+          ) : null}
         </div>
 
         {/* Floating Shortlist IconHeart on Photo */}

@@ -331,6 +331,16 @@ export const authService = {
       throw err;
     }
   },
+
+  heartbeat: async (): Promise<{ success: boolean; timestamp?: string } | null> => {
+    try {
+      return await apiFetch<{ success: boolean; timestamp?: string }>("/auth/heartbeat", {
+        method: "POST",
+      });
+    } catch {
+      return null;
+    }
+  },
 };
 
 export interface UserDevice {

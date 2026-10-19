@@ -181,7 +181,7 @@ function SidebarContent({
                   {badge !== undefined && badge > 0 && (
                     <span
                       className={cn(
-                        "grid h-5 min-w-5 place-items-center rounded-full px-1.5 text-[10px] font-bold shrink-0 ml-auto leading-none",
+                        "grid h-5 min-w-5 place-items-center rounded-full px-1.5 text-[10px] font-bold shrink-0 md:absolute md:top-1.5 md:right-2 lg:static lg:ml-auto leading-none shadow-2xs",
                         active
                           ? "bg-white text-[var(--primary)]"
                           : "bg-[var(--primary)] text-white"

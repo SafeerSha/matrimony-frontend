@@ -84,6 +84,8 @@ export default function NotificationsPage() {
             let link = '/app';
             let actionLabel = 'View';
 
+            let text = n.content;
+
             if (n.type.includes('INTEREST')) {
               type = 'INTEREST';
               title = 'New Interest Received';
@@ -96,8 +98,14 @@ export default function NotificationsPage() {
               actionLabel = 'View Match';
             } else if (n.type.includes('MESSAGE')) {
               type = 'MESSAGE';
-              title = 'New Message';
-              link = '/app/messages';
+              let senderName = '';
+              const colonIdx = n.content.indexOf(': ');
+              if (colonIdx > -1) {
+                senderName = n.content.slice(0, colonIdx).trim();
+                text = n.content.slice(colonIdx + 2).trim();
+              }
+              title = senderName ? `Message from ${senderName}` : 'New Message';
+              link = n.referenceId ? `/app/messages?user=${n.referenceId}` : '/app/messages';
               actionLabel = 'Open Chat';
             }
 
@@ -105,7 +113,7 @@ export default function NotificationsPage() {
               id: n.id,
               type,
               title,
-              text: n.content,
+              text,
               time: diffHours < 1 ? 'Just now' : `${Math.floor(diffHours)}h ago`,
               timestamp: createdTime,
               group,
@@ -114,7 +122,17 @@ export default function NotificationsPage() {
               actionLabel,
             };
           });
-          setItems(mapped);
+
+          // Distinct message notifications by sender so each user has only one latest notification card
+          const distinctMap = new Map<string, NotificationDisplayItem>();
+          for (const item of mapped) {
+            const key = item.type === 'MESSAGE' && item.link ? item.link : item.id;
+            if (!distinctMap.has(key)) {
+              distinctMap.set(key, item);
+            }
+          }
+
+          setItems(Array.from(distinctMap.values()));
         } else {
           setItems([]);
         }

@@ -31,7 +31,7 @@ import { Skeleton, ProfileCardSkeleton } from '@/components/ui/skeleton';
 import { matchesService, authService, chatService, profileService } from '@/services';
 import { toast } from '@/lib/toast';
 import { cn } from '@/lib/cn';
-import type { Profile } from '@/lib/demo-data';
+import { type Profile, formatLastActive } from '@/lib/demo-data';
 
 export default function DashboardPage() {
   const [currentUser, setCurrentUser] = useState<any>(null);
@@ -93,9 +93,10 @@ export default function DashboardPage() {
                 profession: prof.occupation || prof.profession || u.occupation || u.profession || '',
                 education: prof.education || u.education || '',
                 image: photoUrl,
-                compatibility: prof.compatibility || 90,
+                compatibility: u.compatibility ?? prof.compatibility ?? 88,
                 verified: Boolean(u.status === 'ACTIVE' || prof.isVerified || u.isVerified),
-                online: idx % 2 === 0,
+                online: Boolean(u.isOnline),
+                lastActiveAt: u.lastActiveAt || undefined,
                 about: prof.bio || prof.about || u.bio || '',
                 height: prof.height ? `${prof.height}cm` : '',
                 maritalStatus: prof.maritalStatus || u.maritalStatus || '',
@@ -138,9 +139,10 @@ export default function DashboardPage() {
                 profession: prof.occupation || prof.profession || u.occupation || u.profession || '',
                 education: prof.education || u.education || '',
                 image: photoUrl,
-                compatibility: prof.compatibility || 90,
+                compatibility: u.compatibility ?? prof.compatibility ?? 88,
                 verified: Boolean(u.status === 'ACTIVE' || prof.isVerified || u.isVerified),
-                online: idx % 2 === 0,
+                online: Boolean(u.isOnline),
+                lastActiveAt: u.lastActiveAt || undefined,
                 about: prof.bio || prof.about || u.bio || '',
                 height: prof.height ? `${prof.height}cm` : '',
                 maritalStatus: prof.maritalStatus || u.maritalStatus || '',
@@ -379,17 +381,25 @@ export default function DashboardPage() {
                         {profile.compatibility}% Match
                       </Badge>
 
-                      {profile.online && (
+                      {profile.online ? (
                         <Badge
                           tone="neutral"
                           size="sm"
                           dot
                           dotColor="bg-emerald-500"
-                          className="bg-white/90 backdrop-blur-md text-[var(--foreground)] border-white/80"
+                          className="bg-white/90 backdrop-blur-md text-[var(--foreground)] border-white/80 font-medium"
                         >
-                          Online
+                          Online now
                         </Badge>
-                      )}
+                      ) : profile.lastActiveAt ? (
+                        <Badge
+                          tone="neutral"
+                          size="sm"
+                          className="bg-black/50 text-white/95 backdrop-blur-md border-white/20 text-[10px] font-medium"
+                        >
+                          {formatLastActive(profile.lastActiveAt)}
+                        </Badge>
+                      ) : null}
                     </div>
 
                     {/* Shortlist IconHeart Button */}
