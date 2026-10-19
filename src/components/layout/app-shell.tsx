@@ -7,6 +7,7 @@ import { MobileNav } from "./mobile-nav";
 import { usePathname } from "next/navigation";
 import { authService, profileService, notificationService, chatService, isDraftUser } from "@/services";
 import { CelebrationProvider } from "@/context/celebration-context";
+import { toast } from "@/lib/toast";
 
 export interface AppShellProps {
   children: React.ReactNode;
@@ -55,7 +56,7 @@ export function AppShell({ children }: AppShellProps) {
       })
       .catch(() => {});
 
-    // 3. Messages count
+    // 3. Messages count & real-time message toast listener
     chatService
       .getConversations()
       .then((convos) => {
@@ -65,7 +66,67 @@ export function AppShell({ children }: AppShellProps) {
         }
       })
       .catch(() => {});
-  }, []);
+
+    // Listen to custom event when /app/messages updates unread count
+    const handleUnreadChanged = (e: any) => {
+      if (typeof e?.detail?.totalUnread === "number") {
+        setUnreadMessagesCount(e.detail.totalUnread);
+      }
+    };
+    window.addEventListener("chat:unread-changed", handleUnreadChanged);
+
+    // Global real-time WebSocket connection and incoming message toast
+    chatService.connect();
+    const unsubMessage = chatService.onMessage((msg: any) => {
+      // If message is from current user, ignore
+      if (currentUser?.id && msg.senderId === currentUser.id) return;
+
+      // Check if user is currently looking at this active conversation
+      const activeContactIds: string[] = typeof window !== "undefined" ? (window as any).__ACTIVE_CHAT_CONTACT_IDS__ || [] : [];
+      const activeContactId = typeof window !== "undefined" ? (window as any).__ACTIVE_CHAT_CONTACT_ID__ : null;
+
+      const isCurrentChatActive =
+        Boolean(msg.senderId) &&
+        (activeContactIds.includes(msg.senderId) ||
+          activeContactId === msg.senderId ||
+          (msg.conversationId && activeContactIds.includes(msg.conversationId)));
+
+      if (isCurrentChatActive) {
+        // User is already actively inside this chat, don't show toast
+        return;
+      }
+
+      // Increment unread count badge
+      setUnreadMessagesCount((prev) => prev + 1);
+
+      // Extract sender display name
+      const senderName =
+        msg.sender?.firstName
+          ? `${msg.sender.firstName} ${msg.sender.lastName || ""}`.trim()
+          : "New Message";
+
+      // Extract sender photo
+      const primaryPhoto =
+        msg.sender?.photos?.find((p: any) => p.isPrimary)?.url ||
+        msg.sender?.photos?.[0]?.url ||
+        null;
+
+      // Show real-time notification toastr
+      toast.show("success", `Message from ${senderName}`, {
+        description: msg.content?.length > 70 ? `${msg.content.substring(0, 70)}...` : msg.content,
+        duration: 5000,
+        avatarUrl: primaryPhoto,
+        onClick: () => {
+          window.location.href = `/app/messages?user=${msg.senderId}`;
+        },
+      });
+    });
+
+    return () => {
+      window.removeEventListener("chat:unread-changed", handleUnreadChanged);
+      unsubMessage();
+    };
+  }, [currentUser?.id]);
 
   return (
     <CelebrationProvider>

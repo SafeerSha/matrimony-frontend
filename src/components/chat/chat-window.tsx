@@ -177,13 +177,18 @@ export function ChatWindow({
   const scrollToBottom = (behavior: ScrollBehavior = 'auto') => {
     if (messagesContainerRef.current) {
       const container = messagesContainerRef.current;
-      container.scrollTo({
-        top: container.scrollHeight,
-        behavior,
-      });
+      container.scrollTop = container.scrollHeight;
+      try {
+        container.scrollTo({
+          top: container.scrollHeight,
+          behavior,
+        });
+      } catch {}
     }
     if (messagesEndRef.current) {
-      messagesEndRef.current.scrollIntoView({ behavior, block: 'end' });
+      try {
+        messagesEndRef.current.scrollIntoView({ behavior, block: 'end' });
+      } catch {}
     }
   };
 
@@ -201,28 +206,43 @@ export function ChatWindow({
   useEffect(() => {
     if (isLoadingMessages) return;
 
-    if (isInitialLoadRef.current) {
-      // Instant scroll on initial chat open with retries for late-loading images / card layout
+    // Instant multi-frame scroll
+    const triggerInstantScroll = () => {
       scrollToBottom('auto');
-      const t1 = setTimeout(() => scrollToBottom('auto'), 40);
-      const t2 = setTimeout(() => scrollToBottom('auto'), 120);
-      const t3 = setTimeout(() => {
-        scrollToBottom('auto');
-        isInitialLoadRef.current = false;
-      }, 250);
+      requestAnimationFrame(() => scrollToBottom('auto'));
+    };
 
-      return () => {
-        clearTimeout(t1);
-        clearTimeout(t2);
-        clearTimeout(t3);
-      };
-    } else {
-      // Smooth scroll for subsequent incoming / sent messages
-      scrollToBottom('smooth');
-      const t = setTimeout(() => scrollToBottom('smooth'), 50);
-      return () => clearTimeout(t);
-    }
+    triggerInstantScroll();
+    const t1 = setTimeout(triggerInstantScroll, 50);
+    const t2 = setTimeout(triggerInstantScroll, 150);
+    const t3 = setTimeout(triggerInstantScroll, 350);
+    const t4 = setTimeout(() => {
+      triggerInstantScroll();
+      isInitialLoadRef.current = false;
+    }, 600);
+
+    return () => {
+      clearTimeout(t1);
+      clearTimeout(t2);
+      clearTimeout(t3);
+      clearTimeout(t4);
+    };
   }, [messages, isLoadingMessages]);
+
+  // Keep pinned to bottom on container resize (e.g. mobile keyboard open / layout shifts)
+  useEffect(() => {
+    const container = messagesContainerRef.current;
+    if (!container || typeof ResizeObserver === 'undefined') return;
+
+    const ro = new ResizeObserver(() => {
+      if (isInitialLoadRef.current) {
+        scrollToBottom('auto');
+      }
+    });
+
+    ro.observe(container);
+    return () => ro.disconnect();
+  }, []);
 
   const handleSend = async () => {
     if (!text.trim() || isSending) return;

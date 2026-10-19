@@ -42,6 +42,32 @@ function MessagesContent() {
   const mobileViewRef = useRef<'list' | 'chat'>('list');
   mobileViewRef.current = mobileView;
 
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const isMobile = window.innerWidth < 768;
+      const isChatVisible = !isMobile || mobileView === 'chat';
+      if (isChatVisible && selected) {
+        const ids = [
+          selected.id,
+          selected.participantId,
+          selected.participant?.id,
+          selected.participant?.userId,
+        ].filter(Boolean) as string[];
+        (window as any).__ACTIVE_CHAT_CONTACT_IDS__ = ids;
+        (window as any).__ACTIVE_CHAT_CONTACT_ID__ = selected.participantId || selected.id;
+      } else {
+        (window as any).__ACTIVE_CHAT_CONTACT_IDS__ = [];
+        (window as any).__ACTIVE_CHAT_CONTACT_ID__ = null;
+      }
+    }
+    return () => {
+      if (typeof window !== 'undefined') {
+        (window as any).__ACTIVE_CHAT_CONTACT_IDS__ = [];
+        (window as any).__ACTIVE_CHAT_CONTACT_ID__ = null;
+      }
+    };
+  }, [selected, mobileView]);
+
   const isFocusedRef = useRef<boolean>(true);
 
   // Mark a conversation as read and synchronize unread counters
@@ -58,9 +84,11 @@ function MessagesContent() {
       );
       const totalUnread = updated.reduce((sum, c) => sum + (c.unreadCount || 0), 0);
       if (typeof window !== 'undefined') {
-        window.dispatchEvent(
-          new CustomEvent('chat:unread-changed', { detail: { totalUnread } })
-        );
+        queueMicrotask(() => {
+          window.dispatchEvent(
+            new CustomEvent('chat:unread-changed', { detail: { totalUnread } })
+          );
+        });
       }
       return updated;
     });
@@ -131,9 +159,11 @@ function MessagesContent() {
 
         const initialTotalUnread = list.reduce((sum, c) => sum + (c.unreadCount || 0), 0);
         if (typeof window !== 'undefined') {
-          window.dispatchEvent(
-            new CustomEvent('chat:unread-changed', { detail: { totalUnread: initialTotalUnread } })
-          );
+          queueMicrotask(() => {
+            window.dispatchEvent(
+              new CustomEvent('chat:unread-changed', { detail: { totalUnread: initialTotalUnread } })
+            );
+          });
         }
 
         if (targetUserId) {
@@ -301,9 +331,11 @@ function MessagesContent() {
 
         const totalUnread = updated.reduce((sum, c) => sum + (c.unreadCount || 0), 0);
         if (typeof window !== 'undefined') {
-          window.dispatchEvent(
-            new CustomEvent('chat:unread-changed', { detail: { totalUnread } })
-          );
+          queueMicrotask(() => {
+            window.dispatchEvent(
+              new CustomEvent('chat:unread-changed', { detail: { totalUnread } })
+            );
+          });
         }
         return updated;
       });
@@ -494,6 +526,7 @@ function MessagesContent() {
         >
           {selected ? (
             <ChatWindow
+              key={`${selected.participantId || selected.id}-${mobileView}`}
               conversation={selected}
               messages={messages}
               isLoadingMessages={isLoadingMessages}

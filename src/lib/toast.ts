@@ -6,6 +6,9 @@ export interface ToastOptions {
   description?: string;
   duration?: number;
   persistOnRedirect?: boolean;
+  onClick?: () => void;
+  avatarUrl?: string | null;
+  actionLabel?: string;
 }
 
 export interface ToastItem {
@@ -15,6 +18,9 @@ export interface ToastItem {
   description?: string;
   duration: number;
   createdAt: number;
+  onClick?: () => void;
+  avatarUrl?: string | null;
+  actionLabel?: string;
 }
 
 type ToastListener = (toasts: ToastItem[]) => void;
@@ -92,6 +98,10 @@ class ToastManager {
       }
     }
 
+    const onClick = typeof options === "object" && options ? options.onClick : undefined;
+    const avatarUrl = typeof options === "object" && options ? options.avatarUrl : undefined;
+    const actionLabel = typeof options === "object" && options ? options.actionLabel : undefined;
+
     const toastItem: ToastItem = {
       id,
       type,
@@ -99,6 +109,9 @@ class ToastManager {
       description,
       duration,
       createdAt: Date.now(),
+      onClick,
+      avatarUrl,
+      actionLabel,
     };
 
     // Keep up to 5 toasts active

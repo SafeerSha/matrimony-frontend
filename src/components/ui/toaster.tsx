@@ -1,7 +1,15 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { IconCircleCheck, IconAlertCircle, IconAlertTriangle, IconInfoCircle, IconX } from '@tabler/icons-react';
+import {
+  IconCircleCheck,
+  IconAlertCircle,
+  IconAlertTriangle,
+  IconInfoCircle,
+  IconX,
+  IconMessageCircleFilled,
+  IconChevronRight,
+} from "@tabler/icons-react";
 import { toast, type ToastItem } from "@/lib/toast";
 import { cn } from "@/lib/cn";
 
@@ -19,7 +27,7 @@ export function Toaster() {
   return (
     <div
       aria-live="polite"
-      className="pointer-events-none fixed top-4 right-4 z-[9999] flex w-full max-w-sm flex-col gap-2.5 px-4 sm:px-0"
+      className="pointer-events-none fixed z-[99999] flex flex-col gap-2.5 top-3 inset-x-3 sm:top-5 sm:right-5 sm:left-auto sm:w-full sm:max-w-md sm:px-0"
     >
       {toasts.map((item) => (
         <ToastCard key={item.id} item={item} onDismiss={() => toast.dismiss(item.id)} />
@@ -28,72 +36,128 @@ export function Toaster() {
   );
 }
 
+function getInitials(title?: string) {
+  if (!title) return "LC";
+  const clean = title.replace(/^Message from\s+/i, "").trim();
+  const parts = clean.split(/\s+/).filter(Boolean);
+  return (parts[0]?.[0] || "M") + (parts[1]?.[0] || "");
+}
+
 function ToastCard({ item, onDismiss }: { item: ToastItem; onDismiss: () => void }) {
   const [isExiting, setIsExiting] = useState(false);
+  const [imgError, setImgError] = useState(false);
 
   const handleDismiss = () => {
     setIsExiting(true);
-    setTimeout(onDismiss, 200);
+    setTimeout(onDismiss, 220);
   };
+
+  const isChatMessage = item.title.toLowerCase().startsWith("message from");
 
   const icons = {
-    success: <IconCircleCheck className="h-5 w-5 text-[var(--primary)] shrink-0 mt-0.5" />,
-    error: <IconAlertCircle className="h-5 w-5 text-rose-600 shrink-0 mt-0.5" />,
-    warning: <IconAlertTriangle className="h-5 w-5 text-amber-600 shrink-0 mt-0.5" />,
-    info: <IconInfoCircle className="h-5 w-5 text-[#8C5D30] shrink-0 mt-0.5" />,
+    success: <IconCircleCheck className="h-5 w-5 text-[#7A1835] shrink-0" />,
+    error: <IconAlertCircle className="h-5 w-5 text-rose-600 shrink-0" />,
+    warning: <IconAlertTriangle className="h-5 w-5 text-amber-600 shrink-0" />,
+    info: <IconInfoCircle className="h-5 w-5 text-[#8C5D30] shrink-0" />,
   };
 
-  const borders = {
-    success: "border-white/40 bg-white/70 shadow-[0_12px_30px_-4px_rgba(122,24,53,0.08)]",
-    error: "border-white/40 bg-white/70 shadow-rose-950/5",
-    warning: "border-white/40 bg-white/70 shadow-amber-950/5",
-    info: "border-white/40 bg-white/70 shadow-[#8C5D30]/5",
-  };
-
-  const accentPills = {
-    success: "bg-gradient-to-b from-[var(--primary)] to-[var(--primary-deep)]",
-    error: "bg-rose-500",
-    warning: "bg-amber-500",
-    info: "bg-[#D8B28C]",
+  const handleClick = () => {
+    if (item.onClick) {
+      item.onClick();
+      handleDismiss();
+    }
   };
 
   return (
     <div
-      className={cn(
-        "pointer-events-auto relative flex w-full items-start gap-3 rounded-2xl border p-4 shadow-xl backdrop-blur-xl transition-all duration-300 ease-out",
-        borders[item.type],
-        isExiting
-          ? "opacity-0 -translate-y-2 scale-95"
-          : "opacity-100 translate-y-0 scale-100 animate-in fade-in slide-in-from-top-3"
-      )}
-      style={{
-        boxShadow: "0 12px 30px -4px rgba(33, 27, 30, 0.12), 0 4px 10px -2px rgba(33, 27, 30, 0.04)"
+      onClick={handleClick}
+      role={item.onClick ? "button" : "status"}
+      tabIndex={item.onClick ? 0 : undefined}
+      onKeyDown={(e) => {
+        if (item.onClick && (e.key === "Enter" || e.key === " ")) {
+          e.preventDefault();
+          handleClick();
+        }
       }}
+      className={cn(
+        "pointer-events-auto relative w-full overflow-hidden rounded-2xl border transition-all duration-300 ease-out select-none",
+        "bg-white/95 backdrop-blur-2xl border-[#EEDFCE] shadow-[0_16px_38px_rgba(92,16,39,0.16),0_4px_12px_rgba(0,0,0,0.06)]",
+        item.onClick && "cursor-pointer hover:shadow-[0_20px_45px_rgba(92,16,39,0.22)] active:scale-[0.98]",
+        isExiting
+          ? "opacity-0 -translate-y-4 scale-95 duration-200"
+          : "opacity-100 translate-y-0 scale-100 animate-in fade-in slide-in-from-top-4 duration-300"
+      )}
     >
-      <div className={cn("absolute left-0 top-3 bottom-3 w-1 rounded-r-full", accentPills[item.type])} />
+      {/* Top micro progress accent line */}
+      <div className="absolute top-0 inset-x-0 h-1 bg-gradient-to-r from-[#7A1835] via-[#A7586A] to-[#D8B28C]" />
 
-      <div className="pl-1">
-        {icons[item.type]}
-      </div>
-
-      <div className="flex-1 min-w-0 pr-2">
-        <h4 className="text-sm font-semibold text-stone-900/90 leading-snug">
-          {item.title}
-        </h4>
-        {item.description && (
-          <p className="mt-1 text-xs text-stone-600/85 leading-relaxed break-words">
-            {item.description}
-          </p>
+      <div className="p-3.5 sm:p-4 flex items-center gap-3">
+        {/* Leading Avatar / Icon Graphic */}
+        {isChatMessage ? (
+          <div className="relative shrink-0">
+            {item.avatarUrl && !imgError ? (
+              <div className="h-11 w-11 sm:h-12 sm:w-12 rounded-full overflow-hidden ring-2 ring-[#7A1835]/25 border-2 border-white shadow-sm bg-[#FAF2EF]">
+                <img
+                  src={item.avatarUrl}
+                  alt={item.title}
+                  className="h-full w-full object-cover object-center"
+                  onError={() => setImgError(true)}
+                />
+              </div>
+            ) : (
+              <div className="grid h-11 w-11 sm:h-12 sm:w-12 place-items-center rounded-full bg-gradient-to-br from-[#7A1835] via-[#8B1E3F] to-[#5C1027] text-[#FAF0E6] font-bold text-xs sm:text-sm tracking-wider shadow-sm ring-2 ring-white">
+                <span>{getInitials(item.title).toUpperCase()}</span>
+              </div>
+            )}
+            {/* Small chat badge indicator */}
+            <span className="absolute -bottom-0.5 -right-0.5 grid h-4 w-4 place-items-center rounded-full bg-[#7A1835] text-white ring-2 ring-white shadow-2xs">
+              <IconMessageCircleFilled className="h-2.5 w-2.5 text-[#F4D9C0]" />
+            </span>
+          </div>
+        ) : (
+          <div className="grid h-10 w-10 sm:h-11 sm:w-11 place-items-center rounded-xl bg-[#FAF3EC] border border-[#EAD8C7] shrink-0 text-[#7A1835]">
+            {icons[item.type]}
+          </div>
         )}
-      </div>
 
-      <button
-        onClick={handleDismiss}
-        className="rounded-lg p-1 text-stone-400/90 hover:text-stone-700 hover:bg-white/60 transition-colors focus:outline-none focus:ring-2 focus:ring-[var(--primary)]/30"
-        aria-label="Dismiss notification"
-      >
-        <IconX className="h-4 w-4" />
-      </button>
+        {/* Text Details */}
+        <div className="flex-1 min-w-0 pr-1">
+          <div className="flex items-center gap-1.5">
+            <h4 className="text-sm font-bold text-[#211B1E] truncate leading-tight">
+              {item.title}
+            </h4>
+            <span className="inline-block shrink-0 rounded-full bg-[#FAF3EC] px-1.5 py-0.2 text-[9px] font-bold text-[#7A1835] uppercase tracking-wider border border-[#E5D2C0]">
+              Now
+            </span>
+          </div>
+          {item.description && (
+            <p className="mt-1 text-xs text-[#5C5357] line-clamp-2 leading-relaxed break-words font-medium">
+              {item.description}
+            </p>
+          )}
+        </div>
+
+        {/* Action arrow indicator if clickable */}
+        {item.onClick && (
+          <div className="shrink-0 text-[#A97C52] sm:flex items-center hidden pr-0.5">
+            <span className="text-[11px] font-bold text-[#7A1835] mr-0.5">Reply</span>
+            <IconChevronRight className="h-4 w-4" />
+          </div>
+        )}
+
+        {/* Dismiss Button */}
+        <button
+          type="button"
+          onClick={(e) => {
+            e.stopPropagation();
+            handleDismiss();
+          }}
+          className="rounded-full p-1.5 text-[#8C7D82] hover:text-[#211B1E] hover:bg-[#FAF3EC] transition-colors focus:outline-none focus:ring-2 focus:ring-[#7A1835]/30 shrink-0 self-center"
+          aria-label="Dismiss notification"
+        >
+          <IconX className="h-4 w-4" />
+        </button>
+      </div>
     </div>
   );
 }
