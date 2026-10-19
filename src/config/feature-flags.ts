@@ -47,10 +47,10 @@ export const FEATURE_FLAGS: FeatureFlags = {
     discover: true,
     profile: true,
 
-    // Outside pages show "Under Development"
-    matches: false,
-    messages: true,
-    favorites: false,
+    // Epic 5 Live Features
+    matches: true,
+    messages: false,
+    favorites: true,
     interests: false,
     notifications: false,
     settings: false,

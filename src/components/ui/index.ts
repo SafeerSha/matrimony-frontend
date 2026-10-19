@@ -20,3 +20,4 @@ export * from "./education-selector";
 export * from "./profession-combobox";
 export * from "./employment-status-selector";
 export * from "./modern-select";
+export * from "./celebration-modal";

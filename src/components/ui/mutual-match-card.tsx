@@ -19,6 +19,7 @@ import { Card } from '@/components/ui/card';
 import { VerificationBadge } from '@/components/ui/verification-badge';
 import { cn } from '@/lib/cn';
 import type { Profile } from '@/lib/demo-data';
+import { IconSparkles } from '@tabler/icons-react';
 
 export interface MutualMatchCardProps {
   match: Profile;
@@ -28,6 +29,7 @@ export interface MutualMatchCardProps {
     verified?: boolean;
     city?: string;
   };
+  onCelebrate?: (match: Profile) => void;
   className?: string;
 }
 
@@ -39,6 +41,7 @@ export function MutualMatchCard({
     verified: true,
     city: '',
   },
+  onCelebrate,
   className,
 }: MutualMatchCardProps) {
   return (
@@ -179,15 +182,30 @@ export function MutualMatchCard({
         {/* ACTIONS: START CHAT & VIEW PROFILE                       */}
         {/* ======================================================== */}
         <div className="pt-2 border-t border-[var(--border)] flex flex-col gap-2.5">
-          <Link href={`/app/profile?user=${match.id}`} className="w-full focus-ring">
-            <Button
-              variant="secondary"
-              size="md"
-              className="w-full rounded-2xl text-xs font-bold h-11"
-            >
-              View Profile
-            </Button>
-          </Link>
+          <div className="flex items-center gap-2">
+            <Link href={`/app/profile?user=${match.id}`} className="flex-1 focus-ring">
+              <Button
+                variant="secondary"
+                size="md"
+                className="w-full rounded-2xl text-xs font-bold h-11"
+              >
+                View Profile
+              </Button>
+            </Link>
+
+            {onCelebrate && (
+              <Button
+                variant="secondary"
+                size="md"
+                onClick={() => onCelebrate(match)}
+                className="rounded-2xl text-xs font-bold h-11 px-3 bg-[#FAF3EC] border-[#EAD8C7] text-[#7A1835] hover:bg-[#F3E7DC] active-press flex items-center gap-1.5 shrink-0"
+                title="Celebrate Connection"
+              >
+                <IconSparkles className="h-4 w-4 text-[#7A1835]" />
+                <span className="hidden sm:inline">Celebrate</span>
+              </Button>
+            )}
+          </div>
 
           <Link href={`/app/messages?user=${match.id}`} className="w-full focus-ring">
             <Button
