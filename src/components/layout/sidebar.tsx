@@ -134,7 +134,7 @@ function SidebarContent({
         className
       )}
     >
-      <div className="sticky top-20 flex flex-col justify-between rounded-3xl border border-[var(--border)] bg-white p-2.5 sm:p-3 shadow-[var(--elevation-card)] min-h-[calc(100vh-6.5rem)]">
+      <div className="sticky top-20 flex flex-col justify-between rounded-3xl border border-[#EAD8C7]/90 bg-white p-2.5 sm:p-3 shadow-[0_1px_3px_rgba(45,15,25,0.04),0_8px_24px_-4px_rgba(122,24,53,0.08),0_18px_36px_-6px_rgba(40,10,20,0.06)] min-h-[calc(100vh-6.5rem)]">
         {/* Top Navigation Group */}
         <div className="space-y-1">
           <div className="hidden lg:block px-3 py-1.5 mb-1">

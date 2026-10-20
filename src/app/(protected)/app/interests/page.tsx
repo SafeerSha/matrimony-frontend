@@ -118,13 +118,14 @@ function InterestsContent() {
     router.replace(`/app/interests?${params.toString()}`);
   };
 
-  // Fetch both received and sent connections simultaneously so both tab counts show immediately on load
+  // Fetch received, sent, and declined connections simultaneously so all tab counts show immediately on load
   const fetchConnections = useCallback(async () => {
     setIsLoading(true);
     try {
-      const [recRes, sentRes] = await Promise.allSettled([
+      const [recRes, sentRes, decRes] = await Promise.allSettled([
         matchesService.getConnections('received'),
         matchesService.getConnections('sent'),
+        matchesService.getConnections('declined'),
       ]);
 
       if (recRes.status === 'fulfilled') {
@@ -139,6 +140,13 @@ function InterestsContent() {
         setSentItems(raw.map(mapProfile));
       } else {
         console.error('Error fetching sent connections:', sentRes.reason);
+      }
+
+      if (decRes.status === 'fulfilled') {
+        const raw = Array.isArray(decRes.value) ? decRes.value : (decRes.value as any)?.data || [];
+        setDeclinedItems(raw.map(mapProfile));
+      } else {
+        console.error('Error fetching declined connections:', decRes.reason);
       }
     } catch (err) {
       console.error('Error fetching connections:', err);
@@ -191,7 +199,6 @@ function InterestsContent() {
       await matchesService.rejectInterest(id);
       setReceivedItems((prev) => prev.filter((p) => p.id !== id));
       if (item) {
-        setDeclinedItems((prev) => [item, ...prev]);
         toast.info(
           'Interest Declined',
           `You have respectfully declined the request from ${item.name}.`
@@ -200,7 +207,6 @@ function InterestsContent() {
     } catch {
       setReceivedItems((prev) => prev.filter((p) => p.id !== id));
       if (item) {
-        setDeclinedItems((prev) => [item, ...prev]);
         toast.info(
           'Interest Declined',
           `You have respectfully declined the request from ${item.name}.`
@@ -456,10 +462,10 @@ function InterestsContent() {
           ) : (
             <EmptyState
               title="No declined requests"
-              description="Requests that you respectfully pass or decline will be archived here for your privacy and records."
+              description="Interest requests you sent to other members that were passed or declined will appear here."
               actionText="Discover Profiles"
               onAction={() => router.push('/app/discover')}
-              tip="Declined profiles will never be notified with negative feedback; discretion is maintained at all times."
+              tip="Members decline requests based on personal criteria like location or age. Discover more profiles to find your ideal match!"
             />
           )}
         </div>

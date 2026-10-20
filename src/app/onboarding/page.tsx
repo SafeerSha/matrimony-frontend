@@ -42,6 +42,15 @@ import {
   EmploymentStatusSelector,
   ModernSelect,
 } from "@/components/ui";
+import {
+  CLIENT_EMPLOYMENT_OPTIONS,
+  CLIENT_INCOME_OPTIONS,
+  RELIGION_OPTIONS,
+  POPULAR_CASTES_BY_RELIGION,
+  POPULAR_INDIAN_STATES,
+  HEIGHT_OPTIONS_CM,
+  POPULAR_EDUCATION_OPTIONS,
+} from "@/lib/data/education-profession-data";
 
 const STEPS = [
   { id: 1, label: "Personal", fullLabel: "Personal Details", isRequired: true },
@@ -101,6 +110,21 @@ export default function OnboardingPage() {
             createdBy: parsed.createdBy || prev.createdBy || "",
             category: parsed.category || parsed.profileFor || prev.category || "Marriage",
             lookingIn: parsed.lookingIn || prev.lookingIn || "",
+            nationality: parsed.nationality || prev.nationality || "Indian",
+            state: parsed.state || prev.state || "Kerala",
+            fatherName: parsed.fatherName || prev.fatherName || "",
+            religion: parsed.religion || prev.religion || "Christian",
+            caste: parsed.caste || prev.caste || "Roman Catholic Syrian Christian",
+            permanentAddress: parsed.permanentAddress || prev.permanentAddress || "",
+            height: parsed.height || prev.height || "170 cm",
+            employmentStatus: parsed.employmentStatus || prev.employmentStatus || "Govt. Employ",
+            income: parsed.income || prev.income || "5 to 12 lakhs",
+            fatherAlive: prev.fatherAlive !== undefined ? prev.fatherAlive : true,
+            motherAlive: prev.motherAlive !== undefined ? prev.motherAlive : true,
+            brothersCount: prev.brothersCount || 0,
+            brothersMarried: prev.brothersMarried || 0,
+            sistersCount: prev.sistersCount || 0,
+            sistersMarried: prev.sistersMarried || 0,
           }));
 
           if (parsed.preferences) {
@@ -139,7 +163,13 @@ export default function OnboardingPage() {
           if (profile) {
             // If the user is already active and completed onboarding, do not restart onboarding
             if (!isDraftUser(profile)) {
-              window.location.href = "/app/discover";
+              if (typeof window !== "undefined") {
+                sessionStorage.removeItem("shaadi_onboarding_draft");
+                localStorage.removeItem("shaadi_onboarding_draft");
+              }
+              authService.refreshToken().catch(() => {}).finally(() => {
+                window.location.href = "/app/discover";
+              });
               return;
             }
 
@@ -172,42 +202,69 @@ export default function OnboardingPage() {
 
     if (step === 1) {
       setError(null);
-      const emailVal = (formData.get("email") as string || "").trim();
-      if (!emailVal || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailVal)) {
-        setError("Please enter a valid email address.");
-        return;
-      }
 
-      const firstNameVal = (formData.get("firstName") as string || "").trim();
+      // 1. Name
+      const firstNameVal = (formData.get("firstName") as string || profileData.firstName || "").trim();
+      const lastNameVal = (formData.get("lastName") as string || profileData.lastName || "").trim();
       if (!firstNameVal) {
-        setError("Please enter your first name.");
+        setError("Please enter your name.");
         return;
       }
 
-      const dobVal = formData.get("dob") as string;
+      // 5. Permanent Address - Strictly Mandatory
+      const permanentAddressVal = (formData.get("permanentAddress") as string || profileData.permanentAddress || "").trim();
+      if (!permanentAddressVal) {
+        setError("Permanent Address is mandatory. (Note: It will remain confidential and hidden from other users).");
+        return;
+      }
+
+      // 6. Cell Number - Strictly Mandatory
+      const phoneVal = (formData.get("phone") as string || profileData.phone || draftInfo?.phone || "").trim();
+      if (!phoneVal) {
+        setError("Cell number is mandatory. (Note: It will remain confidential and hidden from other users).");
+        return;
+      }
+
+      // 6. Email ID - Strictly Mandatory
+      const emailVal = (formData.get("email") as string || profileData.email || "").trim();
+      if (!emailVal || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailVal)) {
+        setError("A valid Email ID is mandatory. (Note: It will remain confidential and hidden from other users).");
+        return;
+      }
+
+      // 2. Nationality & State
+      const nationalityVal = (formData.get("nationality") as string || profileData.nationality || "Indian").trim();
+      const stateVal = (formData.get("state") as string || profileData.state || "Kerala").trim();
+
+      // 3. Father's Name
+      const fatherNameVal = (formData.get("fatherName") as string || profileData.fatherName || "").trim();
+
+      // 4. Religion and Caste
+      const religionVal = (formData.get("religion") as string || profileData.religion || "").trim();
+      const casteVal = (formData.get("caste") as string || profileData.caste || "").trim();
+
+      // 7. Educational qualification
+      const eduVal = (formData.get("education") as string || profileData.education || "").trim();
+      if (!eduVal) {
+        setError("Please specify your educational qualification.");
+        return;
+      }
+
+      // 8. Present Employment
+      const employmentStatusVal = (formData.get("employmentStatus") as string || profileData.employmentStatus || "").trim();
+
+      // 9. Annual Income
+      const incomeVal = (formData.get("income") as string || profileData.income || "").trim();
+
+      // 10. Height
+      const heightVal = (formData.get("height") as string || profileData.height || "").trim();
+
+      // Other baseline details
+      const dobVal = formData.get("dob") as string || profileData.dateOfBirth;
       if (!dobVal) {
         setError("Please select your date of birth.");
         return;
       }
-
-      const eduVal = (formData.get("education") as string || "").trim();
-      if (!eduVal) {
-        setError("Please select your highest education.");
-        return;
-      }
-
-      const profVal = (
-        (formData.get("profession") as string) ||
-        (formData.get("occupation") as string) ||
-        ""
-      ).trim();
-      if (!profVal) {
-        setError("Please select or search your profession.");
-        return;
-      }
-
-      const employmentStatusVal = (formData.get("employmentStatus") as string || "").trim();
-      const lastNameVal = (formData.get("lastName") as string || profileData.lastName || "").trim();
 
       const genderVal = (formData.get("gender") as string || profileData.gender || "").trim().toLowerCase();
       if (!genderVal) {
@@ -215,18 +272,53 @@ export default function OnboardingPage() {
         return;
       }
 
+      const profVal = (
+        (formData.get("profession") as string) ||
+        (formData.get("occupation") as string) ||
+        profileData.occupation ||
+        ""
+      ).trim();
+
+      // 11. Family details
+      const fatherAliveVal = profileData.fatherAlive !== false;
+      const motherAliveVal = profileData.motherAlive !== false;
+      const rawBrothersCount = formData.get("brothersCount");
+      const rawBrothersMarried = formData.get("brothersMarried");
+      const rawSistersCount = formData.get("sistersCount");
+      const rawSistersMarried = formData.get("sistersMarried");
+
+      const brothersCountVal = rawBrothersCount !== null ? Number(rawBrothersCount) : (profileData.brothersCount ?? 0);
+      const brothersMarriedVal = rawBrothersMarried !== null ? Number(rawBrothersMarried) : (profileData.brothersMarried ?? 0);
+      const sistersCountVal = rawSistersCount !== null ? Number(rawSistersCount) : (profileData.sistersCount ?? 0);
+      const sistersMarriedVal = rawSistersMarried !== null ? Number(rawSistersMarried) : (profileData.sistersMarried ?? 0);
+
       updatedProfile = {
         ...updatedProfile,
         firstName: firstNameVal,
         lastName: lastNameVal,
         name: `${firstNameVal} ${lastNameVal}`.trim(),
+        nationality: nationalityVal,
+        state: stateVal,
+        fatherName: fatherNameVal,
+        religion: religionVal,
+        caste: casteVal,
+        permanentAddress: permanentAddressVal,
+        phone: phoneVal,
         email: emailVal,
-        phone: (formData.get("phone") as string || profileData.phone || "").trim(),
+        education: eduVal,
+        employmentStatus: employmentStatusVal,
+        income: incomeVal,
+        height: heightVal,
+        occupation: profVal || employmentStatusVal,
+        profession: profVal || employmentStatusVal,
         gender: genderVal,
         dateOfBirth: new Date(dobVal).toISOString(),
-        education: eduVal,
-        occupation: profVal,
-        employmentStatus: employmentStatusVal,
+        fatherAlive: fatherAliveVal,
+        motherAlive: motherAliveVal,
+        brothersCount: isNaN(brothersCountVal) ? 0 : brothersCountVal,
+        brothersMarried: isNaN(brothersMarriedVal) ? 0 : brothersMarriedVal,
+        sistersCount: isNaN(sistersCountVal) ? 0 : sistersCountVal,
+        sistersMarried: isNaN(sistersMarriedVal) ? 0 : sistersMarriedVal,
         bio: (formData.get("family") as string || profileData.bio || "").trim(),
       };
       setProfileData(updatedProfile);
@@ -436,12 +528,27 @@ export default function OnboardingPage() {
       // Always pass skipPhotoCheck: true so backend does not block if photos are still processing
       await profileService.completeOnboarding({
         email: profileData.email,
+        phone: profileData.phone,
+        permanentAddress: profileData.permanentAddress,
+        fatherName: profileData.fatherName,
+        nationality: profileData.nationality,
+        state: profileData.state,
+        religion: profileData.religion,
+        caste: profileData.caste,
         dateOfBirth: profileData.dateOfBirth,
         gender: profileData.gender,
+        height: profileData.height,
         education: profileData.education,
         occupation: profileData.occupation,
         profession: profileData.profession || profileData.occupation,
         employmentStatus: profileData.employmentStatus,
+        income: profileData.income,
+        fatherAlive: profileData.fatherAlive !== false,
+        motherAlive: profileData.motherAlive !== false,
+        brothersCount: profileData.brothersCount || 0,
+        brothersMarried: profileData.brothersMarried || 0,
+        sistersCount: profileData.sistersCount || 0,
+        sistersMarried: profileData.sistersMarried || 0,
         bio: profileData.bio,
         maritalStatus: profileData.maritalStatus,
         city: profileData.city,
@@ -451,7 +558,11 @@ export default function OnboardingPage() {
 
       if (typeof window !== "undefined") {
         sessionStorage.removeItem("shaadi_onboarding_draft");
+        localStorage.removeItem("shaadi_onboarding_draft");
       }
+
+      // Refresh auth tokens so the updated ACTIVE status is stored in cookies and session
+      await authService.refreshToken().catch(() => {});
 
       toast.flash(
         "success",
@@ -480,7 +591,9 @@ export default function OnboardingPage() {
       }
       if (typeof window !== "undefined") {
         sessionStorage.removeItem("shaadi_onboarding_draft");
+        localStorage.removeItem("shaadi_onboarding_draft");
       }
+      await authService.refreshToken().catch(() => {});
       toast.flash(
         "success",
         "Profile Setup Complete!",
@@ -835,166 +948,321 @@ export default function OnboardingPage() {
                 <form onSubmit={handleNext} className="space-y-6">
                   {/* Two-Column Responsive Layout for Desktop Mode */}
                   <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 lg:gap-6 items-start">
-                    {/* Left Column: Personal Identity & Contact */}
-                    <div className="p-5 sm:p-6 rounded-2xl bg-white/80 border border-[var(--border)] shadow-xs space-y-4">
-                      <div className="flex items-center gap-2 pb-2 border-b border-[var(--border)]/60">
-                        <IconUser className="w-5 h-5 text-[#80132E]" />
-                        <h2 className="text-sm font-bold uppercase tracking-wider text-[var(--foreground)]">
-                          Identity & Contact
-                        </h2>
-                      </div>
+                    
+                    {/* LEFT COLUMN: Identity, Religion, Caste, and Confidential Details */}
+                    <div className="space-y-5">
+                      
+                      {/* Card 1: Personal Identity & Origin */}
+                      <div className="p-5 sm:p-6 rounded-2xl bg-white border border-[var(--border)] shadow-xs space-y-4">
+                        <div className="flex items-center gap-2 pb-2 border-b border-[var(--border)]/60">
+                          <IconUser className="w-5 h-5 text-[#80132E]" />
+                          <h2 className="text-sm font-bold uppercase tracking-wider text-[var(--foreground)]">
+                            1. Personal & Family Identity
+                          </h2>
+                        </div>
 
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                        {/* First Name */}
-                        <div>
-                          <label className="block text-xs font-semibold uppercase tracking-wider text-[var(--muted-strong)] mb-1.5">
-                            First Name <span className="text-rose-500">*</span>
-                          </label>
-                          <div className="relative">
+                        {/* 1. Name */}
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                          <div>
+                            <label className="block text-xs font-semibold uppercase tracking-wider text-[var(--muted-strong)] mb-1.5">
+                              First Name / Name <span className="text-rose-500">*</span>
+                            </label>
+                            <div className="relative">
+                              <input
+                                name="firstName"
+                                type="text"
+                                required
+                                value={profileData.firstName ?? draftInfo?.firstName ?? ""}
+                                onChange={(e) =>
+                                  setProfileData((prev: any) => ({ ...prev, firstName: e.target.value }))
+                                }
+                                placeholder="e.g. S Georgekutty"
+                                className="h-12 w-full rounded-xl border border-[var(--border)] bg-white px-4 pl-10 text-sm text-[var(--foreground)] outline-none focus:border-[var(--primary)] focus:ring-4 focus:ring-[var(--primary)]/10 transition"
+                              />
+                              <IconUser className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-[var(--muted)]" />
+                            </div>
+                          </div>
+
+                          <div>
+                            <label className="block text-xs font-semibold uppercase tracking-wider text-[var(--muted-strong)] mb-1.5">
+                              Last Name / Initial
+                            </label>
+                            <div className="relative">
+                              <input
+                                name="lastName"
+                                type="text"
+                                value={profileData.lastName ?? draftInfo?.lastName ?? ""}
+                                onChange={(e) =>
+                                  setProfileData((prev: any) => ({ ...prev, lastName: e.target.value }))
+                                }
+                                placeholder="e.g. Sebastian"
+                                className="h-12 w-full rounded-xl border border-[var(--border)] bg-white px-4 pl-10 text-sm text-[var(--foreground)] outline-none focus:border-[var(--primary)] focus:ring-4 focus:ring-[var(--primary)]/10 transition"
+                              />
+                              <IconUser className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-[var(--muted)]" />
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* 2. Nationality & State */}
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                          <div>
+                            <label className="block text-xs font-semibold uppercase tracking-wider text-[var(--muted-strong)] mb-1.5">
+                              Nationality <span className="text-rose-500">*</span>
+                            </label>
                             <input
-                              name="firstName"
+                              name="nationality"
                               type="text"
                               required
-                              value={profileData.firstName ?? draftInfo?.firstName ?? ""}
+                              value={profileData.nationality ?? "Indian"}
                               onChange={(e) =>
-                                setProfileData((prev: any) => ({ ...prev, firstName: e.target.value }))
+                                setProfileData((prev: any) => ({ ...prev, nationality: e.target.value }))
                               }
-                              placeholder="e.g. Anand"
-                              className="h-12 w-full rounded-xl border border-[var(--border)] bg-white px-4 pl-10 text-sm text-[var(--foreground)] outline-none focus:border-[var(--primary)] focus:ring-4 focus:ring-[var(--primary)]/10 transition"
+                              placeholder="e.g. Indian"
+                              className="h-12 w-full rounded-xl border border-[var(--border)] bg-white px-4 text-sm text-[var(--foreground)] outline-none focus:border-[var(--primary)] focus:ring-4 focus:ring-[var(--primary)]/10 transition"
                             />
-                            <IconUser className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-[var(--muted)]" />
+                          </div>
+
+                          <div>
+                            <ModernSelect
+                              label="State"
+                              required
+                              name="state"
+                              value={profileData.state ?? "Kerala"}
+                              options={POPULAR_INDIAN_STATES.map((s) => ({ value: s, label: s }))}
+                              onChange={(val) =>
+                                setProfileData((prev: any) => ({ ...prev, state: val }))
+                              }
+                              placeholder="Select State"
+                              maxHeight="max-h-[220px]"
+                            />
                           </div>
                         </div>
 
-                        {/* Last Name */}
+                        {/* 3. Father's Name */}
                         <div>
                           <label className="block text-xs font-semibold uppercase tracking-wider text-[var(--muted-strong)] mb-1.5">
-                            Last Name
+                            Father's Name
                           </label>
-                          <div className="relative">
-                            <input
-                              name="lastName"
-                              type="text"
-                              value={profileData.lastName ?? draftInfo?.lastName ?? ""}
-                              onChange={(e) =>
-                                setProfileData((prev: any) => ({ ...prev, lastName: e.target.value }))
-                              }
-                              placeholder="e.g. Menon"
-                              className="h-12 w-full rounded-xl border border-[var(--border)] bg-white px-4 pl-10 text-sm text-[var(--foreground)] outline-none focus:border-[var(--primary)] focus:ring-4 focus:ring-[var(--primary)]/10 transition"
-                            />
-                            <IconUser className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-[var(--muted)]" />
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* Email Address */}
-                      <div>
-                        <div className="flex items-center justify-between mb-1.5">
-                          <label className="block text-xs font-semibold uppercase tracking-wider text-[var(--muted-strong)]">
-                            Email Address <span className="text-rose-500">*</span>
-                          </label>
-                          <span className="text-[11px] text-[var(--muted)]">For alerts</span>
-                        </div>
-                        <div className="relative">
                           <input
-                            name="email"
-                            type="email"
-                            required
-                            value={profileData.email ?? ""}
-                            onChange={(e) => {
-                              setEmailError(null);
-                              setProfileData((prev: any) => ({ ...prev, email: e.target.value }));
-                            }}
-                            placeholder="e.g. anand.menon@example.com"
-                            className={cn(
-                              "h-12 w-full rounded-xl border bg-white px-4 pl-10 text-sm text-[var(--foreground)] outline-none transition",
-                              emailError
-                                ? "border-rose-400 focus:border-rose-500 focus:ring-4 focus:ring-rose-500/10"
-                                : "border-[var(--border)] focus:border-[var(--primary)] focus:ring-4 focus:ring-[var(--primary)]/10"
-                            )}
-                          />
-                          <IconMail className={cn("pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4", emailError ? "text-rose-400" : "text-[var(--muted)]")} />
-                        </div>
-                        {emailError && (
-                          <div className="mt-2 p-2.5 rounded-xl bg-rose-50/80 border border-rose-200/80 flex flex-wrap items-center justify-between gap-2 text-xs">
-                            <span className="text-rose-700 font-medium">⚠️ {emailError}</span>
-                            <Link href="/login" className="text-[#80132E] font-bold underline hover:text-[#5c0d21]">
-                              Sign in to existing account →
-                            </Link>
-                          </div>
-                        )}
-                      </div>
-
-                      {/* Mobile Number - Verified */}
-                      <div>
-                        <div className="flex items-center justify-between mb-1.5">
-                          <label className="block text-xs font-semibold uppercase tracking-wider text-[var(--muted-strong)]">
-                            Mobile Number
-                          </label>
-                          <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">
-                            <IconCircleCheck className="h-3 w-3 text-emerald-600" />
-                            Verified
-                          </span>
-                        </div>
-                        <div className="relative">
-                          <input
-                            name="phone"
-                            type="tel"
-                            readOnly
-                            value={profileData.phone ?? draftInfo?.phone ?? ""}
-                            className="h-12 w-full rounded-xl border border-[var(--border)] bg-slate-50/80 px-4 pl-10 text-sm font-medium text-[var(--muted-strong)] outline-none select-none cursor-not-allowed"
-                          />
-                          <IconPhone className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-[var(--muted)]" />
-                        </div>
-                      </div>
-
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                        {/* Gender */}
-                        <div>
-                          <ModernSelect
-                            label="Gender"
-                            required
-                            name="gender"
-                            value={profileData.gender || ""}
-                            onChange={(val) =>
-                              setProfileData((prev: any) => ({ ...prev, gender: val }))
+                            name="fatherName"
+                            type="text"
+                            value={profileData.fatherName ?? ""}
+                            onChange={(e) =>
+                              setProfileData((prev: any) => ({ ...prev, fatherName: e.target.value }))
                             }
-                            options={[
-                              { value: "female", label: "Female" },
-                              { value: "male", label: "Male" },
-                            ]}
-                            placeholder="Select Gender"
+                            placeholder="e.g. Sebastian"
+                            className="h-12 w-full rounded-xl border border-[var(--border)] bg-white px-4 text-sm text-[var(--foreground)] outline-none focus:border-[var(--primary)] focus:ring-4 focus:ring-[var(--primary)]/10 transition"
                           />
                         </div>
 
-                        {/* Date of Birth */}
-                        <div>
-                          <label className="block text-xs font-semibold uppercase tracking-wider text-[var(--muted-strong)] mb-1.5">
-                            Date of Birth <span className="text-rose-500">*</span>
-                          </label>
-                          <DatePicker
-                            name="dob"
-                            required
-                            defaultValue={profileData.dateOfBirth}
-                            onChange={(d) => {
-                              if (d) {
+                        {/* 4. Religion and Caste */}
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                          <div>
+                            <ModernSelect
+                              label="Religion"
+                              required
+                              name="religion"
+                              value={profileData.religion || "Christian"}
+                              options={RELIGION_OPTIONS.map((r) => ({ value: r, label: r }))}
+                              onChange={(val) => {
+                                const availableCastes = POPULAR_CASTES_BY_RELIGION[val] || ["Other"];
+                                const defaultCaste = availableCastes[0] || "Other";
                                 setProfileData((prev: any) => ({
                                   ...prev,
-                                  dateOfBirth: d.toISOString(),
+                                  religion: val,
+                                  caste: availableCastes.includes(prev.caste) ? prev.caste : defaultCaste,
                                 }));
+                              }}
+                              placeholder="Select Religion"
+                              maxHeight="max-h-[220px]"
+                            />
+                          </div>
+
+                          <div>
+                            <ModernSelect
+                              label="Caste / Community"
+                              required
+                              name="caste"
+                              value={profileData.caste || (POPULAR_CASTES_BY_RELIGION[profileData.religion || "Christian"]?.[0] || "")}
+                              options={(() => {
+                                const list = POPULAR_CASTES_BY_RELIGION[profileData.religion || "Christian"] || ["Other"];
+                                const opts = list.map((c) => ({ value: c, label: c }));
+                                if (profileData.caste && !list.includes(profileData.caste)) {
+                                  opts.unshift({ value: profileData.caste, label: profileData.caste });
+                                }
+                                return opts;
+                              })()}
+                              onChange={(val) =>
+                                setProfileData((prev: any) => ({ ...prev, caste: val }))
                               }
-                            }}
-                            placeholder="Select Date of Birth"
-                            minAge={18}
-                            maxAge={70}
-                          />
+                              placeholder="Select Caste / Community"
+                              maxHeight="max-h-[220px]"
+                            />
+                          </div>
+                        </div>
+
+                        {/* Gender, DOB & 10. Height */}
+                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                          <div>
+                            <ModernSelect
+                              label="Gender"
+                              required
+                              name="gender"
+                              value={profileData.gender || ""}
+                              onChange={(val) =>
+                                setProfileData((prev: any) => ({ ...prev, gender: val }))
+                              }
+                              options={[
+                                { value: "female", label: "Female" },
+                                { value: "male", label: "Male" },
+                              ]}
+                              placeholder="Select Gender"
+                            />
+                          </div>
+
+                          <div>
+                            <label className="block text-xs font-semibold uppercase tracking-wider text-[var(--muted-strong)] mb-1.5">
+                              Date of Birth <span className="text-rose-500">*</span>
+                            </label>
+                            <DatePicker
+                              name="dob"
+                              required
+                              defaultValue={profileData.dateOfBirth}
+                              onChange={(d) => {
+                                if (d) {
+                                  setProfileData((prev: any) => ({
+                                    ...prev,
+                                    dateOfBirth: d.toISOString(),
+                                  }));
+                                }
+                              }}
+                              placeholder="Select Date of Birth"
+                              minAge={18}
+                              maxAge={70}
+                            />
+                          </div>
+
+                          {/* 10. Height */}
+                          <div>
+                            <ModernSelect
+                              label="Height"
+                              required
+                              name="height"
+                              value={profileData.height ?? "170 cm"}
+                              options={HEIGHT_OPTIONS_CM.map((h) => ({ value: h.value, label: h.label }))}
+                              onChange={(val) =>
+                                setProfileData((prev: any) => ({ ...prev, height: val }))
+                              }
+                              placeholder="Select Height"
+                              maxHeight="max-h-[220px]"
+                            />
+                          </div>
                         </div>
                       </div>
+
+                      {/* Card 2: Confidential Contact & Permanent Address (Blended with standard card styles) */}
+                      <div className="p-5 sm:p-6 rounded-2xl bg-white border border-[var(--border)] shadow-xs space-y-4">
+                        <div className="flex items-center justify-between pb-2 border-b border-[var(--border)]/60">
+                          <div className="flex items-center gap-2">
+                            <IconLock className="w-5 h-5 text-[#80132E]" />
+                            <h2 className="text-sm font-bold uppercase tracking-wider text-[var(--foreground)]">
+                              Contact & Address
+                            </h2>
+                          </div>
+                          {/* <span className="inline-flex items-center gap-1.5 text-[11px] font-medium text-[var(--muted-strong)] bg-slate-50 px-2.5 py-1 rounded-full border border-[var(--border)]">
+                            <IconLock className="w-3.5 h-3.5 text-[var(--muted)]" /> Hidden from public profile
+                          </span> */}
+                        </div>
+
+                        <p className="text-xs text-[var(--muted)] leading-relaxed">
+                          Your permanent address, cell number, and email ID are collected strictly for verified membership records and will never be shared publicly.
+                        </p>
+
+                        {/* 5. Permanent Address */}
+                        <div>
+                          <div className="flex items-center justify-between mb-1.5">
+                            <label className="block text-xs font-semibold uppercase tracking-wider text-[var(--muted-strong)]">
+                              5. Permanent Address <span className="text-rose-500">*</span>
+                            </label>
+                            {/* <span className="text-[11px] font-medium text-[var(--muted)] flex items-center gap-1">
+                              <IconLock className="w-3 h-3 text-[var(--muted)]" /> Hidden from profile
+                            </span> */}
+                          </div>
+                          <textarea
+                            name="permanentAddress"
+                            required
+                            rows={3}
+                            value={profileData.permanentAddress ?? ""}
+                            onChange={(e) =>
+                              setProfileData((prev: any) => ({ ...prev, permanentAddress: e.target.value }))
+                            }
+                            placeholder="Enter your permanent residential address"
+                            className="w-full rounded-xl border border-[var(--border)] bg-white p-3.5 text-sm text-[var(--foreground)] outline-none focus:border-[var(--primary)] focus:ring-4 focus:ring-[var(--primary)]/10 transition resize-y"
+                          />
+                        </div>
+
+                        {/* 6. Cell Number & Mail ID */}
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                          <div>
+                            <div className="flex items-center justify-between mb-1.5">
+                              <label className="block text-xs font-semibold uppercase tracking-wider text-[var(--muted-strong)]">
+                                6. Cell Number <span className="text-rose-500">*</span>
+                              </label>
+                              {/* <span className="text-[11px] font-medium text-[var(--muted)] flex items-center gap-1">
+                                <IconLock className="w-3 h-3 text-[var(--muted)]" /> Hidden
+                              </span> */}
+                            </div>
+                            <div className="relative">
+                              <input
+                                name="phone"
+                                type="tel"
+                                required
+                                value={profileData.phone ?? draftInfo?.phone ?? ""}
+                                onChange={(e) =>
+                                  setProfileData((prev: any) => ({ ...prev, phone: e.target.value }))
+                                }
+                                placeholder="+91 9876543210"
+                                className="h-12 w-full rounded-xl border border-[var(--border)] bg-white px-4 pl-10 text-sm font-medium text-[var(--foreground)] outline-none focus:border-[var(--primary)] focus:ring-4 focus:ring-[var(--primary)]/10 transition"
+                              />
+                              <IconPhone className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-[var(--muted)]" />
+                            </div>
+                          </div>
+
+                          <div>
+                            <div className="flex items-center justify-between mb-1.5">
+                              <label className="block text-xs font-semibold uppercase tracking-wider text-[var(--muted-strong)]">
+                                6. Mail ID <span className="text-rose-500">*</span>
+                              </label>
+                              {/* <span className="text-[11px] font-medium text-[var(--muted)] flex items-center gap-1">
+                                <IconLock className="w-3 h-3 text-[var(--muted)]" /> Hidden
+                              </span> */}
+                            </div>
+                            <div className="relative">
+                              <input
+                                name="email"
+                                type="email"
+                                required
+                                value={profileData.email ?? ""}
+                                onChange={(e) => {
+                                  setEmailError(null);
+                                  setProfileData((prev: any) => ({ ...prev, email: e.target.value }));
+                                }}
+                                placeholder="name@example.com"
+                                className="h-12 w-full rounded-xl border border-[var(--border)] bg-white px-4 pl-10 text-sm font-medium text-[var(--foreground)] outline-none focus:border-[var(--primary)] focus:ring-4 focus:ring-[var(--primary)]/10 transition"
+                              />
+                              <IconMail className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-[var(--muted)]" />
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+
                     </div>
 
-                    {/* Right Column: Education, Profession & About You */}
-                    <div className="space-y-5 lg:space-y-6">
-                      <div className="p-5 sm:p-6 rounded-2xl bg-white/80 border border-[var(--border)] shadow-xs space-y-4">
+                    {/* RIGHT COLUMN: Education, Employment, Income, and Family Details */}
+                    <div className="space-y-5">
+                      
+                      {/* Card 3: Education & Career */}
+                      <div className="p-5 sm:p-6 rounded-2xl bg-white border border-[var(--border)] shadow-xs space-y-4">
                         <div className="flex items-center gap-2 pb-2 border-b border-[var(--border)]/60">
                           <IconSchool className="w-5 h-5 text-[#80132E]" />
                           <h2 className="text-sm font-bold uppercase tracking-wider text-[var(--foreground)]">
@@ -1002,88 +1270,248 @@ export default function OnboardingPage() {
                           </h2>
                         </div>
 
-                        {/* Highest Education */}
+                        {/* 7. Educational qualification */}
                         <div>
-                          <EducationSelector
-                            name="education"
+                          <ModernSelect
+                            label="7. Educational Qualification"
                             required
-                            defaultValue={profileData.education}
+                            name="education"
+                            value={profileData.education ?? "MA"}
+                            options={(() => {
+                              const opts = [...POPULAR_EDUCATION_OPTIONS];
+                              if (
+                                profileData.education &&
+                                !opts.some(
+                                  (o) =>
+                                    o.value.toLowerCase() === profileData.education.toLowerCase() ||
+                                    o.label.toLowerCase() === profileData.education.toLowerCase()
+                                )
+                              ) {
+                                opts.unshift({
+                                  value: profileData.education,
+                                  label: profileData.education,
+                                  description: "Custom / Selected",
+                                });
+                              }
+                              return opts;
+                            })()}
                             onChange={(val) =>
                               setProfileData((prev: any) => ({ ...prev, education: val }))
                             }
+                            placeholder="Select Educational Qualification"
+                            searchable
+                            maxHeight="max-h-[260px]"
                           />
                         </div>
 
+                        {/* 8. Present Employment & 9. Annual Income */}
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                          {/* Profession / Career */}
                           <div>
-                            <ProfessionCombobox
-                              name="profession"
+                            <ModernSelect
+                              label="8. Present Employment"
                               required
-                              defaultValue={profileData.occupation || profileData.profession}
-                              onChange={(val) =>
-                                setProfileData((prev: any) => ({
-                                  ...prev,
-                                  occupation: val,
-                                  profession: val,
-                                }))
-                              }
-                            />
-                          </div>
-
-                          {/* Employment Status */}
-                          <div>
-                            <EmploymentStatusSelector
                               name="employmentStatus"
-                              defaultValue={profileData.employmentStatus}
+                              value={profileData.employmentStatus ?? "Govt. Employ"}
+                              options={CLIENT_EMPLOYMENT_OPTIONS.map((opt) => ({ value: opt, label: opt }))}
                               onChange={(val) =>
-                                setProfileData((prev: any) => ({
-                                  ...prev,
-                                  employmentStatus: val,
-                                }))
+                                setProfileData((prev: any) => ({ ...prev, employmentStatus: val }))
                               }
+                              placeholder="Select Employment"
+                              maxHeight="max-h-[220px]"
+                            />
+                          </div>
+
+                          <div>
+                            <ModernSelect
+                              label="9. Annual Income"
+                              required
+                              name="income"
+                              value={profileData.income ?? "5 to 12 lakhs"}
+                              options={CLIENT_INCOME_OPTIONS.map((opt) => ({ value: opt, label: opt }))}
+                              onChange={(val) =>
+                                setProfileData((prev: any) => ({ ...prev, income: val }))
+                              }
+                              placeholder="Select Income"
+                              maxHeight="max-h-[220px]"
                             />
                           </div>
                         </div>
+
+                        {/* Job Title / Profession */}
+                        <div>
+                          <label className="block text-xs font-semibold uppercase tracking-wider text-[var(--muted-strong)] mb-1.5">
+                            Job Title / Profession Designation
+                          </label>
+                          <input
+                            name="profession"
+                            type="text"
+                            value={profileData.occupation ?? profileData.profession ?? ""}
+                            onChange={(e) =>
+                              setProfileData((prev: any) => ({
+                                ...prev,
+                                occupation: e.target.value,
+                                profession: e.target.value,
+                              }))
+                            }
+                            placeholder="e.g. Higher Secondary Teacher / Officer"
+                            className="h-12 w-full rounded-xl border border-[var(--border)] bg-white px-4 text-sm text-[var(--foreground)] outline-none focus:border-[var(--primary)] focus:ring-4 focus:ring-[var(--primary)]/10 transition"
+                          />
+                        </div>
                       </div>
 
-                      {/* Family & Bio */}
-                      <div className="p-5 sm:p-6 rounded-2xl bg-white/80 border border-[var(--border)] shadow-xs space-y-3">
-                        <div className="flex items-center justify-between pb-2 border-b border-[var(--border)]/60">
-                          <div className="flex items-center gap-2">
-                            <IconShieldCheck className="w-5 h-5 text-[#80132E]" />
-                            <h2 className="text-sm font-bold uppercase tracking-wider text-[var(--foreground)]">
-                              About You & Family Background
-                            </h2>
-                          </div>
-                          <span className="text-rose-500 font-bold text-xs">*</span>
+                      {/* Card 4: 11. Family Details */}
+                      <div className="p-5 sm:p-6 rounded-2xl bg-white border border-[var(--border)] shadow-xs space-y-4">
+                        <div className="flex items-center gap-2 pb-2 border-b border-[var(--border)]/60">
+                          <IconUsers className="w-5 h-5 text-[#80132E]" />
+                          <h2 className="text-sm font-bold uppercase tracking-wider text-[var(--foreground)]">
+                            11. Family Details
+                          </h2>
                         </div>
-                        <textarea
-                          name="family"
-                          required
-                          rows={4}
-                          value={profileData.bio ?? profileData.family ?? ""}
-                          onChange={(e) =>
-                            setProfileData((prev: any) => ({
-                              ...prev,
-                              bio: e.target.value,
-                              family: e.target.value,
-                            }))
-                          }
-                          placeholder="Tell us a bit about your family values, personal interests, and lifestyle..."
-                          className="w-full rounded-xl border border-[var(--border)] bg-white p-3.5 text-sm text-[var(--foreground)] outline-none focus:border-[var(--primary)] focus:ring-4 focus:ring-[var(--primary)]/10 transition resize-y"
-                        />
+
+                        {/* Father & Mother Living Ticks */}
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 p-3.5 rounded-xl bg-slate-50 border border-[var(--border)]/60">
+                          <label className="flex items-center gap-2.5 cursor-pointer text-xs font-semibold text-[var(--foreground)]">
+                            <input
+                              type="checkbox"
+                              name="fatherAlive"
+                              checked={profileData.fatherAlive !== false}
+                              onChange={(e) =>
+                                setProfileData((prev: any) => ({ ...prev, fatherAlive: e.target.checked }))
+                              }
+                              className="h-4 w-4 rounded text-[#80132E] focus:ring-[#80132E]"
+                            />
+                            <span>Father (Living / Alive)</span>
+                          </label>
+
+                          <label className="flex items-center gap-2.5 cursor-pointer text-xs font-semibold text-[var(--foreground)]">
+                            <input
+                              type="checkbox"
+                              name="motherAlive"
+                              checked={profileData.motherAlive !== false}
+                              onChange={(e) =>
+                                setProfileData((prev: any) => ({ ...prev, motherAlive: e.target.checked }))
+                              }
+                              className="h-4 w-4 rounded text-[#80132E] focus:ring-[#80132E]"
+                            />
+                            <span>Mother (Living / Alive)</span>
+                          </label>
+                        </div>
+
+                        {/* a. Brothers count and married status */}
+                        <div className="grid grid-cols-2 gap-3">
+                          <div>
+                            <label className="block text-xs font-semibold uppercase tracking-wider text-[var(--muted-strong)] mb-1">
+                              Brothers Count
+                            </label>
+                            <input
+                              type="number"
+                              min={0}
+                              max={10}
+                              name="brothersCount"
+                              value={profileData.brothersCount ?? 0}
+                              onChange={(e) =>
+                                setProfileData((prev: any) => ({ ...prev, brothersCount: Number(e.target.value) }))
+                              }
+                              className="h-11 w-full rounded-xl border border-[var(--border)] bg-white px-3 text-sm text-[var(--foreground)] outline-none focus:border-[var(--primary)]"
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-xs font-semibold uppercase tracking-wider text-[var(--muted-strong)] mb-1">
+                              Married Brothers
+                            </label>
+                            <input
+                              type="number"
+                              min={0}
+                              max={profileData.brothersCount ?? 10}
+                              name="brothersMarried"
+                              value={profileData.brothersMarried ?? 0}
+                              onChange={(e) =>
+                                setProfileData((prev: any) => ({ ...prev, brothersMarried: Number(e.target.value) }))
+                              }
+                              className="h-11 w-full rounded-xl border border-[var(--border)] bg-white px-3 text-sm text-[var(--foreground)] outline-none focus:border-[var(--primary)]"
+                            />
+                          </div>
+                        </div>
+
+                        {/* b. Sisters count and married status */}
+                        <div className="grid grid-cols-2 gap-3">
+                          <div>
+                            <label className="block text-xs font-semibold uppercase tracking-wider text-[var(--muted-strong)] mb-1">
+                              Sisters Count
+                            </label>
+                            <input
+                              type="number"
+                              min={0}
+                              max={10}
+                              name="sistersCount"
+                              value={profileData.sistersCount ?? 0}
+                              onChange={(e) =>
+                                setProfileData((prev: any) => ({ ...prev, sistersCount: Number(e.target.value) }))
+                              }
+                              className="h-11 w-full rounded-xl border border-[var(--border)] bg-white px-3 text-sm text-[var(--foreground)] outline-none focus:border-[var(--primary)]"
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-xs font-semibold uppercase tracking-wider text-[var(--muted-strong)] mb-1">
+                              Married Sisters
+                            </label>
+                            <input
+                              type="number"
+                              min={0}
+                              max={profileData.sistersCount ?? 10}
+                              name="sistersMarried"
+                              value={profileData.sistersMarried ?? 0}
+                              onChange={(e) =>
+                                setProfileData((prev: any) => ({ ...prev, sistersMarried: Number(e.target.value) }))
+                              }
+                              className="h-11 w-full rounded-xl border border-[var(--border)] bg-white px-3 text-sm text-[var(--foreground)] outline-none focus:border-[var(--primary)]"
+                            />
+                          </div>
+                        </div>
+
+                        {/* Family Background Notes */}
+                        <div>
+                          <label className="block text-xs font-semibold uppercase tracking-wider text-[var(--muted-strong)] mb-1.5">
+                            Family Values & About Profile
+                          </label>
+                          <textarea
+                            name="family"
+                            rows={3}
+                            value={profileData.bio ?? profileData.family ?? ""}
+                            onChange={(e) =>
+                              setProfileData((prev: any) => ({
+                                ...prev,
+                                bio: e.target.value,
+                                family: e.target.value,
+                              }))
+                            }
+                            placeholder="Additional details about your family, values, and lifestyle..."
+                            className="w-full rounded-xl border border-[var(--border)] bg-white p-3.5 text-sm text-[var(--foreground)] outline-none focus:border-[var(--primary)] focus:ring-4 focus:ring-[var(--primary)]/10 transition resize-y"
+                          />
+                        </div>
                       </div>
+
                     </div>
+
                   </div>
 
                   <div className="pt-6 flex justify-end border-t border-[var(--border)]/70">
                     <button
                       type="submit"
-                      className="focus-ring inline-flex h-12 w-full sm:w-auto items-center justify-center gap-2 rounded-xl bg-[var(--primary)] px-8 text-sm font-semibold text-white shadow-md hover:bg-[var(--primary-deep)] transition-all cursor-pointer active-press"
+                      disabled={isLoading}
+                      className="focus-ring inline-flex h-12 w-full sm:w-auto items-center justify-center gap-2 rounded-xl bg-[var(--primary)] px-8 text-sm font-semibold text-white shadow-md hover:bg-[var(--primary-deep)] transition-all cursor-pointer active-press disabled:opacity-50"
                     >
-                      <span>Continue to Profile Photo</span>
-                      <IconArrowRight className="h-4 w-4" />
+                      {isLoading ? (
+                        <>
+                          <IconLoader2 className="h-4 w-4 animate-spin" />
+                          <span>Saving Profile...</span>
+                        </>
+                      ) : (
+                        <>
+                          <span>Continue to Profile Photo</span>
+                          <IconArrowRight className="h-4 w-4" />
+                        </>
+                      )}
                     </button>
                   </div>
                 </form>

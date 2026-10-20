@@ -21,7 +21,7 @@ export default function LandingPage() {
         className="pointer-events-none absolute inset-x-0 top-0 h-[880px] z-[2] hidden sm:block"
       />
       <header className="absolute top-0 inset-x-0 w-full z-30 mx-auto flex h-16 sm:h-20 max-w-[1600px] items-start pt-3 sm:pt-4 lg:pt-0 lg:items-center justify-between px-3 sm:px-6 lg:px-8 xl:px-10 bg-transparent lg:relative">
-        <Logo lightOnMobile={true} />
+        <Logo lightOnMobile={true} blurredBg={true} />
         <div className="flex items-start lg:items-center gap-2 sm:gap-3 shrink-0">
           {/* 100% Verified badge in top header on mobile (aligned with the top line of IshtamChat logo) */}
           <div className="inline-flex lg:hidden items-center gap-1.5 rounded-full border border-white/30 bg-black/60 backdrop-blur-md px-2.5 py-1 text-[10.5px] font-bold text-white shadow-sm shrink-0 whitespace-nowrap">

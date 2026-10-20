@@ -11,17 +11,17 @@ export interface CardProps extends HTMLAttributes<HTMLDivElement> {
 
 const variants: Record<CardVariant, string> = {
   default:
-    "bg-[var(--surface)] border border-[var(--border)] shadow-[var(--elevation-card)]",
+    "bg-white border border-[#EAD8C7]/90 shadow-[0_1px_3px_rgba(45,15,25,0.04),0_8px_24px_-4px_rgba(122,24,53,0.08),0_18px_36px_-6px_rgba(40,10,20,0.06)]",
   interactive:
-    "bg-[var(--surface)] border border-[var(--border)] shadow-[var(--elevation-card)] transition-all duration-300 hover:-translate-y-1 hover:shadow-[var(--elevation-card-hover)] hover:border-[var(--border-strong)] cursor-pointer",
+    "bg-white border border-[#EAD8C7]/90 shadow-[0_1px_3px_rgba(45,15,25,0.04),0_8px_24px_-4px_rgba(122,24,53,0.08),0_18px_36px_-6px_rgba(40,10,20,0.06)] transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_2px_6px_rgba(45,15,25,0.06),0_16px_36px_-6px_rgba(122,24,53,0.16),0_24px_48px_-10px_rgba(33,27,30,0.10)] hover:border-[#D8B28C] cursor-pointer",
   warm:
-    "bg-gradient-to-b from-[var(--surface)] via-white to-[var(--background)] border border-[var(--border)] shadow-[var(--elevation-card)]",
+    "bg-white border border-[#EAD8C7]/90 shadow-[0_1px_3px_rgba(45,15,25,0.04),0_8px_24px_-4px_rgba(122,24,53,0.08),0_18px_36px_-6px_rgba(40,10,20,0.06)]",
   champagne:
-    "bg-gradient-to-b from-[#FFFDFB] to-white border border-[#EAD8C7] shadow-[0_12px_36px_-10px_rgba(216,178,140,0.22)] ring-1 ring-[var(--accent)]/30",
+    "bg-white border border-[#D8B28C]/80 shadow-[0_12px_36px_-8px_rgba(216,178,140,0.30)] ring-1 ring-[#D8B28C]/35",
   glass:
-    "bg-white/85 backdrop-blur-xl border border-[var(--border)]/80 shadow-[var(--elevation-card)]",
+    "bg-white/95 backdrop-blur-xl border border-[#EAD8C7]/90 shadow-[0_1px_3px_rgba(45,15,25,0.04),0_8px_24px_-4px_rgba(122,24,53,0.08),0_18px_36px_-6px_rgba(40,10,20,0.06)]",
   outline:
-    "bg-transparent border border-[var(--border)]"
+    "bg-white border border-[#EAD8C7] shadow-xs"
 };
 
 const paddings: Record<CardPadding, string> = {

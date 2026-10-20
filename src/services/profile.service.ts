@@ -47,6 +47,16 @@ export interface UserProfile {
   lifestyle?: string[];
   interests?: string[];
   family?: string;
+  fatherName?: string;
+  nationality?: string;
+  permanentAddress?: string;
+  fatherAlive?: boolean;
+  motherAlive?: boolean;
+  brothersCount?: number;
+  brothersMarried?: number;
+  sistersCount?: number;
+  sistersMarried?: number;
+  familyDetails?: any;
   lookingFor?: string;
   photos?: ProfilePhoto[];
   preferences?: any;
@@ -86,12 +96,28 @@ export const profileService = {
 
   completeOnboarding: (data: {
     email?: string;
+    phone?: string;
     dateOfBirth?: string;
     gender?: string;
     education?: string;
     occupation?: string;
     profession?: string;
     employmentStatus?: string;
+    annualIncome?: string;
+    income?: string;
+    height?: string | number;
+    religion?: string;
+    caste?: string;
+    fatherName?: string;
+    nationality?: string;
+    permanentAddress?: string;
+    fatherAlive?: boolean;
+    motherAlive?: boolean;
+    brothersCount?: number;
+    brothersMarried?: number;
+    sistersCount?: number;
+    sistersMarried?: number;
+    familyDetails?: any;
     bio?: string;
     maritalStatus?: string;
     motherTongue?: string;

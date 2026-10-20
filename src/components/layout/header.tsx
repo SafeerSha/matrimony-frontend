@@ -56,7 +56,7 @@ export function Header({
       >
         {/* Brand Logo */}
         <div className="flex items-center gap-4 transition-transform duration-300">
-          <Logo href="/app" blurredBg={!isScrolled} />
+          <Logo href="/app" blurredBg={false} />
         </div>
 
         {/* Right Action Icons & User Menu */}

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import IconPhoto from "next/image";
 import Link from "next/link";
 import {
@@ -32,6 +32,17 @@ export default function LoginPage() {
   const [otpStep, setOtpStep] = useState<"phone" | "code">("phone");
   const [phone, setPhone] = useState("");
   const [otp, setOtp] = useState("");
+  const otpInputRef = useRef<HTMLInputElement>(null);
+
+  // Auto-focus OTP input when code screen appears
+  useEffect(() => {
+    if (authMethod === "otp" && otpStep === "code") {
+      const timer = setTimeout(() => {
+        otpInputRef.current?.focus();
+      }, 50);
+      return () => clearTimeout(timer);
+    }
+  }, [authMethod, otpStep]);
 
   const [identifier, setIdentifier] = useState("");
   const [password, setPassword] = useState("");
@@ -119,6 +130,20 @@ export default function LoginPage() {
         return;
       }
 
+      const isRateLimited =
+        err?.status === 429 ||
+        err?.statusCode === 429 ||
+        err?.message?.includes("ThrottlerException") ||
+        err?.message?.toLowerCase().includes("too many requests") ||
+        err?.message?.toLowerCase().includes("too many attempts");
+
+      if (isRateLimited) {
+        const rateLimitMsg = "Too many verification requests. For your security, please wait a minute before requesting another code.";
+        setErrorMessage(rateLimitMsg);
+        toast.warning("Please wait a moment", rateLimitMsg);
+        return;
+      }
+
       const msg = err.message || "Failed to send verification code. Please try again.";
       setErrorMessage(msg);
       toast.error("Failed to send OTP", msg);
@@ -174,6 +199,21 @@ export default function LoginPage() {
           "Account Not Found",
           "This mobile number is not registered. Please create your profile to continue."
         );
+        setIsLoading(false);
+        return;
+      }
+
+      const isRateLimited =
+        err?.status === 429 ||
+        err?.statusCode === 429 ||
+        err?.message?.includes("ThrottlerException") ||
+        err?.message?.toLowerCase().includes("too many requests") ||
+        err?.message?.toLowerCase().includes("too many attempts");
+
+      if (isRateLimited) {
+        const rateLimitMsg = "Too many attempts. For your security, please wait a moment before trying again.";
+        setErrorMessage(rateLimitMsg);
+        toast.warning("Please wait a moment", rateLimitMsg);
         setIsLoading(false);
         return;
       }
@@ -235,6 +275,21 @@ export default function LoginPage() {
           "Account Not Found",
           "No account found. Please create your profile to continue."
         );
+        setIsLoading(false);
+        return;
+      }
+
+      const isRateLimited =
+        error?.status === 429 ||
+        error?.statusCode === 429 ||
+        error?.message?.includes("ThrottlerException") ||
+        error?.message?.toLowerCase().includes("too many requests") ||
+        error?.message?.toLowerCase().includes("too many attempts");
+
+      if (isRateLimited) {
+        const rateLimitMsg = "Too many sign-in attempts. For your security, please wait a minute before trying again.";
+        setErrorMessage(rateLimitMsg);
+        toast.warning("Please wait a moment", rateLimitMsg);
         setIsLoading(false);
         return;
       }
@@ -625,14 +680,18 @@ export default function LoginPage() {
                           Sent to <span className="font-semibold text-[var(--foreground)]">+91 {phone.replace(/\D/g, "").slice(-10)}</span>
                         </p>
                         <input
+                          ref={otpInputRef}
                           id="otp"
                           type="text"
+                          inputMode="numeric"
+                          autoComplete="one-time-code"
+                          autoFocus
                           required
                           maxLength={6}
                           value={otp}
                           onChange={(e) => setOtp(e.target.value.replace(/\D/g, ""))}
-                          placeholder="Enter 6-digit OTP"
-                          className="h-13 w-full rounded-xl border border-[var(--border)] bg-slate-50/70 px-4 text-center text-xl tracking-[0.5em] font-medium text-[var(--foreground)] outline-none transition-all duration-200 focus:bg-white focus:border-[var(--primary)] focus:ring-4 focus:ring-[var(--primary)]/10"
+                          placeholder="• • • • • •"
+                          className="h-13 w-full rounded-xl border border-[var(--border)] bg-slate-50/70 px-4 text-center text-xl sm:text-2xl tracking-[0.4em] font-mono font-semibold text-[var(--foreground)] placeholder:text-slate-300 placeholder:tracking-[0.4em] outline-none transition-all duration-200 focus:bg-white focus:border-[var(--primary)] focus:ring-4 focus:ring-[var(--primary)]/10"
                         />
                       </div>
 

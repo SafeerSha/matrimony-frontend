@@ -23,6 +23,26 @@ const sizes: Record<AvatarSize, { container: string; text: string; badge: string
   "2xl": { container: "h-28 w-28", text: "text-2xl", badge: "h-6 w-6", dot: "h-5 w-5" },
 };
 
+const AVATAR_GRADIENTS = [
+  "from-[#80132E] to-[#A81E41] text-white",
+  "from-[#5C1027] to-[#80132E] text-white",
+  "from-[#8C5D30] to-[#B27C4B] text-white",
+  "from-[#1F4E5B] to-[#2E7385] text-white",
+  "from-[#4A2B68] to-[#6E3C98] text-white",
+  "from-[#8A3B14] to-[#B95525] text-white",
+  "from-[#2B543D] to-[#3B7455] text-white",
+];
+
+function getAvatarGradient(name: string): string {
+  if (!name) return AVATAR_GRADIENTS[0];
+  let hash = 0;
+  for (let i = 0; i < name.length; i++) {
+    hash = name.charCodeAt(i) + ((hash << 5) - hash);
+  }
+  const index = Math.abs(hash) % AVATAR_GRADIENTS.length;
+  return AVATAR_GRADIENTS[index];
+}
+
 export function Avatar({
   src,
   name,
@@ -32,6 +52,12 @@ export function Avatar({
   bordered = false,
   className,
 }: AvatarProps) {
+  const [imgError, setImgError] = React.useState(false);
+
+  React.useEffect(() => {
+    setImgError(false);
+  }, [src]);
+
   const currentSize = sizes[size] || sizes.md;
   
   const initials = name
@@ -43,29 +69,34 @@ export function Avatar({
         .slice(0, 2)
         .join("")
         .toUpperCase()
-    : "LC";
+    : "IC";
+
+  const showFallback = !src || imgError;
 
   return (
-    <div className={cn("relative inline-block shrink-0 select-none", className)}>
+    <div className={cn("relative inline-flex shrink-0 select-none leading-none", className)}>
       <div
         className={cn(
-          "relative overflow-hidden rounded-full font-bold shadow-xs transition-transform duration-200",
-          "bg-gradient-to-br from-[var(--primary-light)] to-[#FCEFF2] text-[var(--primary)]",
+          "relative overflow-hidden rounded-full font-bold shadow-xs transition-transform duration-200 flex items-center justify-center shrink-0",
+          showFallback
+            ? cn("bg-gradient-to-br", getAvatarGradient(name))
+            : "bg-gradient-to-br from-[var(--primary-light)] to-[#FCEFF2] text-[var(--primary)]",
           currentSize.container,
           bordered && "ring-2 ring-[var(--surface)] ring-offset-2 ring-offset-[var(--border)]"
         )}
       >
-        {src ? (
+        {!showFallback ? (
           <img
             src={src}
             alt={`${name} profile picture`}
             className="h-full w-full object-cover object-center"
             loading="lazy"
+            onError={() => setImgError(true)}
           />
         ) : (
           <span
             className={cn(
-              "grid h-full w-full place-items-center tracking-wider font-semibold",
+              "flex h-full w-full items-center justify-center text-center tracking-wider font-bold select-none text-white leading-none",
               currentSize.text
             )}
           >

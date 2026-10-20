@@ -8,6 +8,13 @@ export interface NotificationItem {
   referenceId?: string | null;
   isRead: boolean;
   createdAt: string;
+  sender?: {
+    id: string;
+    name: string;
+    avatarUrl: string | null;
+    city?: string | null;
+    occupation?: string | null;
+  } | null;
 }
 
 export const notificationService = {

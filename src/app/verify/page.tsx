@@ -89,7 +89,16 @@ export default function VerifyPage() {
       setPhoneTimer(30);
       toast.info("SMS Code Resent", `We've sent a new 6-digit code to ${phone || "your mobile"}`);
     } catch (err: any) {
-      toast.error("Failed to resend SMS", err.message || "Please try again later.");
+      const isRateLimited =
+        err?.status === 429 ||
+        err?.statusCode === 429 ||
+        err?.message?.includes("ThrottlerException") ||
+        err?.message?.toLowerCase().includes("too many requests") ||
+        err?.message?.toLowerCase().includes("too many attempts");
+      const msg = isRateLimited
+        ? "Too many code requests. Please wait a moment before requesting another code."
+        : err.message || "Please try again later.";
+      toast.warning("Please wait a moment", msg);
     } finally {
       setIsResendingPhone(false);
     }
@@ -104,7 +113,16 @@ export default function VerifyPage() {
       setEmailTimer(30);
       toast.info("Email Code Resent", `We've sent a new 6-digit code to ${email}`);
     } catch (err: any) {
-      toast.error("Failed to resend email", err.message || "Please try again later.");
+      const isRateLimited =
+        err?.status === 429 ||
+        err?.statusCode === 429 ||
+        err?.message?.includes("ThrottlerException") ||
+        err?.message?.toLowerCase().includes("too many requests") ||
+        err?.message?.toLowerCase().includes("too many attempts");
+      const msg = isRateLimited
+        ? "Too many code requests. Please wait a moment before requesting another code."
+        : err.message || "Please try again later.";
+      toast.warning("Please wait a moment", msg);
     } finally {
       setIsResendingEmail(false);
     }
@@ -159,6 +177,21 @@ export default function VerifyPage() {
         router.push(url);
       }, 500);
     } catch (err: any) {
+      const isRateLimited =
+        err?.status === 429 ||
+        err?.statusCode === 429 ||
+        err?.message?.includes("ThrottlerException") ||
+        err?.message?.toLowerCase().includes("too many requests") ||
+        err?.message?.toLowerCase().includes("too many attempts");
+
+      if (isRateLimited) {
+        const rateLimitMsg = "Too many attempts. For your security, please wait a moment before trying again.";
+        setErrorMessage(rateLimitMsg);
+        toast.warning("Please wait a moment", rateLimitMsg);
+        setIsLoading(false);
+        return;
+      }
+
       const msg = err.message || "Verification code is invalid or has expired.";
       setErrorMessage(msg);
       toast.error("Verification failed", msg);
@@ -380,12 +413,15 @@ export default function VerifyPage() {
                     <input
                       id="phoneOtp"
                       type="text"
+                      inputMode="numeric"
+                      autoComplete="one-time-code"
+                      autoFocus
                       required
                       maxLength={6}
                       value={phoneOtp}
                       onChange={(e) => setPhoneOtp(e.target.value.replace(/\D/g, ""))}
-                      placeholder="Enter 6-digit SMS OTP"
-                      className="h-12 sm:h-13 w-full rounded-xl border border-[var(--border)] bg-slate-50/70 px-4 text-center text-lg sm:text-xl tracking-[0.4em] font-medium text-[var(--foreground)] outline-none transition-all duration-200 focus:bg-white focus:border-[var(--primary)] focus:ring-4 focus:ring-[var(--primary)]/10"
+                      placeholder="• • • • • •"
+                      className="h-12 sm:h-13 w-full rounded-xl border border-[var(--border)] bg-slate-50/70 px-4 text-center text-lg sm:text-2xl tracking-[0.4em] font-mono font-semibold text-[var(--foreground)] placeholder:text-slate-300 placeholder:tracking-[0.4em] outline-none transition-all duration-200 focus:bg-white focus:border-[var(--primary)] focus:ring-4 focus:ring-[var(--primary)]/10"
                     />
                   </div>
                 </div>
@@ -420,12 +456,14 @@ export default function VerifyPage() {
                       <input
                         id="emailOtp"
                         type="text"
+                        inputMode="numeric"
+                        autoComplete="one-time-code"
                         required
                         maxLength={6}
                         value={emailOtp}
                         onChange={(e) => setEmailOtp(e.target.value.replace(/\D/g, ""))}
-                        placeholder="Enter 6-digit Email OTP"
-                        className="h-12 sm:h-13 w-full rounded-xl border border-[var(--border)] bg-slate-50/70 px-4 text-center text-lg sm:text-xl tracking-[0.4em] font-medium text-[var(--foreground)] outline-none transition-all duration-200 focus:bg-white focus:border-[var(--primary)] focus:ring-4 focus:ring-[var(--primary)]/10"
+                        placeholder="• • • • • •"
+                        className="h-12 sm:h-13 w-full rounded-xl border border-[var(--border)] bg-slate-50/70 px-4 text-center text-lg sm:text-2xl tracking-[0.4em] font-mono font-semibold text-[var(--foreground)] placeholder:text-slate-300 placeholder:tracking-[0.4em] outline-none transition-all duration-200 focus:bg-white focus:border-[var(--primary)] focus:ring-4 focus:ring-[var(--primary)]/10"
                       />
                     </div>
                   </div>

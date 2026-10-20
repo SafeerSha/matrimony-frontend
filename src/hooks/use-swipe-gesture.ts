@@ -15,8 +15,8 @@ export function useSwipeGesture({
   onSwipeRight,
   onSwipeCancel,
   onTap,
-  threshold = 120,
-  velocityThreshold = 0.5,
+  threshold = 75,
+  velocityThreshold = 0.25,
   enabled = true,
 }: SwipeGestureProps = {}) {
   const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
@@ -30,6 +30,8 @@ export function useSwipeGesture({
   const velocity = useRef({ x: 0, y: 0 });
   const isHorizontalLock = useRef(false);
   const isVerticalLock = useRef(false);
+  const dragOccurredRef = useRef(false);
+  const currentTargetRef = useRef<HTMLElement | null>(null);
 
   const resetState = useCallback(() => {
     setDragOffset({ x: 0, y: 0 });
@@ -38,25 +40,30 @@ export function useSwipeGesture({
     setSwipeDirection(null);
     isHorizontalLock.current = false;
     isVerticalLock.current = false;
+    dragOccurredRef.current = false;
   }, []);
 
   const onPointerDown = useCallback((e: React.PointerEvent<HTMLDivElement>) => {
     if (!enabled || isAnimatingOut) return;
     
     // Ignore multi-touch or right clicks
-    if (!e.isPrimary || e.button !== 0) return;
+    if (!e.isPrimary || (e.pointerType === 'mouse' && e.button !== 0)) return;
 
     // Do NOT capture pointer or initiate drag if touching interactive controls
-    if ((e.target as HTMLElement).closest('button, a, input, select, textarea')) {
+    if ((e.target as HTMLElement).closest('button, a, input, select, textarea, [data-prevent-swipe]')) {
       return;
     }
 
+    const targetEl = e.currentTarget;
+    currentTargetRef.current = targetEl;
+
     try {
-      (e.target as HTMLElement).setPointerCapture(e.pointerId);
+      targetEl.setPointerCapture(e.pointerId);
     } catch {
       // Ignore
     }
     
+    dragOccurredRef.current = false;
     setIsDragging(true);
     startPos.current = { x: e.clientX, y: e.clientY };
     lastPos.current = { x: e.clientX, y: e.clientY };
@@ -74,24 +81,31 @@ export function useSwipeGesture({
     
     const deltaX = currentPos.x - startPos.current.x;
     const deltaY = currentPos.y - startPos.current.y;
+    const absX = Math.abs(deltaX);
+    const absY = Math.abs(deltaY);
 
-    // Lock direction on initial movement
+    if (absX > 6 || absY > 6) {
+      dragOccurredRef.current = true;
+    }
+
+    // Direction locking: lock horizontal once movement starts or horizontal >= vertical
     if (!isHorizontalLock.current && !isVerticalLock.current) {
-      if (Math.abs(deltaX) > 8 || Math.abs(deltaY) > 8) {
-        if (Math.abs(deltaX) > Math.abs(deltaY) * 1.25) {
+      if (absX > 6 || absY > 6) {
+        if (absX >= absY * 0.75) {
           isHorizontalLock.current = true;
-        } else {
+        } else if (absY > 25 && absX < 8) {
           isVerticalLock.current = true;
         }
       }
     }
 
     if (isVerticalLock.current) {
-      // Yield to vertical scrolling
+      // Yield to vertical page scrolling
       return;
     }
 
-    if (isHorizontalLock.current) {
+    if (isHorizontalLock.current || absX > 8) {
+      isHorizontalLock.current = true;
       const dt = currentTime - lastTime.current;
       if (dt > 0) {
         velocity.current.x = (currentPos.x - lastPos.current.x) / dt;
@@ -108,8 +122,8 @@ export function useSwipeGesture({
     if (!isDragging || isAnimatingOut) return;
 
     try {
-      if ((e.target as HTMLElement).hasPointerCapture?.(e.pointerId)) {
-        (e.target as HTMLElement).releasePointerCapture(e.pointerId);
+      if (currentTargetRef.current?.hasPointerCapture?.(e.pointerId)) {
+        currentTargetRef.current.releasePointerCapture(e.pointerId);
       }
     } catch {
       // Ignore
@@ -119,22 +133,16 @@ export function useSwipeGesture({
     const deltaX = Math.abs(e.clientX - startPos.current.x);
     const deltaY = Math.abs(e.clientY - startPos.current.y);
 
-    // If movement is negligible and no horizontal lock, it was a tap
-    if (!isHorizontalLock.current && deltaX < 15 && deltaY < 15) {
+    // If movement is negligible and no drag occurred, it was a tap
+    if (!dragOccurredRef.current && deltaX < 12 && deltaY < 12) {
       resetState();
       onTap?.();
       return;
     }
 
-    if (!isHorizontalLock.current) {
-      // Was a vertical scroll gesture
-      resetState();
-      return;
-    }
-
     const absX = Math.abs(dragOffset.x);
     const absVelocityX = Math.abs(velocity.current.x);
-    const isFlick = absVelocityX > velocityThreshold && absX > 40;
+    const isFlick = absVelocityX > velocityThreshold && absX > 30;
     const isPastThreshold = absX > threshold;
 
     if (isPastThreshold || isFlick) {
@@ -143,10 +151,11 @@ export function useSwipeGesture({
       setSwipeDirection(direction);
       setIsAnimatingOut(true);
       
+      const screenW = typeof window !== 'undefined' ? window.innerWidth : 500;
       // Animate off screen
       setDragOffset({
-        x: direction === 'right' ? window.innerWidth * 1.2 : -window.innerWidth * 1.2,
-        y: dragOffset.y + velocity.current.y * 200 // Continue trajectory slightly
+        x: direction === 'right' ? screenW * 1.3 : -screenW * 1.3,
+        y: dragOffset.y + velocity.current.y * 150
       });
 
       // Wait for animation to finish before calling handler
@@ -163,7 +172,7 @@ export function useSwipeGesture({
       setDragOffset({ x: 0, y: 0 });
       onSwipeCancel?.();
     }
-  }, [isDragging, isAnimatingOut, dragOffset, threshold, velocityThreshold, onSwipeRight, onSwipeLeft, onSwipeCancel, resetState]);
+  }, [isDragging, isAnimatingOut, dragOffset, threshold, velocityThreshold, onSwipeRight, onSwipeLeft, onSwipeCancel, onTap, resetState]);
 
   const onPointerCancel = useCallback(() => {
     if (!isDragging) return;
@@ -179,8 +188,9 @@ export function useSwipeGesture({
     setSwipeDirection(direction);
     setIsAnimatingOut(true);
     
+    const screenW = typeof window !== 'undefined' ? window.innerWidth : 500;
     setDragOffset({
-      x: direction === 'right' ? window.innerWidth * 1.2 : -window.innerWidth * 1.2,
+      x: direction === 'right' ? screenW * 1.3 : -screenW * 1.3,
       y: 0
     });
 
@@ -205,6 +215,7 @@ export function useSwipeGesture({
     isDragging,
     isAnimatingOut,
     swipeDirection,
-    triggerSwipe
+    triggerSwipe,
+    dragOccurred: dragOccurredRef.current,
   };
 }

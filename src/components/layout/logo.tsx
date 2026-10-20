@@ -7,7 +7,7 @@ export function Logo({
   lightOnMobile = false,
   className = "",
   showTagline = true,
-  blurredBg = true,
+  blurredBg = false,
 }: {
   href?: string;
   lightOnMobile?: boolean;

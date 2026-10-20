@@ -16,6 +16,7 @@ export interface RegisterDto {
 
 export interface AuthResponse {
   accessToken: string;
+  refreshToken?: string;
   user: {
     id: string;
     profileId?: string;
@@ -59,11 +60,22 @@ export const authService = {
     );
   },
 
-  setAccessToken: (token: string) => {
+  setAccessToken: (token: string, refreshToken?: string) => {
     if (typeof window === "undefined" || !token) return;
     try {
       sessionStorage.setItem("accessToken", token);
       localStorage.setItem("accessToken", token);
+      sessionStorage.setItem("auth_token_set_at", Date.now().toString());
+      if (refreshToken) {
+        sessionStorage.setItem("refreshToken", refreshToken);
+        localStorage.setItem("refreshToken", refreshToken);
+      }
+      const maxAge = 7 * 24 * 60 * 60; // 7 days
+      const isSecure = window.location.protocol === "https:";
+      document.cookie = `matrimony_session=${encodeURIComponent(token)}; path=/; max-age=${maxAge}; SameSite=Lax${isSecure ? "; Secure" : ""}`;
+      if (refreshToken) {
+        document.cookie = `refreshToken=${encodeURIComponent(refreshToken)}; path=/; max-age=${30 * 24 * 60 * 60}; SameSite=Lax${isSecure ? "; Secure" : ""}`;
+      }
     } catch {}
   },
 
@@ -72,6 +84,12 @@ export const authService = {
     try {
       sessionStorage.removeItem("accessToken");
       localStorage.removeItem("accessToken");
+      sessionStorage.removeItem("refreshToken");
+      localStorage.removeItem("refreshToken");
+      sessionStorage.removeItem("auth_token_set_at");
+      document.cookie = "matrimony_session=; path=/; max-age=0; SameSite=Lax";
+      document.cookie = "__Host-matrimony_session=; path=/; max-age=0; SameSite=Lax; Secure";
+      document.cookie = "refreshToken=; path=/; max-age=0; SameSite=Lax";
     } catch {}
   },
 
@@ -92,7 +110,7 @@ export const authService = {
     });
 
     if (res?.accessToken) {
-      authService.setAccessToken(res.accessToken);
+      authService.setAccessToken(res.accessToken, res.refreshToken);
     }
 
     return res;
@@ -128,7 +146,7 @@ export const authService = {
       body: JSON.stringify({ phone, otp }),
     });
     if (res?.accessToken) {
-      authService.setAccessToken(res.accessToken);
+      authService.setAccessToken(res.accessToken, res.refreshToken);
     }
     return res;
   },
@@ -159,7 +177,7 @@ export const authService = {
       body: JSON.stringify(payload),
     });
     if (res?.accessToken) {
-      authService.setAccessToken(res.accessToken);
+      authService.setAccessToken(res.accessToken, res.refreshToken);
     }
     return res;
   },
@@ -266,6 +284,20 @@ export const authService = {
       });
     } catch (e) {
       // Ignore if it fails
+    }
+  },
+
+  refreshToken: async () => {
+    try {
+      const res = await apiFetch<AuthResponse>("/auth/refresh", {
+        method: "POST",
+      });
+      if (res?.accessToken) {
+        authService.setAccessToken(res.accessToken, res.refreshToken);
+      }
+      return res;
+    } catch {
+      return null;
     }
   },
 

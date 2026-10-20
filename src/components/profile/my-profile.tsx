@@ -76,6 +76,125 @@ const INCOME_OPTIONS = [
   '₹50+ LPA',
 ];
 
+function SafeGalleryThumbnail({ p, i }: { p: ProfilePhoto; i: number }) {
+  const [error, setError] = useState(false);
+  return (
+    <div
+      key={p.id || i}
+      className="relative aspect-square rounded-xl overflow-hidden border border-[var(--border)] bg-[#FAF3EC] flex items-center justify-center"
+    >
+      {!error && p.url ? (
+        <img
+          src={p.url}
+          alt="Photo"
+          className="w-full h-full object-cover"
+          onError={() => setError(true)}
+        />
+      ) : (
+        <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-[#FAF3EC] to-[#F5E6D8] text-[var(--primary)]">
+          <IconPhoto className="w-6 h-6 opacity-60" />
+        </div>
+      )}
+      {p.isPrimary && (
+        <div className="absolute top-1 right-1 bg-amber-500 text-white rounded-full p-0.5 shadow-xs">
+          <IconStar className="h-2.5 w-2.5 fill-white" />
+        </div>
+      )}
+    </div>
+  );
+}
+
+function SafeAlbumPhotoCard({
+  photo,
+  index,
+  isPrimary,
+  isSettingThisPrimary,
+  isDeletingThis,
+  onSetPrimary,
+  onDelete,
+}: {
+  photo: ProfilePhoto;
+  index: number;
+  isPrimary: boolean;
+  isSettingThisPrimary: boolean;
+  isDeletingThis: boolean;
+  onSetPrimary: () => void;
+  onDelete: () => void;
+}) {
+  const [error, setError] = useState(false);
+
+  return (
+    <div
+      className={cn(
+        'relative aspect-[4/5] rounded-2xl overflow-hidden border-2 transition-all group bg-stone-100 shadow-2xs',
+        isPrimary
+          ? 'border-amber-400 ring-2 ring-amber-300/60 shadow-md'
+          : 'border-[var(--border)] hover:border-[var(--primary)]'
+      )}
+    >
+      {!error && photo.url ? (
+        <img
+          src={photo.url}
+          alt={`Gallery Photo ${index + 1}`}
+          className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+          onError={() => setError(true)}
+        />
+      ) : (
+        <div className="w-full h-full flex flex-col items-center justify-center bg-gradient-to-br from-[#FAF3EC] to-[#F5E6D8] p-4 text-center">
+          <div className="grid h-12 w-12 place-items-center rounded-full bg-white text-[var(--primary)] shadow-sm mb-1.5">
+            <IconPhoto className="w-6 h-6 opacity-75" />
+          </div>
+          <span className="text-[11px] font-bold text-[#5C1027]">Photo {index + 1}</span>
+          <span className="text-[10px] text-[var(--muted)]">Preview unavailable</span>
+        </div>
+      )}
+
+      {/* Primary Photo Badge */}
+      {isPrimary && (
+        <div className="absolute top-2.5 left-2.5 bg-gradient-to-r from-amber-500 to-amber-600 text-white text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider shadow-md flex items-center gap-1 z-10">
+          <IconStar className="h-3 w-3 fill-white" />
+          Primary DP
+        </div>
+      )}
+
+      {/* Photo Actions Overlay */}
+      <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/30 to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex flex-col justify-end p-3 gap-2">
+        {!isPrimary && (
+          <Button
+            variant="secondary"
+            size="xs"
+            onClick={onSetPrimary}
+            disabled={isSettingThisPrimary}
+            className="w-full text-[11px] font-bold bg-white text-[var(--foreground)] hover:bg-[#FAF3EC] border-0 shadow-sm gap-1"
+          >
+            {isSettingThisPrimary ? (
+              <IconLoader2 className="h-3.5 w-3.5 animate-spin" />
+            ) : (
+              <IconStar className="h-3.5 w-3.5 text-amber-500" />
+            )}
+            Set as Primary
+          </Button>
+        )}
+
+        <Button
+          variant="danger"
+          size="xs"
+          onClick={onDelete}
+          disabled={isDeletingThis}
+          className="w-full text-[11px] font-bold bg-rose-600 hover:bg-rose-700 text-white border-0 shadow-sm gap-1"
+        >
+          {isDeletingThis ? (
+            <IconLoader2 className="h-3.5 w-3.5 animate-spin" />
+          ) : (
+            <IconTrash className="h-3.5 w-3.5" />
+          )}
+          Delete Photo
+        </Button>
+      </div>
+    </div>
+  );
+}
+
 export function MyProfile() {
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -380,7 +499,7 @@ export function MyProfile() {
             className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_70%_30%,rgba(216,178,140,0.25)_0%,transparent_60%)]"
             aria-hidden="true"
           />
-          <div className="absolute -bottom-10 left-6 rounded-full border-4 border-white bg-white shadow-md">
+          <div className="absolute -bottom-10 left-6 flex items-center justify-center rounded-full border-4 border-white bg-white shadow-md leading-none shrink-0">
             <Avatar src={displayImage} name={displayName} size="xl" />
           </div>
         </div>
@@ -643,17 +762,7 @@ export function MyProfile() {
               </div>
               <div className="grid grid-cols-3 gap-2">
                 {photos.slice(0, 3).map((p, i) => (
-                  <div
-                    key={p.id || i}
-                    className="relative aspect-square rounded-xl overflow-hidden border border-[var(--border)]"
-                  >
-                    <img src={p.url} alt="Photo" className="w-full h-full object-cover" />
-                    {p.isPrimary && (
-                      <div className="absolute top-1 right-1 bg-amber-500 text-white rounded-full p-0.5">
-                        <IconStar className="h-2.5 w-2.5 fill-white" />
-                      </div>
-                    )}
-                  </div>
+                  <SafeGalleryThumbnail key={p.id || i} p={p} i={i} />
                 ))}
                 {Array.from({ length: Math.max(0, 3 - photos.length) }).map((_, i) => (
                   <div
@@ -873,72 +982,18 @@ export function MyProfile() {
 
           {/* 5-Photo Grid */}
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
-            {photos.map((photo, index) => {
-              const isPrimary = photo.isPrimary || index === 0;
-              const isSettingThisPrimary = isSettingPrimary === photo.id;
-              const isDeletingThis = deletingPhotoId === photo.id;
-
-              return (
-                <div
-                  key={photo.id || index}
-                  className={cn(
-                    'relative aspect-[4/5] rounded-2xl overflow-hidden border-2 transition-all group bg-stone-100 shadow-2xs',
-                    isPrimary
-                      ? 'border-amber-400 ring-2 ring-amber-300/60 shadow-md'
-                      : 'border-[var(--border)] hover:border-[var(--primary)]'
-                  )}
-                >
-                  <img
-                    src={photo.url}
-                    alt={`Gallery Photo ${index + 1}`}
-                    className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
-                  />
-
-                  {/* Primary Photo Badge */}
-                  {isPrimary && (
-                    <div className="absolute top-2.5 left-2.5 bg-gradient-to-r from-amber-500 to-amber-600 text-white text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider shadow-md flex items-center gap-1 z-10">
-                      <IconStar className="h-3 w-3 fill-white" />
-                      Primary DP
-                    </div>
-                  )}
-
-                  {/* Photo Actions Overlay */}
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/30 to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex flex-col justify-end p-3 gap-2">
-                    {!isPrimary && (
-                      <Button
-                        variant="secondary"
-                        size="xs"
-                        onClick={() => handleSetPrimaryPhoto(photo.id)}
-                        disabled={isSettingThisPrimary}
-                        className="w-full text-[11px] font-bold bg-white text-[var(--foreground)] hover:bg-[#FAF3EC] border-0 shadow-sm gap-1"
-                      >
-                        {isSettingThisPrimary ? (
-                          <IconLoader2 className="h-3.5 w-3.5 animate-spin" />
-                        ) : (
-                          <IconStar className="h-3.5 w-3.5 text-amber-500" />
-                        )}
-                        Set as Primary
-                      </Button>
-                    )}
-
-                    <Button
-                      variant="danger"
-                      size="xs"
-                      onClick={() => handleDeletePhoto(photo.id)}
-                      disabled={isDeletingThis}
-                      className="w-full text-[11px] font-bold bg-rose-600 hover:bg-rose-700 text-white border-0 shadow-sm gap-1"
-                    >
-                      {isDeletingThis ? (
-                        <IconLoader2 className="h-3.5 w-3.5 animate-spin" />
-                      ) : (
-                        <IconTrash className="h-3.5 w-3.5" />
-                      )}
-                      Delete Photo
-                    </Button>
-                  </div>
-                </div>
-              );
-            })}
+            {photos.map((photo, index) => (
+              <SafeAlbumPhotoCard
+                key={photo.id || index}
+                photo={photo}
+                index={index}
+                isPrimary={photo.isPrimary || index === 0}
+                isSettingThisPrimary={isSettingPrimary === photo.id}
+                isDeletingThis={deletingPhotoId === photo.id}
+                onSetPrimary={() => handleSetPrimaryPhoto(photo.id)}
+                onDelete={() => handleDeletePhoto(photo.id)}
+              />
+            ))}
 
             {/* Empty Slots Fillers up to 5 */}
             {Array.from({ length: Math.max(0, 5 - photosCount) }).map((_, i) => (

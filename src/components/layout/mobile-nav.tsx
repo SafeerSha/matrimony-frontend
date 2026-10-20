@@ -14,10 +14,14 @@ import {
   IconUser,
   IconAdjustments,
   IconSettings,
-  IconDots,
+  IconLayoutGrid,
+  IconX,
+  IconLogout,
   IconCrown,
 } from '@tabler/icons-react';
 import { cn } from "@/lib/cn";
+import { authService } from "@/services";
+import { toast } from "@/lib/toast";
 
 export interface MobileNavProps {
   unreadMessagesCount?: number;
@@ -34,18 +38,7 @@ export function MobileNav({
   const searchParams = useSearchParams();
   const currentTab = searchParams ? searchParams.get("tab") : null;
   const [isMoreMenuOpen, setIsMoreMenuOpen] = useState(false);
-  const [isScrolled, setIsScrolled] = useState(false);
   const popupRef = useRef<HTMLDivElement>(null);
-
-  // Handle scroll for dynamic dock
-  useEffect(() => {
-    const handleScroll = () => {
-      setIsScrolled(window.scrollY > 40);
-    };
-    handleScroll(); // Init
-    window.addEventListener("scroll", handleScroll, { passive: true });
-    return () => window.removeEventListener("scroll", handleScroll);
-  }, []);
 
   // Close popup if clicked outside
   useEffect(() => {
@@ -66,6 +59,19 @@ export function MobileNav({
   useEffect(() => {
     setIsMoreMenuOpen(false);
   }, [pathname, currentTab]);
+
+  const handleSignOut = async () => {
+    setIsMoreMenuOpen(false);
+    toast.info("Signing Out", "You have been signed out. Redirecting to home...");
+    try {
+      await authService.logout();
+    } catch {
+      // Continue optimistic redirection
+    }
+    setTimeout(() => {
+      window.location.href = "/";
+    }, 600);
+  };
 
   const dockItems = [
     {
@@ -151,10 +157,7 @@ export function MobileNav({
     >
       <div
         className={cn(
-          "relative flex flex-col items-end pointer-events-auto transition-all duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] w-full",
-          isScrolled
-            ? "max-w-[420px] px-4 pb-3"
-            : "max-w-full px-0 pb-[env(safe-area-inset-bottom,0px)]"
+          "relative flex flex-col items-end pointer-events-auto w-full max-w-[420px] px-4 pb-3 pb-[calc(0.75rem+env(safe-area-inset-bottom,0px))]"
         )}
         ref={popupRef}
       >
@@ -174,14 +177,19 @@ export function MobileNav({
                 className={cn(
                   "flex items-center gap-3 px-3 py-2.5 rounded-xl transition-colors text-sm",
                   isActive
-                    ? "bg-[var(--primary)]/15 text-[var(--primary)] font-semibold"
+                    ? "bg-[var(--primary)] text-white font-semibold shadow-xs"
                     : "text-[var(--foreground)] hover:bg-[var(--surface-muted)]"
                 )}
               >
                 <div className="relative">
-                  <Icon className={cn("h-5 w-5", isActive ? "stroke-[2.5]" : "stroke-2 text-[var(--muted-strong)]")} />
+                  <Icon className={cn("h-5 w-5", isActive ? "stroke-[2.5] text-white" : "stroke-2 text-[var(--muted-strong)]")} />
                   {badge !== undefined && badge > 0 && (
-                    <span className="absolute -top-1 -right-1 grid h-4 min-w-[16px] place-items-center rounded-full bg-[var(--primary)] text-white text-[9px] font-bold ring-2 ring-white">
+                    <span className={cn(
+                      "absolute -top-1 -right-1 grid h-4 min-w-[16px] place-items-center rounded-full text-[9px] font-bold ring-2",
+                      isActive
+                        ? "bg-white text-[var(--primary)] ring-[var(--primary)]"
+                        : "bg-[var(--primary)] text-white ring-white"
+                    )}>
                       {badge > 9 ? "9+" : badge}
                     </span>
                   )}
@@ -189,16 +197,27 @@ export function MobileNav({
                 <span className="flex-1 font-medium">{label}</span>
               </Link>
             ))}
+
+            {/* Divider & Log Out */}
+            <div className="border-t border-[var(--border)]/80 pt-1 mt-1">
+              <button
+                type="button"
+                onClick={handleSignOut}
+                className="flex w-full items-center gap-3 px-3 py-2.5 rounded-xl transition-colors text-sm font-medium text-rose-600 hover:bg-rose-50 active:bg-rose-100"
+              >
+                <div className="relative">
+                  <IconLogout className="h-5 w-5 stroke-2 text-rose-600" />
+                </div>
+                <span className="flex-1 font-medium text-left">Log Out</span>
+              </button>
+            </div>
           </div>
         </div>
 
         {/* DOCK */}
         <nav
           className={cn(
-            "flex w-full items-center justify-between transition-all duration-500 ease-[cubic-bezier(0.16,1,0.3,1)]",
-            isScrolled
-              ? "rounded-[2rem] border border-white/50 bg-white/75 backdrop-blur-2xl shadow-[0_8px_32px_rgba(33,27,30,0.15)] px-3 py-2"
-              : "rounded-none border-t border-[var(--border)]/80 bg-white/95 backdrop-blur-xl shadow-none px-4 sm:px-6 py-2"
+            "flex w-full items-center justify-between rounded-[2rem] border border-white/50 bg-white/75 backdrop-blur-2xl shadow-[0_8px_32px_rgba(33,27,30,0.15)] px-3 py-2"
           )}
         >
           {dockItems.map(({ label, href, icon: Icon, isActive }) => (
@@ -207,9 +226,9 @@ export function MobileNav({
               href={href}
               aria-label={label}
               className={cn(
-                "focus-ring group relative flex items-center justify-center rounded-xl w-[44px] h-[44px] transition-all duration-200 select-none active-press shrink-0",
+                "focus-ring group relative flex items-center justify-center rounded-2xl w-[44px] h-[44px] transition-all duration-200 select-none active-press shrink-0",
                 isActive
-                  ? "bg-[var(--primary)]/15 text-[var(--primary)] border border-[var(--primary)]/20 shadow-xs"
+                  ? "bg-[var(--primary)] text-white shadow-[0_4px_14px_rgba(122,24,53,0.3)] font-semibold"
                   : "text-[var(--muted-strong)] hover:bg-black/5 hover:text-[var(--foreground)] border border-transparent"
               )}
             >
@@ -217,7 +236,7 @@ export function MobileNav({
                 <Icon
                   className={cn(
                     "h-5 w-5 transition-transform duration-200",
-                    isActive ? "stroke-[2.5]" : "stroke-2 group-hover:-translate-y-0.5"
+                    isActive ? "stroke-[2.5] text-white" : "stroke-2 group-hover:-translate-y-0.5"
                   )}
                   aria-hidden="true"
                 />
@@ -225,26 +244,30 @@ export function MobileNav({
             </Link>
           ))}
 
-          {/* MORE BUTTON */}
+          {/* MORE / APPS MENU BUTTON */}
           <button
             onClick={() => setIsMoreMenuOpen(!isMoreMenuOpen)}
             className={cn(
-              "focus-ring group relative flex items-center justify-center rounded-xl w-[44px] h-[44px] transition-all duration-200 select-none active-press shrink-0",
+              "focus-ring group relative flex items-center justify-center rounded-2xl w-[44px] h-[44px] transition-all duration-200 select-none active-press shrink-0",
               isMoreMenuOpen
                 ? "bg-[var(--foreground)]/10 text-[var(--foreground)] border border-[var(--foreground)]/15 shadow-xs"
                 : "text-[var(--muted-strong)] hover:bg-black/5 hover:text-[var(--foreground)] border border-transparent"
             )}
-            aria-label="More options"
+            aria-label={isMoreMenuOpen ? "Close options menu" : "More options"}
             aria-expanded={isMoreMenuOpen}
           >
             <div className="relative grid place-items-center">
-              <IconDots
-                className={cn(
-                  "h-5 w-5 transition-transform duration-200",
-                  isMoreMenuOpen ? "stroke-[2.5]" : "stroke-2 group-hover:-translate-y-0.5"
-                )}
-                aria-hidden="true"
-              />
+              {isMoreMenuOpen ? (
+                <IconX
+                  className="h-5 w-5 stroke-[2.5] transition-transform duration-200"
+                  aria-hidden="true"
+                />
+              ) : (
+                <IconLayoutGrid
+                  className="h-5 w-5 stroke-2 transition-transform duration-200 group-hover:-translate-y-0.5"
+                  aria-hidden="true"
+                />
+              )}
               {!isMoreMenuOpen && moreItems.some((i) => i.badge && i.badge > 0) && (
                 <span className="absolute -top-1 -right-1 h-2.5 w-2.5 rounded-full bg-[var(--primary)] ring-2 ring-white" />
               )}

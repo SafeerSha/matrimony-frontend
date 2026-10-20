@@ -33,7 +33,7 @@ export function EmptyState({
   return (
     <div
       className={cn(
-        "flex flex-col items-center justify-center rounded-3xl bg-[var(--surface)] p-8 sm:p-12 text-center",
+        "flex flex-col items-center justify-center rounded-3xl bg-white border border-[#EAD8C7]/90 p-8 sm:p-14 text-center shadow-[0_1px_3px_rgba(45,15,25,0.04),0_8px_24px_-4px_rgba(122,24,53,0.08),0_20px_40px_-8px_rgba(40,10,20,0.06)] transition-all duration-300",
         className
       )}
     >

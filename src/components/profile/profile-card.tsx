@@ -82,6 +82,8 @@ export function ProfileCard({ profile, compact = false }: { profile: Profile; co
     }
   };
 
+  const [imgError, setImgError] = useState(false);
+
   return (
     <Card
       variant="interactive"
@@ -91,12 +93,13 @@ export function ProfileCard({ profile, compact = false }: { profile: Profile; co
     >
       {/* Photo with Matrimonial Vignette Overlay */}
       <div className={cn("relative overflow-hidden bg-[var(--surface-muted)]", compact ? "h-52" : "h-72")}>
-        {profile.image ? (
+        {profile.image && !imgError ? (
           <img
             src={profile.image}
             alt={profile.name}
             className="h-full w-full object-cover object-center transition-transform duration-700 ease-out group-hover:scale-[1.03]"
             loading="lazy"
+            onError={() => setImgError(true)}
           />
         ) : (
           <div className="h-full w-full flex flex-col items-center justify-center bg-gradient-to-br from-[#2D121B] via-[#4A1828] to-[#1F0B13] p-4 text-center select-none">

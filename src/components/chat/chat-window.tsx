@@ -29,6 +29,7 @@ import {
   IconX,
 } from '@tabler/icons-react';
 import { Button } from '@/components/ui/button';
+import { Avatar } from '@/components/ui/avatar';
 import { VerificationBadge } from '@/components/ui/verification-badge';
 import { toast } from '@/lib/toast';
 import { cn } from '@/lib/cn';
@@ -331,25 +332,12 @@ export function ChatWindow({
             onClick={onOpenProfile}
             className="relative shrink-0 cursor-pointer group"
           >
-            <div className="h-10 w-10 sm:h-11 sm:w-11 rounded-full overflow-hidden border-2 border-white shadow-sm ring-2 ring-[#7A1835]/20 group-hover:ring-[#7A1835] transition-all bg-[#FAF3EC] flex items-center justify-center">
-              {participantPhoto ? (
-                <img
-                  src={participantPhoto}
-                  alt={participantName}
-                  className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
-                />
-              ) : (
-                <span className="font-bold text-[#7A1835] text-sm sm:text-base">
-                  {participantName.charAt(0).toUpperCase()}
-                </span>
-              )}
-            </div>
-            {isOnline && (
-              <span
-                title="Active now"
-                className="absolute bottom-0 right-0 h-3.5 w-3.5 rounded-full border-2 border-white bg-emerald-500 shadow-2xs"
-              />
-            )}
+            <Avatar
+              src={participantPhoto}
+              name={participantName}
+              size="md"
+              online={isOnline}
+            />
           </div>
 
           {/* Name & Status */}
@@ -548,14 +536,13 @@ export function ChatWindow({
                 <div className="h-12 w-12 rounded-full border-2 border-white shadow-md overflow-hidden bg-gradient-to-br from-[#7A1835] to-[#B85D75] flex items-center justify-center text-white font-bold text-xs z-0 ring-2 ring-[#7A1835]/10">
                   <span>You</span>
                 </div>
-                <div className="h-14 w-14 rounded-full border-2 border-white shadow-lg overflow-hidden -ml-3.5 z-10 ring-2 ring-[#7A1835]/20 bg-[#FAF3EC] flex items-center justify-center">
-                  {participantPhoto ? (
-                    <img src={participantPhoto} alt={participantName} className="h-full w-full object-cover" />
-                  ) : (
-                    <span className="font-bold text-[#7A1835] text-sm">
-                      {participantName.charAt(0).toUpperCase()}
-                    </span>
-                  )}
+                <div className="-ml-3.5 z-10">
+                  <Avatar
+                    src={participantPhoto}
+                    name={participantName}
+                    size="lg"
+                    bordered
+                  />
                 </div>
                 <div className="absolute -bottom-1 -right-1 z-20 h-6 w-6 rounded-full bg-gradient-to-br from-[#7A1835] to-[#9E2045] text-white flex items-center justify-center shadow-md ring-2 ring-white text-[11px]">
                   💍
@@ -664,17 +651,13 @@ export function ChatWindow({
                     <div className="flex items-end gap-2 max-w-[85%] sm:max-w-[72%]">
                       {/* Received message avatar */}
                       {!isOurs && (
-                        participantPhoto ? (
-                          <img
+                        <div className="shrink-0 mb-1">
+                          <Avatar
                             src={participantPhoto}
-                            alt={participantName}
-                            className="h-7 w-7 rounded-full object-cover border border-[#EAD8C7] shadow-2xs shrink-0 mb-1"
+                            name={participantName}
+                            size="xs"
                           />
-                        ) : (
-                          <div className="h-7 w-7 rounded-full bg-[#FAF3EC] border border-[#EAD8C7] shadow-2xs shrink-0 mb-1 flex items-center justify-center text-[10px] font-bold text-[#7A1835]">
-                            {participantName.charAt(0).toUpperCase()}
-                          </div>
-                        )
+                        </div>
                       )}
 
                       <div className="relative">

@@ -31,6 +31,12 @@ export function SwipeCard({
   const [showHint, setShowHint] = useState(false);
 
   // Check both localStorage and sessionStorage
+  const [imgError, setImgError] = useState(false);
+
+  useEffect(() => {
+    setImgError(false);
+  }, [profile.image]);
+
   const checkHintSeen = React.useCallback(() => {
     try {
       if (typeof window === 'undefined') return true;
@@ -83,6 +89,7 @@ export function SwipeCard({
     isAnimatingOut,
     swipeDirection,
     triggerSwipe,
+    dragOccurred,
   } = useSwipeGesture({
     onSwipeRight: () => {
       if (showHint) markHintSeen();
@@ -93,8 +100,8 @@ export function SwipeCard({
       onSwipeLeft();
     },
     onTap: handleCardClick,
-    threshold: 120,
-    velocityThreshold: 0.5,
+    threshold: 75,
+    velocityThreshold: 0.25,
     enabled: !isNext,
   });
 
@@ -107,7 +114,7 @@ export function SwipeCard({
 
   const isSwipingRight = dragOffset.x > 0;
   const isSwipingLeft = dragOffset.x < 0;
-  const swipeProgress = Math.min(1, Math.abs(dragOffset.x) / 120);
+  const swipeProgress = Math.min(1, Math.abs(dragOffset.x) / 75);
   const rotation = (dragOffset.x / (typeof window !== 'undefined' ? window.innerWidth : 400)) * 18;
 
   // Under-card scaling logic
@@ -127,7 +134,7 @@ export function SwipeCard({
   return (
     <div
       className={cn(
-        "absolute inset-0 w-full h-full",
+        "absolute inset-0 w-full h-full touch-none select-none",
         isNext ? "pointer-events-none" : "z-10"
       )}
       style={isNext ? {
@@ -137,6 +144,7 @@ export function SwipeCard({
       } : {
         transform: `translate3d(${dragOffset.x}px, ${dragOffset.y * 0.2}px, 0) rotate(${rotation}deg)`,
         filter: 'blur(0px) brightness(1)',
+        touchAction: 'none',
         transition: isDragging ? 'none' :
                     isAnimatingOut ? 'transform 0.25s cubic-bezier(0.2, 0.8, 0.2, 1), opacity 0.25s ease-out' :
                     'transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275), filter 0.4s ease-out',
@@ -150,7 +158,7 @@ export function SwipeCard({
         tabIndex={isNext ? -1 : 0}
         aria-label={`View ${profile.name}'s profile`}
         onClick={(e) => {
-          if (!isNext && !isDragging && !isAnimatingOut) {
+          if (!isNext && !isDragging && !isAnimatingOut && !dragOccurred) {
             handleCardClick();
           }
         }}
@@ -161,19 +169,20 @@ export function SwipeCard({
           }
         }}
         className={cn(
-          "group relative w-full h-full overflow-hidden rounded-[2rem] sm:rounded-[2.5rem] border border-[var(--border)] bg-white shadow-[var(--elevation-floating)] touch-pan-y select-none",
+          "group relative w-full h-full overflow-hidden rounded-[2rem] sm:rounded-[2.5rem] border border-[var(--border)] bg-white shadow-[var(--elevation-floating)] touch-none select-none",
           !isNext && "cursor-pointer",
           !isNext && showHint && !isDragging && !prefersReducedMotion && "animate-card-wiggle"
         )}
       >
         {/* Profile Image & Overlays */}
         <div className="relative h-full w-full bg-[var(--surface-muted)] overflow-hidden">
-          {profile.image ? (
+          {profile.image && !imgError ? (
             <img
               src={profile.image}
               alt={profile.name}
               className="h-full w-full object-cover object-center pointer-events-none"
               draggable={false}
+              onError={() => setImgError(true)}
             />
           ) : (
             <div className="h-full w-full flex flex-col items-center justify-center bg-gradient-to-br from-[#2D121B] via-[#4A1828] to-[#1F0B13] p-8 text-center select-none">

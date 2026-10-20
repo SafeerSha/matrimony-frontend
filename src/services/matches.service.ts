@@ -141,7 +141,7 @@ export const matchesService = {
    * Fetch raw connections from the live endpoint with zod schema safe validation
    */
   getConnections: async (
-    type: "received" | "sent" | "matches" | "shortlisted" | "shortlisted_by_me" | "shortlisted_you"
+    type: "received" | "sent" | "matches" | "shortlisted" | "shortlisted_by_me" | "shortlisted_you" | "declined"
   ) => {
     const res = await apiFetch<any[]>(`/connections?type=${type}`, {
       method: "GET",

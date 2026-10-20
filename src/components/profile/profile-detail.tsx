@@ -51,6 +51,7 @@ export function ProfileDetail({ id }: { id?: string }) {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [relatedProfiles, setRelatedProfiles] = useState<Profile[]>([]);
   const [activePhotoIdx, setActivePhotoIdx] = useState(0);
+  const [brokenPhotos, setBrokenPhotos] = useState<Record<number, boolean>>({});
   const [isShortlisted, setIsShortlisted] = useState(false);
   const [isInterestSent, setIsInterestSent] = useState(false);
   const [isMatched, setIsMatched] = useState(false);
@@ -76,6 +77,7 @@ export function ProfileDetail({ id }: { id?: string }) {
   useEffect(() => {
     setIsLoading(true);
     setActivePhotoIdx(0);
+    setBrokenPhotos({});
     setIsInterestSent(false);
     setIsMatched(false);
     setIsInterestReceived(false);
@@ -332,11 +334,12 @@ export function ProfileDetail({ id }: { id?: string }) {
           <div className="lg:col-span-7 relative flex flex-col bg-[var(--surface-muted)]">
             {/* Active Hero Portrait Photo */}
             <div className="relative h-[420px] sm:h-[520px] lg:h-[580px] w-full overflow-hidden bg-stone-900">
-              {galleryPhotos.length > 0 ? (
+              {galleryPhotos.length > 0 && !brokenPhotos[activePhotoIdx] ? (
                 <img
                   src={galleryPhotos[activePhotoIdx]}
                   alt={`${profile.name} - Photo ${activePhotoIdx + 1}`}
                   className="h-full w-full object-cover object-center transition-all duration-500 ease-out"
+                  onError={() => setBrokenPhotos((prev) => ({ ...prev, [activePhotoIdx]: true }))}
                 />
               ) : (
                 <div className="h-full w-full flex flex-col items-center justify-center bg-gradient-to-br from-[#2D121B] via-[#4A1828] to-[#1F0B13] p-8 text-center select-none">
