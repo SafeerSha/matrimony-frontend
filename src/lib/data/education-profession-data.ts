@@ -433,3 +433,199 @@ export function parseStoredProfession(storedVal?: string | null): {
 
   return { matchedOption: "Other", customText: trimmed };
 }
+
+export const CLIENT_EMPLOYMENT_OPTIONS = [
+  "Govt. Employ",
+  "private employ",
+  "Self employed",
+  "Business",
+  "Other",
+];
+
+export const CLIENT_INCOME_OPTIONS = [
+  "1 to 2 lakhs",
+  "2 to 5 lakhs",
+  "5 to 12 lakhs",
+  "12 lakhs above",
+];
+
+export const RELIGION_OPTIONS = [
+  "Christian",
+  "Hindu",
+  "Muslim",
+  "Sikh",
+  "Jain",
+  "Buddhist",
+  "Other",
+];
+
+export const POPULAR_CASTES_BY_RELIGION: Record<string, string[]> = {
+  Christian: [
+    "Roman Catholic Syrian Christian",
+    "Syro-Malabar",
+    "Latin Catholic",
+    "Jacobite",
+    "Orthodox",
+    "Marthoma",
+    "CSI",
+    "Pentecostal",
+    "Knanaya Catholic",
+    "Knanaya Jacobite",
+    "Other Christian",
+  ],
+  Hindu: [
+    "Nair",
+    "Ezhava",
+    "Brahmin",
+    "Viswakarma",
+    "Dheevara",
+    "Thiyya",
+    "Kshatriya",
+    "Ambalavasi",
+    "Scheduled Caste (SC)",
+    "Scheduled Tribe (ST)",
+    "Other Hindu",
+  ],
+  Muslim: [
+    "Sunni",
+    "Shafi",
+    "Hanafi",
+    "Mujahid",
+    "Salafi",
+    "Shia",
+    "Other Muslim",
+  ],
+  Sikh: [
+    "Jat",
+    "Ramgarhia",
+    "Khatri",
+    "Arora",
+    "Ahluwalia",
+    "Saini",
+    "Other Sikh",
+  ],
+  Jain: [
+    "Digambar",
+    "Shwetambar",
+    "Oswal",
+    "Porwal",
+    "Other Jain",
+  ],
+  Buddhist: [
+    "Neo-Buddhist",
+    "Mahayana",
+    "Theravada",
+    "Other Buddhist",
+  ],
+  Other: [
+    "Caste No Bar",
+    "Inter-Caste",
+    "Not Applicable",
+    "Other",
+  ],
+};
+
+export const POPULAR_INDIAN_STATES = [
+  "Kerala",
+  "Tamil Nadu",
+  "Karnataka",
+  "Maharashtra",
+  "Andhra Pradesh",
+  "Telangana",
+  "Delhi",
+  "Gujarat",
+  "Goa",
+  "Other State / Union Territory",
+  "Outside India (NRI)",
+];
+
+export const HEIGHT_OPTIONS_CM = Array.from({ length: 71 }, (_, i) => {
+  const cm = 140 + i; // 140 cm to 210 cm
+  const totalInches = cm / 2.54;
+  const feet = Math.floor(totalInches / 12);
+  const inches = Math.round(totalInches % 12);
+  return {
+    value: `${cm} cm`,
+    label: `${cm} cm (${feet}'${inches}")`,
+  };
+});
+
+export const POPULAR_EDUCATION_OPTIONS: { value: string; label: string; description?: string }[] = [
+  // Master's / Post Graduate
+  { value: "MA", label: "M.A. (Master of Arts)", description: "Master's / Post Graduate" },
+  { value: "MCom", label: "M.Com (Master of Commerce)", description: "Master's / Post Graduate" },
+  { value: "MSc", label: "M.Sc. (Master of Science)", description: "Master's / Post Graduate" },
+  { value: "MSc CS/IT", label: "M.Sc. (Computer Science / IT)", description: "Master's / Post Graduate" },
+  { value: "MBA", label: "MBA (Master of Business Administration)", description: "Master's / Post Graduate" },
+  { value: "MCA", label: "MCA (Master of Computer Applications)", description: "Master's / Post Graduate" },
+  { value: "MTech", label: "M.Tech / M.E. (Engineering)", description: "Master's / Post Graduate" },
+  { value: "MS", label: "MS (Master of Science - Abroad)", description: "Master's / Post Graduate" },
+  { value: "MD / MS", label: "MD / MS (Medical Specialty)", description: "Master's / Post Graduate" },
+  { value: "MDS", label: "MDS (Master of Dental Surgery)", description: "Master's / Post Graduate" },
+  { value: "MPharm", label: "M.Pharm (Pharmacy)", description: "Master's / Post Graduate" },
+  { value: "MArch", label: "M.Arch (Architecture)", description: "Master's / Post Graduate" },
+  { value: "LLM", label: "LLM (Master of Laws)", description: "Master's / Post Graduate" },
+  { value: "MEd", label: "M.Ed (Master of Education)", description: "Master's / Post Graduate" },
+  { value: "MSW", label: "MSW (Master of Social Work)", description: "Master's / Post Graduate" },
+  { value: "Other Master's", label: "Other Master's / Post Graduate", description: "Master's / Post Graduate" },
+
+  // Bachelor's / Graduate
+  { value: "BTech / BE", label: "B.Tech / B.E. (Engineering)", description: "Bachelor's / Graduate" },
+  { value: "BTech CS/IT", label: "B.Tech (Computer Science / IT)", description: "Bachelor's / Graduate" },
+  { value: "BCA", label: "BCA (Computer Applications)", description: "Bachelor's / Graduate" },
+  { value: "BSc", label: "B.Sc. (Bachelor of Science)", description: "Bachelor's / Graduate" },
+  { value: "BSc CS/IT", label: "B.Sc. (Computer Science / IT)", description: "Bachelor's / Graduate" },
+  { value: "BSc Nursing", label: "B.Sc. (Nursing)", description: "Bachelor's / Graduate" },
+  { value: "BCom", label: "B.Com (Bachelor of Commerce)", description: "Bachelor's / Graduate" },
+  { value: "BBA / BBM", label: "BBA / BBM (Business Administration)", description: "Bachelor's / Graduate" },
+  { value: "BA", label: "B.A. (Bachelor of Arts)", description: "Bachelor's / Graduate" },
+  { value: "MBBS", label: "MBBS (Medicine)", description: "Bachelor's / Graduate" },
+  { value: "BDS", label: "BDS (Dental Surgery)", description: "Bachelor's / Graduate" },
+  { value: "BAMS / BHMS", label: "BAMS / BHMS (Ayurveda / Homeopathy)", description: "Bachelor's / Graduate" },
+  { value: "BPharm", label: "B.Pharm (Pharmacy)", description: "Bachelor's / Graduate" },
+  { value: "BArch", label: "B.Arch (Architecture)", description: "Bachelor's / Graduate" },
+  { value: "LLB", label: "LLB / Law Graduate", description: "Bachelor's / Graduate" },
+  { value: "BEd", label: "B.Ed (Bachelor of Education)", description: "Bachelor's / Graduate" },
+  { value: "BDes", label: "B.Des (Design / Fashion)", description: "Bachelor's / Graduate" },
+  { value: "BHM", label: "BHM (Hotel Management)", description: "Bachelor's / Graduate" },
+  { value: "BSW", label: "BSW (Bachelor of Social Work)", description: "Bachelor's / Graduate" },
+  { value: "BVoc", label: "B.Voc (Vocational Studies)", description: "Bachelor's / Graduate" },
+  { value: "Other Bachelor's", label: "Other Bachelor's Degree", description: "Bachelor's / Graduate" },
+
+  // Doctorate / PhD
+  { value: "PhD / Doctorate", label: "PhD / Doctorate", description: "Doctorate / PhD" },
+  { value: "DM / MCh", label: "DM / M.Ch (Super Specialty Medicine)", description: "Doctorate / PhD" },
+  { value: "Post-Doctoral", label: "Post-Doctoral Fellow", description: "Doctorate / PhD" },
+
+  // Professional
+  { value: "CA", label: "Chartered Accountant (CA)", description: "Professional" },
+  { value: "CMA / ICWA", label: "Cost & Management Accountant (CMA / ICWA)", description: "Professional" },
+  { value: "CS", label: "Company Secretary (CS)", description: "Professional" },
+  { value: "CFA / CPA", label: "CFA / CPA", description: "Professional" },
+  { value: "Civil Services", label: "Civil Services (IAS / IPS / IFS / IRS)", description: "Professional" },
+  { value: "Commercial Pilot", label: "Commercial Pilot (CPL / ATPL)", description: "Professional" },
+  { value: "Merchant Navy", label: "Merchant Navy / Marine Officer", description: "Professional" },
+  { value: "Other Professional", label: "Other Professional Qualification", description: "Professional" },
+
+  // Diploma / Polytechnic
+  { value: "Diploma in Engineering", label: "Diploma in Engineering (Mech / Civil / EEE / ECE)", description: "Diploma / Polytechnic" },
+  { value: "Diploma in Computer / IT", label: "Diploma in Computer / IT", description: "Diploma / Polytechnic" },
+  { value: "Diploma in Pharmacy", label: "Diploma in Pharmacy (D.Pharm)", description: "Diploma / Polytechnic" },
+  { value: "Diploma in Nursing", label: "Diploma in Nursing (GNM)", description: "Diploma / Polytechnic" },
+  { value: "Diploma in Hotel Management", label: "Diploma in Hotel Management", description: "Diploma / Polytechnic" },
+  { value: "Other Diploma", label: "Other Polytechnic / Diploma", description: "Diploma / Polytechnic" },
+
+  // Vocational / ITI
+  { value: "ITI Electrician", label: "ITI - Electrician / Wireman", description: "Vocational / ITI" },
+  { value: "ITI Mechanical", label: "ITI - Fitter / Mechanic / Machinist", description: "Vocational / ITI" },
+  { value: "ITI COPA", label: "ITI - Computer Operator (COPA)", description: "Vocational / ITI" },
+  { value: "Other ITI", label: "Other ITI Trade", description: "Vocational / ITI" },
+
+  // School
+  { value: "Plus Two / 12th", label: "Plus Two / Higher Secondary / 12th", description: "School / Pre-degree" },
+  { value: "SSLC / 10th", label: "SSLC / 10th Standard / Matriculation", description: "School / Pre-degree" },
+
+  // Other
+  { value: "Other", label: "Other Educational Qualification", description: "Other" },
+];
+

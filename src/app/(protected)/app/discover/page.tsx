@@ -69,6 +69,36 @@ export function heightToInches(h?: string): number {
   return 0;
 }
 
+function SafeDiscoverImage({ profile }: { profile: Profile }) {
+  const [error, setError] = useState(false);
+  if (!profile.image || error) {
+    return (
+      <div className="h-full w-full flex flex-col items-center justify-center bg-gradient-to-br from-[#2D121B] via-[#4A1828] to-[#1F0B13] p-6 text-center select-none">
+        <div className="grid h-28 w-28 place-items-center rounded-full bg-white/10 backdrop-blur-md text-white border border-white/20 shadow-2xl">
+          <span className="font-editorial-title text-5xl font-bold">
+            {profile.name?.charAt(0)?.toUpperCase() || 'M'}
+          </span>
+        </div>
+        <p className="mt-4 text-base font-bold text-white/90">
+          {profile.name}
+        </p>
+        <p className="text-xs text-white/60 mt-0.5">
+          Photo not uploaded
+        </p>
+      </div>
+    );
+  }
+  return (
+    <img
+      src={profile.image}
+      alt={profile.name}
+      className="h-full w-full object-cover object-center transition-transform duration-700 ease-out group-hover:scale-[1.03]"
+      loading="lazy"
+      onError={() => setError(true)}
+    />
+  );
+}
+
 export default function DiscoverPage() {
   const router = useRouter();
   // Discovery view mode: 'swipe' on mobile by default, 'grid' on desktop
@@ -659,10 +689,15 @@ export default function DiscoverPage() {
 
       {/* Identity & Action Overlay on Photo */}
       <div 
-        className="absolute inset-x-0 bottom-0 p-3.5 sm:p-5 md:p-8 text-white z-10 space-y-1 sm:space-y-2 pointer-events-auto cursor-pointer"
-        onClick={() => router.push(`/app/profile?user=${profile.id}`)}
+        className="absolute inset-x-0 bottom-0 p-3.5 sm:p-5 md:p-8 text-white z-10 space-y-1 sm:space-y-2 pointer-events-auto"
       >
-        <div className="group/name flex items-center gap-2">
+        <div 
+          className="group/name flex items-center gap-2 cursor-pointer w-fit active:opacity-80 transition-opacity"
+          onClick={(e) => {
+            e.stopPropagation();
+            router.push(`/app/profile?user=${profile.id}`);
+          }}
+        >
           <h2 className="font-editorial-title text-2xl sm:text-3xl font-bold tracking-tight text-white drop-shadow-sm group-hover/name:text-[var(--accent-light)] transition-colors">
             {profile.name}, {profile.age}
           </h2>
@@ -689,6 +724,7 @@ export default function DiscoverPage() {
         {/* Matrimonial Discovery Actions Floating in Overlay */}
         <div 
           className="w-full pt-1.5 sm:pt-3 flex items-center justify-between gap-2 sm:gap-3"
+          data-prevent-swipe="true"
           onClick={(e) => e.stopPropagation()}
           onPointerDown={(e) => e.stopPropagation()}
         >
@@ -1066,28 +1102,7 @@ export default function DiscoverPage() {
               >
                 {/* 3:4 Portrait Photography with Overlay */}
                 <div className="relative h-[570px] sm:h-[530px] w-full overflow-hidden bg-[var(--surface-muted)]">
-                  {profile.image ? (
-                    <img
-                      src={profile.image}
-                      alt={profile.name}
-                      className="h-full w-full object-cover object-center transition-transform duration-700 ease-out group-hover:scale-[1.03]"
-                      loading="lazy"
-                    />
-                  ) : (
-                    <div className="h-full w-full flex flex-col items-center justify-center bg-gradient-to-br from-[#2D121B] via-[#4A1828] to-[#1F0B13] p-6 text-center select-none">
-                      <div className="grid h-28 w-28 place-items-center rounded-full bg-white/10 backdrop-blur-md text-white border border-white/20 shadow-2xl">
-                        <span className="font-editorial-title text-5xl font-bold">
-                          {profile.name?.charAt(0)?.toUpperCase() || 'M'}
-                        </span>
-                      </div>
-                      <p className="mt-4 text-base font-bold text-white/90">
-                        {profile.name}
-                      </p>
-                      <p className="text-xs text-white/60 mt-0.5">
-                        Photo not uploaded
-                      </p>
-                    </div>
-                  )}
+                  <SafeDiscoverImage profile={profile} />
 
                   {/* Ambient Warm Gradient Overlay */}
                   {profile.image && <div className="absolute inset-0 photo-overlay-warm" aria-hidden="true" />}

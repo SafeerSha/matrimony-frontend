@@ -83,28 +83,38 @@ export default function NotificationsPage() {
             let title = 'System Notification';
             let link = '/app';
             let actionLabel = 'View';
-
             let text = n.content;
+
+            let profile = n.sender
+              ? {
+                  id: n.sender.id,
+                  name: n.sender.name,
+                  image: n.sender.avatarUrl || '',
+                  city: n.sender.city || '',
+                }
+              : undefined;
 
             if (n.type.includes('INTEREST')) {
               type = 'INTEREST';
-              title = 'New Interest Received';
+              title = n.sender ? `${n.sender.name} sent you an interest` : 'New Interest Received';
+              text = n.sender?.city ? `Based in ${n.sender.city}` : n.content;
               link = '/app/interests?tab=received';
               actionLabel = 'Respond to Interest';
             } else if (n.type.includes('MATCH') || n.type.includes('ACCEPTED')) {
               type = 'ACCEPTED';
-              title = 'Match Confirmed!';
+              title = n.sender ? `Matched with ${n.sender.name}!` : 'Match Confirmed!';
+              text = 'Both of you are interested in connecting.';
               link = '/app/matches';
               actionLabel = 'View Match';
             } else if (n.type.includes('MESSAGE')) {
               type = 'MESSAGE';
-              let senderName = '';
+              let senderName = n.sender?.name || '';
               const colonIdx = n.content.indexOf(': ');
               if (colonIdx > -1) {
-                senderName = n.content.slice(0, colonIdx).trim();
+                if (!senderName) senderName = n.content.slice(0, colonIdx).trim();
                 text = n.content.slice(colonIdx + 2).trim();
               }
-              title = senderName ? `Message from ${senderName}` : 'New Message';
+              title = senderName ? `${senderName}` : 'New Message';
               link = n.referenceId ? `/app/messages?user=${n.referenceId}` : '/app/messages';
               actionLabel = 'Open Chat';
             }
@@ -118,12 +128,13 @@ export default function NotificationsPage() {
               timestamp: createdTime,
               group,
               unread: !n.isRead,
+              profile,
               link,
               actionLabel,
             };
           });
 
-          // Distinct message notifications by sender so each user has only one latest notification card
+          // Distinct message notifications by sender so each user has only ONE card showing their latest message
           const distinctMap = new Map<string, NotificationDisplayItem>();
           for (const item of mapped) {
             const key = item.type === 'MESSAGE' && item.link ? item.link : item.id;
@@ -400,8 +411,8 @@ function NotificationRow({
       className={cn(
         'group relative rounded-2xl border transition-all duration-200 p-4 sm:p-4.5',
         item.unread
-          ? 'bg-[#FAF3EC]/60 border-[#EAD8C7] hover:bg-[#FAF3EC] shadow-xs'
-          : 'bg-white border-[#E9DDE0] hover:bg-[#FFF9F6]'
+          ? 'bg-white border-[#D8B28C] shadow-[0_1px_3px_rgba(45,15,25,0.04),0_8px_20px_-4px_rgba(122,24,53,0.10)] ring-1 ring-[#D8B28C]/30'
+          : 'bg-white border-[#EAD8C7]/90 shadow-[0_1px_2px_rgba(45,15,25,0.03),0_4px_14px_-2px_rgba(122,24,53,0.06)] hover:bg-[#FFFDFB] hover:shadow-[0_2px_6px_rgba(45,15,25,0.05),0_10px_24px_-4px_rgba(122,24,53,0.12)]'
       )}
     >
       <div className="flex items-start gap-3.5">
@@ -409,13 +420,11 @@ function NotificationRow({
         <div className="relative shrink-0">
           {item.profile ? (
             <div className="relative">
-              <div className="h-11 w-11 sm:h-12 sm:w-12 rounded-2xl overflow-hidden border border-[#E9DDE0] bg-[#FAF3EC] shadow-2xs">
-                <img
-                  src={item.profile.image}
-                  alt={item.profile.name}
-                  className="h-full w-full object-cover"
-                />
-              </div>
+              <Avatar
+                src={item.profile.image}
+                name={item.profile.name}
+                size="md"
+              />
               <span
                 className={cn(
                   'absolute -bottom-1 -right-1 grid h-5 w-5 place-items-center rounded-full border-2 border-white shadow-2xs text-[10px]',

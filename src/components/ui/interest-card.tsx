@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useState } from 'react';
 import Link from 'next/link';
 import {
   IconCheck,
@@ -72,12 +72,13 @@ export function InterestCard({
   className,
 }: InterestCardProps) {
   const formattedId = getProfileUniqueId(profile);
+  const [imgError, setImgError] = useState(false);
 
   return (
     <Card
       variant="default"
       className={cn(
-        'group relative overflow-hidden rounded-3xl border border-[var(--border)] bg-white p-0 shadow-[var(--elevation-card)] transition-all duration-300 hover:shadow-[var(--elevation-card-hover)]',
+        'group relative overflow-hidden rounded-3xl border border-[#EAD8C7]/90 bg-white p-0 shadow-[0_1px_3px_rgba(45,15,25,0.04),0_8px_24px_-4px_rgba(122,24,53,0.08),0_18px_36px_-6px_rgba(40,10,20,0.06)] transition-all duration-300 hover:shadow-[0_2px_6px_rgba(45,15,25,0.06),0_16px_36px_-6px_rgba(122,24,53,0.16),0_24px_48px_-10px_rgba(33,27,30,0.10)]',
         type === 'declined' && 'opacity-70 bg-[var(--surface-muted)]/50',
         className
       )}
@@ -85,12 +86,13 @@ export function InterestCard({
       <div className="flex flex-col md:flex-row">
         {/* Large Profile Photography Section (3:4 ratio portrait or dominant square) */}
         <div className="relative h-64 sm:h-72 md:h-auto md:w-56 lg:w-64 shrink-0 overflow-hidden bg-[var(--surface-muted)]">
-          {profile.image ? (
+          {profile.image && !imgError ? (
             <img
               src={profile.image}
               alt={profile.name}
               className="h-full w-full object-cover object-center transition-transform duration-700 ease-out group-hover:scale-[1.03]"
               loading="lazy"
+              onError={() => setImgError(true)}
             />
           ) : (
             <div className="h-full w-full min-h-[16rem] flex flex-col items-center justify-center bg-gradient-to-br from-[#FAF3EC] via-[#FFF8F3] to-[#F5E6D8] p-6 text-center select-none">
@@ -315,7 +317,7 @@ export function InterestCard({
             {type === 'declined' && (
               <div className="flex items-center justify-between w-full">
                 <span className="text-xs text-[var(--muted)]">
-                  Respectfully passed
+                  Request declined
                 </span>
                 <Link href={`/app/profile?user=${profile.id}`} className="focus-ring">
                   <Button

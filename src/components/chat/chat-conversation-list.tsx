@@ -177,25 +177,12 @@ export function ChatConversationList({
               >
                 {/* Avatar with subtle online indicator */}
                 <div className="relative shrink-0">
-                  <div className="h-11 w-11 rounded-2xl overflow-hidden border border-[#E9DDE0] bg-[#FAF3EC] shadow-2xs flex items-center justify-center">
-                    {pPhoto ? (
-                      <img
-                        src={pPhoto}
-                        alt={pName}
-                        className="h-full w-full object-cover"
-                      />
-                    ) : (
-                      <span className="font-bold text-[#7A1835] text-sm">
-                        {pName.charAt(0).toUpperCase()}
-                      </span>
-                    )}
-                  </div>
-                  {isOnline && (
-                    <span
-                      title="Online"
-                      className="absolute -bottom-0.5 -right-0.5 h-3.5 w-3.5 rounded-full border-2 border-white bg-emerald-500 shadow-2xs"
-                    />
-                  )}
+                  <Avatar
+                    src={pPhoto}
+                    name={pName}
+                    size="md"
+                    online={isOnline}
+                  />
                 </div>
 
                 {/* Content */}

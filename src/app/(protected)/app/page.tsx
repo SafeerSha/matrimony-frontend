@@ -33,6 +33,31 @@ import { toast } from '@/lib/toast';
 import { cn } from '@/lib/cn';
 import { type Profile, formatLastActive } from '@/lib/demo-data';
 
+function SafeCardImage({ src, alt, name }: { src?: string | null; alt: string; name: string }) {
+  const [error, setError] = useState(false);
+  if (!src || error) {
+    return (
+      <div className="h-full w-full bg-gradient-to-br from-[#2D121B] via-[#4A1828] to-[#1F0B13] flex flex-col items-center justify-center text-white select-none">
+        <div className="grid h-16 w-16 place-items-center rounded-full bg-white/10 backdrop-blur-md text-white border border-white/20 shadow-md mb-2">
+          <span className="font-editorial-title text-2xl font-bold">
+            {name?.charAt(0)?.toUpperCase() || 'M'}
+          </span>
+        </div>
+        <span className="text-[11px] font-semibold text-white/60">Photo not uploaded</span>
+      </div>
+    );
+  }
+  return (
+    <img
+      src={src}
+      alt={alt}
+      className="h-full w-full object-cover object-center transition-transform duration-700 ease-out group-hover:scale-[1.03]"
+      loading="lazy"
+      onError={() => setError(true)}
+    />
+  );
+}
+
 export default function DashboardPage() {
   const [currentUser, setCurrentUser] = useState<any>(null);
   const [userProfile, setUserProfile] = useState<any>(null);
@@ -229,7 +254,7 @@ export default function DashboardPage() {
     }
   };
 
-  const displayName = currentUser?.firstName || currentUser?.name || 'Member';
+  const displayName = currentUser?.firstName || currentUser?.name || '';
   const profileCompletion = userProfile?.completionRate || 78;
 
   return (
@@ -354,18 +379,7 @@ export default function DashboardPage() {
                 >
                   {/* Photo area with warm matrimonial overlay */}
                   <div className="relative h-72 sm:h-80 overflow-hidden bg-[var(--surface-muted)]">
-                      {profile.image ? (
-                        <img
-                          src={profile.image}
-                          alt={profile.name}
-                          className="h-full w-full object-cover object-center transition-transform duration-700 ease-out group-hover:scale-[1.03]"
-                          loading="lazy"
-                        />
-                      ) : (
-                        <div className="h-full w-full bg-[var(--border)] flex items-center justify-center text-[var(--muted)] text-xs">
-                          No Photo
-                        </div>
-                      )}
+                      <SafeCardImage src={profile.image} alt={profile.name} name={profile.name} />
 
                     {/* Gradient overlay */}
                     <div className="absolute inset-0 photo-overlay-warm" aria-hidden="true" />
@@ -559,18 +573,7 @@ export default function DashboardPage() {
                     className="overflow-hidden p-0 rounded-2xl border-[var(--border)] bg-white shadow-xs"
                   >
                     <div className="relative h-60 sm:h-64 overflow-hidden bg-[var(--surface-muted)]">
-                      {p.image ? (
-                        <img
-                          src={p.image}
-                          alt={p.name}
-                          className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-[1.03]"
-                          loading="lazy"
-                        />
-                      ) : (
-                        <div className="h-full w-full bg-[var(--border)] flex items-center justify-center text-[var(--muted)] text-xs">
-                          No Photo
-                        </div>
-                      )}
+                      <SafeCardImage src={p.image} alt={p.name} name={p.name} />
                       <div className="absolute inset-0 photo-overlay-warm" aria-hidden="true" />
 
                       {/* Badges */}

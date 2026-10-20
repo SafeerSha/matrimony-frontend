@@ -19,7 +19,6 @@ import { Card } from '@/components/ui/card';
 import { VerificationBadge } from '@/components/ui/verification-badge';
 import { cn } from '@/lib/cn';
 import type { Profile } from '@/lib/demo-data';
-import { IconSparkles } from '@tabler/icons-react';
 
 export interface MutualMatchCardProps {
   match: Profile;
@@ -44,11 +43,14 @@ export function MutualMatchCard({
   onCelebrate,
   className,
 }: MutualMatchCardProps) {
+  const [userImgError, setUserImgError] = React.useState(false);
+  const [matchImgError, setMatchImgError] = React.useState(false);
+
   return (
     <Card
       variant="default"
       className={cn(
-        'group relative overflow-hidden rounded-3xl border border-[#EAD8C7] bg-white p-0 shadow-[var(--elevation-card)] transition-all duration-300 hover:shadow-[var(--elevation-card-hover)]',
+        'group relative overflow-hidden rounded-3xl border border-[#EAD8C7]/90 bg-white p-0 shadow-[0_1px_3px_rgba(45,15,25,0.04),0_8px_24px_-4px_rgba(122,24,53,0.08),0_18px_36px_-6px_rgba(40,10,20,0.06)] transition-all duration-300 hover:shadow-[0_2px_6px_rgba(45,15,25,0.06),0_16px_36px_-6px_rgba(122,24,53,0.16),0_24px_48px_-10px_rgba(33,27,30,0.10)]',
         className
       )}
     >
@@ -81,11 +83,12 @@ export function MutualMatchCard({
           <div className="flex flex-col items-center text-center">
             <div className="relative">
               <div className="h-14 w-14 sm:h-16 sm:w-16 overflow-hidden rounded-full ring-4 ring-[#FAF3EC] border-2 border-[#D8B28C] shadow-sm bg-[var(--surface-muted)] flex items-center justify-center">
-                {currentUser.image ? (
+                {currentUser.image && !userImgError ? (
                   <img
                     src={currentUser.image}
                     alt={currentUser.name || 'You'}
                     className="h-full w-full object-cover object-center"
+                    onError={() => setUserImgError(true)}
                   />
                 ) : (
                   <div className="h-full w-full bg-gradient-to-br from-[#7A1835] to-[#5C1027] text-white flex items-center justify-center font-bold text-base sm:text-lg">
@@ -128,11 +131,12 @@ export function MutualMatchCard({
               className="focus-ring relative rounded-full block group/avatar"
             >
               <div className="h-14 w-14 sm:h-16 sm:w-16 overflow-hidden rounded-full ring-4 ring-[#FAF3EC] border-2 border-[var(--primary)] shadow-sm bg-[var(--surface-muted)] transition-transform duration-300 group-hover/avatar:scale-105">
-                {match.image ? (
+                {match.image && !matchImgError ? (
                   <img
                     src={match.image}
                     alt={match.name}
                     className="h-full w-full object-cover object-center"
+                    onError={() => setMatchImgError(true)}
                   />
                 ) : (
                   <div className="h-full w-full flex items-center justify-center bg-gradient-to-br from-[#FAF3EC] to-[#F5E6D8] text-[var(--primary)] font-editorial-title text-xl font-bold">
@@ -181,31 +185,16 @@ export function MutualMatchCard({
         {/* ======================================================== */}
         {/* ACTIONS: START CHAT & VIEW PROFILE                       */}
         {/* ======================================================== */}
-        <div className="pt-2 border-t border-[var(--border)] flex flex-col gap-2.5">
-          <div className="flex items-center gap-2">
-            <Link href={`/app/profile?user=${match.id}`} className="flex-1 focus-ring">
-              <Button
-                variant="secondary"
-                size="md"
-                className="w-full rounded-2xl text-xs font-bold h-11"
-              >
-                View Profile
-              </Button>
-            </Link>
-
-            {onCelebrate && (
-              <Button
-                variant="secondary"
-                size="md"
-                onClick={() => onCelebrate(match)}
-                className="rounded-2xl text-xs font-bold h-11 px-3 bg-[#FAF3EC] border-[#EAD8C7] text-[#7A1835] hover:bg-[#F3E7DC] active-press flex items-center gap-1.5 shrink-0"
-                title="Celebrate Connection"
-              >
-                <IconSparkles className="h-4 w-4 text-[#7A1835]" />
-                <span className="hidden sm:inline">Celebrate</span>
-              </Button>
-            )}
-          </div>
+        <div className="pt-2 border-t border-[var(--border)] flex flex-col gap-2">
+          <Link href={`/app/profile?user=${match.id}`} className="w-full focus-ring">
+            <Button
+              variant="secondary"
+              size="md"
+              className="w-full rounded-2xl text-xs font-bold h-10"
+            >
+              View Profile
+            </Button>
+          </Link>
 
           <Link href={`/app/messages?user=${match.id}`} className="w-full focus-ring">
             <Button

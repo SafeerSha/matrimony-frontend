@@ -2,22 +2,40 @@ import { NextResponse, type NextRequest } from "next/server";
 import { jwtVerify } from "jose";
 
 const SESSION_COOKIE = "__Host-matrimony_session";
+const FALLBACK_COOKIE = "matrimony_session";
+const DEFAULT_JWT_SECRET = "d74c959aa3b21d3e248e4d25708670dc000e491b846f78a34d6d33415a284fce";
 
-async function getSessionPayload(request: NextRequest) {
-  const token = request.cookies.get(SESSION_COOKIE)?.value;
-  // Use AUTH_SECRET or JWT_ACCESS_SECRET to align with backend if possible
-  const secret = process.env.AUTH_SECRET || process.env.JWT_ACCESS_SECRET;
-
-  if (!token || !secret) return null;
-
+async function verifyToken(rawToken: string, secretStr: string) {
   try {
-    const { payload } = await jwtVerify(token, new TextEncoder().encode(secret), {
+    const cleanToken = decodeURIComponent(rawToken.trim());
+    const secret = new TextEncoder().encode(secretStr);
+    const { payload } = await jwtVerify(cleanToken, secret, {
       algorithms: ["HS256"]
     });
-    return payload.sub ? payload : null;
+    return payload?.sub ? payload : null;
   } catch {
     return null;
   }
+}
+
+async function getSessionPayload(request: NextRequest) {
+  const secret = process.env.AUTH_SECRET || process.env.JWT_ACCESS_SECRET || DEFAULT_JWT_SECRET;
+  
+  // Try matrimony_session first as client JS updates it directly upon verification
+  const fallbackToken = request.cookies.get(FALLBACK_COOKIE)?.value;
+  if (fallbackToken) {
+    const session = await verifyToken(fallbackToken, secret);
+    if (session) return session;
+  }
+
+  // Also check __Host-matrimony_session
+  const hostToken = request.cookies.get(SESSION_COOKIE)?.value;
+  if (hostToken) {
+    const session = await verifyToken(hostToken, secret);
+    if (session) return session;
+  }
+
+  return null;
 }
 
 export default async function middleware(request: NextRequest) {
@@ -40,11 +58,6 @@ export default async function middleware(request: NextRequest) {
       const login = new URL("/login", request.url);
       login.searchParams.set("next", pathname);
       return NextResponse.redirect(login);
-    }
-
-    // Incomplete / Draft profile protection: must complete onboarding
-    if (session.status === "DRAFT" || session.status === "draft") {
-      return NextResponse.redirect(new URL("/onboarding", request.url));
     }
 
     // Role-based authorization

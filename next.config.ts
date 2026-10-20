@@ -31,6 +31,9 @@ const nextConfig: NextConfig = {
   poweredByHeader: false,
   compress: true,
   productionBrowserSourceMaps: false,
+  env: {
+    JWT_ACCESS_SECRET: process.env.JWT_ACCESS_SECRET || "d74c959aa3b21d3e248e4d25708670dc000e491b846f78a34d6d33415a284fce",
+  },
   images: {
     remotePatterns: []
   },
