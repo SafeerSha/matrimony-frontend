@@ -74,7 +74,7 @@ function MessagesContent() {
   const markConversationAsRead = (contactId: string) => {
     if (!contactId) return;
 
-    chatService.markAsRead(contactId).catch(() => {});
+    chatService.markAsRead(contactId).catch(() => { });
 
     setConversations((prev) => {
       const updated = prev.map((c) =>
@@ -143,7 +143,7 @@ function MessagesContent() {
           setCurrentUserId(user.id);
         }
       })
-      .catch(() => {});
+      .catch(() => { });
 
     setIsLoadingConversations(true);
 
@@ -202,8 +202,8 @@ function MessagesContent() {
               const formattedPhotos = photos.length
                 ? photos
                 : avatarUrl
-                ? [{ id: 'p1', url: avatarUrl }]
-                : [];
+                  ? [{ id: 'p1', url: avatarUrl }]
+                  : [];
 
               const provisionalConv: Conversation = {
                 id: participantId,
@@ -307,7 +307,7 @@ function MessagesContent() {
         });
 
         if (isActivelyViewed && partnerId) {
-          chatService.markAsRead(partnerId).catch(() => {});
+          chatService.markAsRead(partnerId).catch(() => { });
         }
       }
 
@@ -362,8 +362,8 @@ function MessagesContent() {
       .then((data) => {
         const sorted = Array.isArray(data)
           ? [...data].sort(
-              (a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
-            )
+            (a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
+          )
           : [];
         setMessages(sorted);
       })
@@ -477,19 +477,6 @@ function MessagesContent() {
             eyebrow="Connections & Chat"
             title="Messages"
           />
-        </div>
-
-        <div className="flex items-center gap-2 self-start sm:self-auto shrink-0">
-          <Link href="/app/discover">
-            <Button
-              variant="secondary"
-              size="sm"
-              className="rounded-xl text-xs font-bold gap-1.5 border-[#E9DDE0]"
-              leftIcon={<IconCompass className="h-3.5 w-3.5 text-[#7A1835]" />}
-            >
-              <span>Discover Profiles</span>
-            </Button>
-          </Link>
         </div>
       </div>
 
