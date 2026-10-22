@@ -134,7 +134,7 @@ function SidebarContent({
         className
       )}
     >
-      <div className="sticky top-20 flex flex-col justify-between rounded-3xl border border-[#EAD8C7]/90 bg-white p-2.5 sm:p-3 shadow-[0_1px_3px_rgba(45,15,25,0.04),0_8px_24px_-4px_rgba(122,24,53,0.08),0_18px_36px_-6px_rgba(40,10,20,0.06)] min-h-[calc(100vh-6.5rem)]">
+      <div className="sticky top-20 flex flex-col justify-between rounded-3xl border border-[var(--champagne-border)] bg-white p-2.5 sm:p-3 shadow-[var(--elevation-card)] min-h-[calc(100vh-6.5rem)]">
         {/* Top Navigation Group */}
         <div className="space-y-1">
           <div className="hidden lg:block px-3 py-1.5 mb-1">
@@ -156,8 +156,8 @@ function SidebarContent({
                     // Tablet icon rail centering vs Desktop expanded layout
                     "justify-center lg:justify-start",
                     active
-                      ? "bg-[var(--primary)] text-white shadow-[0_4px_14px_var(--primary-shadow)] font-semibold"
-                      : "text-[var(--muted-strong)] font-medium hover:bg-[var(--primary-lighter)] hover:text-[var(--primary)]"
+                      ? "bg-gradient-to-r from-[var(--primary)] to-[var(--primary-deep)] text-white shadow-[0_4px_14px_var(--primary-shadow)] font-semibold"
+                      : "text-[var(--muted-strong)] font-semibold hover:bg-[var(--primary-lighter)] hover:text-[var(--primary)]"
                   )}
                   title={label}
                 >
@@ -199,12 +199,12 @@ function SidebarContent({
         {/* Bottom Section: Premium + Profile & IconSettings */}
         <div className="space-y-3 pt-3 border-t border-[var(--border)]/70">
           {/* Subtle Premium Spotlight Card on Desktop */}
-          <div className="hidden lg:block rounded-2xl bg-gradient-to-br from-[#FAF3EC] to-[#FFF9F6] p-3 border border-[#EAD8C7] shadow-2xs">
+          <div className="hidden lg:block rounded-2xl bg-gradient-to-br from-[#FDF8F2] to-[#FFF9F6] p-3 border border-[var(--champagne-border)] shadow-2xs">
             <div className="flex items-center gap-2 mb-1">
-              <span className="grid h-6 w-6 place-items-center rounded-full bg-[#EAD8C7]/50 text-[#8C5D30]">
+              <span className="grid h-6 w-6 place-items-center rounded-full bg-[var(--champagne-light)] text-[#8F591E] border border-[var(--champagne-border)] shadow-2xs">
                 <IconCrown className="h-3.5 w-3.5" />
               </span>
-              <p className="text-xs font-bold text-[#5C1027]">Premium</p>
+              <p className="text-xs font-bold text-[var(--primary)]">Premium</p>
             </div>
             <p className="text-[11px] text-[var(--muted-strong)] leading-snug">
               Connect with best matches

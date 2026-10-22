@@ -266,10 +266,10 @@ function InterestsContent() {
       {/* ======================================================== */}
       {/* 2. TABS CONTROLS & SEARCH BAR                            */}
       {/* ======================================================== */}
-      <Card className="p-3 sm:p-4 rounded-3xl border-[var(--border)] bg-white shadow-[var(--elevation-card)] animate-content-appear stagger-2">
+      <Card className="p-3 sm:p-4 rounded-3xl border border-[var(--champagne-border)] bg-white shadow-[var(--elevation-card)] animate-content-appear stagger-2">
         <div className="flex flex-col lg:flex-row lg:items-center gap-3">
           {/* Segmented Tabs: Received | Sent | Accepted (Matches) | Declined */}
-          <div className="flex items-center gap-1.5 p-1 bg-[var(--surface-muted)] rounded-2xl border border-[var(--border)] overflow-x-auto scrollbar-none">
+          <div className="flex items-center gap-1.5 p-1.5 bg-[#FAF4EF] rounded-2xl border border-[#EDE4DC] overflow-x-auto scrollbar-none">
             {/* Received Tab */}
             <button
               type="button"
@@ -277,7 +277,7 @@ function InterestsContent() {
               className={cn(
                 'focus-ring flex items-center gap-2 px-3.5 sm:px-4 py-2 rounded-xl text-xs sm:text-sm font-bold transition-all active-press select-none whitespace-nowrap',
                 tab === 'received'
-                  ? 'bg-white text-[var(--primary)] shadow-xs'
+                  ? 'bg-white text-[var(--primary)] shadow-xs border border-[var(--champagne-border)]'
                   : 'text-[var(--muted-strong)] hover:text-[var(--foreground)]'
               )}
             >
@@ -304,7 +304,7 @@ function InterestsContent() {
               className={cn(
                 'focus-ring flex items-center gap-2 px-3.5 sm:px-4 py-2 rounded-xl text-xs sm:text-sm font-bold transition-all active-press select-none whitespace-nowrap',
                 tab === 'sent'
-                  ? 'bg-white text-[var(--primary)] shadow-xs'
+                  ? 'bg-white text-[var(--primary)] shadow-xs border border-[var(--champagne-border)]'
                   : 'text-[var(--muted-strong)] hover:text-[var(--foreground)]'
               )}
             >
@@ -331,7 +331,7 @@ function InterestsContent() {
               className={cn(
                 'focus-ring flex items-center gap-2 px-3.5 sm:px-4 py-2 rounded-xl text-xs sm:text-sm font-bold transition-all active-press select-none whitespace-nowrap',
                 tab === 'declined'
-                  ? 'bg-white text-[var(--primary)] shadow-xs'
+                  ? 'bg-white text-[var(--primary)] shadow-xs border border-[var(--champagne-border)]'
                   : 'text-[var(--muted-strong)] hover:text-[var(--foreground)]'
               )}
             >

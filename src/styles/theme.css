@@ -9,75 +9,75 @@
  */
 :root {
   /* Primary Burgundy */
-  --primary: #7A1835;
-  --primary-deep: #5C1027;
-  --primary-light: #F7E8EB;
-  --primary-lighter: #FDF2F4;
+  --primary: #801835;
+  --primary-deep: #5E0E24;
+  --primary-light: #FDF2F4;
+  --primary-lighter: #FFF8F9;
   --primary-foreground: #FFFFFF;
 
   /* Blush / Rose Accents */
   --blush: #C77A8B;
   --blush-deep: #A7586A;
-  --blush-light: #FCEFF2;
+  --blush-light: #FDF4F6;
 
-  /* Champagne Gold (Used sparingly for premium badges & highlights) */
-  --accent: #D8B28C;
-  --accent-foreground: #5C1027;
-  --accent-light: #FAF3EC;
-  --accent-deep: #A97C52;
-  --champagne: #D8B28C;
-  --champagne-light: #FAF3EC;
-  --champagne-border: #EAD8C7;
+  /* Champagne Gold (Radiant, luminous celebration gold) */
+  --accent: #C99757;
+  --accent-foreground: #5E0E24;
+  --accent-light: #FDF9F2;
+  --accent-deep: #9B6C2E;
+  --champagne: #C99757;
+  --champagne-light: #FDF9F2;
+  --champagne-border: #EEDCC8;
 
-  /* Surfaces & Warm Ivory */
-  --background: #FFF9F6;
+  /* Surfaces & High-Clarity Warm Ivory */
+  --background: #FAF8F6;
   --surface: #FFFFFF;
-  --surface-muted: #FAF2EF;
+  --surface-muted: #F5EFEB;
 
   /* Secondary */
-  --secondary: #FFF9F6;
-  --secondary-foreground: #211B1E;
+  --secondary: #FFFFFF;
+  --secondary-foreground: #180D12;
 
-  /* Charcoal / Deep Typography */
-  --foreground: #211B1E;
-  --muted: #766B6F;
-  --muted-strong: #453A3E;
-  --subtle-foreground: #9B8F94;
+  /* Enriched Velvet Obsidian & Warm Espresso Typography */
+  --foreground: #180D12;
+  --muted: #5C4951;
+  --muted-strong: #36262D;
+  --subtle-foreground: #7D6971;
 
   /* Borders */
-  --border: #E9DDE0;
-  --border-strong: #D5C2C6;
+  --border: #EDE4DC;
+  --border-strong: #DECFC4;
 
   /* Functional Status */
-  --success: #1E7E52;
-  --warning: #C68A4C;
+  --success: #1B7A4E;
+  --warning: #C98A44;
   --danger: #B42318;
   --danger-deep: #8F1D14;
 
   /* Shadows, Rings & Glows */
-  --focus-ring: rgba(122, 24, 53, .28);
-  --primary-glow: rgba(122, 24, 53, .07);
-  --primary-shadow: rgba(122, 24, 53, .16);
-  --primary-shadow-strong: rgba(122, 24, 53, .22);
-  --card-shadow: rgba(92, 16, 39, .05);
-  --hero-shadow: rgba(92, 16, 39, .12);
-  --glass-background: rgba(255, 255, 255, .88);
-  --glass-border: rgba(233, 221, 224, .75);
+  --focus-ring: rgba(128, 24, 53, .25);
+  --primary-glow: rgba(128, 24, 53, .06);
+  --primary-shadow: rgba(128, 24, 53, .12);
+  --primary-shadow-strong: rgba(128, 24, 53, .18);
+  --card-shadow: rgba(26, 12, 18, .04);
+  --hero-shadow: rgba(26, 12, 18, .08);
+  --glass-background: rgba(255, 255, 255, .92);
+  --glass-border: rgba(238, 220, 200, .75);
 
-  --botanical-primary: #7A1835;
-  --botanical-deep: #5C1027;
+  --botanical-primary: #801835;
+  --botanical-deep: #5E0E24;
   --botanical-rich: #A7586A;
   --botanical-sage: #C77A8B;
-  --botanical-soft: #D8B28C;
-  --botanical-glow: rgba(122, 24, 53, .08);
+  --botanical-soft: #C99757;
+  --botanical-glow: rgba(128, 24, 53, .07);
 
-  /* Modern Matchmaking Elevation & Shadows (Tangible 3D Depth) */
-  --elevation-card: 0 1px 3px rgba(45, 15, 25, 0.04), 0 8px 24px -4px rgba(122, 24, 53, 0.08), 0 18px 36px -6px rgba(40, 10, 20, 0.06);
-  --elevation-card-hover: 0 2px 6px rgba(45, 15, 25, 0.06), 0 16px 36px -6px rgba(122, 24, 53, 0.16), 0 24px 48px -10px rgba(33, 27, 30, 0.10);
-  --elevation-floating: 0 20px 48px -8px rgba(92, 16, 39, 0.22), 0 8px 20px -4px rgba(33, 27, 30, 0.10);
-  --elevation-3d: 0 1px 3px rgba(45, 15, 25, 0.04), 0 8px 24px -4px rgba(122, 24, 53, 0.08), 0 20px 40px -8px rgba(40, 10, 20, 0.06);
-  --glow-champagne: 0 0 24px -4px rgba(216, 178, 140, 0.35);
-  --glow-primary: 0 8px 24px -4px rgba(122, 24, 53, 0.25);
+  /* Modern Matchmaking Elevation & Shadows (Tangible Crisp Depth) */
+  --elevation-card: 0 1px 3px rgba(26, 12, 18, 0.04), 0 8px 24px -4px rgba(26, 12, 18, 0.06), 0 16px 32px -8px rgba(128, 24, 53, 0.04);
+  --elevation-card-hover: 0 4px 12px rgba(26, 12, 18, 0.06), 0 16px 36px -6px rgba(128, 24, 53, 0.12), 0 24px 48px -12px rgba(26, 12, 18, 0.08);
+  --elevation-floating: 0 16px 40px -8px rgba(26, 12, 18, 0.12), 0 6px 16px -4px rgba(128, 24, 53, 0.08);
+  --elevation-3d: 0 1px 3px rgba(26, 12, 18, 0.04), 0 8px 20px -4px rgba(26, 12, 18, 0.06), 0 16px 32px -8px rgba(128, 24, 53, 0.05);
+  --glow-champagne: 0 0 24px -2px rgba(201, 151, 87, 0.35);
+  --glow-primary: 0 8px 24px -4px rgba(128, 24, 53, 0.22);
 
   /* Matchmaking Radii Scale */
   --radius-pill: 9999px;

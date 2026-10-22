@@ -162,7 +162,7 @@ export function AppShell({ children }: AppShellProps) {
         <Header user={currentUser} />
 
         {/* Main Responsive Layout */}
-        <div className="relative z-10 mx-auto flex w-full max-w-[1600px] flex-1 gap-6 px-4 py-6 sm:px-6 lg:px-8 xl:px-10">
+        <div className="relative z-10 mx-auto flex w-full max-w-[1600px] flex-1 gap-6 px-4 pt-2.5 pb-6 sm:py-6 sm:px-6 lg:px-8 xl:px-10">
           {/* Desktop & Tablet Sidebar */}
           <Sidebar
             unreadMessagesCount={unreadMessagesCount}
@@ -173,7 +173,7 @@ export function AppShell({ children }: AppShellProps) {
           <main
             key={pathname}
             id="main-content"
-            className="min-w-0 flex-1 pb-24 md:pb-12 animate-page-enter"
+            className="min-w-0 flex-1 pb-28 md:pb-12 animate-page-enter"
           >
             {children}
           </main>

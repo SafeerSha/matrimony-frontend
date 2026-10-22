@@ -563,28 +563,30 @@ export default function DiscoverPage() {
   ) => {
     const isMobileSwipe = viewMode === 'swipe' || options?.silentToast;
     const isIncoming = receivedInterestIds.has(id);
+
+    // Optimistically update feed state immediately so swipe exit is completely fluid
+    if (isIncoming) {
+      setReceivedInterestIds((prev) => {
+        const next = new Set(prev);
+        next.delete(id);
+        return next;
+      });
+    }
+    setSentInterestIds((prev) => new Set(prev).add(id));
+
+    if (!isMobileSwipe && !isIncoming) {
+      toast.success('Interest Sent!', `We have notified ${name} of your interest.`);
+    }
+
     try {
       if (isIncoming) {
         await matchesService.acceptInterest(id);
-        setReceivedInterestIds((prev) => {
-          const next = new Set(prev);
-          next.delete(id);
-          return next;
-        });
-        setSentInterestIds((prev) => new Set(prev).add(id));
         toast.success('Connected & Matched! 🎉', `You and ${name} liked each other! Start chatting now.`);
       } else {
         await matchesService.sendInterest(id);
-        setSentInterestIds((prev) => new Set(prev).add(id));
-        if (!isMobileSwipe) {
-          toast.success('Interest Sent!', `We have notified ${name} of your interest.`);
-        }
       }
-    } catch {
-      setSentInterestIds((prev) => new Set(prev).add(id));
-      if (!isMobileSwipe) {
-        toast.success('Interest Sent!', `We have notified ${name} of your interest.`);
-      }
+    } catch (err) {
+      console.warn('Failed sending interest in background:', err);
     }
   };
 
@@ -827,7 +829,7 @@ export default function DiscoverPage() {
     <div className={cn(
       "transition-all",
       viewMode === 'swipe'
-        ? "h-[calc(100dvh-132px)] flex flex-col gap-2.5 sm:gap-3 overflow-hidden pb-0 md:h-auto md:overflow-visible md:pb-8 md:space-y-4 md:gap-0"
+        ? "h-[calc(100dvh-220px-env(safe-area-inset-bottom,0px))] flex flex-col gap-2 overflow-visible pb-0 md:h-auto md:pb-8 md:space-y-4 md:gap-0"
         : "space-y-2.5 sm:space-y-4 pb-2 sm:pb-8"
     )}>
       {/* Mobile layout spacing & Swipe mode lock */}
@@ -845,10 +847,11 @@ export default function DiscoverPage() {
             }
             #main-content { 
               padding-bottom: 0 !important; 
-              overflow: hidden !important;
+              overflow: visible !important;
             }
             div:has(> #main-content) {
               padding-bottom: 0 !important;
+              overflow: visible !important;
             }
           ` : ''}
         }
@@ -960,7 +963,7 @@ export default function DiscoverPage() {
             <div className="block md:hidden max-w-2xl mx-auto w-full flex-1 min-h-0 flex flex-col animate-content-appear stagger-2">
               {swipeProfiles.length > 0 ? (
                 /* Stack of SwipeCards - Dynamically sized to fill available viewport */
-                <div className="relative flex-1 min-h-[400px] max-h-[640px] w-full">
+                <div className="relative flex-1 min-h-[350px] max-h-[580px] w-full">
                   {[
                     swipeProfiles.length > 1 ? swipeProfiles[1] : null,
                     swipeProfiles[0],
@@ -999,7 +1002,7 @@ export default function DiscoverPage() {
                 </div>
               ) : (
                 /* All Profiles Covered Completion View */
-                <div className="relative flex-1 min-h-[400px] max-h-[640px] w-full flex flex-col items-center justify-center p-3 sm:p-4">
+                <div className="relative flex-1 min-h-[350px] max-h-[580px] w-full flex flex-col items-center justify-center p-3 sm:p-4">
                   <div className="relative w-full rounded-[2.5rem] border border-[var(--border)] bg-gradient-to-b from-white via-white to-rose-50/40 p-6 sm:p-8 shadow-[var(--elevation-floating)] text-center flex flex-col items-center justify-center space-y-4">
                     {/* Glowing Celebration Icon */}
                     <div className="relative flex items-center justify-center pt-2">

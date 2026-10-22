@@ -74,10 +74,15 @@ export function MatchCard({
             )}
           </div>
 
-          <p className="mt-0.5 flex items-center gap-1 text-xs text-[var(--muted)]">
-            <IconMapPin className="h-3 w-3 shrink-0 text-[var(--muted)]" />
-            <span className="truncate">{match.city}</span>
-            {match.profession && <span>· {match.profession}</span>}
+          <p className="mt-1 flex items-center gap-1.5 text-xs">
+            <IconMapPin className="h-3.5 w-3.5 shrink-0 text-[#B87A28]" />
+            <span className="truncate text-[#8F591E] font-semibold">{match.city}</span>
+            {match.profession && (
+              <>
+                <span className="text-[var(--muted)]/40">·</span>
+                <span className="text-[var(--foreground)] font-semibold truncate">{match.profession}</span>
+              </>
+            )}
           </p>
 
           {match.commonInterests && match.commonInterests.length > 0 && (
