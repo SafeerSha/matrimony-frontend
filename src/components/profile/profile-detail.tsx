@@ -32,6 +32,7 @@ import {
   IconShield,
   IconClock,
   IconAward,
+  IconBan,
 } from '@tabler/icons-react';
 import { getProfileUniqueId, formatLastActive } from '@/lib/demo-data';
 import { PageLoader } from '@/components/ui/page-loader';
@@ -56,6 +57,7 @@ export function ProfileDetail({ id }: { id?: string }) {
   const [isInterestSent, setIsInterestSent] = useState(false);
   const [isMatched, setIsMatched] = useState(false);
   const [isInterestReceived, setIsInterestReceived] = useState(false);
+  const [isDeclined, setIsDeclined] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [showFloatingDock, setShowFloatingDock] = useState(false);
   const inlineActionsRef = useRef<HTMLDivElement>(null);
@@ -82,6 +84,7 @@ export function ProfileDetail({ id }: { id?: string }) {
     setIsMatched(false);
     setIsInterestReceived(false);
     setIsShortlisted(false);
+    setIsDeclined(false);
 
     const targetId = id || 'me';
     profileService
@@ -102,10 +105,17 @@ export function ProfileDetail({ id }: { id?: string }) {
             '';
 
           const isMutual = Boolean(res.isMatched || res.connectionStatus === 'MATCHED');
+          const isDeclinedStatus = Boolean(
+            res.isDeclined ||
+            res.isDeclinedByThem ||
+            res.connectionStatus === 'REJECTED'
+          );
+
           setIsMatched(isMutual);
-          setIsInterestSent(Boolean(res.isInterestSent || isMutual || res.connectionStatus === 'SENT'));
-          setIsInterestReceived(Boolean(res.isInterestReceived || res.connectionStatus === 'RECEIVED'));
-          setIsShortlisted(Boolean(res.isShortlisted || res.connectionStatus === 'SHORTLISTED'));
+          setIsDeclined(isDeclinedStatus);
+          setIsInterestSent(Boolean(!isDeclinedStatus && (res.isInterestSent || isMutual || res.connectionStatus === 'SENT')));
+          setIsInterestReceived(Boolean(!isDeclinedStatus && (res.isInterestReceived || res.connectionStatus === 'RECEIVED')));
+          setIsShortlisted(Boolean(!isDeclinedStatus && (res.isShortlisted || res.connectionStatus === 'SHORTLISTED')));
 
           setProfile({
             id: res.id || targetId,
@@ -119,17 +129,33 @@ export function ProfileDetail({ id }: { id?: string }) {
             profession: res.occupation || res.profession || '',
             education: res.education || '',
             employmentStatus: res.employmentStatus || '',
+            annualIncome: res.annualIncome || '',
             about: res.bio || '',
             family: res.family || '',
+            fatherName: res.fatherName || '',
+            fatherAlive: res.fatherAlive,
+            motherAlive: res.motherAlive,
+            brothersCount: res.brothersCount ?? 0,
+            brothersMarried: res.brothersMarried ?? 0,
+            sistersCount: res.sistersCount ?? 0,
+            sistersMarried: res.sistersMarried ?? 0,
             lookingFor: res.lookingFor || '',
             lifestyle: Array.isArray(res.lifestyle) ? res.lifestyle : [],
             interests: Array.isArray(res.interests) ? res.interests : [],
             image: primaryImg,
             photos: res.photos || [],
-            compatibility: (res as any).compatibility ?? (res as any).profile?.compatibility ?? 88,
-            height: res.height ? `${res.height}cm` : '',
+            compatibility: (res as any).compatibility ?? 88,
+            compatibilityHighlights: (res as any).compatibilityHighlights || [],
+            preferences: res.preferences || {},
+            height: res.height ? (String(res.height).includes('cm') ? String(res.height) : `${res.height}cm`) : '',
             maritalStatus: res.maritalStatus || '',
             religion: res.religion || '',
+            caste: res.caste || '',
+            gender: res.gender || '',
+            profileFor: res.profileFor || 'Self',
+            nationality: res.nationality || 'Indian',
+            country: res.country || 'India',
+            diet: res.diet || '',
           });
         } else {
           setProfile(null);
@@ -211,7 +237,7 @@ export function ProfileDetail({ id }: { id?: string }) {
 
   // Shortlist handler
   const handleToggleShortlist = async () => {
-    if (!profile) return;
+    if (!profile || isDeclined) return;
     try {
       await matchesService.shortlistProfile(profile.id);
       setIsShortlisted(!isShortlisted);
@@ -230,7 +256,7 @@ export function ProfileDetail({ id }: { id?: string }) {
 
   // Interest handler
   const handleSendInterest = async () => {
-    if (!profile || isInterestSent || isMatched) return;
+    if (!profile || isInterestSent || isMatched || isDeclined) return;
     try {
       const res: any = await matchesService.sendInterest(profile.id);
       setIsInterestSent(true);
@@ -486,8 +512,13 @@ export function ProfileDetail({ id }: { id?: string }) {
             <div className="space-y-5">
               {/* Header Title & Verification */}
               <div>
-                <div className="flex items-center gap-2">
-                                    {profile.verified && <VerificationBadge type="general" size="md" />}
+                <div className="flex items-center gap-2 flex-wrap">
+                  {profile.verified && <VerificationBadge type="general" size="md" />}
+                  {isDeclined && (
+                    <span className="inline-flex items-center gap-1 text-[11px] font-bold text-stone-600 bg-stone-100 px-2.5 py-0.5 rounded-full border border-stone-200">
+                      Declined
+                    </span>
+                  )}
                   <span className="text-xs font-semibold text-[var(--muted)]">
                     Profile ID: {getProfileUniqueId(profile)}
                   </span>
@@ -511,7 +542,7 @@ export function ProfileDetail({ id }: { id?: string }) {
                   <p className="flex items-center gap-2">
                     <IconMapPin className="h-4 w-4 text-[var(--accent)] shrink-0" />
                     <span>
-                      {profile.city}, {profile.state}, India
+                      {[profile.city, profile.state, 'India'].filter(Boolean).join(', ')}
                     </span>
                   </p>
                 </div>
@@ -590,19 +621,19 @@ export function ProfileDetail({ id }: { id?: string }) {
                     </span>
                   </div>
 
-                  <div className="flex items-center gap-3">
+                  <div className="flex items-center gap-2.5 sm:gap-3">
                     {/* Chat action is the primary prominent button! */}
                     <Link
                       href={`/app/messages?user=${profile.id}`}
-                      className="focus-ring flex-1"
+                      className="focus-ring flex-1 min-w-0"
                     >
                       <Button
                         variant="primary"
                         size="lg"
-                        className="w-full font-bold shadow-md rounded-2xl text-sm h-13 active-press bg-gradient-to-r from-[var(--primary)] to-[#8E1B3E] hover:brightness-105"
-                        leftIcon={<IconMessageCircle className="h-5 w-5" />}
+                        className="w-full font-bold shadow-md rounded-2xl text-xs sm:text-sm h-12 sm:h-13 active-press bg-gradient-to-r from-[var(--primary)] to-[#8E1B3E] hover:brightness-105 px-3 sm:px-6"
+                        leftIcon={<IconMessageCircle className="h-4.5 w-4.5 shrink-0" />}
                       >
-                        <span>Chat with {profile.name.split(' ')[0]}</span>
+                        <span className="truncate">Chat with {profile.name.split(' ')[0]}</span>
                       </Button>
                     </Link>
 
@@ -614,7 +645,7 @@ export function ProfileDetail({ id }: { id?: string }) {
                       aria-label={isShortlisted ? 'Favorited' : 'Favorite'}
                       title={isShortlisted ? 'Favorited' : `Add ${profile.name} to favorites`}
                       className={cn(
-                        'h-13 px-4 sm:px-5 rounded-2xl shrink-0 active-press transition-all font-bold text-sm',
+                        'h-12 sm:h-13 w-12 sm:w-auto p-0 sm:px-5 rounded-2xl shrink-0 active-press transition-all font-bold text-sm flex items-center justify-center gap-1.5',
                         isShortlisted
                           ? 'bg-[var(--primary)] text-white border-transparent'
                           : 'border-[var(--border)] text-[var(--foreground)] hover:border-[var(--primary)] hover:text-[var(--primary)]'
@@ -627,27 +658,29 @@ export function ProfileDetail({ id }: { id?: string }) {
                         )
                       }
                     >
-                      <span>{isShortlisted ? 'Favorited' : 'Favorite'}</span>
+                      <span className="hidden sm:inline">{isShortlisted ? 'Favorited' : 'Favorite'}</span>
                     </Button>
                   </div>
                 </>
               ) : isInterestReceived ? (
-                <div className="flex items-center gap-3">
+                <div className="flex items-center gap-2.5 sm:gap-3">
                   <Button
                     variant="primary"
                     size="lg"
                     onClick={handleAcceptInterest}
-                    className="flex-1 font-bold shadow-md rounded-2xl text-sm h-13 active-press bg-emerald-600 hover:bg-emerald-700 text-white"
-                    leftIcon={<IconCheck className="h-4 w-4" />}
+                    className="flex-1 min-w-0 font-bold shadow-md rounded-2xl text-xs sm:text-sm h-12 sm:h-13 active-press bg-emerald-600 hover:bg-emerald-700 text-white px-3 sm:px-6"
+                    leftIcon={<IconCheck className="h-4 w-4 shrink-0" />}
                   >
-                    Accept Interest
+                    <span className="truncate">Accept Interest</span>
                   </Button>
                   <Button
                     variant={isShortlisted ? 'primary' : 'outline'}
                     size="lg"
                     onClick={handleToggleShortlist}
+                    aria-label={isShortlisted ? 'Favorited' : 'Favorite'}
+                    title={isShortlisted ? 'Favorited' : `Add ${profile.name} to favorites`}
                     className={cn(
-                      'h-13 px-4 sm:px-5 rounded-2xl shrink-0 active-press transition-all font-bold text-sm',
+                      'h-12 sm:h-13 w-12 sm:w-auto p-0 sm:px-5 rounded-2xl shrink-0 active-press transition-all font-bold text-sm flex items-center justify-center gap-1.5',
                       isShortlisted
                         ? 'bg-[var(--primary)] text-white border-transparent'
                         : 'border-[var(--border)] text-[var(--foreground)] hover:border-[var(--primary)] hover:text-[var(--primary)]'
@@ -660,28 +693,45 @@ export function ProfileDetail({ id }: { id?: string }) {
                       )
                     }
                   >
-                    <span>{isShortlisted ? 'Favorited' : 'Favorite'}</span>
+                    <span className="hidden sm:inline">{isShortlisted ? 'Favorited' : 'Favorite'}</span>
                   </Button>
+                </div>
+              ) : isDeclined ? (
+                <div className="space-y-2">
+                  <div className="flex items-center">
+                    <Button
+                      variant="secondary"
+                      size="lg"
+                      disabled
+                      className="w-full font-bold rounded-2xl text-xs sm:text-sm h-12 sm:h-13 opacity-75 bg-stone-100 text-stone-500 border border-stone-200 cursor-not-allowed select-none shadow-none"
+                      leftIcon={<IconBan className="h-4.5 w-4.5 text-stone-400 shrink-0" />}
+                    >
+                      <span>Declined</span>
+                    </Button>
+                  </div>
+                  <p className="text-center text-[11px] text-[var(--muted)] font-medium">
+                    This connection request was declined.
+                  </p>
                 </div>
               ) : (
                 <>
-                  <div className="flex items-center gap-3">
+                  <div className="flex items-center gap-2.5 sm:gap-3">
                     {/* Send Interest (Burgundy primary) */}
                     <Button
                       variant={isInterestSent ? 'blush' : 'primary'}
                       size="lg"
                       disabled={isInterestSent}
                       onClick={handleSendInterest}
-                      className="flex-1 font-bold shadow-md rounded-2xl text-sm h-13 active-press"
+                      className="flex-1 min-w-0 font-bold shadow-md rounded-2xl text-xs sm:text-sm h-12 sm:h-13 active-press px-3 sm:px-6"
                       leftIcon={
                         isInterestSent ? (
-                          <IconCheck className="h-4 w-4" />
+                          <IconCheck className="h-4 w-4 shrink-0" />
                         ) : (
-                          <IconHeart className="h-4 w-4 fill-white" />
+                          <IconHeart className="h-4 w-4 fill-white shrink-0" />
                         )
                       }
                     >
-                      {isInterestSent ? 'Interest Sent' : 'Send Interest'}
+                      <span className="truncate">{isInterestSent ? 'Interest Sent' : 'Send Interest'}</span>
                     </Button>
 
                     {/* Favorite Button */}
@@ -692,7 +742,7 @@ export function ProfileDetail({ id }: { id?: string }) {
                       aria-label={isShortlisted ? 'Favorited' : 'Favorite'}
                       title={isShortlisted ? 'Favorited' : `Add ${profile.name} to favorites`}
                       className={cn(
-                        'h-13 px-4 sm:px-5 rounded-2xl shrink-0 active-press transition-all font-bold text-sm',
+                        'h-12 sm:h-13 w-12 sm:w-auto p-0 sm:px-5 rounded-2xl shrink-0 active-press transition-all font-bold text-sm flex items-center justify-center gap-1.5',
                         isShortlisted
                           ? 'bg-[var(--primary)] text-white border-transparent'
                           : 'border-[var(--border)] text-[var(--foreground)] hover:border-[var(--primary)] hover:text-[var(--primary)]'
@@ -705,7 +755,7 @@ export function ProfileDetail({ id }: { id?: string }) {
                         )
                       }
                     >
-                      <span>{isShortlisted ? 'Favorited' : 'Favorite'}</span>
+                      <span className="hidden sm:inline">{isShortlisted ? 'Favorited' : 'Favorite'}</span>
                     </Button>
                   </div>
 
@@ -717,10 +767,10 @@ export function ProfileDetail({ id }: { id?: string }) {
                     <Button
                       variant="secondary"
                       size="md"
-                      className="w-full rounded-2xl text-xs font-bold h-11 text-[var(--foreground)] hover:border-[var(--primary)]"
-                      leftIcon={<IconMessageCircle className="h-4 w-4 text-[var(--primary)]" />}
+                      className="w-full rounded-2xl text-xs sm:text-sm font-bold h-11 sm:h-12 text-[var(--foreground)] hover:border-[var(--primary)]"
+                      leftIcon={<IconMessageCircle className="h-4 w-4 text-[var(--primary)] shrink-0" />}
                     >
-                      Chat with {profile.name.split(' ')[0]}
+                      <span className="truncate">Chat with {profile.name.split(' ')[0]}</span>
                     </Button>
                   </Link>
                 </>
@@ -733,74 +783,44 @@ export function ProfileDetail({ id }: { id?: string }) {
       {/* ======================================================== */}
       {/* 3. CONTEXTUAL PROFILE INSIGHTS: "Why You May Connect"     */}
       {/* ======================================================== */}
-      <Card
-        variant="champagne"
-        className="rounded-3xl border border-[#EAD8C7] bg-gradient-to-br from-[#FAF3EC] via-[#FFF9F6] to-[#FFF5F7] p-6 sm:p-7 shadow-[var(--elevation-card)]"
-      >
-        <div className="flex items-center gap-3">
-          <div className="grid h-10 w-10 place-items-center rounded-2xl bg-[var(--primary)] text-white shadow-xs">
-            <IconShieldCheck className="h-5 w-5 fill-current" />
-          </div>
-          <div>
-            <h2 className="font-editorial-title text-xl sm:text-2xl font-bold text-[#5C1027]">
-              Why you may connect with {profile.name.split(' ')[0]}
-            </h2>
-            <p className="text-xs text-[var(--muted-strong)]">
-              Contextual profile alignment based on your partner preferences and lifestyle criteria.
-            </p>
-          </div>
-        </div>
-
-        <div className="mt-5 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5">
-          <div className="rounded-2xl bg-white/90 p-4 border border-[#EAD8C7]/70 backdrop-blur-xs">
-            <p className="text-xs font-bold text-[var(--primary)] flex items-center gap-1.5">
-              <span>✓ Same Location</span>
-            </p>
-            <p className="mt-1 text-xs text-[var(--foreground)] font-semibold">
-              Based in {profile.city}, {profile.state}
-            </p>
-            <p className="mt-0.5 text-[11px] text-[var(--muted)]">
-              Shared familiarity with regional lifestyle and community roots.
-            </p>
+      {profile.compatibilityHighlights && profile.compatibilityHighlights.length > 0 && (
+        <Card
+          variant="champagne"
+          className="rounded-3xl border border-[#EAD8C7] bg-gradient-to-br from-[#FAF3EC] via-[#FFF9F6] to-[#FFF5F7] p-6 sm:p-7 shadow-[var(--elevation-card)]"
+        >
+          <div className="flex items-center gap-3">
+            <div className="grid h-10 w-10 place-items-center rounded-2xl bg-[var(--primary)] text-white shadow-xs">
+              <IconShieldCheck className="h-5 w-5 fill-current" />
+            </div>
+            <div>
+              <h2 className="font-editorial-title text-xl sm:text-2xl font-bold text-[#5C1027]">
+                Why you may connect with {profile.name.split(' ')[0]}
+              </h2>
+              <p className="text-xs text-[var(--muted-strong)]">
+                Contextual profile alignment based on your partner preferences and lifestyle criteria.
+              </p>
+            </div>
           </div>
 
-          <div className="rounded-2xl bg-white/90 p-4 border border-[#EAD8C7]/70 backdrop-blur-xs">
-            <p className="text-xs font-bold text-[var(--primary)] flex items-center gap-1.5">
-              <span>✓ Partner Age Match</span>
-            </p>
-            <p className="mt-1 text-xs text-[var(--foreground)] font-semibold">
-              Age {profile.age} years
-            </p>
-            <p className="mt-0.5 text-[11px] text-[var(--muted)]">
-              Falls within your preferred age window for matrimonial matchmaking.
-            </p>
+          <div className="mt-5 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5">
+            {profile.compatibilityHighlights.map((hl: any, idx: number) => (
+              <div key={idx} className="rounded-2xl bg-white/90 p-4 border border-[#EAD8C7]/70 backdrop-blur-xs flex flex-col justify-between">
+                <div>
+                  <p className="text-xs font-bold text-[var(--primary)] flex items-center gap-1.5">
+                    <span>✓ {hl.title}</span>
+                  </p>
+                  <p className="mt-1 text-xs text-[var(--foreground)] font-semibold truncate">
+                    {hl.value}
+                  </p>
+                </div>
+                <p className="mt-1.5 text-[11px] text-[var(--muted)] leading-relaxed">
+                  {hl.description}
+                </p>
+              </div>
+            ))}
           </div>
-
-          <div className="rounded-2xl bg-white/90 p-4 border border-[#EAD8C7]/70 backdrop-blur-xs">
-            <p className="text-xs font-bold text-[var(--primary)] flex items-center gap-1.5">
-              <span>✓ Educational Alignment</span>
-            </p>
-            <p className="mt-1 text-xs text-[var(--foreground)] font-semibold truncate">
-              {profile.education}
-            </p>
-            <p className="mt-0.5 text-[11px] text-[var(--muted)]">
-              Matches your preference for professional and postgraduate qualifications.
-            </p>
-          </div>
-
-          <div className="rounded-2xl bg-white/90 p-4 border border-[#EAD8C7]/70 backdrop-blur-xs">
-            <p className="text-xs font-bold text-[var(--primary)] flex items-center gap-1.5">
-              <span>✓ Shared Passions</span>
-            </p>
-            <p className="mt-1 text-xs text-[var(--foreground)] font-semibold truncate">
-              {profile.interests.slice(0, 2).join(' & ')}
-            </p>
-            <p className="mt-0.5 text-[11px] text-[var(--muted)]">
-              Overlapping leisure interests make initial conversations effortless.
-            </p>
-          </div>
-        </div>
-      </Card>
+        </Card>
+      )}
 
       {/* ======================================================== */}
       {/* 4. STRUCTURED PROFILE SECTIONS (NO GIANT BIODATA CARD)   */}
@@ -829,28 +849,19 @@ export function ProfileDetail({ id }: { id?: string }) {
 
               <div>
                 <p className="text-xs font-semibold uppercase tracking-wider text-[var(--muted)]">
-                  Height
+                  Gender
                 </p>
                 <p className="mt-0.5 text-sm font-bold text-[var(--foreground)]">
-                  {profile.height}
+                  {profile.gender || 'Not specified'}
                 </p>
               </div>
 
               <div>
                 <p className="text-xs font-semibold uppercase tracking-wider text-[var(--muted)]">
-                  Marital Status
+                  Profile Created By
                 </p>
                 <p className="mt-0.5 text-sm font-bold text-[var(--foreground)]">
-                  {profile.maritalStatus}
-                </p>
-              </div>
-
-              <div>
-                <p className="text-xs font-semibold uppercase tracking-wider text-[var(--muted)]">
-                  Mother Tongue
-                </p>
-                <p className="mt-0.5 text-sm font-bold text-[var(--foreground)]">
-                  {profile.motherTongue}
+                  {profile.profileFor || 'Self'}
                 </p>
               </div>
 
@@ -859,7 +870,7 @@ export function ProfileDetail({ id }: { id?: string }) {
                   Current City
                 </p>
                 <p className="mt-0.5 text-sm font-bold text-[var(--foreground)]">
-                  {profile.city}
+                  {profile.city || 'Not specified'}
                 </p>
               </div>
 
@@ -868,9 +879,29 @@ export function ProfileDetail({ id }: { id?: string }) {
                   State / Country
                 </p>
                 <p className="mt-0.5 text-sm font-bold text-[var(--foreground)]">
-                  {profile.state}, India
+                  {[profile.state, profile.country || 'India'].filter(Boolean).join(', ')}
                 </p>
               </div>
+
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-wider text-[var(--muted)]">
+                  Citizenship
+                </p>
+                <p className="mt-0.5 text-sm font-bold text-[var(--foreground)]">
+                  {profile.nationality || 'Indian'}
+                </p>
+              </div>
+
+              {profile.diet && (
+                <div>
+                  <p className="text-xs font-semibold uppercase tracking-wider text-[var(--muted)]">
+                    Diet
+                  </p>
+                  <p className="mt-0.5 text-sm font-bold text-[var(--foreground)]">
+                    {profile.diet}
+                  </p>
+                </div>
+              )}
             </div>
           </Card>
 
@@ -889,10 +920,7 @@ export function ProfileDetail({ id }: { id?: string }) {
                   Highest Qualification
                 </p>
                 <p className="mt-1 text-sm font-bold text-[var(--foreground)]">
-                  {profile.education}
-                </p>
-                <p className="mt-0.5 text-xs text-[var(--muted)]">
-                  Full-time Professional Program
+                  {profile.education || 'Graduate'}
                 </p>
               </div>
 
@@ -901,11 +929,13 @@ export function ProfileDetail({ id }: { id?: string }) {
                   Current Occupation
                 </p>
                 <p className="mt-1 text-sm font-bold text-[var(--foreground)]">
-                  {profile.profession}
+                  {profile.profession || 'Professional'}
                 </p>
-                <p className="mt-0.5 text-xs text-[var(--muted)]">
-                  {profile.employmentStatus || 'Working Professional'}
-                </p>
+                {profile.employmentStatus && (
+                  <p className="mt-0.5 text-xs text-[var(--muted)]">
+                    {profile.employmentStatus}
+                  </p>
+                )}
               </div>
 
               <div className="p-4 rounded-2xl bg-[var(--surface-muted)]/70 border border-[var(--border)]/70">
@@ -913,10 +943,7 @@ export function ProfileDetail({ id }: { id?: string }) {
                   Working Location
                 </p>
                 <p className="mt-1 text-sm font-bold text-[var(--foreground)]">
-                  {profile.city}, {profile.state}
-                </p>
-                <p className="mt-0.5 text-xs text-[var(--muted)]">
-                  Hybrid / Office Based
+                  {[profile.city, profile.state].filter(Boolean).join(', ') || 'Not specified'}
                 </p>
               </div>
 
@@ -925,10 +952,7 @@ export function ProfileDetail({ id }: { id?: string }) {
                   Annual Income
                 </p>
                 <p className="mt-1 text-sm font-bold text-[var(--primary)]">
-                  Disclosed to accepted connections
-                </p>
-                <p className="mt-0.5 text-xs text-[var(--muted)]">
-                  Confidential bracket maintained
+                  {profile.annualIncome || 'Available on request'}
                 </p>
               </div>
             </div>
@@ -945,26 +969,38 @@ export function ProfileDetail({ id }: { id?: string }) {
 
             <div className="mt-4 space-y-4">
               <p className="text-sm leading-relaxed text-[var(--muted-strong)] bg-[#FFFDFB] p-4 rounded-2xl border border-[var(--border)]">
-                "{profile.family}"
+                {profile.family || 'Family background shared with mutual matches.'}
               </p>
 
-              <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                 <div className="p-3 rounded-xl bg-[var(--surface-muted)] text-center">
-                  <p className="text-[11px] font-semibold text-[var(--muted)]">Family Values</p>
-                  <p className="text-xs font-bold text-[var(--foreground)] mt-0.5">
-                    Moderate & Caring
+                  <p className="text-[11px] font-semibold text-[var(--muted)]">Father</p>
+                  <p className="text-xs font-bold text-[var(--foreground)] mt-0.5 truncate" title={profile.fatherName || undefined}>
+                    {profile.fatherName
+                      ? `${profile.fatherName} (${profile.fatherAlive !== false ? 'Alive' : 'Late'})`
+                      : profile.fatherAlive !== false ? 'Father alive' : 'Father late'}
                   </p>
                 </div>
                 <div className="p-3 rounded-xl bg-[var(--surface-muted)] text-center">
-                  <p className="text-[11px] font-semibold text-[var(--muted)]">Family Type</p>
+                  <p className="text-[11px] font-semibold text-[var(--muted)]">Mother</p>
                   <p className="text-xs font-bold text-[var(--foreground)] mt-0.5">
-                    Nuclear Family
+                    {profile.motherAlive !== false ? 'Mother alive' : 'Mother late'}
                   </p>
                 </div>
                 <div className="p-3 rounded-xl bg-[var(--surface-muted)] text-center">
-                  <p className="text-[11px] font-semibold text-[var(--muted)]">Native Roots</p>
+                  <p className="text-[11px] font-semibold text-[var(--muted)]">Brothers</p>
                   <p className="text-xs font-bold text-[var(--foreground)] mt-0.5">
-                    {profile.city}, {profile.state}
+                    {profile.brothersCount !== undefined
+                      ? `${profile.brothersCount} (${profile.brothersMarried || 0} m)`
+                      : '0'}
+                  </p>
+                </div>
+                <div className="p-3 rounded-xl bg-[var(--surface-muted)] text-center">
+                  <p className="text-[11px] font-semibold text-[var(--muted)]">Sisters</p>
+                  <p className="text-xs font-bold text-[var(--foreground)] mt-0.5">
+                    {profile.sistersCount !== undefined
+                      ? `${profile.sistersCount} (${profile.sistersMarried || 0} m)`
+                      : '0'}
                   </p>
                 </div>
               </div>
@@ -986,7 +1022,7 @@ export function ProfileDetail({ id }: { id?: string }) {
                   Religion
                 </p>
                 <p className="mt-0.5 text-sm font-bold text-[var(--foreground)]">
-                  {profile.religion === 'Not specified' ? 'Hindu' : profile.religion}
+                  {profile.religion || 'Not specified'}
                 </p>
               </div>
 
@@ -995,16 +1031,16 @@ export function ProfileDetail({ id }: { id?: string }) {
                   Caste / Community
                 </p>
                 <p className="mt-0.5 text-sm font-bold text-[var(--foreground)]">
-                  Open to all communities
+                  {profile.caste || 'Open to all communities'}
                 </p>
               </div>
 
               <div>
                 <p className="text-xs font-semibold uppercase tracking-wider text-[var(--muted)]">
-                  Horoscope Matching
+                  Mother Tongue
                 </p>
                 <p className="mt-0.5 text-sm font-bold text-[var(--foreground)]">
-                  Optional / Mutual
+                  {profile.motherTongue || 'Not specified'}
                 </p>
               </div>
             </div>
@@ -1075,28 +1111,48 @@ export function ProfileDetail({ id }: { id?: string }) {
             <div className="space-y-3 pt-2">
               <div className="flex items-center justify-between text-xs py-1.5 border-b border-[var(--border)]">
                 <span className="text-[var(--muted)] font-medium">Preferred Age</span>
-                <span className="font-bold text-[var(--foreground)]">24 – 32 years</span>
+                <span className="font-bold text-[var(--foreground)]">
+                  {profile.preferences?.minAge && profile.preferences?.maxAge
+                    ? `${profile.preferences.minAge} – ${profile.preferences.maxAge} years`
+                    : profile.preferences?.minAge
+                      ? `${profile.preferences.minAge}+ years`
+                      : 'Open to all'}
+                </span>
               </div>
 
               <div className="flex items-center justify-between text-xs py-1.5 border-b border-[var(--border)]">
                 <span className="text-[var(--muted)] font-medium">Preferred Height</span>
-                <span className="font-bold text-[var(--foreground)]">5'3" – 6'0"</span>
+                <span className="font-bold text-[var(--foreground)]">
+                  {profile.preferences?.minHeight && profile.preferences?.maxHeight
+                    ? `${profile.preferences.minHeight} – ${profile.preferences.maxHeight}`
+                    : 'Open to all'}
+                </span>
               </div>
 
               <div className="flex items-center justify-between text-xs py-1.5 border-b border-[var(--border)]">
                 <span className="text-[var(--muted)] font-medium">Education</span>
-                <span className="font-bold text-[var(--foreground)]">Graduate or Post Graduate</span>
+                <span className="font-bold text-[var(--foreground)] truncate max-w-[180px] text-right" title={Array.isArray(profile.preferences?.education) ? profile.preferences.education.join(', ') : undefined}>
+                  {Array.isArray(profile.preferences?.education) && profile.preferences.education.length > 0
+                    ? profile.preferences.education.join(', ')
+                    : 'Open to all'}
+                </span>
               </div>
 
               <div className="flex items-center justify-between text-xs py-1.5 border-b border-[var(--border)]">
                 <span className="text-[var(--muted)] font-medium">Profession</span>
-                <span className="font-bold text-[var(--foreground)]">Working Professional</span>
+                <span className="font-bold text-[var(--foreground)] truncate max-w-[180px] text-right" title={Array.isArray(profile.preferences?.professions) ? profile.preferences.professions.join(', ') : undefined}>
+                  {Array.isArray(profile.preferences?.professions) && profile.preferences.professions.length > 0
+                    ? profile.preferences.professions.join(', ')
+                    : 'Open to all'}
+                </span>
               </div>
 
               <div className="flex items-center justify-between text-xs py-1.5">
-                <span className="text-[var(--muted)] font-medium">Location</span>
-                <span className="font-bold text-[var(--foreground)]">
-                  {profile.state}, Bangalore or UAE
+                <span className="text-[var(--muted)] font-medium">Preferred Locations</span>
+                <span className="font-bold text-[var(--foreground)] truncate max-w-[180px] text-right" title={Array.isArray(profile.preferences?.locations) ? profile.preferences.locations.join(', ') : undefined}>
+                  {Array.isArray(profile.preferences?.locations) && profile.preferences.locations.length > 0
+                    ? profile.preferences.locations.join(', ')
+                    : 'Open to any location'}
                 </span>
               </div>
             </div>
@@ -1121,9 +1177,9 @@ export function ProfileDetail({ id }: { id?: string }) {
             <div className="space-y-2.5 pt-2">
               <div className="rounded-xl bg-[var(--surface-muted)] p-3 border border-[var(--border)] flex items-center justify-between">
                 <div>
-                  <p className="text-[11px] font-semibold text-[var(--muted)]">Phone Number</p>
-                  <p className="text-xs font-bold text-[var(--foreground)] tracking-wider">
-                    +91 98•••• •••12
+                  <p className="text-[11px] font-semibold text-[var(--muted)]">Verified Contact & Phone</p>
+                  <p className="text-xs font-semibold text-[var(--foreground)]">
+                    Protected by Matrimonial Privacy
                   </p>
                 </div>
                 <span className="inline-flex items-center gap-1 rounded-full bg-stone-200/60 px-2 py-0.5 text-[10px] font-bold text-stone-600">
@@ -1134,10 +1190,10 @@ export function ProfileDetail({ id }: { id?: string }) {
               <div className="rounded-xl bg-[var(--surface-muted)] p-3 border border-[var(--border)] flex items-center justify-between">
                 <div>
                   <p className="text-[11px] font-semibold text-[var(--muted)]">
-                    Residential Address
+                    Permanent Residential Address
                   </p>
-                  <p className="text-xs font-bold text-[var(--foreground)]">
-                    ••••••••, {profile.city}
+                  <p className="text-xs font-semibold text-[var(--foreground)]">
+                    {[profile.city, profile.state].filter(Boolean).join(', ') || 'Protected'}
                   </p>
                 </div>
                 <span className="inline-flex items-center gap-1 rounded-full bg-stone-200/60 px-2 py-0.5 text-[10px] font-bold text-stone-600">
@@ -1150,19 +1206,6 @@ export function ProfileDetail({ id }: { id?: string }) {
               Contact numbers and complete family addresses are revealed exclusively when both
               members accept a mutual matrimonial connection.
             </p>
-
-            {/* Premium notice */}
-            <div className="pt-3 border-t border-[var(--border)]">
-              <Link href="/app/subscription" className="focus-ring block w-full">
-                <div className="rounded-2xl bg-[#FAF3EC] p-3 border border-[#EAD7C5] flex items-center gap-3 hover:bg-[#F5EADE] transition active-press">
-                  <IconLock className="h-5 w-5 text-[#8C5D30] shrink-0" />
-                  <p className="text-xs font-semibold text-[#8C5D30] leading-snug">
-                    An active Premium is required to unlock direct chat.{' '}
-                    <strong className="underline font-bold">Upgrade Permit</strong>
-                  </p>
-                </div>
-              </Link>
-            </div>
           </Card>
         </div>
       </div>
@@ -1213,14 +1256,14 @@ export function ProfileDetail({ id }: { id?: string }) {
       >
         <div className="w-full max-w-[420px] p-2 rounded-[2rem] bg-white/90 backdrop-blur-2xl border border-white/70 shadow-[0_12px_36px_rgba(33,27,30,0.14)] pointer-events-auto flex items-center gap-2">
           {isMatched ? (
-            <Link href={`/app/messages?user=${profile.id}`} className="flex-1">
+            <Link href={`/app/messages?user=${profile.id}`} className="flex-1 min-w-0">
               <Button
                 variant="primary"
                 size="md"
-                className="w-full font-bold rounded-2xl text-xs h-11 shadow-sm active-press bg-gradient-to-r from-[var(--primary)] to-[#8E1B3E]"
-                leftIcon={<IconMessageCircle className="h-4 w-4" />}
+                className="w-full font-bold rounded-2xl text-xs h-11 shadow-sm active-press bg-gradient-to-r from-[var(--primary)] to-[#8E1B3E] px-2.5 sm:px-4"
+                leftIcon={<IconMessageCircle className="h-4 w-4 shrink-0" />}
               >
-                Chat with {profile.name.split(' ')[0]}
+                <span className="truncate">Chat with {profile.name.split(' ')[0]}</span>
               </Button>
             </Link>
           ) : isInterestReceived ? (
@@ -1228,57 +1271,67 @@ export function ProfileDetail({ id }: { id?: string }) {
               variant="primary"
               size="md"
               onClick={handleAcceptInterest}
-              className="flex-1 font-bold rounded-2xl text-xs h-11 shadow-sm active-press bg-emerald-600 text-white"
-              leftIcon={<IconCheck className="h-4 w-4" />}
+              className="flex-1 min-w-0 font-bold rounded-2xl text-xs h-11 shadow-sm active-press bg-emerald-600 text-white px-2.5 sm:px-4"
+              leftIcon={<IconCheck className="h-4 w-4 shrink-0" />}
             >
-              Accept Interest
+              <span className="truncate">Accept Interest</span>
+            </Button>
+          ) : isDeclined ? (
+            <Button
+              variant="secondary"
+              size="md"
+              disabled
+              className="w-full font-bold rounded-2xl text-xs h-11 opacity-80 bg-stone-100 text-stone-500 border border-stone-200 cursor-not-allowed select-none shadow-none"
+              leftIcon={<IconBan className="h-4 w-4 text-stone-400 shrink-0" />}
+            >
+              <span>Declined</span>
             </Button>
           ) : (
-            <Button
-              variant={isInterestSent ? 'blush' : 'primary'}
-              size="md"
-              disabled={isInterestSent}
-              onClick={handleSendInterest}
-              className="flex-1 font-bold rounded-2xl text-xs h-11 shadow-sm active-press"
-              leftIcon={isInterestSent ? <IconCheck className="h-4 w-4" /> : <IconHeart className="h-4 w-4 fill-white" />}
-            >
-              {isInterestSent ? 'Interest Sent' : 'Send Interest'}
-            </Button>
-          )}
-
-          <Button
-            variant={isShortlisted ? 'primary' : 'outline'}
-            size="md"
-            onClick={handleToggleShortlist}
-            className={cn(
-              'h-11 px-3.5 rounded-2xl shrink-0 active-press border-[var(--border)] font-bold text-xs flex items-center gap-1.5',
-              isShortlisted && 'bg-[var(--primary)] text-white border-[var(--primary)]'
-            )}
-            aria-label={isShortlisted ? 'Favorited' : 'Favorite'}
-            title={isShortlisted ? 'Favorited' : 'Favorite'}
-            leftIcon={
-              isShortlisted ? (
-                <IconStarFilled className="h-4 w-4 text-white shrink-0" />
-              ) : (
-                <IconStar className="h-4 w-4 text-[var(--primary)] shrink-0" />
-              )
-            }
-          >
-            <span>{isShortlisted ? 'Favorited' : 'Favorite'}</span>
-          </Button>
-
-          {!isMatched && (
-            <Link href={`/app/messages?user=${profile.id}`} className="shrink-0">
+            <>
               <Button
-                variant="secondary"
+                variant={isInterestSent ? 'blush' : 'primary'}
                 size="md"
-                className="h-11 w-11 p-0 rounded-2xl text-xs font-bold border-[var(--border)] flex items-center justify-center active-press"
-                aria-label="Chat"
-                title="Chat"
+                disabled={isInterestSent}
+                onClick={handleSendInterest}
+                className="flex-1 min-w-0 font-bold rounded-2xl text-xs h-11 shadow-sm active-press px-2.5 sm:px-4"
+                leftIcon={isInterestSent ? <IconCheck className="h-4 w-4 shrink-0" /> : <IconHeart className="h-4 w-4 fill-white shrink-0" />}
               >
-                <IconMessageCircle className="h-4.5 w-4.5 text-[var(--primary)]" />
+                <span className="truncate">{isInterestSent ? 'Interest Sent' : 'Send Interest'}</span>
               </Button>
-            </Link>
+
+              <Button
+                variant={isShortlisted ? 'primary' : 'outline'}
+                size="md"
+                onClick={handleToggleShortlist}
+                className={cn(
+                  'h-11 w-11 sm:w-auto p-0 sm:px-3.5 rounded-2xl shrink-0 active-press border-[var(--border)] font-bold text-xs flex items-center justify-center gap-1.5',
+                  isShortlisted && 'bg-[var(--primary)] text-white border-[var(--primary)]'
+                )}
+                aria-label={isShortlisted ? 'Favorited' : 'Favorite'}
+                title={isShortlisted ? 'Favorited' : 'Favorite'}
+                leftIcon={
+                  isShortlisted ? (
+                    <IconStarFilled className="h-4 w-4 text-white shrink-0" />
+                  ) : (
+                    <IconStar className="h-4 w-4 text-[var(--primary)] shrink-0" />
+                  )
+                }
+              >
+                <span className="hidden sm:inline">{isShortlisted ? 'Favorited' : 'Favorite'}</span>
+              </Button>
+
+              <Link href={`/app/messages?user=${profile.id}`} className="shrink-0">
+                <Button
+                  variant="secondary"
+                  size="md"
+                  className="h-11 w-11 p-0 rounded-2xl text-xs font-bold border-[var(--border)] flex items-center justify-center active-press"
+                  aria-label="Chat"
+                  title="Chat"
+                >
+                  <IconMessageCircle className="h-4.5 w-4.5 text-[var(--primary)]" />
+                </Button>
+              </Link>
+            </>
           )}
         </div>
       </div>

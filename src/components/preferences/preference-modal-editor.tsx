@@ -453,35 +453,6 @@ export function PreferenceModalEditor({
                 className="w-full rounded-xl bg-white border border-[#E9DDE0] p-2.5 text-xs text-[#211B1E] outline-none focus:border-[#7A1835]"
               />
             </div>
-
-            {/* Horoscope Toggle */}
-            <div className="flex items-center justify-between rounded-2xl bg-[#FFF9F6] p-4 border border-[#E9DDE0]">
-              <div className="pr-4">
-                <span className="font-bold text-xs text-[#211B1E] block">
-                  Horoscope Matching Preferred
-                </span>
-                <span className="text-[11px] text-[#766B6F]">
-                  Prioritize profiles with matching astrological compatibility (kundali / porutham).
-                </span>
-              </div>
-              <button
-                type="button"
-                onClick={() =>
-                  setDraft({ ...draft, horoscopeMatch: !draft.horoscopeMatch })
-                }
-                className={cn(
-                  'h-6 w-11 rounded-full p-0.5 transition-colors shrink-0',
-                  draft.horoscopeMatch ? 'bg-[#7A1835]' : 'bg-[#E9DDE0]'
-                )}
-              >
-                <div
-                  className={cn(
-                    'h-5 w-5 rounded-full bg-white transition-transform shadow-xs',
-                    draft.horoscopeMatch ? 'translate-x-5' : 'translate-x-0'
-                  )}
-                />
-              </button>
-            </div>
           </div>
         )}
 

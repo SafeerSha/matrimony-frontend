@@ -719,12 +719,12 @@ export default function DiscoverPage() {
 
         {/* Matrimonial Discovery Actions Floating in Overlay */}
         <div 
-          className="w-full pt-1.5 sm:pt-3 flex items-center justify-between gap-2 sm:gap-3"
+          className="w-full pt-2 flex items-center justify-center gap-3 sm:gap-4 px-2"
           data-prevent-swipe="true"
           onClick={(e) => e.stopPropagation()}
           onPointerDown={(e) => e.stopPropagation()}
         >
-          {/* Pass button: Highlighted 360° circle */}
+          {/* Pass button: Large circle */}
           <Button
             variant="secondary"
             size="icon"
@@ -736,61 +736,62 @@ export default function DiscoverPage() {
                 handlePass(profile.id);
               }
             }}
-            className="rounded-full aspect-square h-11 w-11 sm:h-14 sm:w-14 shrink-0 p-0 flex items-center justify-center bg-white/95 backdrop-blur-md text-rose-600 border border-white/70 hover:bg-white hover:scale-110 active-press shadow-lg hover:shadow-xl transition-all"
+            className="rounded-full aspect-square h-12 w-12 sm:h-14 sm:w-14 shrink-0 p-0 flex items-center justify-center bg-white/95 backdrop-blur-md text-rose-600 border border-white/70 hover:bg-white hover:scale-110 active-press shadow-lg hover:shadow-xl transition-all"
             title="Pass"
+            aria-label="Pass"
           >
-            <IconX className="h-5 w-5 sm:h-6.5 sm:w-6.5 stroke-[2.3]" />
+            <IconX className="h-6 w-6 sm:h-6.5 sm:w-6.5 stroke-[2.3]" />
           </Button>
 
-          {/* Chat button: flex-1 end-to-end */}
+          {/* Chat button: Smaller circle, icon only, no label */}
           <Link
             href={`/app/messages?user=${profile.id}`}
-            className="flex-1 min-w-0 focus-ring rounded-full"
+            className="focus-ring rounded-full shrink-0"
             onClick={(e) => e.stopPropagation()}
+            title={`Chat with ${profile.name}`}
+            aria-label="Chat"
           >
             <Button
               variant="secondary"
-              size="md"
-              className="w-full h-10 sm:h-11 rounded-full bg-white/95 backdrop-blur-md text-[var(--foreground)] border border-white/60 shadow-md hover:bg-white hover:scale-[1.02] active-press flex items-center justify-center gap-1.5 px-2.5 sm:px-3 text-xs sm:text-sm font-semibold"
-              leftIcon={<IconMessageCircleFilled className="h-4 w-4 text-[var(--primary)] shrink-0" />}
+              size="icon"
+              className="rounded-full aspect-square h-9.5 w-9.5 sm:h-11 sm:w-11 shrink-0 p-0 bg-white/95 backdrop-blur-md text-[var(--foreground)] border border-white/60 shadow-md hover:bg-white hover:scale-110 active-press flex items-center justify-center transition-all"
+              title={`Chat with ${profile.name}`}
+              aria-label="Chat"
             >
-              <span className="whitespace-nowrap">Chat</span>
+              <IconMessageCircleFilled className="h-4.5 w-4.5 sm:h-5 sm:w-5 text-[var(--primary)] shrink-0" />
             </Button>
           </Link>
 
-          {/* Favorite button: flex-1 end-to-end */}
+          {/* Favorite button: Smaller circle, icon only, no label */}
           <Button
             variant={
               shortlistedIds.has(profile.id) ? 'primary' : 'outline'
             }
-            size="md"
+            size="icon"
             onClick={(e) => {
               e.stopPropagation();
               handleShortlist(profile.id, profile.name);
             }}
             className={cn(
-              'flex-1 min-w-0 h-10 sm:h-11 rounded-full border shadow-md active-press transition-all flex items-center justify-center gap-1.5 px-2.5 sm:px-3 text-xs sm:text-sm font-semibold',
+              'rounded-full aspect-square h-9.5 w-9.5 sm:h-11 sm:w-11 shrink-0 p-0 border shadow-md active-press transition-all flex items-center justify-center',
               shortlistedIds.has(profile.id)
-                ? 'bg-[var(--primary)] text-white border-transparent hover:brightness-110'
-                : 'bg-white/95 backdrop-blur-md text-[var(--foreground)] border border-white/60 hover:bg-white hover:scale-[1.02]'
+                ? 'bg-[var(--primary)] text-white border-transparent hover:brightness-110 hover:scale-110'
+                : 'bg-white/95 backdrop-blur-md text-[var(--foreground)] border border-white/60 hover:bg-white hover:scale-110'
             )}
-            leftIcon={
-              <IconStarFilled
-                className={cn(
-                  'h-4 w-4 shrink-0',
-                  shortlistedIds.has(profile.id)
-                    ? 'text-white'
-                    : 'text-[var(--primary)]'
-                )}
-              />
-            }
+            title={shortlistedIds.has(profile.id) ? 'Favorited' : `Add ${profile.name} to favorites`}
+            aria-label={shortlistedIds.has(profile.id) ? 'Favorited' : 'Favorite'}
           >
-            <span className="whitespace-nowrap">
-              {shortlistedIds.has(profile.id) ? 'Favorited' : 'Favorite'}
-            </span>
+            <IconStarFilled
+              className={cn(
+                'h-4.5 w-4.5 sm:h-5 sm:w-5 shrink-0',
+                shortlistedIds.has(profile.id)
+                  ? 'text-white'
+                  : 'text-[var(--primary)]'
+              )}
+            />
           </Button>
 
-          {/* Send Interest button: Highlighted 360° circle */}
+          {/* Send Interest button: Large circle */}
           <Button
             variant="secondary"
             size="icon"
@@ -805,14 +806,15 @@ export default function DiscoverPage() {
               }
             }}
             className={cn(
-              "rounded-full aspect-square h-11 w-11 sm:h-14 sm:w-14 shrink-0 p-0 flex items-center justify-center backdrop-blur-md transition-all",
+              "rounded-full aspect-square h-12 w-12 sm:h-14 sm:w-14 shrink-0 p-0 flex items-center justify-center backdrop-blur-md transition-all",
               sentInterestIds.has(profile.id)
                 ? "bg-rose-50 border border-rose-200 text-rose-300 opacity-60 cursor-default"
                 : "bg-white/95 text-rose-600 border border-white/70 hover:bg-white hover:scale-110 active-press shadow-lg hover:shadow-xl"
             )}
             title={sentInterestIds.has(profile.id) ? "Interest already sent" : "Send Interest"}
+            aria-label="Send Interest"
           >
-            <IconHeart className={cn("h-5.5 w-5.5 sm:h-6.5 sm:w-6.5 fill-rose-600", sentInterestIds.has(profile.id) && "opacity-50")} />
+            <IconHeart className={cn("h-6 w-6 sm:h-6.5 sm:w-6.5 fill-rose-600", sentInterestIds.has(profile.id) && "opacity-50")} />
           </Button>
         </div>
       </div>
@@ -1170,8 +1172,8 @@ export default function DiscoverPage() {
                     )}
 
                     {/* Matrimonial Discovery Actions Floating in Overlay */}
-                    <div className="w-full pt-2.5 flex items-center justify-between md:justify-center gap-2 sm:gap-2.5 lg:gap-4 md:px-2">
-                      {/* Pass button: Highlighted 360° circle */}
+                    <div className="w-full pt-2.5 flex items-center justify-center gap-3 sm:gap-3.5 lg:gap-4 px-2">
+                      {/* Pass button: Large circle */}
                       <Button
                         variant="secondary"
                         size="icon"
@@ -1179,58 +1181,58 @@ export default function DiscoverPage() {
                           e.stopPropagation();
                           handlePass(profile.id);
                         }}
-                        className="rounded-full aspect-square h-10 w-10 md:h-12 md:w-12 shrink-0 p-0 flex items-center justify-center bg-white/95 backdrop-blur-md text-rose-600 border border-white/70 hover:bg-white hover:scale-110 active-press shadow-lg hover:shadow-xl transition-all"
+                        className="rounded-full aspect-square h-12 w-12 sm:h-13 sm:w-13 md:h-13 md:w-13 shrink-0 p-0 flex items-center justify-center bg-white/95 backdrop-blur-md text-rose-600 border border-white/70 hover:bg-white hover:scale-110 active-press shadow-lg hover:shadow-xl transition-all"
                         title="Pass"
+                        aria-label="Pass"
                       >
-                        <IconX className="h-5 w-5 md:h-6 md:w-6 stroke-[2.3]" />
+                        <IconX className="h-5.5 w-5.5 sm:h-6 sm:w-6 stroke-[2.3]" />
                       </Button>
 
-                      {/* Chat button: Pill on mobile, small circle on desktop */}
+                      {/* Chat button: Smaller circle, icon only, no label */}
                       <Link
                         href={`/app/messages?user=${profile.id}`}
                         onClick={(e) => e.stopPropagation()}
-                        className="flex-1 min-w-0 focus-ring rounded-full md:flex-none md:shrink-0"
+                        className="focus-ring rounded-full shrink-0"
                         title={`Chat with ${profile.name}`}
+                        aria-label="Chat"
                       >
                         <Button
                           variant="secondary"
-                          className="w-full h-10 md:h-9 md:w-9 rounded-full md:aspect-square bg-white/95 backdrop-blur-md text-[var(--foreground)] border border-white/60 shadow-md hover:bg-white hover:scale-110 active-press flex items-center justify-center gap-1.5 md:gap-0 px-2.5 md:p-0 text-xs font-semibold transition-all"
-                          leftIcon={<IconMessageCircleFilled className="h-4.5 w-4.5 md:h-4 md:w-4 text-[var(--primary)] shrink-0 md:-ml-0" />}
+                          size="icon"
+                          className="rounded-full aspect-square h-9.5 w-9.5 sm:h-10 sm:w-10 md:h-10 md:w-10 shrink-0 p-0 bg-white/95 backdrop-blur-md text-[var(--foreground)] border border-white/60 shadow-md hover:bg-white hover:scale-110 active-press flex items-center justify-center transition-all"
                           title={`Chat with ${profile.name}`}
                           aria-label="Chat"
                         >
-                          <span className="md:hidden truncate">Chat</span>
+                          <IconMessageCircleFilled className="h-4.5 w-4.5 text-[var(--primary)] shrink-0" />
                         </Button>
                       </Link>
 
-                      {/* Favorite button: Pill on mobile, small circle on desktop */}
+                      {/* Favorite button: Smaller circle, icon only, no label */}
                       <Button
                         variant={isShortlisted ? 'primary' : 'outline'}
+                        size="icon"
                         onClick={(e) => {
                           e.stopPropagation();
                           handleShortlist(profile.id, profile.name);
                         }}
                         className={cn(
-                          'flex-1 min-w-0 h-10 md:h-9 md:w-9 rounded-full md:aspect-square border shadow-md active-press transition-all flex items-center justify-center gap-1.5 md:gap-0 px-2.5 md:p-0 text-xs font-semibold md:shrink-0',
+                          'rounded-full aspect-square h-9.5 w-9.5 sm:h-10 sm:w-10 md:h-10 md:w-10 shrink-0 p-0 border shadow-md active-press transition-all flex items-center justify-center',
                           isShortlisted
-                            ? 'bg-[var(--primary)] text-white border-transparent hover:brightness-110 md:hover:scale-110'
-                            : 'bg-white/95 backdrop-blur-md text-[var(--foreground)] border border-white/60 hover:bg-white md:hover:scale-110'
+                            ? 'bg-[var(--primary)] text-white border-transparent hover:brightness-110 hover:scale-110'
+                            : 'bg-white/95 backdrop-blur-md text-[var(--foreground)] border border-white/60 hover:bg-white hover:scale-110'
                         )}
-                        leftIcon={
-                          <IconStarFilled
-                            className={cn(
-                              'h-4.5 w-4.5 md:h-4 md:w-4 shrink-0 md:-ml-0',
-                              isShortlisted ? 'text-white' : 'text-[var(--primary)]'
-                            )}
-                          />
-                        }
                         title={isShortlisted ? 'Favorited' : `Add ${profile.name} to favorites`}
                         aria-label={isShortlisted ? 'Favorited' : 'Favorite'}
                       >
-                        <span className="md:hidden truncate">{isShortlisted ? 'Favorited' : 'Favorite'}</span>
+                        <IconStarFilled
+                          className={cn(
+                            'h-4.5 w-4.5 shrink-0',
+                            isShortlisted ? 'text-white' : 'text-[var(--primary)]'
+                          )}
+                        />
                       </Button>
 
-                      {/* Send Interest button: Highlighted 360° circle */}
+                      {/* Send Interest button: Large circle */}
                       <Button
                         variant="secondary"
                         size="icon"
@@ -1241,7 +1243,7 @@ export default function DiscoverPage() {
                           handleSendInterest(profile.id, profile.name);
                         }}
                         className={cn(
-                          "rounded-full aspect-square h-10 w-10 md:h-12 md:w-12 shrink-0 p-0 flex items-center justify-center backdrop-blur-md transition-all",
+                          "rounded-full aspect-square h-12 w-12 sm:h-13 sm:w-13 md:h-13 md:w-13 shrink-0 p-0 flex items-center justify-center backdrop-blur-md transition-all",
                           isInterestSent
                             ? "bg-rose-50 border border-rose-200 text-rose-300 opacity-60 cursor-default"
                             : isInterestReceived
@@ -1255,10 +1257,11 @@ export default function DiscoverPage() {
                             ? "Accept Interest & Connect"
                             : "Send Interest"
                         }
+                        aria-label="Send Interest"
                       >
                         <IconHeart
                           className={cn(
-                            "h-5 w-5 md:h-6 md:w-6",
+                            "h-5.5 w-5.5 sm:h-6 sm:w-6",
                             isInterestSent
                               ? "fill-rose-600 opacity-50"
                               : isInterestReceived

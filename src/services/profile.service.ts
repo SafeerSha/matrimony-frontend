@@ -60,11 +60,16 @@ export interface UserProfile {
   lookingFor?: string;
   photos?: ProfilePhoto[];
   preferences?: any;
+  compatibility?: number;
+  compatibilityHighlights?: Array<{ title: string; value: string; description: string }>;
   connectionStatus?: 'SENT' | 'RECEIVED' | 'MATCHED' | 'SHORTLISTED' | 'REJECTED' | null;
   isMatched?: boolean;
   isInterestSent?: boolean;
   isInterestReceived?: boolean;
   isShortlisted?: boolean;
+  isDeclined?: boolean;
+  isDeclinedByThem?: boolean;
+  isDeclinedByMe?: boolean;
 }
 
 export const profileService = {

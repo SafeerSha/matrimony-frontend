@@ -7,7 +7,6 @@ export interface PartnerPreferences {
   openToRelocate: boolean;
   religions: string[];
   caste: string;
-  horoscopeMatch: boolean;
   education: string[];
   professions: string[];
   minIncome: string;
@@ -27,7 +26,6 @@ export const defaultPreferences: PartnerPreferences = {
   openToRelocate: true,
   religions: ['Open to all communities'],
   caste: 'Open to all',
-  horoscopeMatch: false,
   education: ['Graduate Degree', 'Postgraduate / Masters'],
   professions: ['Software / IT', 'Healthcare / Medical', 'Design / Creative'],
   minIncome: '₹8 Lakhs+',

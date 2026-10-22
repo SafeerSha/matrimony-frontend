@@ -17,7 +17,6 @@ import {
   IconSend,
   IconUserCheck,
   IconBan,
-  IconRefresh,
 } from '@tabler/icons-react';
 import { SectionHeader } from '@/components/ui/section-header';
 import { Card } from '@/components/ui/card';
@@ -237,19 +236,8 @@ function InterestsContent() {
           </h1>
         </div>
 
-        {/* Actions: Refresh and Quick Discovery CTA pill */}
+        {/* Actions: Quick Discovery CTA pill */}
         <div className="flex items-center gap-2 shrink-0">
-          <Button
-            variant="secondary"
-            size="md"
-            onClick={() => fetchConnections()}
-            className="rounded-2xl text-xs font-bold gap-1 active-press h-9 sm:h-10 px-3 sm:px-3.5"
-            leftIcon={<IconRefresh className={cn("h-4 w-4 text-[var(--primary)] shrink-0", isLoading && "animate-spin")} />}
-            title="Refresh interests"
-          >
-            <span className="hidden sm:inline">Refresh</span>
-          </Button>
-
           <Link href="/app/discover" className="focus-ring shrink-0">
             <Button
               variant="secondary"

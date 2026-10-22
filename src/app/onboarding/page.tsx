@@ -112,13 +112,15 @@ export default function OnboardingPage() {
             lookingIn: parsed.lookingIn || prev.lookingIn || "",
             nationality: parsed.nationality || prev.nationality || "Indian",
             state: parsed.state || prev.state || "Kerala",
+            city: parsed.city || prev.city || "",
             fatherName: parsed.fatherName || prev.fatherName || "",
             religion: parsed.religion || prev.religion || "Christian",
             caste: parsed.caste || prev.caste || "Roman Catholic Syrian Christian",
             permanentAddress: parsed.permanentAddress || prev.permanentAddress || "",
             height: parsed.height || prev.height || "170 cm",
             employmentStatus: parsed.employmentStatus || prev.employmentStatus || "Govt. Employ",
-            income: parsed.income || prev.income || "5 to 12 lakhs",
+            income: parsed.income || parsed.annualIncome || prev.income || prev.annualIncome || "5 to 12 lakhs",
+            annualIncome: parsed.annualIncome || parsed.income || prev.annualIncome || prev.income || "5 to 12 lakhs",
             fatherAlive: prev.fatherAlive !== undefined ? prev.fatherAlive : true,
             motherAlive: prev.motherAlive !== undefined ? prev.motherAlive : true,
             brothersCount: prev.brothersCount || 0,
@@ -235,6 +237,7 @@ export default function OnboardingPage() {
       // 2. Nationality & State
       const nationalityVal = (formData.get("nationality") as string || profileData.nationality || "Indian").trim();
       const stateVal = (formData.get("state") as string || profileData.state || "Kerala").trim();
+      const cityVal = (formData.get("city") as string || profileData.city || "").trim();
 
       // 3. Father's Name
       const fatherNameVal = (formData.get("fatherName") as string || profileData.fatherName || "").trim();
@@ -299,6 +302,7 @@ export default function OnboardingPage() {
         name: `${firstNameVal} ${lastNameVal}`.trim(),
         nationality: nationalityVal,
         state: stateVal,
+        city: cityVal,
         fatherName: fatherNameVal,
         religion: religionVal,
         caste: casteVal,
@@ -308,6 +312,7 @@ export default function OnboardingPage() {
         education: eduVal,
         employmentStatus: employmentStatusVal,
         income: incomeVal,
+        annualIncome: incomeVal,
         height: heightVal,
         occupation: profVal || employmentStatusVal,
         profession: profVal || employmentStatusVal,
@@ -542,7 +547,8 @@ export default function OnboardingPage() {
         occupation: profileData.occupation,
         profession: profileData.profession || profileData.occupation,
         employmentStatus: profileData.employmentStatus,
-        income: profileData.income,
+        income: profileData.annualIncome || profileData.income,
+        annualIncome: profileData.annualIncome || profileData.income,
         fatherAlive: profileData.fatherAlive !== false,
         motherAlive: profileData.motherAlive !== false,
         brothersCount: profileData.brothersCount || 0,
@@ -1003,8 +1009,8 @@ export default function OnboardingPage() {
                           </div>
                         </div>
 
-                        {/* 2. Nationality & State */}
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        {/* 2. Nationality, State & City */}
+                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                           <div>
                             <label className="block text-xs font-semibold uppercase tracking-wider text-[var(--muted-strong)] mb-1.5">
                               Nationality <span className="text-rose-500">*</span>
@@ -1034,6 +1040,22 @@ export default function OnboardingPage() {
                               }
                               placeholder="Select State"
                               maxHeight="max-h-[220px]"
+                            />
+                          </div>
+
+                          <div>
+                            <label className="block text-xs font-semibold uppercase tracking-wider text-[var(--muted-strong)] mb-1.5">
+                              City / District
+                            </label>
+                            <input
+                              name="city"
+                              type="text"
+                              value={profileData.city ?? ""}
+                              onChange={(e) =>
+                                setProfileData((prev: any) => ({ ...prev, city: e.target.value }))
+                              }
+                              placeholder="e.g. Kochi, Kozhikode"
+                              className="h-12 w-full rounded-xl border border-[var(--border)] bg-white px-4 text-sm text-[var(--foreground)] outline-none focus:border-[var(--primary)] focus:ring-4 focus:ring-[var(--primary)]/10 transition"
                             />
                           </div>
                         </div>
@@ -1326,10 +1348,10 @@ export default function OnboardingPage() {
                               label="9. Annual Income"
                               required
                               name="income"
-                              value={profileData.income ?? "5 to 12 lakhs"}
+                              value={profileData.annualIncome || profileData.income || "5 to 12 lakhs"}
                               options={CLIENT_INCOME_OPTIONS.map((opt) => ({ value: opt, label: opt }))}
                               onChange={(val) =>
-                                setProfileData((prev: any) => ({ ...prev, income: val }))
+                                setProfileData((prev: any) => ({ ...prev, income: val, annualIncome: val }))
                               }
                               placeholder="Select Income"
                               maxHeight="max-h-[220px]"

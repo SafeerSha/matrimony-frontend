@@ -115,7 +115,6 @@ export function PartnerPreferencesEditor({
         professions: Array.isArray(preferences.professions) ? preferences.professions : [preferences.professions].filter(Boolean),
         openToRelocate: Boolean(preferences.openToRelocate),
         caste: preferences.caste || 'Open to all',
-        horoscopeMatch: Boolean(preferences.horoscopeMatch),
         minIncome: preferences.minIncome || "Doesn't matter",
         partnerIntent: preferences.partnerIntent,
         lifestyleHabits: preferences.lifestyleHabits,
@@ -349,11 +348,6 @@ export function PartnerPreferencesEditor({
                 <span className="rounded-xl bg-[#FAF3EC] text-[#7A1835] px-3 py-1 text-xs font-semibold border border-[#EAD8C7]">
                   Caste: {preferences.caste}
                 </span>
-                {preferences.horoscopeMatch && (
-                  <span className="rounded-xl bg-purple-50 text-purple-700 px-3 py-1 text-xs font-semibold border border-purple-200">
-                    Horoscope Required
-                  </span>
-                )}
               </div>
             }
           />
