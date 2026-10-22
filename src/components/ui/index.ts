@@ -21,3 +21,4 @@ export * from "./profession-combobox";
 export * from "./employment-status-selector";
 export * from "./modern-select";
 export * from "./celebration-modal";
+export * from "./modern-otp-input";

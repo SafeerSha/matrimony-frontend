@@ -18,6 +18,7 @@ import {
   IconDeviceMobile,
   IconKey,
   IconUserPlus,
+  IconRefresh,
 } from "@tabler/icons-react";
 import { Logo } from "@/components/layout/logo";
 import { cn } from "@/lib/cn";
@@ -25,6 +26,7 @@ import { authService, profileService } from "@/services";
 import { toast } from "@/lib/toast";
 import { resolvePostAuthRoute } from "@/lib/auth/auth-utils";
 import { LookingForModal } from "@/components/hero";
+import { ModernOtpInput } from "@/components/ui";
 
 export default function LoginPage() {
   const [isRegisterModalOpen, setIsRegisterModalOpen] = useState(false);
@@ -32,17 +34,15 @@ export default function LoginPage() {
   const [otpStep, setOtpStep] = useState<"phone" | "code">("phone");
   const [phone, setPhone] = useState("");
   const [otp, setOtp] = useState("");
-  const otpInputRef = useRef<HTMLInputElement>(null);
+  const [resendTimer, setResendTimer] = useState(30);
 
-  // Auto-focus OTP input when code screen appears
+  // Resend OTP countdown effect
   useEffect(() => {
-    if (authMethod === "otp" && otpStep === "code") {
-      const timer = setTimeout(() => {
-        otpInputRef.current?.focus();
-      }, 50);
+    if (otpStep === "code" && resendTimer > 0) {
+      const timer = setTimeout(() => setResendTimer((prev) => prev - 1), 1000);
       return () => clearTimeout(timer);
     }
-  }, [authMethod, otpStep]);
+  }, [otpStep, resendTimer]);
 
   const [identifier, setIdentifier] = useState("");
   const [password, setPassword] = useState("");
@@ -107,6 +107,7 @@ export default function LoginPage() {
     try {
       await authService.sendOtp(cleanPhone, "login");
       setOtpStep("code");
+      setResendTimer(30);
       toast.info("Verification code sent", `We've sent a 6-digit OTP to ${cleanPhone}`);
     } catch (err: any) {
       const isAccountNotFound =
@@ -152,9 +153,11 @@ export default function LoginPage() {
     }
   };
 
-  // 2. Handle Verify OTP
-  const handleVerifyOtp = async (e: React.FormEvent) => {
-    e.preventDefault();
+  // 2. Core Verify OTP Execution (supports auto-submit on 6th digit)
+  const executeVerifyOtp = async (codeToVerify?: string) => {
+    const code = (codeToVerify ?? otp).trim();
+    if (!code || code.length !== 6 || isLoading) return;
+
     setIsLoading(true);
     setErrorMessage(null);
 
@@ -163,7 +166,7 @@ export default function LoginPage() {
       const cleanDigits = rawDigits.startsWith("91") && rawDigits.length > 10 ? rawDigits.slice(2) : rawDigits;
       const cleanPhone = `+91 ${cleanDigits}`;
 
-      const res = await authService.verifyOtp(cleanPhone, otp.trim());
+      const res = await authService.verifyOtp(cleanPhone, code);
       const { url, isDraft } = await determineDestination(res);
 
       if (isDraft) {
@@ -223,6 +226,11 @@ export default function LoginPage() {
       toast.error("Sign in failed", msg);
       setIsLoading(false);
     }
+  };
+
+  const handleVerifyOtp = async (e: React.FormEvent) => {
+    e.preventDefault();
+    executeVerifyOtp();
   };
 
   // 3. Handle Password Login (supports Email or Mobile)
@@ -660,7 +668,6 @@ export default function LoginPage() {
                       <div className="group">
                         <div className="flex items-center justify-between mb-1.5">
                           <label
-                            htmlFor="otp"
                             className="block text-[11px] sm:text-xs font-semibold uppercase tracking-wider text-[var(--muted-strong)]"
                           >
                             Enter 6-Digit OTP
@@ -670,29 +677,34 @@ export default function LoginPage() {
                             onClick={() => {
                               setOtpStep("phone");
                               setOtp("");
+                              setErrorMessage(null);
                             }}
-                            className="text-xs font-medium text-[var(--primary)] hover:underline"
+                            className="text-xs font-semibold text-[var(--primary)] hover:underline cursor-pointer"
                           >
                             Change number
                           </button>
                         </div>
-                        <p className="text-xs text-[var(--muted)] mb-2">
+                        <p className="text-xs text-[var(--muted)] mb-3">
                           Sent to <span className="font-semibold text-[var(--foreground)]">+91 {phone.replace(/\D/g, "").slice(-10)}</span>
                         </p>
-                        <input
-                          ref={otpInputRef}
-                          id="otp"
-                          type="text"
-                          inputMode="numeric"
-                          autoComplete="one-time-code"
-                          autoFocus
-                          required
-                          maxLength={6}
-                          value={otp}
-                          onChange={(e) => setOtp(e.target.value.replace(/\D/g, ""))}
-                          placeholder="• • • • • •"
-                          className="h-13 w-full rounded-xl border border-[var(--border)] bg-slate-50/70 px-4 text-center text-xl sm:text-2xl tracking-[0.4em] font-mono font-semibold text-[var(--foreground)] placeholder:text-slate-300 placeholder:tracking-[0.4em] outline-none transition-all duration-200 focus:bg-white focus:border-[var(--primary)] focus:ring-4 focus:ring-[var(--primary)]/10"
-                        />
+
+                        {/* Modern Segmented 3-3 Pin Input */}
+                        <div className="my-2">
+                          <ModernOtpInput
+                            value={otp}
+                            onChange={(val) => {
+                              setOtp(val);
+                              setErrorMessage(null);
+                            }}
+                            onComplete={(code) => {
+                              setTimeout(() => {
+                                executeVerifyOtp(code);
+                              }, 150);
+                            }}
+                            disabled={isLoading}
+                            error={Boolean(errorMessage)}
+                          />
+                        </div>
                       </div>
 
                       <div className="pt-2">
@@ -705,7 +717,7 @@ export default function LoginPage() {
                             "shadow-[0_10px_24px_rgba(116,17,41,0.28)]",
                             "hover:shadow-[0_14px_30px_rgba(116,17,41,0.38)] hover:brightness-105",
                             "active:scale-[0.98] transition-all duration-200",
-                            "disabled:cursor-not-allowed disabled:opacity-60"
+                            "disabled:cursor-not-allowed disabled:opacity-60 cursor-pointer"
                           )}
                         >
                           {isLoading ? (
@@ -722,14 +734,26 @@ export default function LoginPage() {
                         </button>
                       </div>
 
-                      <div className="text-center pt-1">
+                      <div className="text-center pt-1.5 flex items-center justify-center">
                         <button
                           type="button"
                           onClick={handleSendOtp}
-                          disabled={isLoading}
-                          className="text-xs text-[var(--muted)] hover:text-[var(--primary)] transition-colors"
+                          disabled={isLoading || resendTimer > 0}
+                          className={cn(
+                            "text-xs font-medium transition-colors inline-flex items-center gap-1.5",
+                            resendTimer > 0
+                              ? "text-slate-400 cursor-not-allowed"
+                              : "text-[var(--primary)] hover:text-[var(--primary-deep)] hover:underline cursor-pointer"
+                          )}
                         >
-                          Didn&apos;t receive code? Resend OTP
+                          {resendTimer > 0 ? (
+                            <span>Didn&apos;t receive code? Resend in <strong className="font-mono text-slate-700">{resendTimer}s</strong></span>
+                          ) : (
+                            <>
+                              <IconRefresh className="h-3.5 w-3.5" />
+                              <span>Didn&apos;t receive code? Resend OTP</span>
+                            </>
+                          )}
                         </button>
                       </div>
                     </form>

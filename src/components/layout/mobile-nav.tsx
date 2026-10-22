@@ -217,7 +217,7 @@ export function MobileNav({
         {/* DOCK */}
         <nav
           className={cn(
-            "flex w-full items-center justify-between rounded-[2rem] border border-[var(--champagne-border)]/80 bg-white/90 backdrop-blur-2xl shadow-[0_12px_36px_rgba(26,12,18,0.12)] px-3 py-2"
+            "flex w-full items-center justify-between rounded-[2rem] border border-[var(--champagne-border)]/80 bg-white/90 backdrop-blur-2xl shadow-[0_12px_36px_rgba(26,12,18,0.12)] px-2.5 py-1.5"
           )}
         >
           {dockItems.map(({ label, href, icon: Icon, isActive }) => (
@@ -226,7 +226,7 @@ export function MobileNav({
               href={href}
               aria-label={label}
               className={cn(
-                "focus-ring group relative flex items-center justify-center rounded-2xl w-[44px] h-[44px] transition-all duration-200 select-none active-press shrink-0",
+                "focus-ring group relative flex items-center justify-center rounded-2xl w-[40px] h-[40px] transition-all duration-200 select-none active-press shrink-0",
                 isActive
                   ? "bg-gradient-to-br from-[var(--primary)] to-[var(--primary-deep)] text-white shadow-[0_4px_14px_rgba(128,24,53,0.35)] font-semibold"
                   : "text-[var(--muted-strong)] hover:bg-black/5 hover:text-[var(--foreground)] border border-transparent"
@@ -248,7 +248,7 @@ export function MobileNav({
           <button
             onClick={() => setIsMoreMenuOpen(!isMoreMenuOpen)}
             className={cn(
-              "focus-ring group relative flex items-center justify-center rounded-2xl w-[44px] h-[44px] transition-all duration-200 select-none active-press shrink-0",
+              "focus-ring group relative flex items-center justify-center rounded-2xl w-[40px] h-[40px] transition-all duration-200 select-none active-press shrink-0",
               isMoreMenuOpen
                 ? "bg-[var(--foreground)]/10 text-[var(--foreground)] border border-[var(--foreground)]/15 shadow-xs"
                 : "text-[var(--muted-strong)] hover:bg-black/5 hover:text-[var(--foreground)] border border-transparent"

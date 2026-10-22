@@ -55,7 +55,7 @@ export function ListItemSkeleton() {
 
 export function SwipeCardSkeleton() {
   return (
-    <div className="relative h-full min-h-[350px] max-h-[580px] w-full max-w-2xl mx-auto rounded-[2rem] sm:rounded-[2.5rem] overflow-hidden border border-[var(--champagne-border)] bg-white shadow-[var(--elevation-floating)]">
+    <div className="relative h-full min-h-[350px] w-full max-w-2xl mx-auto rounded-[2rem] sm:rounded-[2.5rem] overflow-hidden border border-[var(--champagne-border)] bg-white shadow-[var(--elevation-floating)]">
       <Skeleton className="absolute inset-0 h-full w-full rounded-none" />
       <div className="absolute inset-x-0 bottom-0 p-3.5 sm:p-5 md:p-8 flex flex-col gap-2.5 sm:gap-4 z-10">
         <Skeleton className="h-8 sm:h-10 w-2/3 rounded-xl bg-white/80" />

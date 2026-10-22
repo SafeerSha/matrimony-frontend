@@ -20,6 +20,7 @@ import { Logo } from "@/components/layout/logo";
 import { cn } from "@/lib/cn";
 import { authService, resolvePostAuthRoute } from "@/services";
 import { toast } from "@/lib/toast";
+import { ModernOtpInput } from "@/components/ui";
 
 export default function VerifyPage() {
   const router = useRouter();
@@ -409,19 +410,15 @@ export default function VerifyPage() {
                       )}
                     </button>
                   </div>
-                  <div className="relative">
-                    <input
-                      id="phoneOtp"
-                      type="text"
-                      inputMode="numeric"
-                      autoComplete="one-time-code"
-                      autoFocus
-                      required
-                      maxLength={6}
+                  <div className="my-2">
+                    <ModernOtpInput
                       value={phoneOtp}
-                      onChange={(e) => setPhoneOtp(e.target.value.replace(/\D/g, ""))}
-                      placeholder="• • • • • •"
-                      className="h-12 sm:h-13 w-full rounded-xl border border-[var(--border)] bg-slate-50/70 px-4 text-center text-lg sm:text-2xl tracking-[0.4em] font-mono font-semibold text-[var(--foreground)] placeholder:text-slate-300 placeholder:tracking-[0.4em] outline-none transition-all duration-200 focus:bg-white focus:border-[var(--primary)] focus:ring-4 focus:ring-[var(--primary)]/10"
+                      onChange={(val) => {
+                        setPhoneOtp(val);
+                        setErrorMessage(null);
+                      }}
+                      disabled={isLoading}
+                      error={Boolean(errorMessage)}
                     />
                   </div>
                 </div>
@@ -431,7 +428,6 @@ export default function VerifyPage() {
                   <div>
                     <div className="flex items-center justify-between mb-1.5">
                       <label
-                        htmlFor="emailOtp"
                         className="block text-[11px] sm:text-xs font-semibold uppercase tracking-wider text-[var(--muted-strong)]"
                       >
                         Email Verification Code
@@ -452,18 +448,16 @@ export default function VerifyPage() {
                         )}
                       </button>
                     </div>
-                    <div className="relative">
-                      <input
-                        id="emailOtp"
-                        type="text"
-                        inputMode="numeric"
-                        autoComplete="one-time-code"
-                        required
-                        maxLength={6}
+                    <div className="my-2">
+                      <ModernOtpInput
                         value={emailOtp}
-                        onChange={(e) => setEmailOtp(e.target.value.replace(/\D/g, ""))}
-                        placeholder="• • • • • •"
-                        className="h-12 sm:h-13 w-full rounded-xl border border-[var(--border)] bg-slate-50/70 px-4 text-center text-lg sm:text-2xl tracking-[0.4em] font-mono font-semibold text-[var(--foreground)] placeholder:text-slate-300 placeholder:tracking-[0.4em] outline-none transition-all duration-200 focus:bg-white focus:border-[var(--primary)] focus:ring-4 focus:ring-[var(--primary)]/10"
+                        onChange={(val) => {
+                          setEmailOtp(val);
+                          setErrorMessage(null);
+                        }}
+                        autoFocus={false}
+                        disabled={isLoading}
+                        error={Boolean(errorMessage)}
                       />
                     </div>
                   </div>
