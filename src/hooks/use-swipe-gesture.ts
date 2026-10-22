@@ -1,4 +1,4 @@
-import { useState, useCallback, useRef } from 'react';
+import { useState, useCallback, useRef, useEffect } from 'react';
 
 interface SwipeGestureProps {
   onSwipeLeft?: () => void;
@@ -32,6 +32,15 @@ export function useSwipeGesture({
   const isVerticalLock = useRef(false);
   const dragOccurredRef = useRef(false);
   const currentTargetRef = useRef<HTMLElement | null>(null);
+  const animTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (animTimeoutRef.current) {
+        clearTimeout(animTimeoutRef.current);
+      }
+    };
+  }, []);
 
   const resetState = useCallback(() => {
     setDragOffset({ x: 0, y: 0 });
@@ -152,23 +161,24 @@ export function useSwipeGesture({
       setIsAnimatingOut(true);
       
       const screenW = typeof window !== 'undefined' ? window.innerWidth : 500;
-      // Animate off screen
+      // Animate off screen with generous clearance
       setDragOffset({
-        x: direction === 'right' ? screenW * 1.3 : -screenW * 1.3,
+        x: direction === 'right' ? screenW * 1.4 : -screenW * 1.4,
         y: dragOffset.y + velocity.current.y * 150
       });
 
-      // Wait for animation to finish before calling handler
-      setTimeout(() => {
+      // Wait for CSS transition to finish before triggering handler.
+      // Do NOT call resetState() here: the card stays off-screen until unmounted by the parent.
+      if (animTimeoutRef.current) clearTimeout(animTimeoutRef.current);
+      animTimeoutRef.current = setTimeout(() => {
         if (direction === 'right') {
           onSwipeRight?.();
         } else {
           onSwipeLeft?.();
         }
-        resetState();
       }, 250); // Matches CSS transition duration
     } else {
-      // Cancel swipe
+      // Cancel swipe - return smoothly to center
       setDragOffset({ x: 0, y: 0 });
       onSwipeCancel?.();
     }
@@ -181,7 +191,7 @@ export function useSwipeGesture({
     onSwipeCancel?.();
   }, [isDragging, onSwipeCancel]);
 
-  // Programmatic swipe triggers (e.g. for buttons)
+  // Programmatic swipe triggers (e.g. for action buttons)
   const triggerSwipe = useCallback((direction: 'left' | 'right') => {
     if (isAnimatingOut) return;
     
@@ -190,19 +200,19 @@ export function useSwipeGesture({
     
     const screenW = typeof window !== 'undefined' ? window.innerWidth : 500;
     setDragOffset({
-      x: direction === 'right' ? screenW * 1.3 : -screenW * 1.3,
+      x: direction === 'right' ? screenW * 1.4 : -screenW * 1.4,
       y: 0
     });
 
-    setTimeout(() => {
+    if (animTimeoutRef.current) clearTimeout(animTimeoutRef.current);
+    animTimeoutRef.current = setTimeout(() => {
       if (direction === 'right') {
         onSwipeRight?.();
       } else {
         onSwipeLeft?.();
       }
-      resetState();
     }, 250);
-  }, [isAnimatingOut, onSwipeRight, onSwipeLeft, resetState]);
+  }, [isAnimatingOut, onSwipeRight, onSwipeLeft]);
 
   return {
     handlers: {

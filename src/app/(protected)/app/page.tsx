@@ -37,13 +37,14 @@ function SafeCardImage({ src, alt, name }: { src?: string | null; alt: string; n
   const [error, setError] = useState(false);
   if (!src || error) {
     return (
-      <div className="h-full w-full bg-gradient-to-br from-[#2D121B] via-[#4A1828] to-[#1F0B13] flex flex-col items-center justify-center text-white select-none">
-        <div className="grid h-16 w-16 place-items-center rounded-full bg-white/10 backdrop-blur-md text-white border border-white/20 shadow-md mb-2">
+      <div className="relative h-full w-full bg-gradient-to-br from-[#7D1633] via-[#630E26] to-[#450718] flex flex-col items-center justify-center text-white select-none overflow-hidden">
+        <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_top,rgba(201,151,87,0.22),transparent_70%)]" />
+        <div className="relative z-10 grid h-16 w-16 place-items-center rounded-full bg-gradient-to-b from-white/20 to-white/5 backdrop-blur-md text-[#FFF2D6] border border-[#F5D8A8]/60 shadow-md mb-2">
           <span className="font-editorial-title text-2xl font-bold">
             {name?.charAt(0)?.toUpperCase() || 'M'}
           </span>
         </div>
-        <span className="text-[11px] font-semibold text-white/60">Photo not uploaded</span>
+        <span className="relative z-10 text-[10px] font-medium text-[#F7DFBA] px-2.5 py-0.5 rounded-full bg-black/25 border border-white/10">Photo Pending</span>
       </div>
     );
   }
@@ -56,6 +57,27 @@ function SafeCardImage({ src, alt, name }: { src?: string | null; alt: string; n
       onError={() => setError(true)}
     />
   );
+}
+
+function formatConversationTime(isoString?: string) {
+  if (!isoString) return 'Today';
+  try {
+    const date = new Date(isoString);
+    if (isNaN(date.getTime())) return 'Today';
+    const now = new Date();
+    const diffMs = now.getTime() - date.getTime();
+    const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+    if (diffDays === 0) {
+      return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    }
+    if (diffDays === 1) return 'Yesterday';
+    if (diffDays < 7) {
+      return date.toLocaleDateString([], { weekday: 'short' });
+    }
+    return date.toLocaleDateString([], { month: 'short', day: 'numeric' });
+  } catch {
+    return 'Today';
+  }
 }
 
 export default function DashboardPage() {
@@ -470,19 +492,19 @@ export default function DashboardPage() {
                         </span>
                       </div>
 
-                      <div className="space-y-1">
+                      <div className="space-y-1.5">
                         <p className="text-sm font-bold text-[var(--foreground)] flex items-center gap-1.5">
-                          <IconBriefcase className="h-3.5 w-3.5 text-[var(--muted)]" />
+                          <IconBriefcase className="h-3.5 w-3.5 text-[var(--primary)] shrink-0" />
                           <span>{profile.profession}</span>
                         </p>
-                        <p className="text-xs text-[var(--muted)] flex items-center gap-1.5">
-                          <IconSchool className="h-3.5 w-3.5 text-[var(--muted)]" />
+                        <p className="text-xs text-[var(--muted-strong)] font-semibold flex items-center gap-1.5">
+                          <IconSchool className="h-3.5 w-3.5 text-[#801835]/75 shrink-0" />
                           <span>{profile.education}</span>
                         </p>
                       </div>
 
                       {profile.about && (
-                        <p className="line-clamp-2 text-xs leading-relaxed text-[var(--muted-strong)] bg-[var(--surface-muted)]/60 p-3 rounded-2xl italic border border-[var(--border)]/40">
+                        <p className="line-clamp-2 text-xs leading-relaxed text-[#2C1D24] bg-[#FFFAF5] p-3 rounded-2xl italic border border-[var(--champagne-border)]/80 shadow-2xs">
                           "{profile.about}"
                         </p>
                       )}
@@ -720,31 +742,49 @@ export default function DashboardPage() {
               </div>
             ) : (
               recentConversations.slice(0, 3).map((conv) => {
-                const pName = conv.profile?.name || conv.participant?.name || 'Member';
-                const pImage = conv.profile?.image || conv.participant?.photos?.[0]?.url;
-                const lastText = conv.last || conv.lastMessage?.content || 'Hello, I reviewed your profile.';
+                const partner = conv.participant || conv.profile || {};
+                const pName =
+                  partner.name ||
+                  `${partner.firstName || ''} ${partner.lastName || ''}`.trim() ||
+                  conv.name ||
+                  'Member';
+                const pImage =
+                  partner.avatarUrl ||
+                  partner.photos?.[0]?.url ||
+                  partner.image ||
+                  conv.image ||
+                  null;
+                const lastText = conv.lastMessage?.content || conv.last || 'Hello, I reviewed your profile.';
+                const partnerId = conv.participantId || partner.id || conv.id;
+                const timeStr = formatConversationTime(
+                  conv.lastMessage?.createdAt || conv.updatedAt || conv.time
+                );
+                const unread = conv.unreadCount || conv.unread || 0;
+                const isOnline = Boolean(
+                  conv.online ?? conv.isOnline ?? partner.isOnline ?? partner.online ?? false
+                );
 
                 return (
                   <Link
                     key={conv.id}
-                    href="/app/messages"
+                    href={`/app/messages?user=${partnerId}`}
                     className="focus-ring flex items-center gap-3.5 py-3.5 first:pt-0 last:pb-0 hover:bg-[var(--surface-muted)]/70 -mx-2 px-2 rounded-xl transition-colors"
                   >
-                    <Avatar src={pImage} name={pName} size="md" online={true} bordered />
+                    <Avatar src={pImage} name={pName} size="md" online={isOnline} bordered />
 
                     <div className="min-w-0 flex-1">
                       <div className="flex items-center justify-between">
                         <p className="text-sm font-bold text-[var(--foreground)] truncate">{pName}</p>
                         <span className="text-[10px] font-medium text-[var(--muted)]">
-                          {conv.time || 'Today'}
+                          {timeStr}
                         </span>
                       </div>
                       <p className="mt-0.5 text-xs text-[var(--muted)] truncate">{lastText}</p>
                     </div>
 
-                    {conv.unread > 0 && (
+                    {unread > 0 && (
                       <span className="grid h-5 min-w-5 place-items-center rounded-full bg-[var(--primary)] px-1.5 text-[10px] font-bold text-white shrink-0">
-                        {conv.unread}
+                        {unread}
                       </span>
                     )}
                   </Link>

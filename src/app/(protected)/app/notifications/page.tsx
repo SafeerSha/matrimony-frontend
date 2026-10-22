@@ -45,17 +45,17 @@ export interface NotificationDisplayItem {
 function getCategoryIcon(type: NotificationDisplayItem['type']) {
   switch (type) {
     case 'INTEREST':
-      return { icon: IconHeart, color: 'text-[#7A1835] bg-[#FAF3EC] border-[#EAD8C7]' };
+      return { icon: IconHeart, color: 'text-[var(--primary)] bg-[var(--primary-light)] border border-[var(--primary)]/20' };
     case 'ACCEPTED':
-      return { icon: IconUsers, color: 'text-amber-700 bg-amber-50 border-amber-200' };
+      return { icon: IconUsers, color: 'text-emerald-700 bg-emerald-50 border border-emerald-200' };
     case 'MESSAGE':
-      return { icon: IconMessageCircle, color: 'text-[#7A1835] bg-[#FAF3EC] border-[#EAD8C7]' };
+      return { icon: IconMessageCircle, color: 'text-[var(--primary)] bg-[var(--primary-light)] border border-[var(--primary)]/20' };
     case 'VIEW':
-      return { icon: IconEye, color: 'text-stone-700 bg-stone-100 border-stone-200' };
+      return { icon: IconEye, color: 'text-[#36262D] bg-[#FAF4EF] border border-[#EDE4DC]' };
     case 'MATCH':
-      return { icon: IconCompass, color: 'text-[#8C5D30] bg-[#FAF3EC] border-[#EAD8C7]' };
+      return { icon: IconCompass, color: 'text-[#8F591E] bg-[var(--champagne-light)] border border-[var(--champagne-border)]' };
     default:
-      return { icon: IconShieldCheck, color: 'text-emerald-700 bg-emerald-50 border-emerald-200' };
+      return { icon: IconShieldCheck, color: 'text-emerald-700 bg-emerald-50 border border-emerald-200' };
   }
 }
 

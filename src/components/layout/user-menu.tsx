@@ -168,7 +168,7 @@ export function UserMenu({ user, className }: UserMenuProps) {
               <Link
                 href="/app/subscription"
                 onClick={() => setIsOpen(false)}
-                className="text-[11px] font-bold text-[#8C5D30] bg-[#FAF3EC] border border-[#EAD8C7] rounded-full px-2 py-0.5 hover:bg-[#F5EADE] transition-colors"
+                className="text-[11px] font-bold text-[#8F591E] bg-[var(--champagne-light)] border border-[var(--champagne-border)] rounded-full px-2.5 py-0.5 hover:bg-[#FDF3E7] shadow-2xs transition-colors"
               >
                 Upgrade
               </Link>
@@ -187,7 +187,7 @@ export function UserMenu({ user, className }: UserMenuProps) {
               <span>My Profile & Photos</span>
             </Link>
 
-            <Link
+            {/* <Link
               href="/app/preferences"
               onClick={() => setIsOpen(false)}
               className="flex items-center gap-3 rounded-xl px-3 py-2 text-xs font-semibold text-[var(--foreground)] hover:bg-[var(--primary-lighter)] hover:text-[var(--primary)] transition-colors"
@@ -195,8 +195,8 @@ export function UserMenu({ user, className }: UserMenuProps) {
             >
               <IconAdjustments className="h-4 w-4 text-[var(--primary)]" />
               <span>Partner Preferences</span>
-            </Link>
-
+            </Link> */}
+{/* 
             <Link
               href="/app/subscription"
               onClick={() => setIsOpen(false)}
@@ -205,7 +205,7 @@ export function UserMenu({ user, className }: UserMenuProps) {
             >
               <IconCreditCard className="h-4 w-4 text-[var(--muted)]" />
               <span>Premium Plans</span>
-            </Link>
+            </Link> */}
 
             <Link
               href="/app/settings"

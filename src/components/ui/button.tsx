@@ -33,7 +33,7 @@ const variants: Record<ButtonVariant, string> = {
   blush:
     "bg-[var(--blush-light)] text-[var(--blush-deep)] border border-[var(--border)] hover:bg-[var(--blush)] hover:text-white transition-all",
   champagne:
-    "bg-[#FAF3EC] text-[#5C1027] border border-[#EAD8C7] hover:bg-[#F5EADE] shadow-sm font-semibold",
+    "bg-[var(--champagne-light)] text-[var(--accent-foreground)] border border-[var(--champagne-border)] hover:bg-[#FDF3E7] shadow-xs font-semibold",
   outline:
     "bg-transparent text-[var(--foreground)] border border-[var(--border)] hover:bg-[var(--surface-muted)] hover:border-[var(--border-strong)]",
   ghost:

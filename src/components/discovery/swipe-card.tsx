@@ -117,9 +117,9 @@ export function SwipeCard({
   const swipeProgress = Math.min(1, Math.abs(dragOffset.x) / 75);
   const rotation = (dragOffset.x / (typeof window !== 'undefined' ? window.innerWidth : 400)) * 18;
 
-  // Under-card scaling logic
-  const underCardScale = isNext ? 0.94 + (0.06 * swipeProgress) : 1;
-  const underCardTranslateY = isNext ? 12 * (1 - swipeProgress) : 0;
+  // Under-card scaling logic: keep under-card centered behind the active card without protruding downward
+  const underCardScale = isNext ? 0.97 + (0.03 * swipeProgress) : 1;
+  const underCardTranslateY = 0;
 
   // Overlay intensities tied to drag progress
   const overlayOpacity = Math.min(0.45, swipeProgress * 0.55);
@@ -138,9 +138,10 @@ export function SwipeCard({
         isNext ? "pointer-events-none" : "z-10"
       )}
       style={isNext ? {
-        transform: `scale(${underCardScale}) translateY(${underCardTranslateY}px)`,
-        filter: 'blur(12px) brightness(0.85)',
-        transition: isDragging ? 'none' : 'transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275), filter 0.4s ease-out'
+        transform: `scale(${underCardScale})`,
+        filter: 'blur(8px) brightness(0.92)',
+        opacity: isDragging ? 0.8 + (0.2 * swipeProgress) : 0.88,
+        transition: isDragging ? 'none' : 'transform 0.3s cubic-bezier(0.2, 0.8, 0.2, 1), filter 0.3s ease-out, opacity 0.3s ease-out'
       } : {
         transform: `translate3d(${dragOffset.x}px, ${dragOffset.y * 0.2}px, 0) rotate(${rotation}deg)`,
         filter: 'blur(0px) brightness(1)',
@@ -169,7 +170,8 @@ export function SwipeCard({
           }
         }}
         className={cn(
-          "group relative w-full h-full overflow-hidden rounded-[2rem] sm:rounded-[2.5rem] border border-[var(--border)] bg-white shadow-[var(--elevation-floating)] touch-none select-none",
+          "group relative w-full h-full overflow-hidden rounded-[2rem] sm:rounded-[2.5rem] border border-[var(--champagne-border)] bg-white touch-none select-none",
+          isNext ? "shadow-none" : "shadow-[var(--elevation-floating)]",
           !isNext && "cursor-pointer",
           !isNext && showHint && !isDragging && !prefersReducedMotion && "animate-card-wiggle"
         )}
@@ -185,14 +187,15 @@ export function SwipeCard({
               onError={() => setImgError(true)}
             />
           ) : (
-            <div className="h-full w-full flex flex-col items-center justify-center bg-gradient-to-br from-[#2D121B] via-[#4A1828] to-[#1F0B13] p-8 text-center select-none">
-              <div className="grid h-32 w-32 place-items-center rounded-full bg-white/10 backdrop-blur-md text-white border border-white/20 shadow-2xl mb-4">
+            <div className="relative h-full w-full flex flex-col items-center justify-center bg-gradient-to-br from-[#7D1633] via-[#630E26] to-[#450718] p-8 text-center select-none overflow-hidden">
+              <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_top,rgba(201,151,87,0.22),transparent_70%)]" />
+              <div className="relative z-10 grid h-32 w-32 place-items-center rounded-full bg-gradient-to-b from-white/20 to-white/5 backdrop-blur-md text-[#FFF2D6] border border-[#F5D8A8]/60 shadow-2xl mb-4">
                 <span className="font-editorial-title text-6xl font-bold">
                   {profile.name?.charAt(0)?.toUpperCase() || 'M'}
                 </span>
               </div>
-              <p className="text-xs font-semibold uppercase tracking-wider text-white/60">
-                Photo not uploaded
+              <p className="relative z-10 text-xs font-semibold uppercase tracking-wider text-[#F7DFBA] px-3 py-1 rounded-full bg-black/25 border border-white/10">
+                Photo Pending
               </p>
             </div>
           )}

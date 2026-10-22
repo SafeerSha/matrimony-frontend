@@ -102,14 +102,15 @@ export function ProfileCard({ profile, compact = false }: { profile: Profile; co
             onError={() => setImgError(true)}
           />
         ) : (
-          <div className="h-full w-full flex flex-col items-center justify-center bg-gradient-to-br from-[#2D121B] via-[#4A1828] to-[#1F0B13] p-4 text-center select-none">
-            <div className="grid h-20 w-20 place-items-center rounded-full bg-white/10 backdrop-blur-md text-white border border-white/20 shadow-xl mb-2">
-              <span className="font-editorial-title text-3xl font-bold">
+          <div className="relative h-full w-full flex flex-col items-center justify-center bg-gradient-to-br from-[#7D1633] via-[#630E26] to-[#450718] p-4 text-center select-none overflow-hidden">
+            <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_top,rgba(201,151,87,0.2),transparent_70%)]" />
+            <div className="relative z-10 grid h-16 w-16 place-items-center rounded-full bg-gradient-to-b from-white/20 to-white/5 backdrop-blur-md text-[#FFF2D6] border border-[#F5D8A8]/60 shadow-lg mb-2">
+              <span className="font-editorial-title text-2xl font-bold">
                 {profile.name?.charAt(0)?.toUpperCase() || 'M'}
               </span>
             </div>
-            <p className="text-[11px] font-semibold uppercase tracking-wider text-white/60">
-              Photo not uploaded
+            <p className="relative z-10 text-[10px] font-medium text-[#F7DFBA] px-2 py-0.5 rounded-full bg-black/20 border border-white/10">
+              Photo Pending
             </p>
           </div>
         )}
@@ -179,7 +180,7 @@ export function ProfileCard({ profile, compact = false }: { profile: Profile; co
             )}
           </div>
           <p className="mt-1 flex items-center gap-1.5 text-xs text-white/90 font-medium">
-            <IconMapPin className="h-3.5 w-3.5 text-[var(--accent)]" />
+            <IconMapPin className="h-3.5 w-3.5 text-[#F5D8A8]" />
             <span className="truncate">{profile.city}, {profile.state}</span>
           </p>
         </div>
@@ -189,32 +190,32 @@ export function ProfileCard({ profile, compact = false }: { profile: Profile; co
       <div className="flex-1 p-4 space-y-3.5 flex flex-col justify-between">
         <div className="space-y-2">
           <div>
-            <p className="text-sm font-semibold text-[var(--foreground)] truncate">{profile.profession}</p>
-            <p className="text-xs text-[var(--muted)] font-normal truncate">
+            <p className="text-sm font-bold text-[var(--foreground)] truncate">{profile.profession}</p>
+            <p className="text-xs text-[var(--muted-strong)] font-medium truncate">
               {profile.education} · {profile.maritalStatus}
             </p>
           </div>
 
           {!compact && profile.about && (
-            <p className="line-clamp-2 text-xs leading-relaxed text-[var(--muted-strong)] font-normal">
-              {profile.about}
+            <p className="line-clamp-2 text-xs leading-relaxed text-[#2C1D24] font-medium bg-[#FFFAF5] p-2.5 rounded-xl border border-[var(--champagne-border)]/70">
+              "{profile.about}"
             </p>
           )}
 
           {!compact && profile.lifestyle && profile.lifestyle.length > 0 && (
             <div className="flex flex-wrap gap-1.5 pt-0.5">
               {profile.height && (
-                <span className="rounded-lg bg-[var(--surface-muted)] border border-[var(--border)]/70 px-2 py-0.5 text-[11px] font-medium text-[var(--muted-strong)]">
+                <span className="rounded-lg bg-[#FAF4EF] border border-[#EDE4DC] px-2 py-0.5 text-[11px] font-semibold text-[var(--muted-strong)]">
                   {profile.height}
                 </span>
               )}
               {profile.motherTongue && (
-                <span className="rounded-lg bg-[var(--surface-muted)] border border-[var(--border)]/70 px-2 py-0.5 text-[11px] font-medium text-[var(--muted-strong)]">
+                <span className="rounded-lg bg-[#FAF4EF] border border-[#EDE4DC] px-2 py-0.5 text-[11px] font-semibold text-[var(--muted-strong)]">
                   {profile.motherTongue}
                 </span>
               )}
               {profile.lifestyle[0] && (
-                <span className="rounded-lg bg-[var(--surface-muted)] border border-[var(--border)]/70 px-2 py-0.5 text-[11px] font-medium text-[var(--muted-strong)]">
+                <span className="rounded-lg bg-[#FAF4EF] border border-[#EDE4DC] px-2 py-0.5 text-[11px] font-semibold text-[var(--muted-strong)]">
                   {profile.lifestyle[0]}
                 </span>
               )}

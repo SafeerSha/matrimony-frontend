@@ -40,7 +40,7 @@ export function SectionHeader({
           </h2>
         )}
         {description && (
-          <p className="mt-1.5 text-sm leading-relaxed text-[var(--muted)] font-normal">
+          <p className="mt-1.5 text-sm leading-relaxed text-[var(--muted-strong)] font-medium">
             {description}
           </p>
         )}

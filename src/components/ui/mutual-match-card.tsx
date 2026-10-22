@@ -50,24 +50,24 @@ export function MutualMatchCard({
     <Card
       variant="default"
       className={cn(
-        'group relative overflow-hidden rounded-3xl border border-[#EAD8C7]/90 bg-white p-0 shadow-[0_1px_3px_rgba(45,15,25,0.04),0_8px_24px_-4px_rgba(122,24,53,0.08),0_18px_36px_-6px_rgba(40,10,20,0.06)] transition-all duration-300 hover:shadow-[0_2px_6px_rgba(45,15,25,0.06),0_16px_36px_-6px_rgba(122,24,53,0.16),0_24px_48px_-10px_rgba(33,27,30,0.10)]',
+        'group relative overflow-hidden rounded-3xl border border-[var(--champagne-border)] bg-white p-0 shadow-[var(--elevation-card)] transition-all duration-300 hover:shadow-[var(--elevation-card-hover)]',
         className
       )}
     >
       {/* Top Ambient Gold Highlight Strip */}
-      <div className="bg-gradient-to-r from-[#FAF3EC] via-[#FFF9F6] to-[#FFF5F7] px-5 py-3 border-b border-[#EAD8C7]/70 flex items-center justify-between">
+      <div className="bg-gradient-to-r from-[#FDF8F2] via-[#FFF9F6] to-[#FDF4F6] px-5 py-3 border-b border-[var(--champagne-border)]/70 flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <span className="grid h-6 w-6 place-items-center rounded-full bg-[var(--primary)] text-white">
+          <span className="grid h-6 w-6 place-items-center rounded-full bg-[var(--primary)] text-white shadow-2xs">
             <IconUsers className="h-3.5 w-3.5" />
           </span>
-          <span className="text-[10px] font-bold uppercase tracking-wider text-[#5C1027]">
+          <span className="text-[10px] font-bold uppercase tracking-wider text-[var(--primary)]">
             Mutual Match
           </span>
         </div>
 
         <div className="flex items-center gap-2">
           {match.compatibility && (
-            <Badge tone="accent" size="sm" className="font-bold text-[10px]">
+            <Badge tone="accent" size="sm" className="font-bold text-[10px] bg-white/95 text-[var(--primary)] border-[var(--champagne-border)] shadow-xs">
               {match.compatibility}% Matches
             </Badge>
           )}
@@ -82,7 +82,7 @@ export function MutualMatchCard({
           {/* Profile A: Current User */}
           <div className="flex flex-col items-center text-center">
             <div className="relative">
-              <div className="h-14 w-14 sm:h-16 sm:w-16 overflow-hidden rounded-full ring-4 ring-[#FAF3EC] border-2 border-[#D8B28C] shadow-sm bg-[var(--surface-muted)] flex items-center justify-center">
+              <div className="h-14 w-14 sm:h-16 sm:w-16 overflow-hidden rounded-full ring-4 ring-[#FAF4EF] border-2 border-[var(--champagne)] shadow-sm bg-[var(--surface-muted)] flex items-center justify-center">
                 {currentUser.image && !userImgError ? (
                   <img
                     src={currentUser.image}
@@ -91,7 +91,7 @@ export function MutualMatchCard({
                     onError={() => setUserImgError(true)}
                   />
                 ) : (
-                  <div className="h-full w-full bg-gradient-to-br from-[#7A1835] to-[#5C1027] text-white flex items-center justify-center font-bold text-base sm:text-lg">
+                  <div className="h-full w-full bg-gradient-to-br from-[#7D1633] to-[#5C0D24] text-[#FFF2D6] flex items-center justify-center font-bold text-base sm:text-lg">
                     {currentUser.name?.charAt(0)?.toUpperCase() || 'Y'}
                   </div>
                 )}
@@ -105,21 +105,21 @@ export function MutualMatchCard({
             <p className="mt-2 text-xs font-bold text-[var(--foreground)] truncate max-w-[75px]">
               {currentUser.name || 'You'}
             </p>
-            <span className="text-[10px] font-semibold text-[var(--muted)]">Your Profile</span>
+            <span className="text-[10px] font-medium text-[var(--muted)]">Your Profile</span>
           </div>
 
           {/* Center Connection Knot & Crest */}
           <div className="flex flex-col items-center justify-center px-0">
             <div className="relative flex items-center justify-center">
               {/* Subtle connecting horizontal line */}
-              <div className="absolute w-10 sm:w-14 h-0.5 bg-gradient-to-r from-transparent via-[#D8B28C] to-transparent" />
+              <div className="absolute w-10 sm:w-14 h-0.5 bg-gradient-to-r from-transparent via-[var(--accent)] to-transparent" />
               
               {/* Central Refined Emblem */}
-              <div className="relative z-10 grid h-9 w-9 sm:h-10 sm:w-10 place-items-center rounded-full bg-gradient-to-br from-[#7A1835] to-[#5C1027] text-white shadow-md ring-4 ring-white">
+              <div className="relative z-10 grid h-9 w-9 sm:h-10 sm:w-10 place-items-center rounded-full bg-gradient-to-br from-[var(--primary)] to-[var(--primary-deep)] text-white shadow-md ring-4 ring-white">
                 <IconUsers className="h-5 w-5" />
               </div>
             </div>
-            <span className="mt-2 text-[10px] font-bold tracking-wider text-[#8C5D30] uppercase">
+            <span className="mt-2 text-[10px] font-bold tracking-wider text-[#8F591E] uppercase">
               Connected
             </span>
           </div>
@@ -130,7 +130,7 @@ export function MutualMatchCard({
               href={`/app/profile?user=${match.id}`}
               className="focus-ring relative rounded-full block group/avatar"
             >
-              <div className="h-14 w-14 sm:h-16 sm:w-16 overflow-hidden rounded-full ring-4 ring-[#FAF3EC] border-2 border-[var(--primary)] shadow-sm bg-[var(--surface-muted)] transition-transform duration-300 group-hover/avatar:scale-105">
+              <div className="h-14 w-14 sm:h-16 sm:w-16 overflow-hidden rounded-full ring-4 ring-[#FAF4EF] border-2 border-[var(--primary)] shadow-sm bg-[var(--surface-muted)] transition-transform duration-300 group-hover/avatar:scale-105">
                 {match.image && !matchImgError ? (
                   <img
                     src={match.image}
@@ -139,7 +139,7 @@ export function MutualMatchCard({
                     onError={() => setMatchImgError(true)}
                   />
                 ) : (
-                  <div className="h-full w-full flex items-center justify-center bg-gradient-to-br from-[#FAF3EC] to-[#F5E6D8] text-[var(--primary)] font-editorial-title text-xl font-bold">
+                  <div className="h-full w-full flex items-center justify-center bg-gradient-to-br from-[#7D1633] via-[#630E26] to-[#450718] text-[#FFF2D6] font-editorial-title text-xl font-bold">
                     {match.name.charAt(0).toUpperCase()}
                   </div>
                 )}
@@ -162,7 +162,7 @@ export function MutualMatchCard({
             >
               {match.name}, {match.age}
             </Link>
-            <span className="text-[10px] font-semibold text-[var(--muted)] truncate max-w-[100px]">
+            <span className="text-[10px] font-medium text-[#8F591E] truncate max-w-[100px]">
               {match.city}
             </span>
           </div>
@@ -175,8 +175,8 @@ export function MutualMatchCard({
           <h3 className="font-editorial-title text-base sm:text-lg font-bold text-[var(--foreground)] leading-tight">
             Both of you are interested in connecting.
           </h3>
-          <p className="text-[11px] sm:text-xs text-[var(--muted-strong)] max-w-md mx-auto">
-            {match.profession} · {match.education} · Based in {match.city}, {match.state}
+          <p className="text-[11px] sm:text-xs text-[var(--muted-strong)] font-medium max-w-md mx-auto">
+            <span className="text-[var(--foreground)] font-semibold">{match.profession}</span> · {match.education} · Based in <span className="text-[#8F591E] font-semibold">{match.city}{match.state ? `, ${match.state}` : ''}</span>
           </p>
         </div>
 

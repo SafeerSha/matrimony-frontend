@@ -39,8 +39,8 @@ export function Chip({
       ? "bg-[var(--blush-deep)] text-white border-[var(--blush-deep)]"
       : "bg-[var(--blush-light)] text-[var(--blush-deep)] border-[var(--border)] hover:bg-[var(--blush)] hover:text-white",
     champagne: selected
-      ? "bg-[var(--accent)] text-white border-[var(--accent)] shadow-xs"
-      : "bg-[#FAF3EC] text-[#5C1027] border-[#EAD8C7] hover:bg-[#F5EADE]",
+      ? "bg-[var(--accent)] text-white border-[var(--accent)] shadow-xs font-semibold"
+      : "bg-[var(--champagne-light)] text-[var(--accent-foreground)] border border-[var(--champagne-border)] hover:bg-[#FDF3E7] font-semibold",
   };
 
   const sizes = {

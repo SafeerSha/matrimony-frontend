@@ -143,7 +143,30 @@ class ChatService {
     try {
       const data = await apiFetch<Conversation[]>("/chat/conversations", { method: "GET" });
       if (Array.isArray(data)) {
-        return data;
+        return data.map((conv: any) => {
+          const p = conv.participant || {};
+          const fullName =
+            p.name ||
+            `${p.firstName || ''} ${p.lastName || ''}`.trim() ||
+            conv.name ||
+            'Member';
+          const photo =
+            p.avatarUrl ||
+            p.photos?.[0]?.url ||
+            p.image ||
+            conv.avatarUrl ||
+            conv.image ||
+            null;
+          return {
+            ...conv,
+            participant: {
+              ...p,
+              name: fullName,
+              avatarUrl: photo,
+              photos: p.photos || (photo ? [{ id: 'p1', url: photo }] : []),
+            },
+          };
+        });
       }
     } catch (err: any) {
       console.warn("[ChatService] /chat/conversations fallback to matches:", err?.message || err);
