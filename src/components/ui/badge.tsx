@@ -76,7 +76,7 @@ export function Badge({
   return (
     <span
       className={cn(
-        "inline-flex items-center rounded-full font-medium shadow-[0_1px_2px_rgba(0,0,0,0.02)] select-none",
+        "inline-flex items-center rounded-full font-medium shadow-[0_1px_2px_rgba(0,0,0,0.02)] select-none whitespace-nowrap",
         tones[tone] || tones.neutral,
         sizes[size],
         className
@@ -92,8 +92,8 @@ export function Badge({
           aria-hidden="true"
         />
       )}
-      {icon && <span className="shrink-0 leading-none">{icon}</span>}
-      <span>{children}</span>
+      {icon && <span className="shrink-0 inline-flex items-center leading-none">{icon}</span>}
+      <span className="inline-flex items-center gap-1.5 leading-tight">{children}</span>
     </span>
   );
 }

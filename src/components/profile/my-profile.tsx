@@ -36,6 +36,12 @@ import { cn } from '@/lib/cn';
 import { profileService, mediaService, authService } from '@/services';
 import type { UserProfile, ProfilePhoto } from '@/services/profile.service';
 import { PartnerPreferencesEditor } from '@/components/preferences/partner-preferences-editor';
+import { ModernSelect } from '@/components/ui/modern-select';
+import {
+  POPULAR_EDUCATION_OPTIONS,
+  POPULAR_CASTES_BY_RELIGION,
+  RELIGION_OPTIONS,
+} from '@/lib/data/education-profession-data';
 import { PageLoader } from '@/components/ui/page-loader';
 import { toast } from '@/lib/toast';
 
@@ -75,6 +81,23 @@ const INCOME_OPTIONS = [
   '₹30 - 50 LPA',
   '₹50+ LPA',
 ];
+
+const EMPLOYMENT_STATUS_OPTIONS = [
+  'Private Sector',
+  'Government / PSU',
+  'Business / Self-Employed',
+  'Defense / Civil Services',
+  'Not Employed',
+];
+
+const MARITAL_STATUS_OPTIONS = [
+  'Never Married',
+  'Divorced',
+  'Widowed',
+  'Awaiting Divorce',
+];
+
+
 
 function SafeGalleryThumbnail({ p, i }: { p: ProfilePhoto; i: number }) {
   const [error, setError] = useState(false);
@@ -217,6 +240,13 @@ export function MyProfile() {
     city: string;
     motherTongue: string;
     annualIncome: string;
+    height: string;
+    education: string;
+    occupation: string;
+    employmentStatus: string;
+    maritalStatus: string;
+    religion: string;
+    caste: string;
     lifestyle: string[];
     interests: string[];
     customLifestyleInput: string;
@@ -229,11 +259,64 @@ export function MyProfile() {
     city: '',
     motherTongue: '',
     annualIncome: '',
+    height: '',
+    education: '',
+    occupation: '',
+    employmentStatus: '',
+    maritalStatus: '',
+    religion: '',
+    caste: '',
     lifestyle: [],
     interests: [],
     customLifestyleInput: '',
     customInterestInput: '',
   });
+
+  const educationOptions = React.useMemo(() => {
+    const opts = [...POPULAR_EDUCATION_OPTIONS];
+    if (
+      editDraft.education &&
+      !opts.some(
+        (o) =>
+          o.value.toLowerCase() === editDraft.education.toLowerCase() ||
+          o.label.toLowerCase() === editDraft.education.toLowerCase()
+      )
+    ) {
+      opts.unshift({
+        value: editDraft.education,
+        label: editDraft.education,
+        description: 'Custom / Selected',
+      });
+    }
+    return opts;
+  }, [editDraft.education]);
+
+  const casteOptions = React.useMemo(() => {
+    const religionKey = editDraft.religion || 'Christian';
+    const list = POPULAR_CASTES_BY_RELIGION[religionKey] || ['Other'];
+    const opts: { value: string; label: string; description?: string }[] = list.map((c) => ({
+      value: c,
+      label: c,
+    }));
+    if (editDraft.caste && !list.includes(editDraft.caste)) {
+      opts.unshift({
+        value: editDraft.caste,
+        label: editDraft.caste,
+        description: 'Custom / Selected',
+      });
+    }
+    return opts;
+  }, [editDraft.religion, editDraft.caste]);
+
+  const handleReligionChange = (newReligion: string) => {
+    const availableCastes = POPULAR_CASTES_BY_RELIGION[newReligion] || ['Other'];
+    const defaultCaste = availableCastes[0] || 'Other';
+    setEditDraft((prev) => ({
+      ...prev,
+      religion: newReligion,
+      caste: availableCastes.includes(prev.caste) ? prev.caste : defaultCaste,
+    }));
+  };
 
   const fetchProfile = async () => {
     try {
@@ -262,7 +345,14 @@ export function MyProfile() {
         state: combined.state || '',
         city: combined.city || '',
         motherTongue: combined.motherTongue || '',
-        annualIncome: combined.annualIncome || '',
+        annualIncome: combined.annualIncome || (combined as any).income || '',
+        height: combined.height ? String(combined.height) : '',
+        education: combined.education || '',
+        occupation: combined.occupation || combined.profession || '',
+        employmentStatus: combined.employmentStatus || '',
+        maritalStatus: combined.maritalStatus || '',
+        religion: combined.religion || '',
+        caste: combined.caste || '',
         lifestyle: Array.isArray(combined.lifestyle) ? combined.lifestyle : [],
         interests: Array.isArray(combined.interests) ? combined.interests : [],
         customLifestyleInput: '',
@@ -377,6 +467,13 @@ export function MyProfile() {
         city: editDraft.city,
         motherTongue: editDraft.motherTongue,
         annualIncome: editDraft.annualIncome,
+        height: editDraft.height as any,
+        education: editDraft.education,
+        occupation: editDraft.occupation,
+        employmentStatus: editDraft.employmentStatus,
+        maritalStatus: editDraft.maritalStatus,
+        religion: editDraft.religion,
+        caste: editDraft.caste,
         lifestyle: editDraft.lifestyle,
         interests: editDraft.interests,
       };
@@ -455,11 +552,26 @@ export function MyProfile() {
     profile.profileId ||
     profile.user?.profileId ||
     (profile.id
-      ? String(profile.id).replace(/[^a-zA-Z0-9]/g, '').substring(0, 8).toUpperCase()
-      : 'LT-A00001');
+      ? `IC-${String(profile.id).replace(/[^a-zA-Z0-9]/g, '').substring(0, 6).toUpperCase()}`
+      : 'IC-A00001');
 
   const photosCount = photos.length;
   const isCapReached = photosCount >= 5;
+
+  const calculateCompleteness = (p: UserProfile, pCount: number) => {
+    let score = 0;
+    if (pCount >= 1) score += 20;
+    if (pCount >= 3) score += 10;
+    if (p.bio && p.bio.trim().length > 10) score += 15;
+    if (p.education && (p.occupation || p.profession)) score += 15;
+    if (p.city || p.state) score += 15;
+    if (p.motherTongue) score += 5;
+    if (p.family && p.family.trim().length > 5) score += 10;
+    if (Array.isArray(p.lifestyle) && p.lifestyle.length > 0) score += 5;
+    if (Array.isArray(p.interests) && p.interests.length > 0) score += 5;
+    return Math.min(100, Math.max(25, score));
+  };
+  const completenessPercent = calculateCompleteness(profile, photosCount);
 
   return (
     <div className="space-y-6 pb-12">
@@ -468,7 +580,7 @@ export function MyProfile() {
         <SectionHeader
           eyebrow="My Profile"
           title="Profile Management"
-          description="Keep your matrimonial profile details, photos, and criteria up to date for verified compatibility matching."
+          // description="Keep your matrimonial profile details, photos, and criteria up to date for verified compatibility matching."
         />
         <div className="flex items-center gap-2.5 self-start sm:self-auto shrink-0">
           <Button
@@ -515,9 +627,9 @@ export function MyProfile() {
                   <Badge
                     tone="champagne"
                     size="sm"
-                    className="font-bold gap-1 bg-amber-50 text-amber-800 border-amber-200"
+                    icon={<IconShieldCheck className="h-3.5 w-3.5 text-amber-600 shrink-0" />}
+                    className="font-bold gap-1.5 bg-amber-50 text-amber-800 border-amber-200 inline-flex items-center"
                   >
-                    <IconShieldCheck className="h-3.5 w-3.5 text-amber-600" />
                     Verified Profile
                   </Badge>
                 )}
@@ -527,8 +639,7 @@ export function MyProfile() {
                 <span>{profile.occupation || 'Profession not set'}</span>
                 <span>•</span>
                 <span>
-                  {profile.city || 'City not set'}
-                  {profile.state ? `, ${profile.state}` : ''}
+                  {[profile.city, profile.state].filter(Boolean).join(', ') || 'Location not set'}
                 </span>
                 {profile.motherTongue && (
                   <>
@@ -555,17 +666,17 @@ export function MyProfile() {
               <div className="flex justify-between items-end mb-2">
                 <p className="text-xs font-bold text-[#5C1027]">Profile Completeness</p>
                 <p className="text-lg font-bold text-[var(--primary)]">
-                  {photosCount >= 3 && profile.bio ? '95%' : '80%'}
+                  {completenessPercent}%
                 </p>
               </div>
               <div className="h-2 w-full overflow-hidden rounded-full bg-stone-200/80">
                 <div
                   className="h-full rounded-full bg-gradient-to-r from-[var(--primary)] to-[var(--blush-deep)] transition-all duration-500"
-                  style={{ width: photosCount >= 3 && profile.bio ? '95%' : '80%' }}
+                  style={{ width: `${completenessPercent}%` }}
                 />
               </div>
               <p className="mt-2 text-[10px] font-semibold text-[var(--muted)]">
-                {photosCount} of 5 photos • {profile.bio ? 'Bio completed' : 'Add bio'}
+                {photosCount} of 5 photos • {profile.bio ? 'Bio added' : 'Add bio'}
               </p>
             </div>
           </div>
@@ -642,8 +753,7 @@ export function MyProfile() {
                     Location (City & State)
                   </span>
                   <span className="font-bold text-[var(--foreground)] text-sm">
-                    {profile.city || 'Not specified'}
-                    {profile.state ? `, ${profile.state}` : ''}
+                    {[profile.city, profile.state].filter(Boolean).join(', ') || 'Not specified'}
                     {profile.country ? ` (${profile.country})` : ''}
                   </span>
                 </div>
@@ -669,7 +779,7 @@ export function MyProfile() {
                     Annual Income
                   </span>
                   <span className="font-bold text-[var(--foreground)] text-sm">
-                    {profile.annualIncome || 'Available upon request'}
+                    {profile.annualIncome || (profile as any).income || 'Not specified'}
                   </span>
                 </div>
               </div>
@@ -1111,6 +1221,109 @@ export function MyProfile() {
                   </option>
                 ))}
               </select>
+            </div>
+          </div>
+
+          {/* Education & Career */}
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <div>
+              <ModernSelect
+                label="Highest Education"
+                value={editDraft.education}
+                options={educationOptions}
+                onChange={(val) => setEditDraft({ ...editDraft, education: val })}
+                placeholder="Select Education"
+                searchable
+                maxHeight="max-h-[220px]"
+              />
+            </div>
+
+            <div>
+              <label className="block text-xs font-bold uppercase tracking-wider text-[var(--foreground)] mb-1.5">
+                Profession / Occupation
+              </label>
+              <input
+                type="text"
+                value={editDraft.occupation}
+                onChange={(e) => setEditDraft({ ...editDraft, occupation: e.target.value })}
+                placeholder="e.g. Software Engineer, Doctor"
+                className="w-full rounded-xl border border-[var(--border)] bg-white px-3.5 py-2.5 text-xs text-[var(--foreground)] focus:outline-none focus:ring-2 focus:ring-[var(--primary)]"
+              />
+            </div>
+
+            <div>
+              <label className="block text-xs font-bold uppercase tracking-wider text-[var(--foreground)] mb-1.5">
+                Employment Status
+              </label>
+              <select
+                value={editDraft.employmentStatus}
+                onChange={(e) => setEditDraft({ ...editDraft, employmentStatus: e.target.value })}
+                className="w-full rounded-xl border border-[var(--border)] bg-white px-3.5 py-2.5 text-xs text-[var(--foreground)] focus:outline-none focus:ring-2 focus:ring-[var(--primary)]"
+              >
+                <option value="">Select employment</option>
+                {EMPLOYMENT_STATUS_OPTIONS.map((emp) => (
+                  <option key={emp} value={emp}>
+                    {emp}
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
+
+          {/* Personal & Community Details */}
+          <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
+            <div>
+              <label className="block text-xs font-bold uppercase tracking-wider text-[var(--foreground)] mb-1.5">
+                Height
+              </label>
+              <input
+                type="text"
+                value={editDraft.height}
+                onChange={(e) => setEditDraft({ ...editDraft, height: e.target.value })}
+                placeholder="e.g. 170 cm, 5'7&quot;"
+                className="w-full rounded-xl border border-[var(--border)] bg-white px-3.5 py-2.5 text-xs text-[var(--foreground)] focus:outline-none focus:ring-2 focus:ring-[var(--primary)]"
+              />
+            </div>
+
+            <div>
+              <label className="block text-xs font-bold uppercase tracking-wider text-[var(--foreground)] mb-1.5">
+                Marital Status
+              </label>
+              <select
+                value={editDraft.maritalStatus}
+                onChange={(e) => setEditDraft({ ...editDraft, maritalStatus: e.target.value })}
+                className="w-full rounded-xl border border-[var(--border)] bg-white px-3.5 py-2.5 text-xs text-[var(--foreground)] focus:outline-none focus:ring-2 focus:ring-[var(--primary)]"
+              >
+                <option value="">Select status</option>
+                {MARITAL_STATUS_OPTIONS.map((st) => (
+                  <option key={st} value={st}>
+                    {st}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div>
+              <ModernSelect
+                label="Religion"
+                value={editDraft.religion || 'Christian'}
+                options={RELIGION_OPTIONS.map((rel) => ({ value: rel, label: rel }))}
+                onChange={handleReligionChange}
+                placeholder="Select religion"
+                maxHeight="max-h-[220px]"
+              />
+            </div>
+
+            <div>
+              <ModernSelect
+                label="Caste / Community"
+                value={editDraft.caste || ''}
+                options={casteOptions}
+                onChange={(val) => setEditDraft({ ...editDraft, caste: val })}
+                placeholder="Select Caste / Community"
+                searchable
+                maxHeight="max-h-[220px]"
+              />
             </div>
           </div>
 
