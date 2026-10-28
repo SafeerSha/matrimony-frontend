@@ -3,6 +3,7 @@
 import { useState, useRef, useEffect } from "react";
 import Image from "next/image";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import {
   IconArrowRight,
   IconArrowLeft,
@@ -27,6 +28,7 @@ import {
   IconSchool,
   IconCoffee,
   IconWorld,
+  IconHome,
   IconHomeHeart,
   IconUsers,
   IconSparkles,
@@ -45,6 +47,7 @@ import {
 import {
   CLIENT_EMPLOYMENT_OPTIONS,
   CLIENT_INCOME_OPTIONS,
+  MARITAL_STATUS_OPTIONS,
   RELIGION_OPTIONS,
   POPULAR_CASTES_BY_RELIGION,
   POPULAR_INDIAN_STATES,
@@ -60,6 +63,7 @@ const STEPS = [
 ];
 
 export default function OnboardingPage() {
+  const router = useRouter();
   const [step, setStep] = useState<1 | 2 | 3 | 4>(1);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -71,28 +75,158 @@ export default function OnboardingPage() {
   const [profileData, setProfileData] = useState<any>({});
   const [preferencesData, setPreferencesData] = useState<any>({});
 
-  // Photo States (Step 3: Profile DP is Optional, Step 4: Album Photos is REQUIRED)
+  // Progressive Onboarding & Auto-Save State
+  const [autoSaveStatus, setAutoSaveStatus] = useState<"idle" | "saving" | "saved" | "offline">("idle");
+  const [maxStepReached, setMaxStepReached] = useState<number>(1);
+
+  // Photo States (Step 2: Profile DP is Optional, Step 4: Album Photos is REQUIRED)
   const [primaryPhoto, setPrimaryPhoto] = useState<File | null>(null);
   const [uploadedPhotoId, setUploadedPhotoId] = useState<string | null>(null);
   const [uploadedPhotoUrl, setUploadedPhotoUrl] = useState<string | null>(null);
   const [albumPhotos, setAlbumPhotos] = useState<File[]>([]);
+  const [existingAlbumPhotos, setExistingAlbumPhotos] = useState<Array<{ id: string; url: string; isPrimary?: boolean }>>([]);
   const [albumValidationError, setAlbumValidationError] = useState(false);
 
-  // Optional Password Setup State (Step 4)
+  // Optional Password Setup State (Step 3)
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [passwordError, setPasswordError] = useState<string | null>(null);
   const [isSavingPassword, setIsSavingPassword] = useState(false);
+  const [hasPasswordSet, setHasPasswordSet] = useState(false);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const albumInputRef = useRef<HTMLInputElement>(null);
+
+  // Progressive Persistence Helper: synchronously writes to sessionStorage & localStorage
+  const saveDraftLocally = (data: any) => {
+    if (typeof window !== "undefined") {
+      try {
+        let existingDraft: any = {};
+        try {
+          const stored = sessionStorage.getItem("shaadi_onboarding_draft") || localStorage.getItem("shaadi_onboarding_draft");
+          if (stored) existingDraft = JSON.parse(stored);
+        } catch {
+          // ignore parsing error
+        }
+
+        const { primaryPhoto: _p, albumPhotos: _a, ...serializable } = data;
+
+        const merged: any = {
+          ...existingDraft,
+          ...serializable,
+        };
+
+        // Preserve password fields so page reload or step switching never drops saved credentials
+        if (serializable.password !== undefined) {
+          merged.password = serializable.password;
+        } else if (password) {
+          merged.password = password;
+        }
+
+        if (serializable.confirmPassword !== undefined) {
+          merged.confirmPassword = serializable.confirmPassword;
+        } else if (confirmPassword) {
+          merged.confirmPassword = confirmPassword;
+        }
+
+        if (serializable.hasPasswordSet !== undefined) {
+          merged.hasPasswordSet = serializable.hasPasswordSet;
+        } else if (hasPasswordSet || localStorage.getItem("shaadi_password_enabled") === "true") {
+          merged.hasPasswordSet = true;
+        }
+
+        const json = JSON.stringify(merged);
+        sessionStorage.setItem("shaadi_onboarding_draft", json);
+        localStorage.setItem("shaadi_onboarding_draft", json);
+      } catch (e) {
+        console.warn("Failed saving onboarding draft to local storage:", e);
+      }
+    }
+  };
+
+  // Background Auto-Save Helper: sends non-blocking profile update to backend
+  const triggerBackgroundAutoSave = async (targetStep: number, profileToSave: any, preferencesToSave?: any) => {
+    setAutoSaveStatus("saving");
+    try {
+      const {
+        primaryPhoto: _p,
+        albumPhotos: _a,
+        photos: _ph,
+        password: _pwd,
+        confirmPassword: _cpwd,
+        hasPasswordSet: _hps,
+        ...cleanProfile
+      } = profileToSave;
+      await profileService.updateProfile("me", {
+        ...cleanProfile,
+        onboardingStep: targetStep,
+        preferences: preferencesToSave || preferencesData,
+      });
+      setAutoSaveStatus("saved");
+      setTimeout(() => {
+        setAutoSaveStatus((current) => (current === "saved" ? "idle" : current));
+      }, 2500);
+    } catch (err: any) {
+      console.warn("Background auto-save fallback (data kept safe in local draft):", err);
+      setAutoSaveStatus("offline");
+      setTimeout(() => {
+        setAutoSaveStatus((current) => (current === "offline" ? "idle" : current));
+      }, 3000);
+    }
+  };
+
+  // Validation helper for Step 1 mandatory fields
+  const validateStep1Basic = (dataToValidate?: any) => {
+    const data = dataToValidate || profileData;
+    const firstNameVal = (data.firstName || draftInfo?.firstName || "").trim();
+    if (!firstNameVal) {
+      setError("Please enter your name.");
+      return false;
+    }
+    const permanentAddressVal = (data.permanentAddress || "").trim();
+    if (!permanentAddressVal) {
+      setError("Permanent Address is mandatory. (Note: It will remain confidential and hidden from other users).");
+      return false;
+    }
+    const phoneVal = (data.phone || draftInfo?.phone || "").trim();
+    if (!phoneVal) {
+      setError("Cell number is mandatory. (Note: It will remain confidential and hidden from other users).");
+      return false;
+    }
+    const emailVal = (data.email || "").trim();
+    if (!emailVal || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailVal)) {
+      setError("A valid Email ID is mandatory. (Note: It will remain confidential and hidden from other users).");
+      return false;
+    }
+    const eduVal = (data.education || "").trim();
+    if (!eduVal) {
+      setError("Please specify your educational qualification.");
+      return false;
+    }
+    const dobVal = data.dateOfBirth;
+    if (!dobVal) {
+      setError("Please select your date of birth.");
+      return false;
+    }
+    const genderVal = (data.gender || "").trim();
+    if (!genderVal) {
+      setError("Please select gender.");
+      return false;
+    }
+    const maritalVal = (data.maritalStatus || profileData.maritalStatus || "").trim();
+    if (!maritalVal) {
+      setError("Please select your marital status.");
+      return false;
+    }
+    return true;
+  };
 
   // Load draft data from landing page or existing backend session
   useEffect(() => {
     if (typeof window !== "undefined") {
       try {
-        const stored = sessionStorage.getItem("shaadi_onboarding_draft");
+        const stored = sessionStorage.getItem("shaadi_onboarding_draft") || localStorage.getItem("shaadi_onboarding_draft");
         if (stored) {
           const parsed = JSON.parse(stored);
           setDraftInfo(parsed);
@@ -104,6 +238,7 @@ export default function OnboardingPage() {
             firstName: parsed.firstName || prev.firstName || "",
             lastName: parsed.lastName || prev.lastName || "",
             gender: normalizedGender || prev.gender || "",
+            maritalStatus: parsed.maritalStatus || prev.maritalStatus || "Never Married",
             phone: parsed.phone || prev.phone || "",
             email: parsed.email || prev.email || "",
             profileFor: parsed.profileFor || prev.profileFor || "Marriage",
@@ -121,19 +256,51 @@ export default function OnboardingPage() {
             employmentStatus: parsed.employmentStatus || prev.employmentStatus || "Govt. Employ",
             income: parsed.income || parsed.annualIncome || prev.income || prev.annualIncome || "5 to 12 lakhs",
             annualIncome: parsed.annualIncome || parsed.income || prev.annualIncome || prev.income || "5 to 12 lakhs",
-            fatherAlive: prev.fatherAlive !== undefined ? prev.fatherAlive : true,
-            motherAlive: prev.motherAlive !== undefined ? prev.motherAlive : true,
-            brothersCount: prev.brothersCount || 0,
-            brothersMarried: prev.brothersMarried || 0,
-            sistersCount: prev.sistersCount || 0,
-            sistersMarried: prev.sistersMarried || 0,
+            fatherAlive: parsed.fatherAlive !== undefined ? parsed.fatherAlive : prev.fatherAlive !== undefined ? prev.fatherAlive : true,
+            motherAlive: parsed.motherAlive !== undefined ? parsed.motherAlive : prev.motherAlive !== undefined ? prev.motherAlive : true,
+            brothersCount: parsed.brothersCount ?? prev.brothersCount ?? 0,
+            brothersMarried: parsed.brothersMarried ?? prev.brothersMarried ?? 0,
+            sistersCount: parsed.sistersCount ?? prev.sistersCount ?? 0,
+            sistersMarried: parsed.sistersMarried ?? prev.sistersMarried ?? 0,
+            bio: parsed.bio || prev.bio || "",
           }));
+
+          if (parsed.uploadedPhotoUrl) {
+            setUploadedPhotoUrl(parsed.uploadedPhotoUrl);
+          }
+          if (parsed.uploadedPhotoId) {
+            setUploadedPhotoId(parsed.uploadedPhotoId);
+          }
+          if (parsed.maxStepReached) {
+            setMaxStepReached(Math.min(Math.max(parsed.maxStepReached, 1), 4));
+          }
+          if (parsed.onboardingStep) {
+            const safeDraftStep = Math.min(Math.max(parsed.onboardingStep, 1), 4) as 1 | 2 | 3 | 4;
+            setStep(safeDraftStep);
+            setMaxStepReached((prev) => Math.max(prev, safeDraftStep));
+          }
 
           if (parsed.preferences) {
             setPreferencesData((prev: any) => ({
               ...prev,
               ...parsed.preferences,
             }));
+          }
+
+          if (parsed.password) {
+            setPassword(parsed.password);
+          }
+          if (parsed.confirmPassword) {
+            setConfirmPassword(parsed.confirmPassword);
+          } else if (parsed.password) {
+            setConfirmPassword(parsed.password);
+          }
+
+          if (
+            parsed.hasPasswordSet ||
+            (typeof window !== "undefined" && localStorage.getItem("shaadi_password_enabled") === "true")
+          ) {
+            setHasPasswordSet(true);
           }
 
           if (parsed.lookingIn) {
@@ -158,6 +325,10 @@ export default function OnboardingPage() {
         console.warn("Failed reading local onboarding draft:", err);
       }
 
+      if (typeof window !== "undefined" && localStorage.getItem("shaadi_password_enabled") === "true") {
+        setHasPasswordSet(true);
+      }
+
       // If user has an active session on backend, populate latest state
       profileService
         .getProfile("me")
@@ -176,24 +347,72 @@ export default function OnboardingPage() {
             }
 
             setProfileData((prev: any) => ({
-              ...prev,
               ...profile,
+              ...prev,
               gender: profile.gender?.toLowerCase() || prev.gender || "",
+              maritalStatus: profile.maritalStatus || prev.maritalStatus || "Never Married",
             }));
             if (profile.preferences) {
-              setPreferencesData((prev: any) => ({ ...prev, ...profile.preferences }));
+              setPreferencesData((prev: any) => ({ ...profile.preferences, ...prev }));
             }
+
+            // Restore photos from backend if present
+            if (profile.photos && Array.isArray(profile.photos) && profile.photos.length > 0) {
+              const primaryP = profile.photos.find((p: any) => p.isPrimary);
+              if (primaryP) {
+                setUploadedPhotoUrl(primaryP.url);
+                setUploadedPhotoId(primaryP.id);
+              } else if (profile.avatarUrl) {
+                setUploadedPhotoUrl(profile.avatarUrl);
+              }
+              const nonPrimary = profile.photos.filter((p: any) => !p.isPrimary);
+              if (nonPrimary.length > 0) {
+                setExistingAlbumPhotos(nonPrimary);
+              }
+            } else if (profile.avatarUrl) {
+              setUploadedPhotoUrl(profile.avatarUrl);
+            }
+
             if (profile.onboardingStep && profile.onboardingStep >= 1) {
               const safeStep = Math.min(profile.onboardingStep, 4) as 1 | 2 | 3 | 4;
-              setStep(safeStep);
+              setStep((curr) => {
+                const target = Math.max(curr, safeStep) as 1 | 2 | 3 | 4;
+                setMaxStepReached((prevMax) => Math.max(prevMax, target));
+                return target;
+              });
             }
           }
         })
         .catch(() => {
           // Safe to ignore if not yet authenticated
         });
+
+      router.prefetch("/");
     }
-  }, []);
+  }, [router]);
+
+  // Auto-save draft locally whenever form inputs change (debounced 400ms)
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    if (!profileData || Object.keys(profileData).length === 0) return;
+
+    const timer = setTimeout(() => {
+      saveDraftLocally({
+        ...draftInfo,
+        ...profileData,
+        preferences: preferencesData,
+        uploadedPhotoId,
+        uploadedPhotoUrl,
+        password,
+        confirmPassword,
+        hasPasswordSet,
+        onboardingStep: step,
+        maxStepReached,
+      });
+    }, 400);
+
+    return () => clearTimeout(timer);
+  }, [profileData, preferencesData, step, maxStepReached, uploadedPhotoId, uploadedPhotoUrl, password, confirmPassword, hasPasswordSet]);
 
   const handleNext = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -275,6 +494,12 @@ export default function OnboardingPage() {
         return;
       }
 
+      const maritalStatusVal = (formData.get("maritalStatus") as string || profileData.maritalStatus || "Never Married").trim();
+      if (!maritalStatusVal) {
+        setError("Please select your marital status.");
+        return;
+      }
+
       const profVal = (
         (formData.get("profession") as string) ||
         (formData.get("occupation") as string) ||
@@ -317,6 +542,7 @@ export default function OnboardingPage() {
         occupation: profVal || employmentStatusVal,
         profession: profVal || employmentStatusVal,
         gender: genderVal,
+        maritalStatus: maritalStatusVal,
         dateOfBirth: new Date(dobVal).toISOString(),
         fatherAlive: fatherAliveVal,
         motherAlive: motherAliveVal,
@@ -334,6 +560,7 @@ export default function OnboardingPage() {
         await profileService.updateProfile("me", {
           ...updatedProfile,
           preferences: updatedPreferences,
+          onboardingStep: 2,
         });
       } catch (err: any) {
         setIsLoading(false);
@@ -354,26 +581,76 @@ export default function OnboardingPage() {
       } finally {
         setIsLoading(false);
       }
+
+      // Immediately persist Step 1 to local draft storage
+      saveDraftLocally({
+        ...draftInfo,
+        ...updatedProfile,
+        preferences: updatedPreferences,
+        onboardingStep: 2,
+        maxStepReached: Math.max(maxStepReached, 2),
+      });
+      setMaxStepReached((prev) => Math.max(prev, 2));
+      setStep(2);
+      triggerBackgroundAutoSave(2, updatedProfile, updatedPreferences);
+      return;
+    }
+
+    if (step === 2) {
+      setIsLoading(true);
+      let photoUrlToSave = uploadedPhotoUrl;
+      let photoIdToSave = uploadedPhotoId;
+
+      if (primaryPhoto && !uploadedPhotoId) {
+        try {
+          const uploadRes = await mediaService.uploadPhoto(primaryPhoto, true);
+          if (uploadRes?.id) {
+            photoIdToSave = uploadRes.id;
+            setUploadedPhotoId(uploadRes.id);
+            await mediaService.setPrimaryPhoto(uploadRes.id).catch(() => {});
+          }
+          if (uploadRes?.url) {
+            photoUrlToSave = uploadRes.url;
+            setUploadedPhotoUrl(uploadRes.url);
+          }
+        } catch (photoErr) {
+          console.warn("Primary photo upload failed during step 2 save:", photoErr);
+        }
+      }
+
+      const updated = {
+        ...profileData,
+        ...(photoUrlToSave ? { avatarUrl: photoUrlToSave, photoUrl: photoUrlToSave } : {}),
+      };
+      setProfileData(updated);
+
+      saveDraftLocally({
+        ...draftInfo,
+        ...updated,
+        preferences: preferencesData,
+        uploadedPhotoId: photoIdToSave,
+        uploadedPhotoUrl: photoUrlToSave,
+        onboardingStep: 3,
+        maxStepReached: Math.max(maxStepReached, 3),
+      });
+
+      setMaxStepReached((prev) => Math.max(prev, 3));
+      setStep(3);
+      setIsLoading(false);
+      triggerBackgroundAutoSave(3, updated);
+      return;
     }
 
     // Auto-save step progress in background for subsequent steps
-    if (step > 1) {
-      try {
-        if (typeof window !== "undefined") {
-          sessionStorage.setItem(
-            "shaadi_onboarding_draft",
-            JSON.stringify({ ...draftInfo, ...updatedProfile, preferences: updatedPreferences })
-          );
-        }
-        profileService
-          .updateProfile("me", {
-            ...updatedProfile,
-            preferences: updatedPreferences,
-          })
-          .catch(() => {});
-      } catch {
-        // Safe fallback
-      }
+    if (step > 2) {
+      saveDraftLocally({
+        ...draftInfo,
+        ...updatedProfile,
+        preferences: updatedPreferences,
+        onboardingStep: Math.min(step + 1, 4),
+        maxStepReached: Math.max(maxStepReached, Math.min(step + 1, 4)),
+      });
+      triggerBackgroundAutoSave(Math.min(step + 1, 4), updatedProfile, updatedPreferences);
     }
 
     if (step < 4) {
@@ -397,8 +674,58 @@ export default function OnboardingPage() {
 
   const handleBack = () => {
     if (step > 1) {
-      setStep((prev) => (prev - 1) as 1 | 2 | 3 | 4);
+      const prevStep = (step - 1) as 1 | 2 | 3 | 4;
+      setError(null);
+      setPasswordError(null);
+
+      // Save progress so returning retains all details
+      saveDraftLocally({
+        ...draftInfo,
+        ...profileData,
+        preferences: preferencesData,
+        uploadedPhotoId,
+        uploadedPhotoUrl,
+        onboardingStep: prevStep,
+        maxStepReached,
+      });
+
+      setStep(prevStep);
+      triggerBackgroundAutoSave(prevStep, profileData);
     }
+  };
+
+  const handleStepClick = (targetStep: 1 | 2 | 3 | 4) => {
+    if (targetStep === step) return;
+
+    // Disallow jumping ahead if target step is beyond what has been reached
+    if (targetStep > Math.max(step, maxStepReached)) {
+      if (step === 1 && !validateStep1Basic()) {
+        return;
+      }
+    }
+
+    // If leaving step 1, validate basic fields
+    if (step === 1 && targetStep > 1) {
+      if (!validateStep1Basic()) return;
+    }
+
+    setError(null);
+    setPasswordError(null);
+
+    // Synchronously save current step data to guarantee no loss
+    saveDraftLocally({
+      ...draftInfo,
+      ...profileData,
+      preferences: preferencesData,
+      uploadedPhotoId,
+      uploadedPhotoUrl,
+      onboardingStep: targetStep,
+      maxStepReached: Math.max(maxStepReached, targetStep),
+    });
+
+    setMaxStepReached((prev) => Math.max(prev, targetStep));
+    setStep(targetStep);
+    triggerBackgroundAutoSave(targetStep, profileData);
   };
 
   // Step 3: Profile Photo Handler
@@ -449,7 +776,7 @@ export default function OnboardingPage() {
     setError(null);
 
     // Step 4 requires at least 1 album photo
-    if (source === "complete" && albumPhotos.length === 0) {
+    if (source === "complete" && albumPhotos.length === 0 && existingAlbumPhotos.length === 0) {
       setAlbumValidationError(true);
       setError("At least one album photo is mandatory to complete profile setup.");
       toast.error("Album Photo Mandatory", "At least one album photo is mandatory to complete your profile setup.");
@@ -620,9 +947,22 @@ export default function OnboardingPage() {
   // Skip a single optional step to advance to next (Steps 2, 3)
   const handleSkipSingleStep = () => {
     setError(null);
-    if (step < 4) {
-      setStep((prev) => (prev + 1) as 1 | 2 | 3 | 4);
+    if (step === 2) {
+      saveDraftLocally({
+        ...draftInfo,
+        ...profileData,
+        preferences: preferencesData,
+        uploadedPhotoId,
+        uploadedPhotoUrl,
+        onboardingStep: 3,
+        maxStepReached: Math.max(maxStepReached, 3),
+      });
+      setMaxStepReached((prev) => Math.max(prev, 3));
+      setStep(3);
+      triggerBackgroundAutoSave(3, profileData);
       toast.info("Step skipped", "You can always configure this section later in your profile settings.");
+    } else if (step === 3) {
+      handleSkipPassword();
     } else {
       // Step 4 cannot be skipped because at least 1 album photo is required
       setError("Please upload at least one album photo to activate your profile.");
@@ -648,31 +988,104 @@ export default function OnboardingPage() {
     setIsSavingPassword(true);
     try {
       await authService.setPassword(password);
+      setHasPasswordSet(true);
       toast.success(
         "Password saved",
         "You can now also sign in using your email/phone and password!"
       );
-      setStep(4);
     } catch (err: any) {
       const msg = err.message || "Failed to set password. You can still skip this step.";
       setPasswordError(msg);
       toast.error("Error setting password", msg);
+      setIsSavingPassword(false);
+      return;
     } finally {
       setIsSavingPassword(false);
     }
+
+    setHasPasswordSet(true);
+    saveDraftLocally({
+      ...draftInfo,
+      ...profileData,
+      preferences: preferencesData,
+      uploadedPhotoId,
+      uploadedPhotoUrl,
+      password,
+      confirmPassword,
+      hasPasswordSet: true,
+      onboardingStep: 4,
+      maxStepReached: Math.max(maxStepReached, 4),
+    });
+    setMaxStepReached((prev) => Math.max(prev, 4));
+    setStep(4);
+    triggerBackgroundAutoSave(4, profileData);
   };
 
   // Step 3: Skip Password Setup
   const handleSkipPassword = () => {
     setPasswordError(null);
-    toast.info("Step skipped", "You can continue signing in anytime using Mobile OTP.");
+    if (hasPasswordSet) {
+      toast.info("Password retained", "Your existing password remains saved for your account.");
+    } else {
+      toast.info("Step skipped", "You can continue signing in anytime using Mobile OTP.");
+    }
+
+    saveDraftLocally({
+      ...draftInfo,
+      ...profileData,
+      preferences: preferencesData,
+      uploadedPhotoId,
+      uploadedPhotoUrl,
+      password,
+      confirmPassword,
+      hasPasswordSet,
+      onboardingStep: 4,
+      maxStepReached: Math.max(maxStepReached, 4),
+    });
+    setMaxStepReached((prev) => Math.max(prev, 4));
     setStep(4);
+    triggerBackgroundAutoSave(4, profileData);
+  };
+
+  // Complete Later Handler: saves all current progress and returns to landing page
+  const handleCompleteLater = () => {
+    // 1. Synchronously persist current progress to local draft storage
+    saveDraftLocally({
+      ...draftInfo,
+      ...profileData,
+      preferences: preferencesData,
+      uploadedPhotoId,
+      uploadedPhotoUrl,
+      password,
+      confirmPassword,
+      hasPasswordSet,
+      onboardingStep: step,
+      maxStepReached,
+    });
+
+    // 2. Trigger asynchronous background auto-save to backend
+    triggerBackgroundAutoSave(step, profileData);
+
+    // 3. Inform the user with reassurance that progress is preserved
+    toast.info("Progress saved", "Your profile details have been saved safely. You can complete onboarding anytime!");
+
+    // 4. Navigate back to landing page
+    router.push("/");
+  };
+
+  const handleRemoveExistingAlbumPhoto = async (photoId: string) => {
+    setExistingAlbumPhotos((prev) => prev.filter((p) => p.id !== photoId));
+    try {
+      await mediaService.deletePhoto(photoId);
+    } catch (e) {
+      console.warn("Failed deleting album photo:", e);
+    }
   };
 
   // Step 4: Final Complete (delegates to finalizeOnboarding)
   const handleComplete = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (albumPhotos.length === 0) {
+    if (albumPhotos.length === 0 && existingAlbumPhotos.length === 0) {
       setAlbumValidationError(true);
       setError("At least one album photo is mandatory to complete profile setup.");
       toast.error("Album Photo Mandatory", "At least one album photo is mandatory to complete your profile setup.");
@@ -794,27 +1207,36 @@ export default function OnboardingPage() {
       {/* 2. Sticky Luxury Navigation & Step Progress Header */}
       <header className="sticky top-0 z-40 border-b border-[var(--border)]/80 bg-white/90 backdrop-blur-xl">
         <div className={cn(
-          "mx-auto flex h-16 sm:h-20 items-center justify-between px-4 sm:px-6 transition-all duration-300",
+          "mx-auto flex h-16 sm:h-20 items-center justify-between px-3 sm:px-6 transition-all duration-300 gap-2 sm:gap-4",
           step === 1 ? "max-w-5xl xl:max-w-6xl" : "max-w-5xl"
         )}>
-          <Logo href="#" />
+          <Logo href="/" className="shrink-0" />
 
           {/* Desktop Stepper Breadcrumbs */}
-          <div className="hidden lg:flex items-center gap-1.5">
+          <div className="hidden lg:flex items-center gap-1.5 shrink-0">
             {STEPS.map((s) => {
               const isPast = step > s.id;
               const isCurrent = step === s.id;
+              const isAccessible = s.id <= Math.max(step, maxStepReached);
+
               return (
-                <div
+                <button
                   key={s.id}
+                  type="button"
+                  disabled={!isAccessible}
+                  onClick={() => isAccessible && handleStepClick(s.id as 1 | 2 | 3 | 4)}
                   className={cn(
-                    "flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold transition-all",
+                    "flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold transition-all border whitespace-nowrap shrink-0",
+                    isAccessible ? "cursor-pointer" : "cursor-not-allowed opacity-60",
                     isCurrent
-                      ? "bg-[#80132E] text-white shadow-xs font-bold ring-2 ring-[#D89B65]/30"
+                      ? "bg-[#80132E] text-white shadow-xs font-bold ring-2 ring-[#D89B65]/30 border-[#80132E]"
                       : isPast
-                      ? "bg-emerald-50 text-emerald-800 border border-emerald-200"
-                      : "bg-slate-100/90 text-slate-500"
+                      ? "bg-emerald-50 text-emerald-800 border-emerald-200 hover:bg-emerald-100/70"
+                      : isAccessible
+                      ? "bg-slate-100 text-slate-700 border-slate-200 hover:bg-slate-200/80"
+                      : "bg-slate-100/90 text-slate-400 border-transparent"
                   )}
+                  title={isAccessible ? `Go to Step ${s.id}: ${s.label}` : `Complete earlier steps to access ${s.label}`}
                 >
                   {isPast ? (
                     <IconCheck className="h-3 w-3 text-emerald-600 stroke-[3]" />
@@ -841,26 +1263,63 @@ export default function OnboardingPage() {
                       Opt
                     </span>
                   )}
-                </div>
+                </button>
               );
             })}
           </div>
 
-          {/* Right Header Action: Step Badge */}
-          <div className="flex items-center gap-2">
-            {STEPS.find((s) => s.id === step)?.isRequired ? (
-              <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-[#80132E] bg-[#FDF2F4] border border-[#80132E]/20 px-3 py-1.5 rounded-full shadow-2xs">
-                <span>Step {step} of 4</span>
-                <span className="w-1 h-1 rounded-full bg-[#80132E]" />
-                <span className="font-bold">Required</span>
-              </span>
-            ) : (
-              <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-slate-700 bg-slate-100 border border-slate-200 px-3 py-1.5 rounded-full shadow-2xs">
-                <span>Step {step} of 4</span>
-                <span className="w-1 h-1 rounded-full bg-slate-400" />
-                <span>Optional</span>
+          {/* Right Header Action: Step Badge, Auto-save Status & Complete Later */}
+          <div className="flex items-center gap-1.5 sm:gap-2.5 shrink-0">
+            {/* Live Auto-save status feedback */}
+            {autoSaveStatus === "saving" && (
+              <span className="inline-flex items-center gap-1.5 text-xs text-amber-700 bg-amber-50 border border-amber-200/80 px-2.5 py-1 rounded-full animate-pulse shadow-2xs whitespace-nowrap shrink-0">
+                <IconLoader2 className="w-3 h-3 animate-spin text-amber-600 shrink-0" />
+                <span className="hidden sm:inline">Saving progress...</span>
+                <span className="sm:hidden">Saving...</span>
               </span>
             )}
+            {autoSaveStatus === "saved" && (
+              <span className="inline-flex items-center gap-1.5 text-xs text-emerald-700 bg-emerald-50 border border-emerald-200/80 px-2.5 py-1 rounded-full shadow-2xs animate-in fade-in duration-300 whitespace-nowrap shrink-0">
+                <IconCheck className="w-3 h-3 text-emerald-600 stroke-[3] shrink-0" />
+                <span className="hidden sm:inline">Progress saved</span>
+                <span className="sm:hidden">Saved</span>
+              </span>
+            )}
+            {autoSaveStatus === "offline" && (
+              <span className="inline-flex items-center gap-1.5 text-xs text-slate-600 bg-slate-100 border border-slate-200 px-2.5 py-1 rounded-full shadow-2xs whitespace-nowrap shrink-0" title="Changes saved locally on device">
+                <IconShieldCheck className="w-3 h-3 text-slate-500 shrink-0" />
+                <span className="hidden sm:inline">Saved locally</span>
+                <span className="sm:hidden">Saved</span>
+              </span>
+            )}
+
+            {STEPS.find((s) => s.id === step)?.isRequired ? (
+              <span className="inline-flex items-center gap-1 sm:gap-1.5 text-xs font-semibold text-[#80132E] bg-[#FDF2F4] border border-[#80132E]/20 px-2.5 py-1 sm:px-3 sm:py-1.5 rounded-full shadow-2xs whitespace-nowrap shrink-0">
+                <span className="hidden sm:inline">Step {step} of 4</span>
+                <span className="sm:hidden font-bold">Step {step}/4</span>
+                <span className="hidden md:inline-block w-1 h-1 rounded-full bg-[#80132E]" />
+                <span className="hidden md:inline font-bold">Required</span>
+              </span>
+            ) : (
+              <span className="inline-flex items-center gap-1 sm:gap-1.5 text-xs font-semibold text-slate-700 bg-slate-100 border border-slate-200 px-2.5 py-1 sm:px-3 sm:py-1.5 rounded-full shadow-2xs whitespace-nowrap shrink-0">
+                <span className="hidden sm:inline">Step {step} of 4</span>
+                <span className="sm:hidden">Step {step}/4</span>
+                <span className="hidden md:inline-block w-1 h-1 rounded-full bg-slate-400" />
+                <span className="hidden md:inline">Optional</span>
+              </span>
+            )}
+
+            {/* Complete Later Button */}
+            <button
+              type="button"
+              onClick={handleCompleteLater}
+              className="focus-ring inline-flex items-center gap-1 sm:gap-1.5 px-2.5 py-1 sm:px-3.5 sm:py-2 rounded-xl border border-[var(--border)] bg-white text-xs font-semibold text-[var(--muted-strong)] hover:text-[#80132E] hover:border-[#80132E]/30 hover:bg-[#FDF2F4]/70 transition-all shadow-2xs cursor-pointer active:scale-95 whitespace-nowrap shrink-0"
+              title="Save progress and return to landing page. You can complete your profile anytime."
+            >
+              <IconHome className="h-3.5 w-3.5 text-[var(--muted)] shrink-0" />
+              <span className="hidden sm:inline">Complete Later</span>
+              <span className="sm:hidden">Later</span>
+            </button>
           </div>
         </div>
 
@@ -872,18 +1331,24 @@ export default function OnboardingPage() {
           {STEPS.map((s) => {
             const isCompleted = step > s.id;
             const isCurrent = step === s.id;
+            const isAccessible = s.id <= Math.max(step, maxStepReached);
+
             return (
-              <div
+              <button
                 key={s.id}
+                type="button"
+                disabled={!isAccessible}
+                onClick={() => isAccessible && handleStepClick(s.id as 1 | 2 | 3 | 4)}
                 className={cn(
-                  "h-1.5 rounded-full transition-all duration-300",
+                  "h-1.5 rounded-full transition-all duration-300 block w-full p-0 border-0",
+                  isAccessible ? "cursor-pointer hover:opacity-80" : "cursor-default",
                   isCompleted
                     ? "bg-[#80132E]"
                     : isCurrent
                     ? "bg-gradient-to-r from-[#80132E] to-[#D89B65] shadow-xs"
                     : "bg-slate-200/80"
                 )}
-                title={`${s.label} (${s.isRequired ? "Required" : "Optional"})`}
+                title={`${s.label} (${s.isRequired ? "Required" : "Optional"})${isAccessible ? " - Click to navigate" : ""}`}
               />
             );
           })}
@@ -1123,8 +1588,8 @@ export default function OnboardingPage() {
                           </div>
                         </div>
 
-                        {/* Gender, DOB & 10. Height */}
-                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                        {/* Gender & Date of Birth */}
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                           <div>
                             <ModernSelect
                               label="Gender"
@@ -1163,8 +1628,10 @@ export default function OnboardingPage() {
                               maxAge={70}
                             />
                           </div>
+                        </div>
 
-                          {/* 10. Height */}
+                        {/* Height & Marital Status */}
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                           <div>
                             <ModernSelect
                               label="Height"
@@ -1176,6 +1643,24 @@ export default function OnboardingPage() {
                                 setProfileData((prev: any) => ({ ...prev, height: val }))
                               }
                               placeholder="Select Height"
+                              maxHeight="max-h-[220px]"
+                            />
+                          </div>
+
+                          <div>
+                            <ModernSelect
+                              label="Marital Status"
+                              required
+                              name="maritalStatus"
+                              value={profileData.maritalStatus || "Never Married"}
+                              options={MARITAL_STATUS_OPTIONS.map((st) => ({
+                                value: st,
+                                label: st,
+                              }))}
+                              onChange={(val) =>
+                                setProfileData((prev: any) => ({ ...prev, maritalStatus: val }))
+                              }
+                              placeholder="Select Marital Status"
                               maxHeight="max-h-[220px]"
                             />
                           </div>
@@ -1517,7 +2002,16 @@ export default function OnboardingPage() {
 
                   </div>
 
-                  <div className="pt-6 flex justify-end border-t border-[var(--border)]/70">
+                  <div className="pt-6 flex flex-col-reverse sm:flex-row items-center justify-between gap-3 border-t border-[var(--border)]/70">
+                    <button
+                      type="button"
+                      onClick={handleCompleteLater}
+                      className="focus-ring inline-flex h-12 w-full sm:w-auto items-center justify-center gap-2 rounded-xl bg-[var(--surface-muted)] px-5 text-sm font-semibold text-[var(--foreground)] hover:bg-[var(--border)] transition-all cursor-pointer"
+                    >
+                      <IconHome className="h-4 w-4 text-[var(--muted)]" />
+                      <span>Complete Later</span>
+                    </button>
+
                     <button
                       type="submit"
                       disabled={isLoading}
@@ -1567,11 +2061,11 @@ export default function OnboardingPage() {
                 )}
 
                 <form onSubmit={handleNext} className="space-y-6">
-                  {primaryPhoto ? (
+                  {(primaryPhoto || uploadedPhotoUrl) ? (
                     <div className="rounded-2xl border-2 border-emerald-200 bg-emerald-50/40 p-6 flex flex-col items-center text-center">
                       <div className="h-28 w-28 rounded-full overflow-hidden border-4 border-white shadow-md mb-3 relative bg-slate-100">
                         <img
-                          src={URL.createObjectURL(primaryPhoto)}
+                          src={primaryPhoto ? URL.createObjectURL(primaryPhoto) : uploadedPhotoUrl!}
                           alt="Preview"
                           className="h-full w-full object-cover"
                         />
@@ -1598,9 +2092,22 @@ export default function OnboardingPage() {
                         <button
                           type="button"
                           onClick={() => {
+                            if (uploadedPhotoId) {
+                              mediaService.deletePhoto(uploadedPhotoId).catch(() => {});
+                            }
                             setPrimaryPhoto(null);
                             setUploadedPhotoId(null);
                             setUploadedPhotoUrl(null);
+                            setProfileData((prev: any) => ({ ...prev, avatarUrl: null, photoUrl: null }));
+                            saveDraftLocally({
+                              ...draftInfo,
+                              ...profileData,
+                              avatarUrl: null,
+                              photoUrl: null,
+                              uploadedPhotoId: null,
+                              uploadedPhotoUrl: null,
+                              onboardingStep: 2,
+                            });
                           }}
                           className="text-xs font-semibold text-rose-600 bg-white px-3.5 py-1.5 rounded-lg border border-rose-200 shadow-2xs hover:bg-rose-50 transition cursor-pointer"
                         >
@@ -1724,21 +2231,40 @@ export default function OnboardingPage() {
                   </div>
                 )}
 
-                {/* Mobile OTP Highlight */}
-                <div className="mb-6 p-4 rounded-xl border border-emerald-100 bg-emerald-50/50 flex items-start gap-3">
-                  <div className="h-9 w-9 rounded-lg bg-emerald-100 text-emerald-700 flex items-center justify-center shrink-0 mt-0.5">
-                    <IconDeviceMobile className="h-5 w-5" />
+                {/* Mobile OTP / Password Status Highlight */}
+                {hasPasswordSet ? (
+                  <div className="mb-6 p-4 rounded-xl border border-emerald-200 bg-emerald-50/70 flex items-start gap-3">
+                    <div className="h-9 w-9 rounded-lg bg-emerald-100 text-emerald-700 flex items-center justify-center shrink-0 mt-0.5">
+                      <IconShieldCheck className="h-5 w-5" />
+                    </div>
+                    <div className="text-xs text-emerald-950 leading-relaxed">
+                      <p className="font-semibold text-emerald-900 flex items-center gap-2">
+                        <span>Password Configured & Saved</span>
+                        <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-200/80 text-emerald-900">
+                          Active
+                        </span>
+                      </p>
+                      <p className="mt-0.5 text-emerald-800/90">
+                        Your account password has been saved. You can enter a new password below anytime if you wish to change it, or continue forward.
+                      </p>
+                    </div>
                   </div>
-                  <div className="text-xs text-emerald-950 leading-relaxed">
-                    <p className="font-semibold text-emerald-900">
-                      Mobile OTP login is already active
-                    </p>
-                    <p className="mt-0.5 text-emerald-800/90">
-                      If you prefer not to create a password right now, feel free to skip this step.
-                      You can sign in anytime via SMS OTP.
-                    </p>
+                ) : (
+                  <div className="mb-6 p-4 rounded-xl border border-emerald-100 bg-emerald-50/50 flex items-start gap-3">
+                    <div className="h-9 w-9 rounded-lg bg-emerald-100 text-emerald-700 flex items-center justify-center shrink-0 mt-0.5">
+                      <IconDeviceMobile className="h-5 w-5" />
+                    </div>
+                    <div className="text-xs text-emerald-950 leading-relaxed">
+                      <p className="font-semibold text-emerald-900">
+                        Mobile OTP login is already active
+                      </p>
+                      <p className="mt-0.5 text-emerald-800/90">
+                        If you prefer not to create a password right now, feel free to skip this step.
+                        You can sign in anytime via SMS OTP.
+                      </p>
+                    </div>
                   </div>
-                </div>
+                )}
 
                 <form onSubmit={handleSavePassword} className="space-y-5">
                   <div className="space-y-4">
@@ -1754,7 +2280,12 @@ export default function OnboardingPage() {
                         <input
                           type={showPassword ? "text" : "password"}
                           value={password}
-                          onChange={(e) => setPassword(e.target.value)}
+                          onChange={(e) => {
+                            const val = e.target.value;
+                            setPassword(val);
+                            if (passwordError) setPasswordError(null);
+                            saveDraftLocally({ password: val });
+                          }}
                           placeholder="Enter new password"
                           className="h-12 w-full rounded-xl border border-[var(--border)] bg-white pl-11 pr-12 text-sm text-[var(--foreground)] outline-none focus:border-[var(--primary)] focus:ring-4 focus:ring-[var(--primary)]/10"
                         />
@@ -1784,7 +2315,12 @@ export default function OnboardingPage() {
                         <input
                           type={showPassword ? "text" : "password"}
                           value={confirmPassword}
-                          onChange={(e) => setConfirmPassword(e.target.value)}
+                          onChange={(e) => {
+                            const val = e.target.value;
+                            setConfirmPassword(val);
+                            if (passwordError) setPasswordError(null);
+                            saveDraftLocally({ confirmPassword: val });
+                          }}
                           placeholder="Re-enter password"
                           className="h-12 w-full rounded-xl border border-[var(--border)] bg-white pl-11 pr-4 text-sm text-[var(--foreground)] outline-none focus:border-[var(--primary)] focus:ring-4 focus:ring-[var(--primary)]/10"
                         />
@@ -1807,7 +2343,7 @@ export default function OnboardingPage() {
                         onClick={handleSkipPassword}
                         className="text-xs sm:text-sm font-semibold text-[var(--muted)] hover:text-[#80132E] px-3 py-2 transition cursor-pointer"
                       >
-                        Skip for now →
+                        {hasPasswordSet ? "Continue with saved password →" : "Skip for now →"}
                       </button>
                       <button
                         type="submit"
@@ -1818,6 +2354,11 @@ export default function OnboardingPage() {
                           <>
                             <IconLoader2 className="h-4 w-4 animate-spin" />
                             <span>Saving...</span>
+                          </>
+                        ) : hasPasswordSet ? (
+                          <>
+                            <span>Update & Continue</span>
+                            <IconArrowRight className="h-4 w-4" />
                           </>
                         ) : (
                           <>
@@ -1887,58 +2428,92 @@ export default function OnboardingPage() {
                     </div>
 
                     <div className="grid grid-cols-2 sm:grid-cols-4 gap-3.5">
-                      {Array.from({ length: Math.max(4, Math.min(albumPhotos.length + 1, 6)) }).map((_, idx) => {
-                        const file = albumPhotos[idx];
-                        const isFirstSlot = idx === 0;
-                        const isFirstAndNoDp = !primaryPhoto && isFirstSlot;
-                        const hasPhoto = Boolean(file);
-
-                        if (hasPhoto && file) {
-                          return (
-                            <div
-                              key={idx}
-                              className="relative group aspect-square rounded-2xl overflow-hidden border-2 border-slate-200 bg-slate-100 shadow-xs flex flex-col justify-between p-2.5 transition-all"
+                      {/* Render existing saved album photos */}
+                      {existingAlbumPhotos.map((photo, idx) => (
+                        <div
+                          key={`existing-${photo.id}`}
+                          className="relative group aspect-square rounded-2xl overflow-hidden border-2 border-emerald-200 bg-slate-100 shadow-xs flex flex-col justify-between p-2.5 transition-all"
+                        >
+                          <img
+                            src={photo.url}
+                            alt={`Saved Photo ${idx + 1}`}
+                            className="absolute inset-0 h-full w-full object-cover"
+                          />
+                          <div className="relative z-10 flex items-center justify-between">
+                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-700/90 text-white text-[10px] font-bold shadow-xs backdrop-blur-xs">
+                              <IconCircleCheck className="w-3 h-3" />
+                              Saved Photo
+                            </span>
+                            <button
+                              type="button"
+                              onClick={() => handleRemoveExistingAlbumPhoto(photo.id)}
+                              className="h-7 w-7 rounded-full bg-white/90 text-rose-600 hover:bg-rose-600 hover:text-white transition flex items-center justify-center shadow-xs cursor-pointer"
+                              title="Remove photo"
                             >
-                              <img
-                                src={URL.createObjectURL(file)}
-                                alt={`Album Photo ${idx + 1}`}
-                                className="absolute inset-0 h-full w-full object-cover"
-                              />
-                              <div className="relative z-10 flex items-center justify-between">
-                                {isFirstAndNoDp ? (
-                                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-600/90 text-white text-[10px] font-bold shadow-xs backdrop-blur-xs">
-                                    <IconCircleCheck className="w-3 h-3" />
-                                    Primary DP
-                                  </span>
-                                ) : (
-                                  <span className="px-2 py-0.5 rounded-full bg-black/60 text-white text-[10px] font-semibold backdrop-blur-xs">
-                                    Photo {idx + 1}
-                                  </span>
-                                )}
-                                <button
-                                  type="button"
-                                  onClick={() => handleRemoveAlbumPhoto(idx)}
-                                  className="h-7 w-7 rounded-full bg-white/90 text-rose-600 hover:bg-rose-600 hover:text-white transition flex items-center justify-center shadow-xs cursor-pointer"
-                                  title="Remove photo"
-                                >
-                                  <IconTrash className="w-3.5 h-3.5" />
-                                </button>
-                              </div>
+                              <IconTrash className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
+                          <div className="relative z-10 bg-black/65 backdrop-blur-xs text-white px-2 py-1 rounded-lg text-[11px] font-medium truncate">
+                            {getDisplayName()} — Photo {idx + 1}
+                          </div>
+                        </div>
+                      ))}
 
-                              <div className="relative z-10 bg-black/65 backdrop-blur-xs text-white px-2 py-1 rounded-lg text-[11px] font-medium truncate">
-                                {getDisplayName()} — {isFirstAndNoDp ? "Profile DP" : `Photo ${idx + 1}`}
-                              </div>
+                      {/* Render newly selected album photo files */}
+                      {albumPhotos.map((file, idx) => {
+                        const totalIdx = existingAlbumPhotos.length + idx;
+                        const isFirstSlot = totalIdx === 0;
+                        const isFirstAndNoDp = !primaryPhoto && !uploadedPhotoUrl && isFirstSlot;
+
+                        return (
+                          <div
+                            key={`new-${idx}`}
+                            className="relative group aspect-square rounded-2xl overflow-hidden border-2 border-slate-200 bg-slate-100 shadow-xs flex flex-col justify-between p-2.5 transition-all"
+                          >
+                            <img
+                              src={URL.createObjectURL(file)}
+                              alt={`Album Photo ${totalIdx + 1}`}
+                              className="absolute inset-0 h-full w-full object-cover"
+                            />
+                            <div className="relative z-10 flex items-center justify-between">
+                              {isFirstAndNoDp ? (
+                                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-600/90 text-white text-[10px] font-bold shadow-xs backdrop-blur-xs">
+                                  <IconCircleCheck className="w-3 h-3" />
+                                  Primary DP
+                                </span>
+                              ) : (
+                                <span className="px-2 py-0.5 rounded-full bg-black/60 text-white text-[10px] font-semibold backdrop-blur-xs">
+                                  Photo {totalIdx + 1}
+                                </span>
+                              )}
+                              <button
+                                type="button"
+                                onClick={() => handleRemoveAlbumPhoto(idx)}
+                                className="h-7 w-7 rounded-full bg-white/90 text-rose-600 hover:bg-rose-600 hover:text-white transition flex items-center justify-center shadow-xs cursor-pointer"
+                                title="Remove photo"
+                              >
+                                <IconTrash className="w-3.5 h-3.5" />
+                              </button>
                             </div>
-                          );
-                        }
 
-                        // Empty Placeholder Slot
-                        const isFirstEmptyPlaceholder = isFirstSlot && albumPhotos.length === 0;
+                            <div className="relative z-10 bg-black/65 backdrop-blur-xs text-white px-2 py-1 rounded-lg text-[11px] font-medium truncate">
+                              {getDisplayName()} — {isFirstAndNoDp ? "Profile DP" : `Photo ${totalIdx + 1}`}
+                            </div>
+                          </div>
+                        );
+                      })}
+
+                      {/* Render empty placeholders up to limit */}
+                      {Array.from({
+                        length: Math.max(1, Math.min(4 - (existingAlbumPhotos.length + albumPhotos.length), 6 - (existingAlbumPhotos.length + albumPhotos.length)))
+                      }).map((_, placeholderIdx) => {
+                        const totalCount = existingAlbumPhotos.length + albumPhotos.length;
+                        const isFirstEmptyPlaceholder = totalCount === 0 && placeholderIdx === 0;
                         const isHighlightRed = isFirstEmptyPlaceholder && albumValidationError;
 
                         return (
                           <div
-                            key={idx}
+                            key={`placeholder-${placeholderIdx}`}
                             onClick={() => albumInputRef.current?.click()}
                             className={cn(
                               "aspect-square rounded-2xl flex flex-col items-center justify-center p-3 sm:p-4 text-center cursor-pointer transition-all group relative",
@@ -1972,9 +2547,7 @@ export default function OnboardingPage() {
                                   : "text-slate-700 group-hover:text-[var(--primary)]"
                               )}
                             >
-                              {idx === albumPhotos.length && albumPhotos.length > 0
-                                ? "+ Add Photo"
-                                : `Photo ${idx + 1}`}
+                              {totalCount > 0 ? "+ Add Photo" : "Upload Photo"}
                             </span>
 
                             <span className="text-[10px] mt-1.5 font-medium">
