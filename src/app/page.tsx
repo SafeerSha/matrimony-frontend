@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { Logo } from "@/components/layout/logo";
-import { HeroSection, BotanicalCornerDecorations, QuickRegisterSection } from "@/components/hero";
+import { HeroSection, BotanicalCornerDecorations } from "@/components/hero";
 import { ScrollReveal } from "@/components/ui/scroll-reveal";
 
 const features = [
@@ -46,7 +46,7 @@ export default function LandingPage() {
 
       <HeroSection />
 
-      <QuickRegisterSection />
+      {/* <QuickRegisterSection /> */}
 
       <section id="how-it-works" className="border-y border-[var(--border)] bg-white">
         <div className="mx-auto grid max-w-[1600px] gap-4 px-4 py-12 sm:px-6 xl:px-10 md:grid-cols-3">

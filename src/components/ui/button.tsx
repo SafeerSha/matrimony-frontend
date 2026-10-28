@@ -27,19 +27,19 @@ export interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
 
 const variants: Record<ButtonVariant, string> = {
   primary:
-    "bg-[var(--primary)] text-white hover:bg-[var(--primary-deep)] shadow-[0_4px_16px_var(--primary-shadow)] hover:shadow-[0_6px_22px_var(--primary-shadow-strong)] border border-transparent",
+    "bg-gradient-to-b from-[#941A35] via-[var(--primary)] to-[var(--primary-deep)] text-white border-t border-white/25 border-x border-[var(--primary)] border-b-2 border-b-[#4A0818] shadow-[0_6px_16px_-2px_rgba(0,0,0,0.5),0_2px_4px_rgba(0,0,0,0.3),inset_0_1px_0_rgba(255,255,255,0.2),inset_0_-2px_3px_rgba(0,0,0,0.3)] hover:shadow-[0_10px_24px_-2px_rgba(0,0,0,0.6),0_3px_6px_rgba(0,0,0,0.35)] hover:-translate-y-0.5 active:translate-y-[1.5px] active:shadow-[0_2px_5px_rgba(0,0,0,0.4)] transition-all duration-150 font-bold",
   secondary:
-    "bg-[var(--surface)] text-[var(--foreground)] border border-[var(--border)] hover:bg-[var(--surface-muted)] hover:border-[var(--border-strong)] shadow-sm",
+    "bg-gradient-to-b from-white via-slate-50 to-slate-100/90 text-[var(--foreground)] border border-slate-200 border-b-2 border-b-slate-300 shadow-[0_3px_0_0_#CBD5E1,0_3px_8px_rgba(148,163,184,0.3)] hover:shadow-[0_4px_0_0_#CBD5E1,0_5px_12px_rgba(148,163,184,0.35)] hover:-translate-y-0.5 active:translate-y-[2px] active:shadow-[0_1px_0_0_#CBD5E1] transition-all duration-150 font-bold",
   blush:
-    "bg-[var(--blush-light)] text-[var(--blush-deep)] border border-[var(--border)] hover:bg-[var(--blush)] hover:text-white transition-all",
+    "bg-gradient-to-b from-[#FDF2F4] via-[#FCE7EB] to-[#F8D4DC] text-[var(--blush-deep)] border border-[#F7C6CE] border-b-2 border-b-[#EAAFB9] shadow-[0_3px_0_0_#EAAFB9,0_3px_8px_rgba(234,175,185,0.3)] hover:shadow-[0_4px_0_0_#EAAFB9,0_5px_12px_rgba(234,175,185,0.35)] hover:-translate-y-0.5 active:translate-y-[2px] active:shadow-[0_1px_0_0_#EAAFB9] transition-all duration-150 font-bold",
   champagne:
-    "bg-[var(--champagne-light)] text-[var(--accent-foreground)] border border-[var(--champagne-border)] hover:bg-[#FDF3E7] shadow-xs font-semibold",
+    "bg-gradient-to-b from-[#F7E7CE] via-[#EED7B5] to-[#E3C397] text-[#4A2600] border border-[#D8B28C] border-b-2 border-b-[#B88E5E] shadow-[0_3px_0_0_#B88E5E,0_3px_8px_rgba(184,142,94,0.3)] hover:shadow-[0_4px_0_0_#B88E5E,0_5px_12px_rgba(184,142,94,0.35)] hover:-translate-y-0.5 active:translate-y-[2px] active:shadow-[0_1px_0_0_#B88E5E] transition-all duration-150 font-bold",
   outline:
-    "bg-transparent text-[var(--foreground)] border border-[var(--border)] hover:bg-[var(--surface-muted)] hover:border-[var(--border-strong)]",
+    "bg-transparent text-[var(--foreground)] border-2 border-[var(--border)] hover:bg-[var(--surface-muted)] hover:border-[var(--border-strong)] active:translate-y-[1px] transition-all duration-150 font-bold",
   ghost:
-    "bg-transparent text-[var(--muted-strong)] hover:bg-[var(--primary-lighter)] hover:text-[var(--primary)]",
+    "bg-transparent text-[var(--muted-strong)] hover:bg-[var(--primary-lighter)] hover:text-[var(--primary)] active:translate-y-[1px] transition-all duration-150 font-bold",
   danger:
-    "bg-rose-50 text-[var(--danger)] border border-rose-200 hover:bg-[var(--danger)] hover:text-white transition-colors"
+    "bg-gradient-to-b from-rose-500 via-rose-600 to-rose-700 text-white border border-rose-600 border-b-2 border-b-rose-800 shadow-[0_3px_0_0_#9F1239,0_3px_8px_rgba(159,18,57,0.3)] hover:shadow-[0_4px_0_0_#9F1239,0_5px_12px_rgba(159,18,57,0.35)] hover:-translate-y-0.5 active:translate-y-[2px] active:shadow-[0_1px_0_0_#9F1239] transition-all duration-150 font-bold"
 };
 
 const sizes: Record<ButtonSize, string> = {

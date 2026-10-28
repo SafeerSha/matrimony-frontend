@@ -61,30 +61,30 @@ const LOOKING_FOR_OPTIONS: OptionConfig[] = [
     title: "Marriage",
     badge: "Lifelong Bond",
     icon: IconHeartHandshake,
-    iconBgClass: "bg-[#FDF2F4] border-[#F7C6CE] shadow-[0_4px_14px_rgba(122,24,53,0.12)]",
-    iconColorClass: "text-[#7A1835]",
-    accentGlowClass: "from-[#7A1835]/10 via-[#7A1835]/5 to-transparent",
-    badgeColorClass: "bg-[#FDF2F4] text-[#7A1835] border-[#F7C6CE]",
+    iconBgClass: "bg-gradient-to-br from-[#A31D42]/50 to-[#5C1027]/80 border border-[#FF9EAF]/30 shadow-[0_4px_16px_rgba(163,29,66,0.35)]",
+    iconColorClass: "text-[#FFCAD4]",
+    accentGlowClass: "from-[#A31D42]/20 via-[#A31D42]/10 to-transparent",
+    badgeColorClass: "bg-[#7A1835]/60 text-[#FFCAD4] border border-[#FF9EAF]/30 backdrop-blur-xs",
   },
   {
     id: "Friendship",
     title: "Friendship",
     badge: "Social Circle",
     icon: IconUsers,
-    iconBgClass: "bg-[#FAF3EC] border-[#EAD8C7] shadow-[0_4px_14px_rgba(216,178,140,0.18)]",
-    iconColorClass: "text-[#8C5D2C]",
-    accentGlowClass: "from-[#D8B28C]/15 via-[#D8B28C]/5 to-transparent",
-    badgeColorClass: "bg-[#FAF3EC] text-[#8C5D2C] border-[#EAD8C7]",
+    iconBgClass: "bg-gradient-to-br from-[#D8B28C]/35 to-[#8C5D2C]/60 border border-[#E8BE88]/35 shadow-[0_4px_16px_rgba(216,178,140,0.25)]",
+    iconColorClass: "text-[#FCD8A5]",
+    accentGlowClass: "from-[#D8B28C]/20 via-[#D8B28C]/10 to-transparent",
+    badgeColorClass: "bg-[#8C5D2C]/40 text-[#FCD8A5] border border-[#D8B28C]/35 backdrop-blur-xs",
   },
   {
     id: "Living-together",
     title: "Living-together",
     badge: "Modern Living",
     icon: IconHomeHeart,
-    iconBgClass: "bg-[#F0F7F4] border-[#C8E4D6] shadow-[0_4px_14px_rgba(30,126,82,0.12)]",
-    iconColorClass: "text-[#1E7E52]",
-    accentGlowClass: "from-[#1E7E52]/10 via-[#1E7E52]/5 to-transparent",
-    badgeColorClass: "bg-[#F0F7F4] text-[#1E7E52] border-[#C8E4D6]",
+    iconBgClass: "bg-gradient-to-br from-[#1E7E52]/40 to-[#0E4F32]/70 border border-[#6EE7B7]/30 shadow-[0_4px_16px_rgba(30,126,82,0.3)]",
+    iconColorClass: "text-[#A7F3D0]",
+    accentGlowClass: "from-[#1E7E52]/20 via-[#1E7E52]/10 to-transparent",
+    badgeColorClass: "bg-[#1E7E52]/40 text-[#A7F3D0] border border-[#6EE7B7]/30 backdrop-blur-xs",
   },
 ];
 
@@ -94,30 +94,30 @@ const MATRIMONY_OPTIONS: MatrimonySubOptionConfig[] = [
     title: "Kerala matrimony",
     badge: "Malayali",
     icon: IconHeartHandshake,
-    iconBgClass: "bg-[#FDF2F4] border-[#F7C6CE] shadow-[0_4px_14px_rgba(122,24,53,0.12)]",
-    iconColorClass: "text-[#7A1835]",
-    accentGlowClass: "from-[#7A1835]/10 via-[#7A1835]/5 to-transparent",
-    badgeColorClass: "bg-[#FDF2F4] text-[#7A1835] border-[#F7C6CE]",
+    iconBgClass: "bg-gradient-to-br from-[#A31D42]/50 to-[#5C1027]/80 border border-[#FF9EAF]/30 shadow-[0_4px_16px_rgba(163,29,66,0.35)]",
+    iconColorClass: "text-[#FFCAD4]",
+    accentGlowClass: "from-[#A31D42]/20 via-[#A31D42]/10 to-transparent",
+    badgeColorClass: "bg-[#7A1835]/60 text-[#FFCAD4] border border-[#FF9EAF]/30 backdrop-blur-xs",
   },
   {
     id: "Telugu",
     title: "Telugu matrimony",
     badge: "Telugu",
     icon: IconSparkles,
-    iconBgClass: "bg-[#FAF3EC] border-[#EAD8C7] shadow-[0_4px_14px_rgba(216,178,140,0.18)]",
-    iconColorClass: "text-[#8C5D2C]",
-    accentGlowClass: "from-[#D8B28C]/15 via-[#D8B28C]/5 to-transparent",
-    badgeColorClass: "bg-[#FAF3EC] text-[#8C5D2C] border-[#EAD8C7]",
+    iconBgClass: "bg-gradient-to-br from-[#D8B28C]/35 to-[#8C5D2C]/60 border border-[#E8BE88]/35 shadow-[0_4px_16px_rgba(216,178,140,0.25)]",
+    iconColorClass: "text-[#FCD8A5]",
+    accentGlowClass: "from-[#D8B28C]/20 via-[#D8B28C]/10 to-transparent",
+    badgeColorClass: "bg-[#8C5D2C]/40 text-[#FCD8A5] border border-[#D8B28C]/35 backdrop-blur-xs",
   },
   {
     id: "Bharat",
     title: "Bharat matrimony",
     badge: "Pan-India",
     icon: IconWorld,
-    iconBgClass: "bg-[#F0F7F4] border-[#C8E4D6] shadow-[0_4px_14px_rgba(30,126,82,0.12)]",
-    iconColorClass: "text-[#1E7E52]",
-    accentGlowClass: "from-[#1E7E52]/10 via-[#1E7E52]/5 to-transparent",
-    badgeColorClass: "bg-[#F0F7F4] text-[#1E7E52] border-[#C8E4D6]",
+    iconBgClass: "bg-gradient-to-br from-[#1E7E52]/40 to-[#0E4F32]/70 border border-[#6EE7B7]/30 shadow-[0_4px_16px_rgba(30,126,82,0.3)]",
+    iconColorClass: "text-[#A7F3D0]",
+    accentGlowClass: "from-[#1E7E52]/20 via-[#1E7E52]/10 to-transparent",
+    badgeColorClass: "bg-[#1E7E52]/40 text-[#A7F3D0] border border-[#6EE7B7]/30 backdrop-blur-xs",
   },
 ];
 
@@ -133,19 +133,17 @@ const CREATED_BY_OPTIONS: ModernSelectOption[] = [
 export function LookingForModal({
   isOpen,
   onClose,
-  onSelectOption,
   initialOption = null,
   initialPhone,
 }: LookingForModalProps) {
   const router = useRouter();
 
   const [currentStep, setCurrentStep] = useState<ModalStep>("category");
-  const [slideDirection, setSlideDirection] = useState<"forward" | "backward">("forward");
   const [selectedCategory, setSelectedCategory] = useState<LookingForOption | null>(initialOption ?? null);
   const [selectedMatrimony, setSelectedMatrimony] = useState<MatrimonyCommunityOption | null>(null);
 
   // Form Fields State
-  const [seekingGender, setSeekingGender] = useState<"Female" | "Male">("Female"); // Bride = Female, Groom = Male
+  const [seekingGender, setSeekingGender] = useState<"Female" | "Male">("Female");
   const [createdBy, setCreatedBy] = useState("Myself");
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
@@ -153,19 +151,20 @@ export function LookingForModal({
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  // Modal Animation & Rendering States (for dialog open/close)
   const [mounted, setMounted] = useState(false);
   const [isRendered, setIsRendered] = useState(isOpen);
   const [isAnimatingIn, setIsAnimatingIn] = useState(false);
 
   useEffect(() => {
     setMounted(true);
-  }, []);
+    router.prefetch("/verify");
+  }, [router]);
 
   useEffect(() => {
     if (isOpen) {
       setIsRendered(true);
       setCurrentStep("category");
-      setSlideDirection("forward");
       setSelectedCategory(initialOption ?? null);
       setSelectedMatrimony(null);
       setError(null);
@@ -175,24 +174,21 @@ export function LookingForModal({
         setPhone(initialPhone.replace(/\D/g, "").slice(-10));
       }
 
-      const frame = requestAnimationFrame(() => {
-        requestAnimationFrame(() => {
-          setIsAnimatingIn(true);
-        });
-      });
-      return () => cancelAnimationFrame(frame);
+      const timer = setTimeout(() => {
+        setIsAnimatingIn(true);
+      }, 30);
+      return () => clearTimeout(timer);
     } else {
       setIsAnimatingIn(false);
       const timer = setTimeout(() => {
         setIsRendered(false);
-      }, 320);
+      }, 360);
       return () => clearTimeout(timer);
     }
   }, [isOpen, initialOption, initialPhone]);
 
   const handleGoBack = useCallback(() => {
     setError(null);
-    setSlideDirection("backward");
     if (currentStep === "registration_form") {
       if (selectedCategory === "Marriage") {
         setCurrentStep("matrimony_sub");
@@ -243,7 +239,6 @@ export function LookingForModal({
   const handleSelectCategory = (categoryId: LookingForOption) => {
     setSelectedCategory(categoryId);
     setError(null);
-    setSlideDirection("forward");
 
     if (categoryId === "Marriage") {
       setCurrentStep("matrimony_sub");
@@ -257,7 +252,6 @@ export function LookingForModal({
   const handleSelectMatrimony = (communityId: MatrimonyCommunityOption) => {
     setSelectedMatrimony(communityId);
     setError(null);
-    setSlideDirection("forward");
     setCurrentStep("registration_form");
   };
 
@@ -331,7 +325,7 @@ export function LookingForModal({
         "Verification Code Sent",
         `We've sent a 6-digit verification code to ${fullPhone}.`
       );
-      onClose();
+      // Navigate directly to /verify without dismissing the modal beforehand to eliminate landing page flash
       router.push("/verify");
     } catch (err: any) {
       if (err?.status === 409) {
@@ -346,12 +340,473 @@ export function LookingForModal({
         "Verification Code Sent",
         `Please verify your mobile number to continue.`
       );
-      onClose();
+      // Navigate directly to /verify without dismissing the modal beforehand
       router.push("/verify");
-    } finally {
-      setIsSubmitting(false);
     }
   };
+
+  // RENDER STEP 1: Main Category Selection
+  const renderCategoryStep = () => (
+    <div className="w-full">
+      {/* Header with Title and Close Button */}
+      <div className="relative z-20 mb-4 sm:mb-5">
+        <div className="flex items-start justify-between gap-3">
+          <div className="flex-1 min-w-0">
+            <h2
+              id="looking-for-modal-heading"
+              className="text-2xl sm:text-3xl font-black tracking-tight text-white font-editorial-title leading-tight drop-shadow-xs"
+            >
+              What You're Looking For
+            </h2>
+          </div>
+
+          {/* Close Button */}
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              onClose();
+            }}
+            className="group focus-ring shrink-0 grid h-9 w-9 place-items-center rounded-full bg-white/10 hover:bg-white/20 active:scale-90 text-white/90 hover:text-white border border-white/20 backdrop-blur-md transition-all duration-200 cursor-pointer shadow-xs hover:rotate-90"
+            aria-label="Close dialog"
+          >
+            <IconX className="h-4 w-4 transition-transform duration-200" />
+          </button>
+        </div>
+
+        <p className="mt-1 text-sm sm:text-base text-rose-100/90 leading-relaxed font-normal">
+          Choose the type of connection you are seeking on{" "}
+          <span className="font-bold text-[#FCD8A5]">IshtamChat</span> to tailor your registration.
+        </p>
+      </div>
+
+      {/* Options Cards - Blended Luxury Glass Cards */}
+      <div
+        role="radiogroup"
+        aria-labelledby="looking-for-modal-heading"
+        className="relative z-10 flex flex-col gap-3 sm:gap-3.5"
+      >
+        {LOOKING_FOR_OPTIONS.map((option) => {
+          const isSelected = selectedCategory === option.id;
+          const IconComponent = option.icon;
+
+          return (
+            <div
+              key={option.id}
+              role="radio"
+              aria-checked={isSelected}
+              tabIndex={0}
+              onClick={() => handleSelectCategory(option.id)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" || e.key === " ") {
+                  e.preventDefault();
+                  handleSelectCategory(option.id);
+                }
+              }}
+              className={cn(
+                "group relative flex items-center gap-3.5 sm:gap-4 px-4.5 py-3.5 sm:px-5 sm:py-3.5 rounded-2xl cursor-pointer transition-all duration-200 ease-out select-none backdrop-blur-md overflow-hidden",
+                isSelected
+                  ? "bg-white/[0.16] border-2 border-[#E8BE88] ring-2 ring-[#E8BE88]/30 shadow-[0_12px_32px_rgba(0,0,0,0.45),0_0_24px_rgba(232,190,136,0.22)]"
+                  : "bg-white/[0.07] hover:bg-white/[0.13] border border-white/[0.14] hover:border-[#D8B28C]/60 hover:shadow-[0_10px_28px_rgba(0,0,0,0.4),0_0_20px_rgba(216,178,140,0.12)] hover:-translate-y-0.5 active:scale-[0.985]"
+              )}
+            >
+              {/* Top specular hairline highlight */}
+              <div
+                className="pointer-events-none absolute inset-x-0 top-0 h-[1px] bg-gradient-to-r from-transparent via-white/25 to-transparent"
+                aria-hidden="true"
+              />
+
+              {/* Subtle ambient accent glow on hover */}
+              <div
+                className={cn(
+                  "pointer-events-none absolute inset-0 bg-gradient-to-r opacity-0 group-hover:opacity-100 transition-opacity duration-300",
+                  option.accentGlowClass
+                )}
+                aria-hidden="true"
+              />
+
+              {/* Icon */}
+              <div
+                className={cn(
+                  "relative z-10 grid h-12 w-12 sm:h-12.5 sm:w-12.5 shrink-0 place-items-center rounded-2xl border transition-transform duration-300 ease-out group-hover:scale-110 group-active:scale-95",
+                  option.iconBgClass,
+                  option.iconColorClass
+                )}
+              >
+                <IconComponent className="h-6 w-6 sm:h-6.5 sm:w-6.5" />
+              </div>
+
+              {/* Title */}
+              <div className="relative z-10 flex-1 min-w-0 pr-2">
+                <span className="text-lg sm:text-xl font-extrabold tracking-[-0.01em] text-white group-hover:text-[#FCD8A5] transition-colors duration-200 whitespace-nowrap leading-tight drop-shadow-xs">
+                  {option.title}
+                </span>
+              </div>
+
+              {/* Badge + subtle forward chevron */}
+              <div className="relative z-10 flex items-center gap-2 shrink-0">
+                <span
+                  className={cn(
+                    "inline-flex items-center px-3 py-1 rounded-full text-xs sm:text-sm font-bold border whitespace-nowrap transition-all duration-300 ease-out group-hover:scale-105 group-hover:shadow-xs",
+                    option.badgeColorClass
+                  )}
+                >
+                  {option.badge}
+                </span>
+                <IconArrowRight className="h-4 w-4 text-white/30 group-hover:text-[#FCD8A5] group-hover:translate-x-0.5 transition-all duration-200 hidden sm:block" />
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+
+  // RENDER STEP 2: Matrimony Sub-options (Kerala, Telugu, Bharat)
+  const renderMatrimonyStep = () => (
+    <div className="w-full">
+      {/* Header */}
+      <div className="relative z-20 mb-4 sm:mb-5">
+        <div className="flex items-center justify-between gap-3 mb-2.5">
+          <button
+            type="button"
+            onClick={handleGoBack}
+            className="group focus-ring inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-white/10 hover:bg-white/20 active:scale-95 text-white/95 hover:text-white border border-white/20 backdrop-blur-md transition-all duration-200 cursor-pointer shadow-xs text-xs sm:text-sm font-bold tracking-tight"
+            aria-label="Go back to connection options"
+          >
+            <IconArrowLeft className="h-4 w-4 stroke-[2.5] transition-transform duration-200 group-hover:-translate-x-0.5" />
+            <span>Go Back</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              onClose();
+            }}
+            className="group focus-ring shrink-0 grid h-9 w-9 place-items-center rounded-full bg-white/10 hover:bg-white/20 active:scale-90 text-white/90 hover:text-white border border-white/20 backdrop-blur-md transition-all duration-200 cursor-pointer shadow-xs hover:rotate-90"
+            aria-label="Close dialog"
+          >
+            <IconX className="h-4 w-4 transition-transform duration-200" />
+          </button>
+        </div>
+
+        <div className="min-w-0">
+          <h2 className="text-2xl sm:text-[27px] font-black tracking-tight text-white font-editorial-title leading-tight drop-shadow-xs">
+            Select Matrimony
+          </h2>
+          <p className="mt-1 text-xs sm:text-sm text-rose-100/80 leading-relaxed font-normal">
+            Choose your community on{" "}
+            <span className="font-bold text-[#FCD8A5]">IshtamChat</span> to find tailored matches.
+          </p>
+        </div>
+      </div>
+
+      {/* Sub-options Cards */}
+      <div
+        role="radiogroup"
+        aria-label="Select matrimony community"
+        className="relative z-10 flex flex-col gap-3 sm:gap-3.5"
+      >
+        {MATRIMONY_OPTIONS.map((option) => {
+          const isSelected = selectedMatrimony === option.id;
+          const IconComponent = option.icon;
+
+          return (
+            <div
+              key={option.id}
+              role="radio"
+              aria-checked={isSelected}
+              tabIndex={0}
+              onClick={() => handleSelectMatrimony(option.id)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" || e.key === " ") {
+                  e.preventDefault();
+                  handleSelectMatrimony(option.id);
+                }
+              }}
+              className={cn(
+                "group relative flex items-center gap-3.5 sm:gap-4 px-4.5 py-3.5 sm:px-5 sm:py-3.5 rounded-2xl cursor-pointer transition-all duration-200 ease-out select-none backdrop-blur-md overflow-hidden",
+                isSelected
+                  ? "bg-white/[0.16] border-2 border-[#E8BE88] ring-2 ring-[#E8BE88]/30 shadow-[0_12px_32px_rgba(0,0,0,0.45),0_0_24px_rgba(232,190,136,0.22)]"
+                  : "bg-white/[0.07] hover:bg-white/[0.13] border border-white/[0.14] hover:border-[#D8B28C]/60 hover:shadow-[0_10px_28px_rgba(0,0,0,0.4),0_0_20px_rgba(216,178,140,0.12)] hover:-translate-y-0.5 active:scale-[0.985]"
+              )}
+            >
+              {/* Top specular hairline highlight */}
+              <div
+                className="pointer-events-none absolute inset-x-0 top-0 h-[1px] bg-gradient-to-r from-transparent via-white/25 to-transparent"
+                aria-hidden="true"
+              />
+
+              {/* Subtle ambient accent glow on hover */}
+              <div
+                className={cn(
+                  "pointer-events-none absolute inset-0 bg-gradient-to-r opacity-0 group-hover:opacity-100 transition-opacity duration-300",
+                  option.accentGlowClass
+                )}
+                aria-hidden="true"
+              />
+
+              {/* Icon */}
+              <div
+                className={cn(
+                  "relative z-10 grid h-12 w-12 sm:h-12.5 sm:w-12.5 shrink-0 place-items-center rounded-2xl border transition-transform duration-300 ease-out group-hover:scale-110 group-active:scale-95",
+                  option.iconBgClass,
+                  option.iconColorClass
+                )}
+              >
+                <IconComponent className="h-6 w-6 sm:h-6.5 sm:w-6.5" />
+              </div>
+
+              {/* Title */}
+              <div className="relative z-10 flex-1 min-w-0 pr-2">
+                <span className="text-lg sm:text-xl font-extrabold tracking-[-0.01em] text-white group-hover:text-[#FCD8A5] transition-colors duration-200 whitespace-nowrap leading-tight drop-shadow-xs">
+                  {option.title}
+                </span>
+              </div>
+
+              {/* Badge + subtle forward chevron */}
+              <div className="relative z-10 flex items-center gap-2 shrink-0">
+                <span
+                  className={cn(
+                    "inline-flex items-center px-3 py-1 rounded-full text-xs sm:text-sm font-bold border whitespace-nowrap transition-all duration-300 ease-out group-hover:scale-105 group-hover:shadow-xs",
+                    option.badgeColorClass
+                  )}
+                >
+                  {option.badge}
+                </span>
+                <IconArrowRight className="h-4 w-4 text-white/30 group-hover:text-[#FCD8A5] group-hover:translate-x-0.5 transition-all duration-200 hidden sm:block" />
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+
+    // Context-aware dynamic placeholders based on seeking gender (Bride vs Groom) and chosen community
+  const isSeekingBride = seekingGender === "Female";
+  const firstNamePlaceholder = isSeekingBride
+    ? selectedMatrimony === "Telugu"
+      ? "e.g. Karthik"
+      : "e.g. Rahul"
+    : selectedMatrimony === "Telugu"
+    ? "e.g. Sravani"
+    : "e.g. Ananya";
+
+  const lastNamePlaceholder = isSeekingBride
+    ? selectedMatrimony === "Telugu"
+      ? "e.g. Reddy"
+      : selectedMatrimony === "Bharat"
+      ? "e.g. Sharma"
+      : "e.g. Nair"
+    : selectedMatrimony === "Telugu"
+    ? "e.g. Rao"
+    : selectedMatrimony === "Bharat"
+    ? "e.g. Verma"
+    : "e.g. Menon";
+
+  // RENDER STEP 3: Full Registration Details Form
+  const renderRegistrationStep = () => (
+    <div className="w-full">
+      {/* Header with Go Back, Context Tag, and Close Button */}
+      <div className="relative z-20 mb-3.5 sm:mb-4">
+        <div className="flex items-center justify-between gap-2 mb-2">
+          <button
+            type="button"
+            onClick={handleGoBack}
+            className="group focus-ring inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-white/10 hover:bg-white/20 active:scale-95 text-white/95 hover:text-white border border-white/20 backdrop-blur-md transition-all duration-200 cursor-pointer shadow-xs text-xs font-bold tracking-tight"
+            aria-label="Go back to previous step"
+          >
+            <IconArrowLeft className="h-3.5 w-3.5 stroke-[2.5] transition-transform duration-200 group-hover:-translate-x-0.5" />
+            <span>Go Back</span>
+          </button>
+
+          {/* Category / Community Badge Indicator */}
+          <span className="inline-flex items-center px-3 py-1 rounded-full text-xs sm:text-sm font-bold border border-[#C99757]/40 bg-[#C99757]/20 text-[#FCD8A5] shadow-xs">
+            {selectedCategory === "Marriage"
+              ? `${selectedMatrimony ?? "Kerala"} Matrimony`
+              : selectedCategory === "Living-together"
+              ? "Living Together"
+              : "Friendship"}
+          </span>
+
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              onClose();
+            }}
+            className="group focus-ring shrink-0 grid h-8 w-8 place-items-center rounded-full bg-white/10 hover:bg-white/20 active:scale-90 text-white/90 hover:text-white border border-white/20 backdrop-blur-md transition-all duration-200 cursor-pointer shadow-xs hover:rotate-90"
+            aria-label="Close dialog"
+          >
+            <IconX className="h-4 w-4" />
+          </button>
+        </div>
+
+        <div className="min-w-0">
+          <h2 className="text-2xl sm:text-[26px] font-black tracking-tight text-white font-editorial-title leading-tight drop-shadow-xs">
+            {selectedCategory === "Marriage"
+              ? "Register for Marriage"
+              : selectedCategory === "Living-together"
+              ? "Register for Living Together"
+              : "Register for Friendship"}
+          </h2>
+          <p className="mt-1 text-sm sm:text-base text-rose-100/90 leading-relaxed font-normal">
+            Fill in your details to receive your 6-digit verification code.
+          </p>
+        </div>
+      </div>
+
+      {/* Registration Form */}
+      <form onSubmit={handleSubmitRegistration} className="relative z-10 space-y-3">
+        {/* Marriage specific fields: Seeking for & Created by */}
+        {selectedCategory === "Marriage" && (
+          <div className="space-y-2.5 p-3 rounded-2xl bg-black/20 border border-white/15 shadow-inner">
+            {/* Seeking for Bride / Groom */}
+            <div>
+              <label className="block text-xs sm:text-sm font-bold text-[#FCD8A5] mb-1.5 tracking-wide">
+                I am seeking for
+              </label>
+              <div className="h-12 grid grid-cols-2 gap-1.5 p-1 rounded-xl bg-black/25 border border-white/15">
+                <button
+                  type="button"
+                  onClick={() => setSeekingGender("Female")}
+                  className={cn(
+                    "h-full flex items-center justify-center gap-1.5 px-3 rounded-lg text-sm sm:text-base font-bold transition-all duration-150 cursor-pointer",
+                    seekingGender === "Female"
+                      ? "bg-gradient-to-r from-[#D8B28C] via-[#E8BE88] to-[#C99757] text-[#3D0816] shadow-sm font-black"
+                      : "text-white/75 hover:text-white hover:bg-white/10"
+                  )}
+                >
+                  <IconHeartHandshake className="h-4 w-4" />
+                  <span>Bride (Female)</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setSeekingGender("Male")}
+                  className={cn(
+                    "h-full flex items-center justify-center gap-1.5 px-3 rounded-lg text-sm sm:text-base font-bold transition-all duration-150 cursor-pointer",
+                    seekingGender === "Male"
+                      ? "bg-gradient-to-r from-[#D8B28C] via-[#E8BE88] to-[#C99757] text-[#3D0816] shadow-sm font-black"
+                      : "text-white/75 hover:text-white hover:bg-white/10"
+                  )}
+                >
+                  <IconUser className="h-4 w-4" />
+                  <span>Groom (Male)</span>
+                </button>
+              </div>
+            </div>
+
+            {/* Created by with ModernSelect */}
+            <div>
+              <label className="block text-xs sm:text-sm font-bold text-[#FCD8A5] mb-1.5 tracking-wide">
+                Profile Created By
+              </label>
+              <ModernSelect
+                value={createdBy}
+                onChange={setCreatedBy}
+                options={CREATED_BY_OPTIONS}
+                size="md"
+                triggerClassName="h-12 rounded-xl border-white/20 bg-white text-[#180D12] text-sm sm:text-base font-medium hover:border-[#C99757]/80 focus:border-[#C99757] focus:ring-2 focus:ring-[#C99757]/20"
+                menuClassName="border border-[#EAD8C7] bg-white/98 backdrop-blur-xl shadow-[0_16px_40px_rgba(30,3,10,0.35)] rounded-2xl p-1.5 z-50 overflow-hidden"
+              />
+            </div>
+          </div>
+        )}
+
+        {/* Name Fields: First Name and Last Name */}
+        <div className="grid grid-cols-2 gap-2.5">
+          <div>
+            <label className="block text-xs sm:text-sm font-bold text-[#FCD8A5] mb-1.5 tracking-wide">
+              First Name
+            </label>
+            <input
+              type="text"
+              value={firstName}
+              onChange={(e) => {
+                setFirstName(e.target.value);
+                if (error) setError(null);
+              }}
+              placeholder={firstNamePlaceholder}
+              className="h-12 w-full px-3.5 rounded-xl border border-white/20 bg-white text-[#180D12] placeholder:text-neutral-400 text-sm sm:text-base font-medium focus:outline-none focus:border-[#C99757] focus:ring-2 focus:ring-[#C99757]/20 transition-all shadow-xs"
+            />
+          </div>
+          <div>
+            <label className="block text-xs sm:text-sm font-bold text-[#FCD8A5] mb-1.5 tracking-wide">
+              Last Name
+            </label>
+            <input
+              type="text"
+              value={lastName}
+              onChange={(e) => {
+                setLastName(e.target.value);
+                if (error) setError(null);
+              }}
+              placeholder={lastNamePlaceholder}
+              className="h-12 w-full px-3.5 rounded-xl border border-white/20 bg-white text-[#180D12] placeholder:text-neutral-400 text-sm sm:text-base font-medium focus:outline-none focus:border-[#C99757] focus:ring-2 focus:ring-[#C99757]/20 transition-all shadow-xs"
+            />
+          </div>
+        </div>
+
+        {/* Mobile Number Field */}
+        <div>
+          <label className="block text-xs sm:text-sm font-bold text-[#FCD8A5] mb-1.5 tracking-wide">
+            Mobile Number
+          </label>
+          <div className="relative flex items-center">
+            <div className="absolute left-3.5 flex items-center gap-1.5 text-sm sm:text-base font-bold text-[#7A1835] pointer-events-none select-none">
+              <span>🇮🇳 +91</span>
+            </div>
+            <input
+              type="tel"
+              inputMode="numeric"
+              maxLength={10}
+              value={phone}
+              onChange={(e) => {
+                setPhone(e.target.value.replace(/\D/g, ""));
+                if (error) setError(null);
+              }}
+              placeholder="98765 43210"
+              className="h-12 w-full pl-20 pr-4 rounded-xl border border-white/20 bg-white text-[#180D12] placeholder:text-neutral-400 text-sm sm:text-base font-medium focus:outline-none focus:border-[#C99757] focus:ring-2 focus:ring-[#C99757]/20 transition-all shadow-xs"
+            />
+          </div>
+        </div>
+
+        {/* Error Message Alert */}
+        {error && (
+          <div className="p-2.5 rounded-xl bg-rose-950/80 border border-rose-400/40 text-sm font-semibold text-rose-200 animate-in fade-in duration-200">
+            {error}
+          </div>
+        )}
+
+        {/* Submit Button */}
+        <button
+          type="submit"
+          disabled={isSubmitting}
+          className="h-12 w-full mt-2 px-5 rounded-xl bg-gradient-to-b from-[#F3DFBC] via-[#E8BE88] to-[#C99757] hover:from-[#F8E7CD] hover:to-[#D4A367] text-[#3D0816] font-black text-sm sm:text-base tracking-tight border-t border-white/40 border-x border-[#D8B28C] border-b-2 border-b-[#7A501E] shadow-[0_8px_20px_-3px_rgba(0,0,0,0.5),0_2px_5px_rgba(0,0,0,0.3),inset_0_1px_0_rgba(255,255,255,0.35),inset_0_-2px_3px_rgba(122,80,30,0.3)] hover:shadow-[0_12px_26px_-3px_rgba(0,0,0,0.6),0_3px_7px_rgba(0,0,0,0.35)] hover:-translate-y-0.5 active:translate-y-[1.5px] active:shadow-[0_2px_5px_rgba(0,0,0,0.4)] transition-all duration-150 cursor-pointer disabled:opacity-70 disabled:cursor-not-allowed disabled:transform-none disabled:shadow-none flex items-center justify-center gap-2"
+        >
+          {isSubmitting ? (
+            <>
+              <IconLoader2 className="h-4 w-4 animate-spin text-[#3D0816]" />
+              <span>Sending Verification Code...</span>
+            </>
+          ) : (
+            <>
+              <span>Register Free & Verify</span>
+              <IconArrowRight className="h-4 w-4 stroke-[2.5]" />
+            </>
+          )}
+        </button>
+
+        {/* Trust Reassurance Badge */}
+        <div className="flex items-center justify-center gap-2 pt-0.5 text-xs sm:text-sm text-rose-100/85 font-medium">
+          <IconShieldCheck className="h-3.5 w-3.5 text-emerald-400" />
+          <span>100% Privacy • No Spam Guarantee</span>
+        </div>
+      </form>
+    </div>
+  );
 
   return createPortal(
     <div
@@ -364,7 +819,7 @@ export function LookingForModal({
         {/* Glassmorphism Backdrop with Deep Blur & Dark Translucent Tint */}
         <div
           className={cn(
-            "fixed inset-0 bg-neutral-950/60 backdrop-blur-md transition-opacity duration-300 ease-out touch-none select-none",
+            "fixed inset-0 bg-neutral-950/65 backdrop-blur-md transition-opacity duration-400 ease-out touch-none select-none",
             isAnimatingIn ? "opacity-100" : "opacity-0 pointer-events-none"
           )}
           onClick={onClose}
@@ -372,470 +827,46 @@ export function LookingForModal({
           aria-hidden="true"
         />
 
-        {/* Glassmorphic Modal Card - Natural Height Without Dead Empty Space */}
+        {/* Glassmorphic Modal Card */}
         <div
           className={cn(
-            "relative w-full max-w-full sm:max-w-[485px] transform overflow-hidden rounded-t-[2.25rem] sm:rounded-[2rem] rounded-b-none sm:rounded-b-[2rem] text-left transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)]",
-            // Luxury Warm Ivory Glassmorphic Background with Champagne Gold Border
-            "bg-gradient-to-b from-[#FFFDFB]/98 via-[#FFF9F6]/95 to-[#FAF2EF]/98 backdrop-blur-2xl",
-            "border-t sm:border border-[#EAD8C7]/90",
+            "relative w-full max-w-full sm:max-w-[485px] transform overflow-hidden rounded-t-[2.25rem] sm:rounded-[2rem] rounded-b-none sm:rounded-b-[2rem] text-left transition-all duration-400 ease-[cubic-bezier(0.22,1,0.36,1)]",
+            // Luxury Deep Burgundy Gradient with Champagne Gold Border
+            "bg-gradient-to-b from-[#630E26] via-[#4A091C] to-[#2E0410] text-white backdrop-blur-2xl",
+            "border-t sm:border border-[#D8B28C]/35 sm:border-[#C99757]/35",
             // Luxury elevated shadows & ambient gold shimmer
-            "shadow-[0_-14px_44px_rgba(122,24,53,0.18)] sm:shadow-[0_24px_64px_rgba(122,24,53,0.18),0_10px_24px_rgba(216,178,140,0.14)]",
+            "shadow-[0_-16px_50px_rgba(25,2,8,0.7)] sm:shadow-[0_28px_80px_rgba(20,2,7,0.7),0_10px_35px_rgba(201,151,87,0.18)]",
             "px-5 pt-3 pb-[max(1.5rem,env(safe-area-inset-bottom))] sm:p-6 sm:pb-6",
-            // Smooth entering and exiting motion
+            // Smooth entering and exiting motion for dialog itself
             isAnimatingIn
               ? "opacity-100 translate-y-0 sm:scale-100"
-              : "opacity-0 translate-y-full sm:translate-y-4 sm:scale-95 pointer-events-none"
+              : "opacity-0 translate-y-12 sm:translate-y-6 sm:scale-[0.96] pointer-events-none"
           )}
         >
           {/* Mobile Native Sheet Grab / Pull Handle Bar */}
           <div className="flex sm:hidden justify-center pt-1 pb-2">
-            <div className="h-1.25 w-11 rounded-full bg-[#D5C2C6]/90" />
+            <div className="h-1.25 w-11 rounded-full bg-white/25" />
           </div>
 
           {/* Subtle Ambient Radial Glow Accents inside glass container */}
           <div
-            className="pointer-events-none absolute -top-24 -right-24 h-60 w-60 rounded-full bg-[#D8B28C]/22 blur-3xl"
+            className="pointer-events-none absolute -top-24 -right-24 h-60 w-60 rounded-full bg-[#D8B28C]/20 blur-3xl"
             aria-hidden="true"
           />
           <div
-            className="pointer-events-none absolute -bottom-24 -left-24 h-60 w-60 rounded-full bg-[#7A1835]/14 blur-3xl"
+            className="pointer-events-none absolute -bottom-24 -left-24 h-60 w-60 rounded-full bg-[#A31D42]/30 blur-3xl"
             aria-hidden="true"
           />
           <div
-            className="pointer-events-none absolute inset-x-0 top-0 h-[2px] bg-gradient-to-r from-transparent via-[#D8B28C]/70 to-transparent"
+            className="pointer-events-none absolute inset-x-0 top-0 h-[2px] bg-gradient-to-r from-transparent via-[#E8BE88]/80 to-transparent"
             aria-hidden="true"
           />
 
-          {/* Active Step Content with Directional Motion */}
+          {/* Active Step Content - Direct, instant display without content transition effects */}
           <div className="relative w-full">
-            {/* STEP 1: Main Category Selection */}
-            {currentStep === "category" && (
-              <div
-                key="step-category"
-                className={cn(
-                  "w-full transition-opacity duration-250 ease-out",
-                  slideDirection === "forward"
-                    ? "animate-in fade-in slide-in-from-right-4 duration-250"
-                    : "animate-in fade-in slide-in-from-left-4 duration-250"
-                )}
-              >
-                {/* Header with Title and Close Button */}
-                <div className="relative z-20 mb-4 sm:mb-5">
-                  <div className="flex items-start justify-between gap-3">
-                    <div className="flex-1 min-w-0">
-                      <h2
-                        id="looking-for-modal-heading"
-                        className="text-2xl sm:text-[27px] font-black tracking-tight text-[#5C1027] font-editorial-title leading-tight"
-                      >
-                        What You're Looking For
-                      </h2>
-                    </div>
-
-                    {/* Close Button */}
-                    <button
-                      type="button"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        onClose();
-                      }}
-                      className="group focus-ring shrink-0 grid h-9 w-9 place-items-center rounded-full bg-[#FAF3EC]/90 hover:bg-[#F7E8EB] active:scale-90 text-[#7A1835] hover:text-[#5C1027] border border-[#EAD8C7] transition-all duration-200 cursor-pointer shadow-2xs hover:rotate-90"
-                      aria-label="Close dialog"
-                    >
-                      <IconX className="h-4 w-4 transition-transform duration-200" />
-                    </button>
-                  </div>
-
-                  <p className="mt-1 text-xs sm:text-sm text-[#766B6F] leading-relaxed font-normal">
-                    Choose the type of connection you are seeking on{" "}
-                    <span className="font-bold text-[#7A1835]">IshtamChat</span> to tailor your registration.
-                  </p>
-                </div>
-
-                {/* Options Cards - Uniform 2px Border & Perfect Balanced Padding */}
-                <div
-                  role="radiogroup"
-                  aria-labelledby="looking-for-modal-heading"
-                  className="relative z-10 flex flex-col gap-3 sm:gap-3.5"
-                >
-                  {LOOKING_FOR_OPTIONS.map((option) => {
-                    const isSelected = selectedCategory === option.id;
-                    const IconComponent = option.icon;
-
-                    return (
-                      <div
-                        key={option.id}
-                        role="radio"
-                        aria-checked={isSelected}
-                        tabIndex={0}
-                        onClick={() => handleSelectCategory(option.id)}
-                        onKeyDown={(e) => {
-                          if (e.key === "Enter" || e.key === " ") {
-                            e.preventDefault();
-                            handleSelectCategory(option.id);
-                          }
-                        }}
-                        className={cn(
-                          "group relative flex items-center gap-3.5 sm:gap-4 px-4.5 py-3.5 sm:px-5 sm:py-3.5 rounded-2xl cursor-pointer transition-all duration-200 ease-out select-none",
-                          // Uniform 2px border everywhere so padding NEVER shifts or squishes
-                          isSelected
-                            ? "bg-white border-2 border-[#7A1835] shadow-[0_8px_24px_rgba(122,24,53,0.14)]"
-                            : "bg-white/85 border-2 border-[#EAD8C7]/70 hover:bg-white hover:border-[#7A1835]/40 hover:shadow-[0_8px_20px_rgba(122,24,53,0.08)] hover:-translate-y-0.5 active:scale-[0.985]"
-                        )}
-                      >
-                        <div
-                          className={cn(
-                            "grid h-12 w-12 sm:h-12.5 sm:w-12.5 shrink-0 place-items-center rounded-2xl border transition-transform duration-300 ease-out group-hover:scale-110 group-active:scale-95",
-                            option.iconBgClass,
-                            option.iconColorClass
-                          )}
-                        >
-                          <IconComponent className="h-6 w-6 sm:h-6.5 sm:w-6.5" />
-                        </div>
-
-                        <div className="flex-1 min-w-0 pr-2">
-                          <span className="text-[17px] sm:text-lg font-extrabold tracking-[-0.02em] text-[#211B1E] group-hover:text-[#7A1835] transition-colors duration-200 whitespace-nowrap leading-tight">
-                            {option.title}
-                          </span>
-                        </div>
-
-                        <div className="shrink-0">
-                          <span
-                            className={cn(
-                              "inline-flex items-center px-3 py-1 rounded-full text-[11px] sm:text-xs font-semibold border whitespace-nowrap transition-all duration-300 ease-out group-hover:scale-105 group-hover:shadow-xs",
-                              option.badgeColorClass
-                            )}
-                          >
-                            {option.badge}
-                          </span>
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-            )}
-
-            {/* STEP 2: Matrimony Sub-options (Kerala, Telugu, Bharat) */}
-            {currentStep === "matrimony_sub" && (
-              <div
-                key="step-matrimony-sub"
-                className={cn(
-                  "w-full transition-opacity duration-250 ease-out",
-                  slideDirection === "forward"
-                    ? "animate-in fade-in slide-in-from-right-4 duration-250"
-                    : "animate-in fade-in slide-in-from-left-4 duration-250"
-                )}
-              >
-                {/* Header */}
-                <div className="relative z-20 mb-4 sm:mb-5">
-                  <div className="flex items-center justify-between gap-3 mb-2.5">
-                    <button
-                      type="button"
-                      onClick={handleGoBack}
-                      className="group focus-ring inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-[#FAF3EC]/95 hover:bg-[#F7E8EB] active:scale-95 text-[#7A1835] hover:text-[#5C1027] border border-[#EAD8C7] transition-all duration-200 cursor-pointer shadow-2xs text-xs sm:text-sm font-bold tracking-tight"
-                      aria-label="Go back to connection options"
-                    >
-                      <IconArrowLeft className="h-4 w-4 stroke-[2.5] transition-transform duration-200 group-hover:-translate-x-0.5" />
-                      <span>Go Back</span>
-                    </button>
-
-                    <button
-                      type="button"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        onClose();
-                      }}
-                      className="group focus-ring shrink-0 grid h-9 w-9 place-items-center rounded-full bg-[#FAF3EC]/90 hover:bg-[#F7E8EB] active:scale-90 text-[#7A1835] hover:text-[#5C1027] border border-[#EAD8C7] transition-all duration-200 cursor-pointer shadow-2xs hover:rotate-90"
-                      aria-label="Close dialog"
-                    >
-                      <IconX className="h-4 w-4 transition-transform duration-200" />
-                    </button>
-                  </div>
-
-                  <div className="min-w-0">
-                    <h2 className="text-2xl sm:text-[27px] font-black tracking-tight text-[#5C1027] font-editorial-title leading-tight">
-                      Select Matrimony
-                    </h2>
-                    <p className="mt-1 text-xs sm:text-sm text-[#766B6F] leading-relaxed font-normal">
-                      Choose your community on{" "}
-                      <span className="font-bold text-[#7A1835]">IshtamChat</span> to find tailored matches.
-                    </p>
-                  </div>
-                </div>
-
-                {/* Sub-options Cards */}
-                <div
-                  role="radiogroup"
-                  aria-label="Select matrimony community"
-                  className="relative z-10 flex flex-col gap-3 sm:gap-3.5"
-                >
-                  {MATRIMONY_OPTIONS.map((option) => {
-                    const isSelected = selectedMatrimony === option.id;
-                    const IconComponent = option.icon;
-
-                    return (
-                      <div
-                        key={option.id}
-                        role="radio"
-                        aria-checked={isSelected}
-                        tabIndex={0}
-                        onClick={() => handleSelectMatrimony(option.id)}
-                        onKeyDown={(e) => {
-                          if (e.key === "Enter" || e.key === " ") {
-                            e.preventDefault();
-                            handleSelectMatrimony(option.id);
-                          }
-                        }}
-                        className={cn(
-                          "group relative flex items-center gap-3.5 sm:gap-4 px-4.5 py-3.5 sm:px-5 sm:py-3.5 rounded-2xl cursor-pointer transition-all duration-200 ease-out select-none",
-                          isSelected
-                            ? "bg-white border-2 border-[#7A1835] shadow-[0_8px_24px_rgba(122,24,53,0.14)]"
-                            : "bg-white/85 border-2 border-[#EAD8C7]/70 hover:bg-white hover:border-[#7A1835]/40 hover:shadow-[0_8px_20px_rgba(122,24,53,0.08)] hover:-translate-y-0.5 active:scale-[0.985]"
-                        )}
-                      >
-                        <div
-                          className={cn(
-                            "grid h-12 w-12 sm:h-12.5 sm:w-12.5 shrink-0 place-items-center rounded-2xl border transition-transform duration-300 ease-out group-hover:scale-110 group-active:scale-95",
-                            option.iconBgClass,
-                            option.iconColorClass
-                          )}
-                        >
-                          <IconComponent className="h-6 w-6 sm:h-6.5 sm:w-6.5" />
-                        </div>
-
-                        <div className="flex-1 min-w-0 pr-2">
-                          <span className="text-[17px] sm:text-lg font-extrabold tracking-[-0.02em] text-[#211B1E] group-hover:text-[#7A1835] transition-colors duration-200 whitespace-nowrap leading-tight">
-                            {option.title}
-                          </span>
-                        </div>
-
-                        <div className="shrink-0">
-                          <span
-                            className={cn(
-                              "inline-flex items-center px-3 py-1 rounded-full text-[11px] sm:text-xs font-semibold border whitespace-nowrap transition-all duration-300 ease-out group-hover:scale-105 group-hover:shadow-xs",
-                              option.badgeColorClass
-                            )}
-                          >
-                            {option.badge}
-                          </span>
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-            )}
-
-            {/* STEP 3: Full Registration Details Form */}
-            {currentStep === "registration_form" && (
-              <div
-                key="step-registration-form"
-                className={cn(
-                  "w-full transition-opacity duration-250 ease-out",
-                  slideDirection === "forward"
-                    ? "animate-in fade-in slide-in-from-right-4 duration-250"
-                    : "animate-in fade-in slide-in-from-left-4 duration-250"
-                )}
-              >
-                {/* Header with Go Back, Context Tag, and Close Button */}
-                <div className="relative z-20 mb-3.5 sm:mb-4">
-                  <div className="flex items-center justify-between gap-2 mb-2">
-                    <button
-                      type="button"
-                      onClick={handleGoBack}
-                      className="group focus-ring inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[#FAF3EC]/95 hover:bg-[#F7E8EB] active:scale-95 text-[#7A1835] hover:text-[#5C1027] border border-[#EAD8C7] transition-all duration-200 cursor-pointer shadow-2xs text-xs font-bold tracking-tight"
-                      aria-label="Go back to previous step"
-                    >
-                      <IconArrowLeft className="h-3.5 w-3.5 stroke-[2.5] transition-transform duration-200 group-hover:-translate-x-0.5" />
-                      <span>Go Back</span>
-                    </button>
-
-                    {/* Category / Community Badge Indicator */}
-                    <span className="inline-flex items-center px-3 py-1 rounded-full text-[11px] font-extrabold border border-[#EAD8C7] bg-[#FAF3EC] text-[#7A1835] shadow-2xs">
-                      {selectedCategory === "Marriage"
-                        ? `${selectedMatrimony ?? "Kerala"} Matrimony`
-                        : selectedCategory === "Living-together"
-                        ? "Living Together"
-                        : "Friendship"}
-                    </span>
-
-                    <button
-                      type="button"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        onClose();
-                      }}
-                      className="group focus-ring shrink-0 grid h-8 w-8 place-items-center rounded-full bg-[#FAF3EC]/90 hover:bg-[#F7E8EB] active:scale-90 text-[#7A1835] hover:text-[#5C1027] border border-[#EAD8C7] transition-all duration-200 cursor-pointer shadow-2xs hover:rotate-90"
-                      aria-label="Close dialog"
-                    >
-                      <IconX className="h-4 w-4" />
-                    </button>
-                  </div>
-
-                  <div className="min-w-0">
-                    <h2 className="text-xl sm:text-[23px] font-black tracking-tight text-[#5C1027] font-editorial-title leading-tight">
-                      {selectedCategory === "Marriage"
-                        ? "Register for Marriage"
-                        : selectedCategory === "Living-together"
-                        ? "Register for Living Together"
-                        : "Register for Friendship"}
-                    </h2>
-                    <p className="mt-0.5 text-xs text-[#766B6F] leading-relaxed font-normal">
-                      Fill in your details to receive your 6-digit verification code.
-                    </p>
-                  </div>
-                </div>
-
-                {/* Registration Form */}
-                <form onSubmit={handleSubmitRegistration} className="relative z-10 space-y-3">
-                  {/* Marriage specific fields: Seeking for & Created by */}
-                  {selectedCategory === "Marriage" && (
-                    <div className="space-y-2.5 p-3 rounded-2xl bg-white/75 border border-[#EAD8C7]/90 shadow-2xs">
-                      {/* Seeking for Bride / Groom */}
-                      <div>
-                        <label className="block text-[11px] font-bold text-[#5C1027] mb-1 uppercase tracking-wider">
-                          I am seeking for
-                        </label>
-                        <div className="grid grid-cols-2 gap-2 p-1 rounded-xl bg-[#FAF3EC] border border-[#EAD8C7]">
-                          <button
-                            type="button"
-                            onClick={() => setSeekingGender("Female")}
-                            className={cn(
-                              "flex items-center justify-center gap-1.5 py-1.5 px-3 rounded-lg text-xs font-bold transition-all duration-150 cursor-pointer",
-                              seekingGender === "Female"
-                                ? "bg-white text-[#7A1835] shadow-xs border border-[#F7C6CE]"
-                                : "text-[#766B6F] hover:text-[#211B1E]"
-                            )}
-                          >
-                            <IconHeartHandshake className="h-4 w-4" />
-                            <span>Bride (Female)</span>
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => setSeekingGender("Male")}
-                            className={cn(
-                              "flex items-center justify-center gap-1.5 py-1.5 px-3 rounded-lg text-xs font-bold transition-all duration-150 cursor-pointer",
-                              seekingGender === "Male"
-                                ? "bg-white text-[#7A1835] shadow-xs border border-[#F7C6CE]"
-                                : "text-[#766B6F] hover:text-[#211B1E]"
-                            )}
-                          >
-                            <IconUser className="h-4 w-4" />
-                            <span>Groom (Male)</span>
-                          </button>
-                        </div>
-                      </div>
-
-                      {/* Created by with ModernSelect */}
-                      <div>
-                        <label className="block text-[11px] font-bold text-[#5C1027] mb-1 uppercase tracking-wider">
-                          Profile Created By
-                        </label>
-                        <ModernSelect
-                          value={createdBy}
-                          onChange={setCreatedBy}
-                          options={CREATED_BY_OPTIONS}
-                          size="sm"
-                          triggerClassName="h-9.5 rounded-xl border-[#EAD8C7] bg-white text-[#211B1E] text-xs sm:text-sm font-semibold hover:border-[#7A1835]/40 hover:bg-[#FAF3EC]/30 focus:border-[#7A1835] focus:ring-2 focus:ring-[#7A1835]/12"
-                          menuClassName="border border-[#EAD8C7] bg-white/98 backdrop-blur-xl shadow-[0_16px_40px_rgba(122,24,53,0.18)] rounded-2xl p-1.5 z-50 overflow-hidden"
-                        />
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Name Fields: First Name and Last Name */}
-                  <div className="grid grid-cols-2 gap-2.5">
-                    <div>
-                      <label className="block text-[11px] font-bold text-[#5C1027] mb-1 uppercase tracking-wider">
-                        First Name
-                      </label>
-                      <input
-                        type="text"
-                        value={firstName}
-                        onChange={(e) => {
-                          setFirstName(e.target.value);
-                          if (error) setError(null);
-                        }}
-                        placeholder="e.g. Rahul"
-                        className="w-full px-3.5 py-2 rounded-xl border border-[#EAD8C7] bg-white text-[#211B1E] placeholder:text-[#A89FA3] text-xs sm:text-sm font-semibold focus:outline-none focus:border-[#7A1835] focus:ring-2 focus:ring-[#7A1835]/12 transition-all"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-[11px] font-bold text-[#5C1027] mb-1 uppercase tracking-wider">
-                        Last Name
-                      </label>
-                      <input
-                        type="text"
-                        value={lastName}
-                        onChange={(e) => {
-                          setLastName(e.target.value);
-                          if (error) setError(null);
-                        }}
-                        placeholder="e.g. Nair"
-                        className="w-full px-3.5 py-2 rounded-xl border border-[#EAD8C7] bg-white text-[#211B1E] placeholder:text-[#A89FA3] text-xs sm:text-sm font-semibold focus:outline-none focus:border-[#7A1835] focus:ring-2 focus:ring-[#7A1835]/12 transition-all"
-                      />
-                    </div>
-                  </div>
-
-                  {/* Mobile Number Field */}
-                  <div>
-                    <label className="block text-[11px] font-bold text-[#5C1027] mb-1 uppercase tracking-wider">
-                      Mobile Number
-                    </label>
-                    <div className="relative flex items-center">
-                      <div className="absolute left-3.5 flex items-center gap-1.5 text-xs sm:text-sm font-bold text-[#7A1835] pointer-events-none select-none">
-                        <span>🇮🇳 +91</span>
-                      </div>
-                      <input
-                        type="tel"
-                        inputMode="numeric"
-                        maxLength={10}
-                        value={phone}
-                        onChange={(e) => {
-                          setPhone(e.target.value.replace(/\D/g, ""));
-                          if (error) setError(null);
-                        }}
-                        placeholder="98765 43210"
-                        className="w-full pl-20 pr-4 py-2 rounded-xl border border-[#EAD8C7] bg-white text-[#211B1E] placeholder:text-[#A89FA3] text-xs sm:text-sm font-semibold focus:outline-none focus:border-[#7A1835] focus:ring-2 focus:ring-[#7A1835]/12 transition-all"
-                      />
-                    </div>
-                  </div>
-
-                  {/* Error Message Alert */}
-                  {error && (
-                    <div className="p-2.5 rounded-xl bg-[#FDF2F4] border border-[#F7C6CE] text-xs font-semibold text-[#7A1835] animate-in fade-in duration-200">
-                      {error}
-                    </div>
-                  )}
-
-                  {/* Submit Button */}
-                  <button
-                    type="submit"
-                    disabled={isSubmitting}
-                    className="w-full mt-1.5 py-2.5 px-5 rounded-xl bg-gradient-to-r from-[#7A1835] via-[#6D142E] to-[#5C1027] text-white font-extrabold text-xs sm:text-sm tracking-tight shadow-[0_8px_20px_rgba(122,24,53,0.22)] hover:shadow-[0_12px_28px_rgba(122,24,53,0.3)] hover:brightness-105 active:scale-[0.985] transition-all cursor-pointer disabled:opacity-70 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-                  >
-                    {isSubmitting ? (
-                      <>
-                        <IconLoader2 className="h-4 w-4 animate-spin" />
-                        <span>Sending Verification Code...</span>
-                      </>
-                    ) : (
-                      <>
-                        <span>Register Free & Verify</span>
-                        <IconArrowRight className="h-4 w-4" />
-                      </>
-                    )}
-                  </button>
-
-                  {/* Trust Reassurance Badge */}
-                  <div className="flex items-center justify-center gap-2 pt-0.5 text-[11px] text-[#766B6F]">
-                    <IconShieldCheck className="h-3.5 w-3.5 text-[#1E7E52]" />
-                    <span>100% Privacy • No Spam Guarantee</span>
-                  </div>
-                </form>
-              </div>
-            )}
+            {currentStep === "category" && renderCategoryStep()}
+            {currentStep === "matrimony_sub" && renderMatrimonyStep()}
+            {currentStep === "registration_form" && renderRegistrationStep()}
           </div>
         </div>
       </div>
