@@ -64,7 +64,7 @@ const LOOKING_FOR_OPTIONS: OptionConfig[] = [
     iconBgClass: "bg-gradient-to-br from-[#A31D42]/50 to-[#5C1027]/80 border border-[#FF9EAF]/30 shadow-[0_4px_16px_rgba(163,29,66,0.35)]",
     iconColorClass: "text-[#FFCAD4]",
     accentGlowClass: "from-[#A31D42]/20 via-[#A31D42]/10 to-transparent",
-    badgeColorClass: "bg-[#7A1835]/60 text-[#FFCAD4] border border-[#FF9EAF]/30 backdrop-blur-xs",
+    badgeColorClass: "bg-white/15 text-[#FFE3EA] border border-white/25 backdrop-blur-xs font-semibold",
   },
   {
     id: "Friendship",
@@ -74,7 +74,7 @@ const LOOKING_FOR_OPTIONS: OptionConfig[] = [
     iconBgClass: "bg-gradient-to-br from-[#D8B28C]/35 to-[#8C5D2C]/60 border border-[#E8BE88]/35 shadow-[0_4px_16px_rgba(216,178,140,0.25)]",
     iconColorClass: "text-[#FCD8A5]",
     accentGlowClass: "from-[#D8B28C]/20 via-[#D8B28C]/10 to-transparent",
-    badgeColorClass: "bg-[#8C5D2C]/40 text-[#FCD8A5] border border-[#D8B28C]/35 backdrop-blur-xs",
+    badgeColorClass: "bg-white/15 text-[#FFF0D4] border border-white/25 backdrop-blur-xs font-semibold",
   },
   {
     id: "Living-together",
@@ -84,7 +84,7 @@ const LOOKING_FOR_OPTIONS: OptionConfig[] = [
     iconBgClass: "bg-gradient-to-br from-[#1E7E52]/40 to-[#0E4F32]/70 border border-[#6EE7B7]/30 shadow-[0_4px_16px_rgba(30,126,82,0.3)]",
     iconColorClass: "text-[#A7F3D0]",
     accentGlowClass: "from-[#1E7E52]/20 via-[#1E7E52]/10 to-transparent",
-    badgeColorClass: "bg-[#1E7E52]/40 text-[#A7F3D0] border border-[#6EE7B7]/30 backdrop-blur-xs",
+    badgeColorClass: "bg-white/15 text-[#D1FAE5] border border-white/25 backdrop-blur-xs font-semibold",
   },
 ];
 
@@ -97,7 +97,7 @@ const MATRIMONY_OPTIONS: MatrimonySubOptionConfig[] = [
     iconBgClass: "bg-gradient-to-br from-[#A31D42]/50 to-[#5C1027]/80 border border-[#FF9EAF]/30 shadow-[0_4px_16px_rgba(163,29,66,0.35)]",
     iconColorClass: "text-[#FFCAD4]",
     accentGlowClass: "from-[#A31D42]/20 via-[#A31D42]/10 to-transparent",
-    badgeColorClass: "bg-[#7A1835]/60 text-[#FFCAD4] border border-[#FF9EAF]/30 backdrop-blur-xs",
+    badgeColorClass: "bg-white/15 text-[#FFE3EA] border border-white/25 backdrop-blur-xs font-semibold",
   },
   {
     id: "Telugu",
@@ -107,7 +107,7 @@ const MATRIMONY_OPTIONS: MatrimonySubOptionConfig[] = [
     iconBgClass: "bg-gradient-to-br from-[#D8B28C]/35 to-[#8C5D2C]/60 border border-[#E8BE88]/35 shadow-[0_4px_16px_rgba(216,178,140,0.25)]",
     iconColorClass: "text-[#FCD8A5]",
     accentGlowClass: "from-[#D8B28C]/20 via-[#D8B28C]/10 to-transparent",
-    badgeColorClass: "bg-[#8C5D2C]/40 text-[#FCD8A5] border border-[#D8B28C]/35 backdrop-blur-xs",
+    badgeColorClass: "bg-white/15 text-[#FFF0D4] border border-white/25 backdrop-blur-xs font-semibold",
   },
   {
     id: "Bharat",
@@ -117,7 +117,7 @@ const MATRIMONY_OPTIONS: MatrimonySubOptionConfig[] = [
     iconBgClass: "bg-gradient-to-br from-[#1E7E52]/40 to-[#0E4F32]/70 border border-[#6EE7B7]/30 shadow-[0_4px_16px_rgba(30,126,82,0.3)]",
     iconColorClass: "text-[#A7F3D0]",
     accentGlowClass: "from-[#1E7E52]/20 via-[#1E7E52]/10 to-transparent",
-    badgeColorClass: "bg-[#1E7E52]/40 text-[#A7F3D0] border border-[#6EE7B7]/30 backdrop-blur-xs",
+    badgeColorClass: "bg-white/15 text-[#D1FAE5] border border-white/25 backdrop-blur-xs font-semibold",
   },
 ];
 
@@ -406,8 +406,8 @@ export function LookingForModal({
               className={cn(
                 "group relative flex items-center gap-3.5 sm:gap-4 px-4.5 py-3.5 sm:px-5 sm:py-3.5 rounded-2xl cursor-pointer transition-all duration-200 ease-out select-none backdrop-blur-md overflow-hidden",
                 isSelected
-                  ? "bg-white/[0.16] border-2 border-[#E8BE88] ring-2 ring-[#E8BE88]/30 shadow-[0_12px_32px_rgba(0,0,0,0.45),0_0_24px_rgba(232,190,136,0.22)]"
-                  : "bg-white/[0.07] hover:bg-white/[0.13] border border-white/[0.14] hover:border-[#D8B28C]/60 hover:shadow-[0_10px_28px_rgba(0,0,0,0.4),0_0_20px_rgba(216,178,140,0.12)] hover:-translate-y-0.5 active:scale-[0.985]"
+                  ? "bg-white/[0.22] border-2 border-[#FCD8A5] ring-2 ring-[#FCD8A5]/40 shadow-[0_12px_32px_rgba(0,0,0,0.25),0_0_24px_rgba(232,190,136,0.25)]"
+                  : "bg-white/[0.13] hover:bg-white/[0.22] border border-white/25 hover:border-[#FCD8A5]/70 hover:shadow-[0_10px_28px_rgba(0,0,0,0.22),0_0_20px_rgba(216,178,140,0.15)] hover:-translate-y-0.5 active:scale-[0.985]"
               )}
             >
               {/* Top specular hairline highlight */}
@@ -528,8 +528,8 @@ export function LookingForModal({
               className={cn(
                 "group relative flex items-center gap-3.5 sm:gap-4 px-4.5 py-3.5 sm:px-5 sm:py-3.5 rounded-2xl cursor-pointer transition-all duration-200 ease-out select-none backdrop-blur-md overflow-hidden",
                 isSelected
-                  ? "bg-white/[0.16] border-2 border-[#E8BE88] ring-2 ring-[#E8BE88]/30 shadow-[0_12px_32px_rgba(0,0,0,0.45),0_0_24px_rgba(232,190,136,0.22)]"
-                  : "bg-white/[0.07] hover:bg-white/[0.13] border border-white/[0.14] hover:border-[#D8B28C]/60 hover:shadow-[0_10px_28px_rgba(0,0,0,0.4),0_0_20px_rgba(216,178,140,0.12)] hover:-translate-y-0.5 active:scale-[0.985]"
+                  ? "bg-white/[0.22] border-2 border-[#FCD8A5] ring-2 ring-[#FCD8A5]/40 shadow-[0_12px_32px_rgba(0,0,0,0.25),0_0_24px_rgba(232,190,136,0.25)]"
+                  : "bg-white/[0.13] hover:bg-white/[0.22] border border-white/25 hover:border-[#FCD8A5]/70 hover:shadow-[0_10px_28px_rgba(0,0,0,0.22),0_0_20px_rgba(216,178,140,0.15)] hover:-translate-y-0.5 active:scale-[0.985]"
               )}
             >
               {/* Top specular hairline highlight */}
@@ -662,13 +662,13 @@ export function LookingForModal({
       <form onSubmit={handleSubmitRegistration} className="relative z-10 space-y-3">
         {/* Marriage specific fields: Seeking for & Created by */}
         {selectedCategory === "Marriage" && (
-          <div className="space-y-2.5 p-3 rounded-2xl bg-black/20 border border-white/15 shadow-inner">
+          <div className="space-y-2.5 p-3 rounded-2xl bg-white/[0.10] border border-white/20 shadow-xs">
             {/* Seeking for Bride / Groom */}
             <div>
               <label className="block text-xs sm:text-sm font-bold text-[#FCD8A5] mb-1.5 tracking-wide">
                 I am seeking for
               </label>
-              <div className="h-12 grid grid-cols-2 gap-1.5 p-1 rounded-xl bg-black/25 border border-white/15">
+              <div className="h-12 grid grid-cols-2 gap-1.5 p-1 rounded-xl bg-black/15 border border-white/15">
                 <button
                   type="button"
                   onClick={() => setSeekingGender("Female")}
@@ -676,7 +676,7 @@ export function LookingForModal({
                     "h-full flex items-center justify-center gap-1.5 px-3 rounded-lg text-sm sm:text-base font-bold transition-all duration-150 cursor-pointer",
                     seekingGender === "Female"
                       ? "bg-gradient-to-r from-[#D8B28C] via-[#E8BE88] to-[#C99757] text-[#3D0816] shadow-sm font-black"
-                      : "text-white/75 hover:text-white hover:bg-white/10"
+                      : "text-white/85 hover:text-white hover:bg-white/15"
                   )}
                 >
                   <IconHeartHandshake className="h-4 w-4" />
@@ -689,7 +689,7 @@ export function LookingForModal({
                     "h-full flex items-center justify-center gap-1.5 px-3 rounded-lg text-sm sm:text-base font-bold transition-all duration-150 cursor-pointer",
                     seekingGender === "Male"
                       ? "bg-gradient-to-r from-[#D8B28C] via-[#E8BE88] to-[#C99757] text-[#3D0816] shadow-sm font-black"
-                      : "text-white/75 hover:text-white hover:bg-white/10"
+                      : "text-white/85 hover:text-white hover:bg-white/15"
                   )}
                 >
                   <IconUser className="h-4 w-4" />
@@ -819,7 +819,7 @@ export function LookingForModal({
         {/* Glassmorphism Backdrop with Deep Blur & Dark Translucent Tint */}
         <div
           className={cn(
-            "fixed inset-0 bg-neutral-950/65 backdrop-blur-md transition-opacity duration-400 ease-out touch-none select-none",
+            "fixed inset-0 bg-neutral-950/45 backdrop-blur-md transition-opacity duration-400 ease-out touch-none select-none",
             isAnimatingIn ? "opacity-100" : "opacity-0 pointer-events-none"
           )}
           onClick={onClose}
@@ -832,10 +832,10 @@ export function LookingForModal({
           className={cn(
             "relative w-full max-w-full sm:max-w-[485px] transform overflow-hidden rounded-t-[2.25rem] sm:rounded-[2rem] rounded-b-none sm:rounded-b-[2rem] text-left transition-all duration-400 ease-[cubic-bezier(0.22,1,0.36,1)]",
             // Luxury Deep Burgundy Gradient with Champagne Gold Border
-            "bg-gradient-to-b from-[#630E26] via-[#4A091C] to-[#2E0410] text-white backdrop-blur-2xl",
-            "border-t sm:border border-[#D8B28C]/35 sm:border-[#C99757]/35",
+            "bg-gradient-to-b from-[#961F42] via-[#7F1736] to-[#5C0F25] text-white backdrop-blur-2xl",
+            "border-t sm:border border-[#FBE3B5]/45 sm:border-[#FBE3B5]/40",
             // Luxury elevated shadows & ambient gold shimmer
-            "shadow-[0_-16px_50px_rgba(25,2,8,0.7)] sm:shadow-[0_28px_80px_rgba(20,2,7,0.7),0_10px_35px_rgba(201,151,87,0.18)]",
+            "shadow-[0_-16px_50px_rgba(50,5,18,0.5)] sm:shadow-[0_28px_80px_rgba(45,4,16,0.55),0_10px_35px_rgba(251,227,181,0.15)]",
             "px-5 pt-3 pb-[max(1.5rem,env(safe-area-inset-bottom))] sm:p-6 sm:pb-6",
             // Smooth entering and exiting motion for dialog itself
             isAnimatingIn
@@ -845,20 +845,20 @@ export function LookingForModal({
         >
           {/* Mobile Native Sheet Grab / Pull Handle Bar */}
           <div className="flex sm:hidden justify-center pt-1 pb-2">
-            <div className="h-1.25 w-11 rounded-full bg-white/25" />
+            <div className="h-1.25 w-11 rounded-full bg-white/40" />
           </div>
 
           {/* Subtle Ambient Radial Glow Accents inside glass container */}
           <div
-            className="pointer-events-none absolute -top-24 -right-24 h-60 w-60 rounded-full bg-[#D8B28C]/20 blur-3xl"
+            className="pointer-events-none absolute -top-24 -right-24 h-60 w-60 rounded-full bg-[#FBE3B5]/20 blur-3xl"
             aria-hidden="true"
           />
           <div
-            className="pointer-events-none absolute -bottom-24 -left-24 h-60 w-60 rounded-full bg-[#A31D42]/30 blur-3xl"
+            className="pointer-events-none absolute -bottom-24 -left-24 h-60 w-60 rounded-full bg-[#FF809B]/20 blur-3xl"
             aria-hidden="true"
           />
           <div
-            className="pointer-events-none absolute inset-x-0 top-0 h-[2px] bg-gradient-to-r from-transparent via-[#E8BE88]/80 to-transparent"
+            className="pointer-events-none absolute inset-x-0 top-0 h-[2px] bg-gradient-to-r from-transparent via-[#FBE3B5]/90 to-transparent"
             aria-hidden="true"
           />
 
