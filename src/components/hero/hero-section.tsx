@@ -128,6 +128,17 @@ export function HeroSection({ className = "" }: HeroSectionProps) {
     }, 120);
   };
 
+  useEffect(() => {
+    const handleCommunityOpen = (e: Event) => {
+      const customEvent = e as CustomEvent<{ community?: MatrimonyCommunityOption }>;
+      const comm = customEvent.detail?.community;
+      handleSelectLookingForOption("Marriage", comm);
+    };
+
+    window.addEventListener("open-looking-for-community", handleCommunityOpen);
+    return () => window.removeEventListener("open-looking-for-community", handleCommunityOpen);
+  }, []);
+
   return (
     <section
       aria-labelledby="hero-heading"
