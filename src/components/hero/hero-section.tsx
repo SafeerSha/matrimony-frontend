@@ -230,27 +230,32 @@ export function HeroSection({ className = "" }: HeroSectionProps) {
                 <strong className="font-semibold text-white">Register Free</strong> — Create your profile and discover meaningful connections for Friendship, Marriage, and Living Together.
               </p>
 
-              {/* Action Buttons: Modern Mobile Glass & Radiant Ruby */}
+              {/* Action Buttons: Burgundy Register with Sleek Light Loop + Off-White Secondary */}
               <div className="flex flex-col gap-3 pt-1">
                 <Button
                   onClick={handleOpenLookingFor}
-                  className="w-full min-h-12 h-12 text-base sm:text-lg font-bold rounded-2xl bg-gradient-to-r from-[#BA1845] via-[#9F1239] to-[#80132E] hover:from-[#C72551] hover:to-[#8E1735] text-white border border-white/20 shadow-[0_8px_24px_-4px_rgba(186,24,69,0.5),0_2px_8px_rgba(0,0,0,0.3)] active:scale-[0.985] transition-all duration-150 cursor-pointer"
-                  rightIcon={<IconArrowRight className="h-4 w-4 stroke-[2.2] ml-0.5" aria-hidden="true" />}
+                  className="relative overflow-hidden w-full min-h-12 h-12 text-base sm:text-lg font-bold rounded-2xl bg-gradient-to-r from-[#801835] via-[#8E1738] to-[#5E0E24] hover:from-[#8E1738] hover:to-[#500B1E] text-white border border-rose-300/30 shadow-[0_8px_24px_-4px_rgba(128,24,53,0.55),0_2px_8px_rgba(0,0,0,0.35)] active:scale-[0.985] transition-all duration-150 cursor-pointer"
+                  rightIcon={<IconArrowRight className="h-4 w-4 stroke-[2.2] ml-0.5 relative z-10" aria-hidden="true" />}
                 >
-                  Register Free
+                  <span className="relative z-10">Register Free</span>
+                  {/* Looped Sleek Light Sheen Effect */}
+                  <span
+                    className="pointer-events-none absolute inset-0 z-0 animate-sleek-shine bg-gradient-to-r from-transparent via-white/35 to-transparent skew-x-[-20deg]"
+                    aria-hidden="true"
+                  />
                 </Button>
 
                 <div className="grid grid-cols-2 gap-2.5">
                   <Button
                     href="/login"
-                    className="w-full min-h-11 h-11 px-3 text-sm sm:text-base font-semibold rounded-xl bg-white/10 hover:bg-white/18 active:bg-white/25 text-white border border-white/20 backdrop-blur-md shadow-[0_4px_14px_rgba(0,0,0,0.25)] active:scale-[0.985] transition-all duration-150"
+                    className="w-full min-h-11 h-11 px-3 text-sm sm:text-base font-bold rounded-xl bg-[#FAF7F2] hover:bg-white active:bg-[#F2ECE4] text-[#180D12] border border-[#EDE4DC] shadow-[0_4px_14px_rgba(0,0,0,0.22)] active:scale-[0.985] transition-all duration-150"
                   >
                     Sign In
                   </Button>
 
                   <Button
                     href="#contact"
-                    className="w-full min-h-11 h-11 px-3 text-sm sm:text-base font-semibold rounded-xl bg-white/10 hover:bg-white/18 active:bg-white/25 text-white border border-white/20 backdrop-blur-md shadow-[0_4px_14px_rgba(0,0,0,0.25)] active:scale-[0.985] transition-all duration-150"
+                    className="w-full min-h-11 h-11 px-3 text-sm sm:text-base font-bold rounded-xl bg-[#FAF7F2] hover:bg-white active:bg-[#F2ECE4] text-[#180D12] border border-[#EDE4DC] shadow-[0_4px_14px_rgba(0,0,0,0.22)] active:scale-[0.985] transition-all duration-150"
                   >
                     Contact Us
                   </Button>
