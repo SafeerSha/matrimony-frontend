@@ -240,7 +240,7 @@ export function HeroSection({ className = "" }: HeroSectionProps) {
                   <span className="relative z-10">Register Free</span>
                   {/* Looped Sleek Light Sheen Effect (Slow & Prominent) */}
                   <span
-                    className="pointer-events-none absolute -inset-y-0 w-3/4 z-0 animate-sleek-shine bg-gradient-to-r from-transparent via-white/55 to-transparent skew-x-[-20deg]"
+                    className="pointer-events-none absolute -inset-y-0 w-3/4 z-0 animate-sleek-shine bg-gradient-to-r from-transparent via-[#FBE3B5]/85 to-transparent skew-x-[-20deg]"
                     aria-hidden="true"
                   />
                 </Button>
@@ -296,10 +296,15 @@ export function HeroSection({ className = "" }: HeroSectionProps) {
               <Button
                 onClick={handleOpenLookingFor}
                 variant="primary"
-                className="w-full sm:w-auto min-h-12 px-6 sm:px-8 text-sm sm:text-base font-bold rounded-xl shadow-[0_8px_20px_-3px_rgba(128,19,46,0.35),0_2px_4px_rgba(0,0,0,0.1)] hover:shadow-[0_12px_26px_-3px_rgba(128,19,46,0.45)] hover:-translate-y-0.5 active:scale-[0.985] transition-all duration-150"
-                rightIcon={<IconArrowRight className="h-4 w-4" aria-hidden="true" />}
+                className="relative overflow-hidden w-full sm:w-auto min-h-12 px-6 sm:px-8 text-sm sm:text-base font-bold rounded-xl shadow-[0_8px_20px_-3px_rgba(128,19,46,0.35),0_2px_4px_rgba(0,0,0,0.1)] hover:shadow-[0_12px_26px_-3px_rgba(128,19,46,0.45)] hover:-translate-y-0.5 active:scale-[0.985] transition-all duration-150"
+                rightIcon={<IconArrowRight className="h-4 w-4 relative z-10" aria-hidden="true" />}
               >
-                Register Free
+                <span className="relative z-10">Register Free</span>
+                {/* Looped Golden Sleek Light Sheen Effect */}
+                <span
+                  className="pointer-events-none absolute -inset-y-0 w-3/4 z-0 animate-sleek-shine bg-gradient-to-r from-transparent via-[#FBE3B5]/85 to-transparent skew-x-[-20deg]"
+                  aria-hidden="true"
+                />
               </Button>
 
               <div className="grid grid-cols-2 gap-3 w-full sm:w-auto sm:flex sm:items-center sm:gap-3.5">
