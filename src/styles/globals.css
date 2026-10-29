@@ -379,6 +379,24 @@ button, input, textarea, select {
   will-change: transform, opacity;
 }
 
+
+/* Community Looped Pill Slide-In-Fade Animation */
+@keyframes slide-in-fade {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-slide-in-fade {
+  animation: slide-in-fade 320ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  will-change: transform, opacity;
+}
+
 /* ===== SWIPE HINT ONBOARDING ANIMATIONS ===== */
 @keyframes swipe-hint-lifecycle {
   0% { opacity: 0; }
