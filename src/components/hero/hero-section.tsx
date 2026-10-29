@@ -238,9 +238,9 @@ export function HeroSection({ className = "" }: HeroSectionProps) {
                   rightIcon={<IconArrowRight className="h-4 w-4 stroke-[2.2] ml-0.5 relative z-10" aria-hidden="true" />}
                 >
                   <span className="relative z-10">Register Free</span>
-                  {/* Looped Sleek Light Sheen Effect */}
+                  {/* Looped Sleek Light Sheen Effect (Slow & Prominent) */}
                   <span
-                    className="pointer-events-none absolute inset-0 z-0 animate-sleek-shine bg-gradient-to-r from-transparent via-white/35 to-transparent skew-x-[-20deg]"
+                    className="pointer-events-none absolute -inset-y-0 w-3/4 z-0 animate-sleek-shine bg-gradient-to-r from-transparent via-white/55 to-transparent skew-x-[-20deg]"
                     aria-hidden="true"
                   />
                 </Button>
@@ -248,14 +248,16 @@ export function HeroSection({ className = "" }: HeroSectionProps) {
                 <div className="grid grid-cols-2 gap-2.5">
                   <Button
                     href="/login"
-                    className="w-full min-h-11 h-11 px-3 text-sm sm:text-base font-bold rounded-xl bg-[#FAF7F2] hover:bg-white active:bg-[#F2ECE4] text-[#180D12] border border-[#EDE4DC] shadow-[0_4px_14px_rgba(0,0,0,0.22)] active:scale-[0.985] transition-all duration-150"
+                    variant="secondary"
+                    className="w-full min-h-11 h-11 px-3 text-sm sm:text-base font-bold rounded-xl !bg-[#FAF7F2] !bg-none hover:!bg-white active:!bg-[#F2ECE4] !text-[#180D12] border border-[#EDE4DC] shadow-[0_4px_14px_rgba(0,0,0,0.22)] active:scale-[0.985] transition-all duration-150"
                   >
                     Sign In
                   </Button>
 
                   <Button
                     href="#contact"
-                    className="w-full min-h-11 h-11 px-3 text-sm sm:text-base font-bold rounded-xl bg-[#FAF7F2] hover:bg-white active:bg-[#F2ECE4] text-[#180D12] border border-[#EDE4DC] shadow-[0_4px_14px_rgba(0,0,0,0.22)] active:scale-[0.985] transition-all duration-150"
+                    variant="secondary"
+                    className="w-full min-h-11 h-11 px-3 text-sm sm:text-base font-bold rounded-xl !bg-[#FAF7F2] !bg-none hover:!bg-white active:!bg-[#F2ECE4] !text-[#180D12] border border-[#EDE4DC] shadow-[0_4px_14px_rgba(0,0,0,0.22)] active:scale-[0.985] transition-all duration-150"
                   >
                     Contact Us
                   </Button>
