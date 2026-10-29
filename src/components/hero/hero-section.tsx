@@ -230,12 +230,12 @@ export function HeroSection({ className = "" }: HeroSectionProps) {
                 <strong className="font-semibold text-white">Register Free</strong> — Create your profile and discover meaningful connections for Friendship, Marriage, and Living Together.
               </p>
 
-              {/* Action Buttons with 3D Depth */}
+              {/* Action Buttons: Modern Mobile Glass & Radiant Ruby */}
               <div className="flex flex-col gap-3 pt-1">
                 <Button
                   onClick={handleOpenLookingFor}
-                  className="w-full min-h-12 h-12 text-base sm:text-lg font-black rounded-2xl bg-gradient-to-b from-[#A31D3F] via-[#80132E] to-[#660C22] hover:from-[#B02347] hover:to-[#741028] text-white border-t border-white/25 border-x border-[#A31D3F]/60 border-b-2 border-b-[#3D0410] shadow-[0_8px_20px_-3px_rgba(0,0,0,0.65),0_2px_5px_rgba(0,0,0,0.4),inset_0_1px_0_rgba(255,255,255,0.2),inset_0_-2px_3px_rgba(0,0,0,0.35)] hover:shadow-[0_12px_28px_-3px_rgba(0,0,0,0.75),0_4px_8px_rgba(0,0,0,0.45),inset_0_1px_0_rgba(255,255,255,0.25),inset_0_-2px_3px_rgba(0,0,0,0.35)] hover:-translate-y-0.5 active:translate-y-[1.5px] active:shadow-[0_2px_6px_rgba(0,0,0,0.5),inset_0_2px_4px_rgba(0,0,0,0.4)] transition-all duration-150 cursor-pointer"
-                  rightIcon={<IconArrowRight className="h-4 w-4 stroke-[2.5]" aria-hidden="true" />}
+                  className="w-full min-h-12 h-12 text-base sm:text-lg font-bold rounded-2xl bg-gradient-to-r from-[#BA1845] via-[#9F1239] to-[#80132E] hover:from-[#C72551] hover:to-[#8E1735] text-white border border-white/20 shadow-[0_8px_24px_-4px_rgba(186,24,69,0.5),0_2px_8px_rgba(0,0,0,0.3)] active:scale-[0.985] transition-all duration-150 cursor-pointer"
+                  rightIcon={<IconArrowRight className="h-4 w-4 stroke-[2.2] ml-0.5" aria-hidden="true" />}
                 >
                   Register Free
                 </Button>
@@ -243,14 +243,14 @@ export function HeroSection({ className = "" }: HeroSectionProps) {
                 <div className="grid grid-cols-2 gap-2.5">
                   <Button
                     href="/login"
-                    className="w-full min-h-11 h-11 px-3 text-sm sm:text-base font-bold rounded-xl bg-gradient-to-b from-white/12 via-white/[0.08] to-white/[0.04] hover:from-white/18 hover:to-white/[0.06] text-white border-t border-white/25 border-x border-white/15 border-b-2 border-b-black/60 backdrop-blur-md shadow-[0_6px_16px_-2px_rgba(0,0,0,0.55),0_2px_4px_rgba(0,0,0,0.35),inset_0_1px_0_rgba(255,255,255,0.15),inset_0_-2px_3px_rgba(0,0,0,0.3)] hover:shadow-[0_10px_22px_-2px_rgba(0,0,0,0.65),0_3px_6px_rgba(0,0,0,0.4)] hover:-translate-y-0.5 active:translate-y-[1.5px] active:shadow-[0_2px_5px_rgba(0,0,0,0.45),inset_0_2px_3px_rgba(0,0,0,0.35)] transition-all duration-150"
+                    className="w-full min-h-11 h-11 px-3 text-sm sm:text-base font-semibold rounded-xl bg-white/10 hover:bg-white/18 active:bg-white/25 text-white border border-white/20 backdrop-blur-md shadow-[0_4px_14px_rgba(0,0,0,0.25)] active:scale-[0.985] transition-all duration-150"
                   >
                     Sign In
                   </Button>
 
                   <Button
                     href="#contact"
-                    className="w-full min-h-11 h-11 px-3 text-sm sm:text-base font-bold rounded-xl bg-gradient-to-b from-white/12 via-white/[0.08] to-white/[0.04] hover:from-white/18 hover:to-white/[0.06] text-white border-t border-white/25 border-x border-white/15 border-b-2 border-b-black/60 backdrop-blur-md shadow-[0_6px_16px_-2px_rgba(0,0,0,0.55),0_2px_4px_rgba(0,0,0,0.35),inset_0_1px_0_rgba(255,255,255,0.15),inset_0_-2px_3px_rgba(0,0,0,0.3)] hover:shadow-[0_10px_22px_-2px_rgba(0,0,0,0.65),0_3px_6px_rgba(0,0,0,0.4)] hover:-translate-y-0.5 active:translate-y-[1.5px] active:shadow-[0_2px_5px_rgba(0,0,0,0.45),inset_0_2px_3px_rgba(0,0,0,0.35)] transition-all duration-150"
+                    className="w-full min-h-11 h-11 px-3 text-sm sm:text-base font-semibold rounded-xl bg-white/10 hover:bg-white/18 active:bg-white/25 text-white border border-white/20 backdrop-blur-md shadow-[0_4px_14px_rgba(0,0,0,0.25)] active:scale-[0.985] transition-all duration-150"
                   >
                     Contact Us
                   </Button>
@@ -289,7 +289,7 @@ export function HeroSection({ className = "" }: HeroSectionProps) {
               <Button
                 onClick={handleOpenLookingFor}
                 variant="primary"
-                className="w-full sm:w-auto min-h-12 px-6 sm:px-8 text-sm sm:text-base font-semibold border-t border-white/25 border-x border-[#A31D3F]/60 border-b-2 border-b-[#3D0410] shadow-[0_8px_20px_-3px_rgba(0,0,0,0.65),0_2px_5px_rgba(0,0,0,0.4),inset_0_1px_0_rgba(255,255,255,0.2),inset_0_-2px_3px_rgba(0,0,0,0.35)] hover:shadow-[0_12px_28px_-3px_rgba(0,0,0,0.75),0_4px_8px_rgba(0,0,0,0.45)] hover:-translate-y-0.5 active:translate-y-[1.5px] active:shadow-[0_2px_6px_rgba(0,0,0,0.5)] transition-all duration-150"
+                className="w-full sm:w-auto min-h-12 px-6 sm:px-8 text-sm sm:text-base font-bold rounded-xl shadow-[0_8px_20px_-3px_rgba(128,19,46,0.35),0_2px_4px_rgba(0,0,0,0.1)] hover:shadow-[0_12px_26px_-3px_rgba(128,19,46,0.45)] hover:-translate-y-0.5 active:scale-[0.985] transition-all duration-150"
                 rightIcon={<IconArrowRight className="h-4 w-4" aria-hidden="true" />}
               >
                 Register Free
