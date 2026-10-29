@@ -354,7 +354,7 @@ export function LookingForModal({
           <div className="flex-1 min-w-0">
             <h2
               id="looking-for-modal-heading"
-              className="text-2xl sm:text-3xl font-black tracking-tight text-white font-editorial-title leading-tight drop-shadow-xs"
+              className="text-2xl sm:text-3xl font-black tracking-tight font-editorial-title leading-tight drop-shadow-xs bg-gradient-to-r from-white via-amber-50 to-[#FBE3B5] bg-clip-text text-transparent"
             >
               What You're Looking For
             </h2>
@@ -367,7 +367,7 @@ export function LookingForModal({
               e.stopPropagation();
               onClose();
             }}
-            className="group focus-ring shrink-0 grid h-9 w-9 place-items-center rounded-full bg-white/10 hover:bg-white/20 active:scale-90 text-white/90 hover:text-white border border-white/20 backdrop-blur-md transition-all duration-200 cursor-pointer shadow-xs hover:rotate-90"
+            className="group focus-ring shrink-0 grid h-9 w-9 place-items-center rounded-full bg-white/15 hover:bg-[#FBE3B5]/20 active:scale-90 text-white/95 hover:text-[#FBE3B5] border border-[#FBE3B5]/30 backdrop-blur-md transition-all duration-200 cursor-pointer shadow-xs hover:rotate-90"
             aria-label="Close dialog"
           >
             <IconX className="h-4 w-4 transition-transform duration-200" />
@@ -406,8 +406,8 @@ export function LookingForModal({
               className={cn(
                 "group relative flex items-center gap-3.5 sm:gap-4 px-4.5 py-3.5 sm:px-5 sm:py-3.5 rounded-2xl cursor-pointer transition-all duration-200 ease-out select-none backdrop-blur-md overflow-hidden",
                 isSelected
-                  ? "bg-white/[0.22] border-2 border-[#FCD8A5] ring-2 ring-[#FCD8A5]/40 shadow-[0_12px_32px_rgba(0,0,0,0.25),0_0_24px_rgba(232,190,136,0.25)]"
-                  : "bg-white/[0.13] hover:bg-white/[0.22] border border-white/25 hover:border-[#FCD8A5]/70 hover:shadow-[0_10px_28px_rgba(0,0,0,0.22),0_0_20px_rgba(216,178,140,0.15)] hover:-translate-y-0.5 active:scale-[0.985]"
+                  ? "bg-gradient-to-r from-white/[0.25] via-[#FBE3B5]/[0.20] to-white/[0.18] border-2 border-[#FCD8A5] ring-2 ring-[#FCD8A5]/40 shadow-[0_12px_32px_rgba(0,0,0,0.25),0_0_24px_rgba(251,227,181,0.3)]"
+                  : "bg-gradient-to-r from-white/[0.14] via-[#FBE3B5]/[0.08] to-white/[0.10] hover:from-white/[0.22] hover:via-[#FBE3B5]/[0.15] hover:to-white/[0.16] border border-[#FBE3B5]/30 hover:border-[#FCD8A5]/80 hover:shadow-[0_10px_28px_rgba(0,0,0,0.22),0_0_22px_rgba(251,227,181,0.2)] hover:-translate-y-0.5 active:scale-[0.985]"
               )}
             >
               {/* Top specular hairline highlight */}
@@ -471,7 +471,7 @@ export function LookingForModal({
           <button
             type="button"
             onClick={handleGoBack}
-            className="group focus-ring inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-white/10 hover:bg-white/20 active:scale-95 text-white/95 hover:text-white border border-white/20 backdrop-blur-md transition-all duration-200 cursor-pointer shadow-xs text-xs sm:text-sm font-bold tracking-tight"
+            className="group focus-ring inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-white/15 hover:bg-[#FBE3B5]/20 active:scale-95 text-white/95 hover:text-[#FBE3B5] border border-[#FBE3B5]/30 backdrop-blur-md transition-all duration-200 cursor-pointer shadow-xs text-xs sm:text-sm font-bold tracking-tight"
             aria-label="Go back to connection options"
           >
             <IconArrowLeft className="h-4 w-4 stroke-[2.5] transition-transform duration-200 group-hover:-translate-x-0.5" />
@@ -484,7 +484,7 @@ export function LookingForModal({
               e.stopPropagation();
               onClose();
             }}
-            className="group focus-ring shrink-0 grid h-9 w-9 place-items-center rounded-full bg-white/10 hover:bg-white/20 active:scale-90 text-white/90 hover:text-white border border-white/20 backdrop-blur-md transition-all duration-200 cursor-pointer shadow-xs hover:rotate-90"
+            className="group focus-ring shrink-0 grid h-9 w-9 place-items-center rounded-full bg-white/15 hover:bg-[#FBE3B5]/20 active:scale-90 text-white/95 hover:text-[#FBE3B5] border border-[#FBE3B5]/30 backdrop-blur-md transition-all duration-200 cursor-pointer shadow-xs hover:rotate-90"
             aria-label="Close dialog"
           >
             <IconX className="h-4 w-4 transition-transform duration-200" />
@@ -492,7 +492,7 @@ export function LookingForModal({
         </div>
 
         <div className="min-w-0">
-          <h2 className="text-2xl sm:text-[27px] font-black tracking-tight text-white font-editorial-title leading-tight drop-shadow-xs">
+          <h2 className="text-2xl sm:text-[27px] font-black tracking-tight font-editorial-title leading-tight drop-shadow-xs bg-gradient-to-r from-white via-amber-50 to-[#FBE3B5] bg-clip-text text-transparent">
             Select Matrimony
           </h2>
           <p className="mt-1 text-xs sm:text-sm text-rose-100/80 leading-relaxed font-normal">
@@ -528,8 +528,8 @@ export function LookingForModal({
               className={cn(
                 "group relative flex items-center gap-3.5 sm:gap-4 px-4.5 py-3.5 sm:px-5 sm:py-3.5 rounded-2xl cursor-pointer transition-all duration-200 ease-out select-none backdrop-blur-md overflow-hidden",
                 isSelected
-                  ? "bg-white/[0.22] border-2 border-[#FCD8A5] ring-2 ring-[#FCD8A5]/40 shadow-[0_12px_32px_rgba(0,0,0,0.25),0_0_24px_rgba(232,190,136,0.25)]"
-                  : "bg-white/[0.13] hover:bg-white/[0.22] border border-white/25 hover:border-[#FCD8A5]/70 hover:shadow-[0_10px_28px_rgba(0,0,0,0.22),0_0_20px_rgba(216,178,140,0.15)] hover:-translate-y-0.5 active:scale-[0.985]"
+                  ? "bg-gradient-to-r from-white/[0.25] via-[#FBE3B5]/[0.20] to-white/[0.18] border-2 border-[#FCD8A5] ring-2 ring-[#FCD8A5]/40 shadow-[0_12px_32px_rgba(0,0,0,0.25),0_0_24px_rgba(251,227,181,0.3)]"
+                  : "bg-gradient-to-r from-white/[0.14] via-[#FBE3B5]/[0.08] to-white/[0.10] hover:from-white/[0.22] hover:via-[#FBE3B5]/[0.15] hover:to-white/[0.16] border border-[#FBE3B5]/30 hover:border-[#FCD8A5]/80 hover:shadow-[0_10px_28px_rgba(0,0,0,0.22),0_0_22px_rgba(251,227,181,0.2)] hover:-translate-y-0.5 active:scale-[0.985]"
               )}
             >
               {/* Top specular hairline highlight */}
@@ -645,7 +645,7 @@ export function LookingForModal({
         </div>
 
         <div className="min-w-0">
-          <h2 className="text-2xl sm:text-[26px] font-black tracking-tight text-white font-editorial-title leading-tight drop-shadow-xs">
+          <h2 className="text-2xl sm:text-[26px] font-black tracking-tight font-editorial-title leading-tight drop-shadow-xs bg-gradient-to-r from-white via-amber-50 to-[#FBE3B5] bg-clip-text text-transparent">
             {selectedCategory === "Marriage"
               ? "Register for Marriage"
               : selectedCategory === "Living-together"
@@ -662,7 +662,7 @@ export function LookingForModal({
       <form onSubmit={handleSubmitRegistration} className="relative z-10 space-y-3">
         {/* Marriage specific fields: Seeking for & Created by */}
         {selectedCategory === "Marriage" && (
-          <div className="space-y-2.5 p-3 rounded-2xl bg-white/[0.10] border border-white/20 shadow-xs">
+          <div className="space-y-2.5 p-3 rounded-2xl bg-gradient-to-r from-white/[0.12] via-[#FBE3B5]/[0.08] to-white/[0.08] border border-[#FBE3B5]/25 shadow-xs">
             {/* Seeking for Bride / Groom */}
             <div>
               <label className="block text-xs sm:text-sm font-bold text-[#FCD8A5] mb-1.5 tracking-wide">
@@ -832,10 +832,10 @@ export function LookingForModal({
           className={cn(
             "relative w-full max-w-full sm:max-w-[485px] transform overflow-hidden rounded-t-[2.25rem] sm:rounded-[2rem] rounded-b-none sm:rounded-b-[2rem] text-left transition-all duration-400 ease-[cubic-bezier(0.22,1,0.36,1)]",
             // Luxury Deep Burgundy Gradient with Champagne Gold Border
-            "bg-gradient-to-b from-[#961F42] via-[#7F1736] to-[#5C0F25] text-white backdrop-blur-2xl",
-            "border-t sm:border border-[#FBE3B5]/45 sm:border-[#FBE3B5]/40",
+            "bg-gradient-to-br from-[#9E2046] via-[#781432] to-[#45091A] text-white backdrop-blur-2xl",
+            "border-t sm:border border-[#FBE3B5]/50 sm:border-[#FBE3B5]/40",
             // Luxury elevated shadows & ambient gold shimmer
-            "shadow-[0_-16px_50px_rgba(50,5,18,0.5)] sm:shadow-[0_28px_80px_rgba(45,4,16,0.55),0_10px_35px_rgba(251,227,181,0.15)]",
+            "shadow-[0_-16px_50px_rgba(50,5,18,0.5),0_0_35px_rgba(251,227,181,0.12)] sm:shadow-[0_28px_80px_rgba(45,4,16,0.55),0_0_45px_rgba(251,227,181,0.18)]",
             "px-5 pt-3 pb-[max(1.5rem,env(safe-area-inset-bottom))] sm:p-6 sm:pb-6",
             // Smooth entering and exiting motion for dialog itself
             isAnimatingIn
@@ -845,12 +845,18 @@ export function LookingForModal({
         >
           {/* Mobile Native Sheet Grab / Pull Handle Bar */}
           <div className="flex sm:hidden justify-center pt-1 pb-2">
-            <div className="h-1.25 w-11 rounded-full bg-white/40" />
+            <div className="h-1.25 w-11 rounded-full bg-[#FBE3B5]/40" />
           </div>
+
+          {/* Golden Radiance Blend Layer across surface */}
+          <div
+            className="pointer-events-none absolute inset-0 bg-[radial-gradient(110%_80%_at_90%_0%,rgba(251,227,181,0.30)_0%,rgba(216,166,94,0.15)_35%,transparent_75%)]"
+            aria-hidden="true"
+          />
 
           {/* Subtle Ambient Radial Glow Accents inside glass container */}
           <div
-            className="pointer-events-none absolute -top-24 -right-24 h-60 w-60 rounded-full bg-[#FBE3B5]/20 blur-3xl"
+            className="pointer-events-none absolute -top-24 -right-24 h-60 w-60 rounded-full bg-gradient-to-bl from-[#FBE3B5]/35 via-[#D8A65E]/20 to-transparent blur-3xl"
             aria-hidden="true"
           />
           <div
@@ -858,7 +864,7 @@ export function LookingForModal({
             aria-hidden="true"
           />
           <div
-            className="pointer-events-none absolute inset-x-0 top-0 h-[2px] bg-gradient-to-r from-transparent via-[#FBE3B5]/90 to-transparent"
+            className="pointer-events-none absolute inset-x-0 top-0 h-[2px] bg-gradient-to-r from-transparent via-[#FBE3B5] to-transparent"
             aria-hidden="true"
           />
 
