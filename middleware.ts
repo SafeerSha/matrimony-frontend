@@ -60,12 +60,14 @@ export default async function middleware(request: NextRequest) {
       return NextResponse.redirect(login);
     }
 
-    // Role-based authorization
-    if (pathname.startsWith("/admin") && session.role !== "admin") {
+    // Role-based authorization (case-insensitive matching backend 'ADMIN' and 'RM')
+    const normalizedRole = typeof session.role === "string" ? session.role.toUpperCase() : "";
+
+    if (pathname.startsWith("/admin") && normalizedRole !== "ADMIN") {
       return NextResponse.redirect(new URL("/app", request.url));
     }
     
-    if (pathname.startsWith("/rm") && session.role !== "rm" && session.role !== "admin") {
+    if (pathname.startsWith("/rm") && normalizedRole !== "RM" && normalizedRole !== "ADMIN") {
       return NextResponse.redirect(new URL("/app", request.url));
     }
   }

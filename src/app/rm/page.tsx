@@ -31,7 +31,10 @@ export default function RMDashboard() {
             <IconShield className="h-5 w-5" />
           </div>
           <div>
-            <h2 className="text-sm font-bold text-[var(--foreground)] tracking-tight">RM Portal</h2>
+            <div className="flex items-center gap-1.5">
+              <h2 className="text-sm font-bold text-[var(--foreground)] tracking-tight">RM Portal</h2>
+              <Badge tone="default" size="sm" className="bg-amber-100 text-amber-800 text-[9px] py-0 px-1">Mock</Badge>
+            </div>
             <p className="text-xs text-[var(--muted)]">Sarah Jenkins</p>
           </div>
         </div>

@@ -1,5 +1,53 @@
 import type { NextConfig } from "next";
 
+const apiOrigin = (() => {
+  if (process.env.NEXT_PUBLIC_API_URL) {
+    try {
+      return new URL(process.env.NEXT_PUBLIC_API_URL).origin;
+    } catch {}
+  }
+  return "";
+})();
+
+const connectOrigins = Array.from(
+  new Set([
+    "'self'",
+    "https:",
+    "wss:",
+    "http://localhost:4000",
+    "ws://localhost:4000",
+    "http://127.0.0.1:4000",
+    "ws://127.0.0.1:4000",
+    "http://localhost:8080",
+    "ws://localhost:8080",
+    "http://127.0.0.1:8080",
+    "ws://127.0.0.1:8080",
+    "http://localhost:5000",
+    "ws://localhost:5000",
+    "http://127.0.0.1:5000",
+    "ws://127.0.0.1:5000",
+    ...(apiOrigin ? [apiOrigin, apiOrigin.replace(/^http/, "ws")] : []),
+  ])
+).join(" ");
+
+const imgOrigins = Array.from(
+  new Set([
+    "'self'",
+    "data:",
+    "blob:",
+    "https:",
+    "http://localhost:4000",
+    "http://127.0.0.1:4000",
+    "http://localhost:8080",
+    "http://127.0.0.1:8080",
+    "http://localhost:5000",
+    "http://127.0.0.1:5000",
+    "https://i.pravatar.cc",
+    "https://images.unsplash.com",
+    ...(apiOrigin ? [apiOrigin] : []),
+  ])
+).join(" ");
+
 const securityHeaders = [
   { key: "X-Content-Type-Options", value: "nosniff" },
   { key: "X-Frame-Options", value: "DENY" },
@@ -17,9 +65,9 @@ const securityHeaders = [
       "object-src 'none'",
       "script-src 'self' 'unsafe-inline' 'unsafe-eval'",
       "style-src 'self' 'unsafe-inline'",
-      "img-src 'self' data: blob: https: http://localhost:4000 http://localhost:8080 https://i.pravatar.cc https://images.unsplash.com",
+      `img-src ${imgOrigins}`,
       "font-src 'self' data:",
-      "connect-src 'self' https: wss: http://localhost:4000 ws://localhost:4000 http://localhost:8080 ws://localhost:8080",
+      `connect-src ${connectOrigins}`,
       "worker-src 'self' blob:",
       "manifest-src 'self'"
     ].join("; ")
