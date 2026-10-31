@@ -469,175 +469,456 @@ export function UserManagement() {
               )}
             </div>
           ) : (
-            <div className="overflow-x-auto" role="region" aria-label="User list">
-              <table className="w-full text-left border-collapse text-xs sm:text-sm">
-                <thead>
-                  <tr className="border-b border-[var(--border)] bg-[var(--surface-muted)] text-[var(--muted-strong)] font-semibold">
-                    <th scope="col" className="p-3.5 sm:p-4">User / Profile</th>
-                    <th scope="col" className="p-3.5 sm:p-4">Contact</th>
-                    <th scope="col" className="p-3.5 sm:p-4">Location</th>
-                    <th scope="col" className="p-3.5 sm:p-4">Plan</th>
-                    <th scope="col" className="p-3.5 sm:p-4">Status</th>
-                    <th scope="col" className="p-3.5 sm:p-4 text-right">Actions</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-[var(--border)]">
-                  {users.map((u) => {
-                    const displayName =
-                      u.firstName ??
-                      u.profile?.firstName ??
-                      u.email?.split('@')[0] ??
-                      u.phone ??
-                      'Unnamed User';
-                    const locationText =
-                      [u.profile?.city, u.profile?.state, u.profile?.country]
-                        .filter(Boolean)
-                        .join(', ') || 'Not specified';
-                    const isPaid = u.subscriptionTier === 'PAID';
-                    const isBlocked = u.isBanned;
-                    const isActing = actionLoadingId === u.id;
+            <>
+              {/* ── Mobile Card View (< md) ── */}
+              <div className="block md:hidden divide-y divide-[var(--border)]">
+                {users.map((u) => {
+                  const displayName =
+                    u.firstName ??
+                    u.profile?.firstName ??
+                    u.email?.split('@')[0] ??
+                    u.phone ??
+                    'Unnamed User';
+                  const locationText =
+                    [u.profile?.city, u.profile?.state, u.profile?.country]
+                      .filter(Boolean)
+                      .join(', ') || 'Not specified';
+                  const isPaid = u.subscriptionTier === 'PAID';
+                  const isBlocked = u.isBanned;
+                  const isActing = actionLoadingId === u.id;
 
-                    return (
-                      <tr
-                        key={u.id}
-                        className={`hover:bg-[var(--surface-muted)]/50 transition-colors ${
-                          isBlocked ? 'bg-red-50/40 dark:bg-red-950/20' : ''
-                        }`}
-                      >
-                        {/* Name & Avatar */}
-                        <td className="p-3.5 sm:p-4">
-                          <div className="flex items-center gap-3">
-                            <Avatar
-                              src={u.photos?.[0]?.url ?? ''}
-                              name={displayName}
-                              size="md"
-                              className="border border-[var(--border)] shrink-0"
-                            />
-                            <div className="min-w-0">
-                              <div className="flex items-center gap-1.5">
-                                <span className="font-semibold text-[var(--foreground)] truncate">
-                                  {displayName}
-                                </span>
-                                {u.role === 'ADMIN' && (
-                                  <Badge tone="accent" size="sm" className="text-[10px] py-0 px-1">
-                                    Admin
-                                  </Badge>
-                                )}
-                                {u.role === 'RM' && (
-                                  <Badge tone="default" size="sm" className="bg-amber-100 text-amber-800 text-[10px] py-0 px-1">
-                                    RM
-                                  </Badge>
-                                )}
-                              </div>
-                              <div className="flex items-center gap-1 text-[11px] text-[var(--muted)] mt-0.5">
-                                <IconId className="h-3 w-3 shrink-0" aria-hidden="true" />
-                                <span>{u.profileId ?? u.id.slice(0, 8)}</span>
-                              </div>
+                  return (
+                    <div
+                      key={u.id}
+                      className={`p-4 space-y-3 transition-colors ${
+                        isBlocked ? 'bg-red-50/40 dark:bg-red-950/20' : ''
+                      }`}
+                    >
+                      {/* Header: Avatar, Name, Role, Status */}
+                      <div className="flex items-start justify-between gap-2.5">
+                        <div className="flex items-center gap-3 min-w-0">
+                          <Avatar
+                            src={u.photos?.[0]?.url ?? ''}
+                            name={displayName}
+                            size="md"
+                            className="border border-[var(--border)] shrink-0"
+                          />
+                          <div className="min-w-0">
+                            <div className="flex items-center gap-1.5 flex-wrap">
+                              <span className="font-bold text-sm text-[var(--foreground)] truncate">
+                                {displayName}
+                              </span>
+                              {u.role === 'ADMIN' && (
+                                <Badge tone="accent" size="sm" className="text-[10px] py-0 px-1 font-semibold">
+                                  Admin
+                                </Badge>
+                              )}
+                              {u.role === 'RM' && (
+                                <Badge tone="default" size="sm" className="bg-amber-100 text-amber-800 text-[10px] py-0 px-1 font-semibold">
+                                  RM
+                                </Badge>
+                              )}
+                            </div>
+                            <div className="flex items-center gap-1 text-[11px] text-[var(--muted)] mt-0.5">
+                              <IconId className="h-3 w-3 shrink-0" aria-hidden="true" />
+                              <span className="font-mono">{u.profileId ?? u.id.slice(0, 8)}</span>
                             </div>
                           </div>
-                        </td>
+                        </div>
 
-                        {/* Contact */}
-                        <td className="p-3.5 sm:p-4">
-                          <div className="space-y-0.5 text-xs">
-                            {u.email && (
-                              <div className="flex items-center gap-1 text-[var(--foreground)]">
-                                <IconMail className="h-3 w-3 text-[var(--muted)] shrink-0" aria-hidden="true" />
-                                <span className="truncate max-w-[180px]">{u.email}</span>
-                              </div>
-                            )}
-                            {u.phone && (
-                              <div className="flex items-center gap-1 text-[var(--muted-strong)]">
-                                <IconPhone className="h-3 w-3 text-[var(--muted)] shrink-0" aria-hidden="true" />
-                                <span>{u.phone}</span>
-                              </div>
-                            )}
-                            {!u.email && !u.phone && (
-                              <span className="text-[var(--muted)] italic">No contact info</span>
-                            )}
+                        {/* Status Badge */}
+                        <div className="shrink-0">
+                          {isBlocked ? (
+                            <Badge tone="default" className="bg-red-100 text-red-800 border-red-200 text-xs font-bold">
+                              Blocked
+                            </Badge>
+                          ) : u.status === 'ACTIVE' ? (
+                            <Badge tone="success" className="text-xs font-bold">
+                              Active
+                            </Badge>
+                          ) : u.status === 'DEACTIVATED' ? (
+                            <Badge tone="default" className="bg-slate-100 text-slate-700 border-slate-300 text-xs font-bold inline-flex items-center gap-1">
+                              <span className="h-1.5 w-1.5 rounded-full bg-slate-500 inline-block" />
+                              Deactivated
+                            </Badge>
+                          ) : u.status === 'DELETED' ? (
+                            <Badge tone="default" className="bg-rose-100 text-rose-800 border-rose-200 text-xs font-bold inline-flex items-center gap-1">
+                              <span className="h-1.5 w-1.5 rounded-full bg-rose-500 inline-block" />
+                              Deleted
+                            </Badge>
+                          ) : (
+                            <Badge tone="default" className="bg-amber-50 text-amber-700 border-amber-200 text-xs font-bold">
+                              {u.status}
+                            </Badge>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Info Container */}
+                      <div className="space-y-2 text-xs bg-[var(--surface-muted)]/70 rounded-xl p-3 border border-[var(--border)]">
+                        {/* Contact Info */}
+                        <div className="space-y-1">
+                          {u.email && (
+                            <div className="flex items-center gap-1.5 text-[var(--foreground)] truncate">
+                              <IconMail className="h-3.5 w-3.5 text-[var(--muted)] shrink-0" />
+                              <span className="truncate">{u.email}</span>
+                            </div>
+                          )}
+                          {u.phone && (
+                            <div className="flex items-center gap-1.5 text-[var(--muted-strong)]">
+                              <IconPhone className="h-3.5 w-3.5 text-[var(--muted)] shrink-0" />
+                              <span>{u.phone}</span>
+                            </div>
+                          )}
+                          {!u.email && !u.phone && (
+                            <span className="text-[var(--muted)] italic text-[11px]">No contact details</span>
+                          )}
+                        </div>
+
+                        {/* Location & Plan Row */}
+                        <div className="flex items-center justify-between pt-2 border-t border-[var(--border)] text-xs gap-2">
+                          <div className="flex items-center gap-1 text-[var(--muted)] truncate">
+                            <IconMapPin className="h-3.5 w-3.5 text-[var(--primary)] shrink-0" />
+                            <span className="truncate">{locationText}</span>
                           </div>
-                        </td>
 
-                        {/* Location */}
-                        <td className="p-3.5 sm:p-4 text-xs">
-                          <div className="flex items-center gap-1.5 text-[var(--foreground)]">
-                            <IconMapPin className="h-3.5 w-3.5 text-[var(--primary)] shrink-0" aria-hidden="true" />
-                            <span className="truncate max-w-[160px]">{locationText}</span>
-                          </div>
-                        </td>
-
-                        {/* Plan toggle */}
-                        <td className="p-3.5 sm:p-4">
                           <button
                             type="button"
                             onClick={() => handleToggleTier(u)}
                             disabled={isActing}
-                            aria-label={`Toggle plan for ${displayName} — currently ${isPaid ? 'Paid' : 'Basic'}`}
-                            title="Click to toggle between Paid and Basic"
-                            className="group inline-flex items-center gap-1.5 focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)] rounded"
+                            className="shrink-0"
+                            title="Click to switch plan tier"
                           >
                             <Badge
                               tone={isPaid ? 'accent' : 'default'}
-                              className={`cursor-pointer transition-all group-hover:scale-105 ${
+                              className={`cursor-pointer transition-all ${
                                 isPaid
-                                  ? 'bg-amber-100 text-amber-900 border-amber-300 font-semibold'
+                                  ? 'bg-amber-100 text-amber-900 border-amber-300 font-bold'
                                   : 'bg-slate-100 text-slate-700 font-medium'
                               }`}
                             >
-                              {isPaid && <IconCrown className="h-3 w-3 text-amber-600 inline mr-1" aria-hidden="true" />}
+                              {isPaid && <IconCrown className="h-3 w-3 text-amber-600 inline mr-1" />}
                               {isPaid ? 'Paid' : 'Basic'}
                             </Badge>
                           </button>
-                        </td>
+                        </div>
 
-                        {/* Status badge */}
-                        <td className="p-3.5 sm:p-4">
-                          {isBlocked ? (
-                            <Badge tone="default" className="bg-red-100 text-red-800 border-red-200 font-semibold">
-                              Blocked
-                            </Badge>
-                          ) : u.status === 'ACTIVE' ? (
-                            <Badge tone="success" className="font-semibold">Active</Badge>
-                          ) : (
-                            <Badge tone="default" className="bg-amber-50 text-amber-700 border-amber-200">
-                              {u.status}
-                            </Badge>
-                          )}
-                        </td>
+                        {/* Reason / Notes if Deactivated or Deleted */}
+                        {u.deletionReason && (
+                          <div className="pt-1.5 border-t border-[var(--border)] text-[11px] text-[var(--muted)]">
+                            <span className="font-semibold">Reason:</span> &ldquo;{u.deletionReason}&rdquo;
+                          </div>
+                        )}
+                      </div>
 
-                        {/* Actions */}
-                        <td className="p-3.5 sm:p-4 text-right">
+                      {/* Mobile Actions */}
+                      <div className="flex items-center justify-end gap-2 pt-1">
+                        {u.status === 'DEACTIVATED' && (
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            disabled={isActing}
+                            onClick={() => setPendingConfirm({ user: u, action: 'reactivate' })}
+                            className="text-emerald-700 border-emerald-300 hover:bg-emerald-50 text-xs h-8 px-3 flex items-center justify-center gap-1 font-semibold flex-1"
+                          >
+                            <IconRefresh className="h-3.5 w-3.5" />
+                            Reactivate
+                          </Button>
+                        )}
+
+                        {u.status === 'DELETED' && (
+                          <>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              disabled={isActing}
+                              onClick={() => setPendingConfirm({ user: u, action: 'restore' })}
+                              className="text-emerald-700 border-emerald-300 hover:bg-emerald-50 text-xs h-8 px-3 flex items-center justify-center gap-1 font-semibold flex-1"
+                            >
+                              <IconRefresh className="h-3.5 w-3.5" />
+                              Restore
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              disabled={isActing}
+                              onClick={() => setPendingConfirm({ user: u, action: 'purge' })}
+                              className="text-rose-600 border-rose-200 hover:bg-rose-50 text-xs h-8 px-3 flex items-center justify-center gap-1 font-semibold flex-1"
+                            >
+                              <IconTrash className="h-3.5 w-3.5" />
+                              Purge
+                            </Button>
+                          </>
+                        )}
+
+                        {u.status !== 'DELETED' && (
                           <Button
                             size="sm"
                             variant="outline"
                             disabled={isActing}
                             onClick={() => confirmBlock(u)}
-                            aria-label={isBlocked ? `Unblock ${displayName}` : `Block ${displayName}`}
-                            className={
+                            className={`text-xs h-8 px-3 flex items-center justify-center gap-1 font-semibold flex-1 ${
                               isBlocked
-                                ? 'text-emerald-700 hover:text-emerald-800 border-emerald-300 hover:bg-emerald-50 text-xs h-8 px-2.5 flex items-center gap-1'
-                                : 'text-red-600 hover:text-red-700 border-red-200 hover:bg-red-50 text-xs h-8 px-2.5 flex items-center gap-1'
-                            }
+                                ? 'text-emerald-700 border-emerald-300 hover:bg-emerald-50'
+                                : 'text-red-600 border-red-200 hover:bg-red-50'
+                            }`}
                           >
                             {isActing ? (
-                              <span
-                                className="h-3.5 w-3.5 border border-current border-t-transparent rounded-full animate-spin"
-                                aria-hidden="true"
-                              />
+                              <span className="h-3.5 w-3.5 border border-current border-t-transparent rounded-full animate-spin" />
                             ) : isBlocked ? (
-                              <IconUserCheck className="h-3.5 w-3.5" aria-hidden="true" />
+                              <IconUserCheck className="h-3.5 w-3.5" />
                             ) : (
-                              <IconBan className="h-3.5 w-3.5" aria-hidden="true" />
+                              <IconBan className="h-3.5 w-3.5" />
                             )}
-                            {isBlocked ? 'Unblock' : 'Block'}
+                            {isBlocked ? 'Unblock User' : 'Block User'}
                           </Button>
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+
+              {/* ── Desktop Table View (>= md) ── */}
+              <div className="hidden md:block overflow-x-auto" role="region" aria-label="User list">
+                <table className="w-full text-left border-collapse text-xs sm:text-sm">
+                  <thead>
+                    <tr className="border-b border-[var(--border)] bg-[var(--surface-muted)] text-[var(--muted-strong)] font-semibold">
+                      <th scope="col" className="p-3.5 sm:p-4">User / Profile</th>
+                      <th scope="col" className="p-3.5 sm:p-4">Contact</th>
+                      <th scope="col" className="p-3.5 sm:p-4">Location</th>
+                      <th scope="col" className="p-3.5 sm:p-4">Plan</th>
+                      <th scope="col" className="p-3.5 sm:p-4">Status</th>
+                      <th scope="col" className="p-3.5 sm:p-4 text-right">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-[var(--border)]">
+                    {users.map((u) => {
+                      const displayName =
+                        u.firstName ??
+                        u.profile?.firstName ??
+                        u.email?.split('@')[0] ??
+                        u.phone ??
+                        'Unnamed User';
+                      const locationText =
+                        [u.profile?.city, u.profile?.state, u.profile?.country]
+                          .filter(Boolean)
+                          .join(', ') || 'Not specified';
+                      const isPaid = u.subscriptionTier === 'PAID';
+                      const isBlocked = u.isBanned;
+                      const isActing = actionLoadingId === u.id;
+
+                      return (
+                        <tr
+                          key={u.id}
+                          className={`hover:bg-[var(--surface-muted)]/50 transition-colors ${
+                            isBlocked ? 'bg-red-50/40 dark:bg-red-950/20' : ''
+                          }`}
+                        >
+                          {/* Name & Avatar */}
+                          <td className="p-3.5 sm:p-4">
+                            <div className="flex items-center gap-3">
+                              <Avatar
+                                src={u.photos?.[0]?.url ?? ''}
+                                name={displayName}
+                                size="md"
+                                className="border border-[var(--border)] shrink-0"
+                              />
+                              <div className="min-w-0">
+                                <div className="flex items-center gap-1.5">
+                                  <span className="font-semibold text-[var(--foreground)] truncate">
+                                    {displayName}
+                                  </span>
+                                  {u.role === 'ADMIN' && (
+                                    <Badge tone="accent" size="sm" className="text-[10px] py-0 px-1">
+                                      Admin
+                                    </Badge>
+                                  )}
+                                  {u.role === 'RM' && (
+                                    <Badge tone="default" size="sm" className="bg-amber-100 text-amber-800 text-[10px] py-0 px-1">
+                                      RM
+                                    </Badge>
+                                  )}
+                                </div>
+                                <div className="flex items-center gap-1 text-[11px] text-[var(--muted)] mt-0.5">
+                                  <IconId className="h-3 w-3 shrink-0" aria-hidden="true" />
+                                  <span>{u.profileId ?? u.id.slice(0, 8)}</span>
+                                </div>
+                              </div>
+                            </div>
+                          </td>
+
+                          {/* Contact */}
+                          <td className="p-3.5 sm:p-4">
+                            <div className="space-y-0.5 text-xs">
+                              {u.email && (
+                                <div className="flex items-center gap-1 text-[var(--foreground)]">
+                                  <IconMail className="h-3 w-3 text-[var(--muted)] shrink-0" aria-hidden="true" />
+                                  <span className="truncate max-w-[180px]">{u.email}</span>
+                                </div>
+                              )}
+                              {u.phone && (
+                                <div className="flex items-center gap-1 text-[var(--muted-strong)]">
+                                  <IconPhone className="h-3 w-3 text-[var(--muted)] shrink-0" aria-hidden="true" />
+                                  <span>{u.phone}</span>
+                                </div>
+                              )}
+                              {!u.email && !u.phone && (
+                                <span className="text-[var(--muted)] italic">No contact info</span>
+                              )}
+                            </div>
+                          </td>
+
+                          {/* Location */}
+                          <td className="p-3.5 sm:p-4 text-xs">
+                            <div className="flex items-center gap-1.5 text-[var(--foreground)]">
+                              <IconMapPin className="h-3.5 w-3.5 text-[var(--primary)] shrink-0" aria-hidden="true" />
+                              <span className="truncate max-w-[160px]">{locationText}</span>
+                            </div>
+                          </td>
+
+                          {/* Plan toggle */}
+                          <td className="p-3.5 sm:p-4">
+                            <button
+                              type="button"
+                              onClick={() => handleToggleTier(u)}
+                              disabled={isActing}
+                              aria-label={`Toggle plan for ${displayName} — currently ${isPaid ? 'Paid' : 'Basic'}`}
+                              title="Click to toggle between Paid and Basic"
+                              className="group inline-flex items-center gap-1.5 focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)] rounded"
+                            >
+                              <Badge
+                                tone={isPaid ? 'accent' : 'default'}
+                                className={`cursor-pointer transition-all group-hover:scale-105 ${
+                                  isPaid
+                                    ? 'bg-amber-100 text-amber-900 border-amber-300 font-semibold'
+                                    : 'bg-slate-100 text-slate-700 font-medium'
+                                }`}
+                              >
+                                {isPaid && <IconCrown className="h-3 w-3 text-amber-600 inline mr-1" aria-hidden="true" />}
+                                {isPaid ? 'Paid' : 'Basic'}
+                              </Badge>
+                            </button>
+                          </td>
+
+                          {/* Status badge */}
+                          <td className="p-3.5 sm:p-4">
+                            {isBlocked ? (
+                              <Badge tone="default" className="bg-red-100 text-red-800 border-red-200 font-semibold">
+                                Blocked
+                              </Badge>
+                            ) : u.status === 'ACTIVE' ? (
+                              <Badge tone="success" className="font-semibold">Active</Badge>
+                            ) : u.status === 'DEACTIVATED' ? (
+                              <div className="space-y-0.5">
+                                <Badge tone="default" className="bg-slate-100 text-slate-700 border-slate-300 font-semibold inline-flex items-center gap-1">
+                                  <span className="h-1.5 w-1.5 rounded-full bg-slate-500 inline-block" />
+                                  Deactivated
+                                </Badge>
+                                {u.deletionReason && (
+                                  <p className="text-[10px] text-[var(--muted)] truncate max-w-[130px]" title={u.deletionReason}>
+                                    {u.deletionReason}
+                                  </p>
+                                )}
+                              </div>
+                            ) : u.status === 'DELETED' ? (
+                              <div className="space-y-0.5">
+                                <Badge tone="default" className="bg-rose-100 text-rose-800 border-rose-200 font-semibold inline-flex items-center gap-1">
+                                  <span className="h-1.5 w-1.5 rounded-full bg-rose-500 inline-block" />
+                                  Deleted
+                                </Badge>
+                                {u.deletionReason && (
+                                  <p className="text-[10px] text-rose-700/80 truncate max-w-[130px]" title={u.deletionReason}>
+                                    {u.deletionReason}
+                                  </p>
+                                )}
+                              </div>
+                            ) : (
+                              <Badge tone="default" className="bg-amber-50 text-amber-700 border-amber-200">
+                                {u.status}
+                              </Badge>
+                            )}
+                          </td>
+
+                          {/* Actions */}
+                          <td className="p-3.5 sm:p-4 text-right">
+                            <div className="flex items-center justify-end gap-1.5 flex-wrap">
+                              {u.status === 'DEACTIVATED' && (
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  disabled={isActing}
+                                  onClick={() => setPendingConfirm({ user: u, action: 'reactivate' })}
+                                  aria-label={`Reactivate ${displayName}`}
+                                  className="text-emerald-700 hover:text-emerald-800 border-emerald-300 hover:bg-emerald-50 text-xs h-8 px-2 flex items-center gap-1"
+                                >
+                                  <IconRefresh className="h-3.5 w-3.5" aria-hidden="true" />
+                                  Reactivate
+                                </Button>
+                              )}
+
+                              {u.status === 'DELETED' && (
+                                <>
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    disabled={isActing}
+                                    onClick={() => setPendingConfirm({ user: u, action: 'restore' })}
+                                    aria-label={`Restore ${displayName}`}
+                                    className="text-emerald-700 hover:text-emerald-800 border-emerald-300 hover:bg-emerald-50 text-xs h-8 px-2 flex items-center gap-1"
+                                  >
+                                    <IconRefresh className="h-3.5 w-3.5" aria-hidden="true" />
+                                    Restore
+                                  </Button>
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    disabled={isActing}
+                                    onClick={() => setPendingConfirm({ user: u, action: 'purge' })}
+                                    aria-label={`Purge ${displayName}`}
+                                    className="text-rose-600 hover:text-rose-700 border-rose-200 hover:bg-rose-50 text-xs h-8 px-2 flex items-center gap-1"
+                                  >
+                                    <IconTrash className="h-3.5 w-3.5" aria-hidden="true" />
+                                    Purge
+                                  </Button>
+                                </>
+                              )}
+
+                              {u.status !== 'DELETED' && (
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  disabled={isActing}
+                                  onClick={() => confirmBlock(u)}
+                                  aria-label={isBlocked ? `Unblock ${displayName}` : `Block ${displayName}`}
+                                  className={`text-xs h-8 px-2.5 flex items-center gap-1 ${
+                                    isBlocked
+                                      ? 'text-emerald-700 hover:text-emerald-800 border-emerald-300 hover:bg-emerald-50'
+                                      : 'text-red-600 hover:text-red-700 border-red-200 hover:bg-red-50'
+                                  }`}
+                                >
+                                  {isActing ? (
+                                    <span
+                                      className="h-3.5 w-3.5 border border-current border-t-transparent rounded-full animate-spin"
+                                      aria-hidden="true"
+                                    />
+                                  ) : isBlocked ? (
+                                    <IconUserCheck className="h-3.5 w-3.5" aria-hidden="true" />
+                                  ) : (
+                                    <IconBan className="h-3.5 w-3.5" aria-hidden="true" />
+                                  )}
+                                  {isBlocked ? 'Unblock' : 'Block'}
+                                </Button>
+                              )}
+                            </div>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            </>
           )}
 
           {/* Pagination */}
