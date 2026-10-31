@@ -233,6 +233,7 @@ export function MyProfile() {
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isSavingDetails, setIsSavingDetails] = useState(false);
   const [editDraft, setEditDraft] = useState<{
+    email: string;
     bio: string;
     family: string;
     lookingFor: string;
@@ -252,6 +253,7 @@ export function MyProfile() {
     customLifestyleInput: string;
     customInterestInput: string;
   }>({
+    email: '',
     bio: '',
     family: '',
     lookingFor: '',
@@ -339,6 +341,7 @@ export function MyProfile() {
 
       // Pre-fill edit draft
       setEditDraft({
+        email: combined.email || (combined as any)?.user?.email || '',
         bio: combined.bio || '',
         family: combined.family || '',
         lookingFor: combined.lookingFor || '',
@@ -459,7 +462,20 @@ export function MyProfile() {
   const handleSaveDetails = async () => {
     setIsSavingDetails(true);
     try {
+      if (editDraft.email && editDraft.email.trim()) {
+        const cleanEmail = editDraft.email.trim().toLowerCase();
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!emailRegex.test(cleanEmail)) {
+          toast.error('Invalid Email Address', {
+            description: 'Please enter a valid email address (e.g., name@gmail.com).',
+          });
+          setIsSavingDetails(false);
+          return;
+        }
+      }
+
       const payload: Partial<UserProfile> = {
+        email: editDraft.email ? editDraft.email.trim().toLowerCase() : undefined,
         bio: editDraft.bio,
         family: editDraft.family,
         lookingFor: editDraft.lookingFor,
@@ -855,6 +871,27 @@ export function MyProfile() {
                   Active & Searchable
                 </Badge>
               </div>
+
+              {/* Registered Email (Private / Editable) */}
+              <div className="mt-3.5 flex items-center justify-between rounded-2xl bg-white p-3.5 border border-[#EAD8C7] shadow-2xs">
+                <div className="min-w-0 flex-1">
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-[#7A1835] block">
+                    Registered Email (Gmail)
+                  </span>
+                  <span className="text-xs font-bold text-[#211B1E] truncate block mt-0.5">
+                    {profile?.email || (profile as any)?.user?.email || 'Not specified'}
+                  </span>
+                </div>
+                <Button
+                  variant="secondary"
+                  size="xs"
+                  onClick={() => setIsEditModalOpen(true)}
+                  className="rounded-xl text-xs font-bold gap-1 shrink-0 ml-2 shadow-2xs"
+                >
+                  <IconEdit className="h-3.5 w-3.5 text-[var(--primary)]" />
+                  <span>Change</span>
+                </Button>
+              </div>
             </Card>
 
             {/* Quick Photo Gallery Widget */}
@@ -1164,6 +1201,23 @@ export function MyProfile() {
         size="lg"
       >
         <div className="space-y-5 max-h-[72vh] overflow-y-auto px-1 pr-2">
+          {/* Registered Email & Contact Account */}
+          <div className="p-3.5 rounded-2xl bg-gradient-to-r from-[#FAF3EC] via-[#FAF0F3] to-[#FFF9F6] border border-[#EAD8C7]">
+            <label className="block text-xs font-bold uppercase tracking-wider text-[#7A1835] mb-1.5">
+              Registered Email (Gmail)
+            </label>
+            <input
+              type="email"
+              value={editDraft.email}
+              onChange={(e) => setEditDraft({ ...editDraft, email: e.target.value })}
+              placeholder="name@gmail.com"
+              className="w-full rounded-xl border border-[#DCCBBA] bg-white px-3.5 py-2.5 text-xs text-[#211B1E] font-medium focus:outline-none focus:ring-2 focus:ring-[#80132E]"
+            />
+            <p className="mt-1.5 text-[11px] text-[#766B6F] leading-relaxed">
+              🔒 Confidential: Used for your account sign in, verification codes, and security alerts. Never displayed to other members.
+            </p>
+          </div>
+
           {/* Location & Mother Tongue */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>

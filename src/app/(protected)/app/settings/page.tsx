@@ -28,6 +28,7 @@ import {
   IconExternalLink,
   IconSettings,
   IconLoader2,
+  IconEdit,
 } from '@tabler/icons-react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -39,6 +40,8 @@ import { ChangePasswordModal } from '@/components/settings/change-password-modal
 import { BlockedUsersModal } from '@/components/settings/blocked-users-modal';
 import { FeatureGate } from '@/components/ui/under-development';
 import { authService, UserDevice } from '@/services/auth.service';
+import { profileService } from '@/services/profile.service';
+import { IconMail } from '@tabler/icons-react';
 import { toast } from '@/lib/toast';
 import { cn } from '@/lib/cn';
 
@@ -56,6 +59,13 @@ function SettingsContent() {
   const [isDisableConfirmOpen, setIsDisableConfirmOpen] = useState(false);
   const [isBlockedModalOpen, setIsBlockedModalOpen] = useState(false);
 
+  // User Account Details
+  const [currentUser, setCurrentUser] = useState<any>(null);
+  const [isEmailModalOpen, setIsEmailModalOpen] = useState(false);
+  const [emailInput, setEmailInput] = useState('');
+  const [isSavingEmail, setIsSavingEmail] = useState(false);
+  const [emailError, setEmailError] = useState<string | null>(null);
+
   // Password Security State
   const [isPasswordEnabled, setIsPasswordEnabled] = useState(true);
   const [passwordLastChanged, setPasswordLastChanged] = useState('3 weeks ago');
@@ -71,6 +81,13 @@ function SettingsContent() {
         setPasswordLastChanged(storedLastChanged);
       }
     }
+
+    profileService.getProfile('me').then((res) => {
+      if (res) {
+        setCurrentUser(res);
+        setEmailInput(res.email || (res as any)?.user?.email || '');
+      }
+    }).catch(() => {});
   }, []);
 
   const handleTogglePassword = () => {
@@ -342,22 +359,37 @@ function SettingsContent() {
                 </div>
 
                 <div className="divide-y divide-[#E9DDE0]">
-                  {/* Row: Email */}
+                  {/* Row: Email (Dynamic & Editable) */}
                   <div className="p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4">
                     <div className="flex items-center gap-3.5 min-w-0 flex-1">
                       <div className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-[#FAF3EC] text-[#7A1835]">
-                        <IconUser className="h-5 w-5" />
+                        <IconMail className="h-5 w-5" />
                       </div>
                       <div className="min-w-0 flex-1">
-                        <h4 className="text-xs font-bold text-[#211B1E]">Registered Email</h4>
+                        <h4 className="text-xs font-bold text-[#211B1E]">Registered Email (Gmail)</h4>
                         <p className="text-[11px] text-[#766B6F] mt-0.5">
-                          Used for logging in and critical account alerts
+                          Used for logging in, verification codes, and critical account alerts
                         </p>
                       </div>
                     </div>
-                    <span className="text-xs font-semibold text-[#211B1E] bg-[#FFF9F6] border border-[#E9DDE0] px-3 py-1.5 rounded-xl self-start sm:self-auto shrink-0 break-all max-w-full">
-                      pksaf@example.com
-                    </span>
+                    <div className="flex items-center gap-2 self-start sm:self-auto shrink-0">
+                      <span className="text-xs font-semibold text-[#211B1E] bg-[#FFF9F6] border border-[#E9DDE0] px-3 py-1.5 rounded-xl break-all max-w-[220px] truncate">
+                        {currentUser?.email || (currentUser as any)?.user?.email || 'Loading...'}
+                      </span>
+                      <Button
+                        variant="secondary"
+                        size="xs"
+                        onClick={() => {
+                          setEmailInput(currentUser?.email || (currentUser as any)?.user?.email || '');
+                          setEmailError(null);
+                          setIsEmailModalOpen(true);
+                        }}
+                        className="rounded-xl text-xs font-bold gap-1 shadow-2xs cursor-pointer"
+                      >
+                        <IconEdit className="h-3.5 w-3.5 text-[var(--primary)]" />
+                        <span>Change</span>
+                      </Button>
+                    </div>
                   </div>
 
                   {/* Row: Matrimony ID */}
@@ -374,7 +406,7 @@ function SettingsContent() {
                       </div>
                     </div>
                     <span className="font-bold text-xs tracking-wider text-[#7A1835] bg-[#FAF3EC] border border-[#EAD8C7] px-3 py-1.5 rounded-xl self-start sm:self-auto shrink-0">
-                      LT-A0001
+                      {currentUser?.profileId || (currentUser as any)?.user?.profileId || 'ISHTAM-ID'}
                     </span>
                   </div>
 
@@ -1144,6 +1176,90 @@ function SettingsContent() {
               className="rounded-xl bg-red-600 hover:bg-red-700 text-white text-xs font-bold px-5 shadow-sm active-press"
             >
               Disable Password
+            </Button>
+          </div>
+        </div>
+      </Modal>
+
+      {/* CHANGE EMAIL MODAL */}
+      <Modal
+        isOpen={isEmailModalOpen}
+        onClose={() => setIsEmailModalOpen(false)}
+        title="Change Registered Email"
+        description="Update the email address associated with your account for sign in and alerts."
+      >
+        <div className="space-y-4 pt-1">
+          <div>
+            <label className="block text-xs font-bold uppercase tracking-wider text-[var(--foreground)] mb-1.5">
+              New Email Address (Gmail)
+            </label>
+            <input
+              type="email"
+              value={emailInput}
+              onChange={(e) => {
+                setEmailInput(e.target.value);
+                if (emailError) setEmailError(null);
+              }}
+              placeholder="name@gmail.com"
+              className="w-full rounded-xl border border-[var(--border)] bg-white px-3.5 py-2.5 text-sm text-[var(--foreground)] focus:outline-none focus:ring-2 focus:ring-[var(--primary)]"
+            />
+            {emailError && (
+              <p className="mt-1.5 text-xs text-rose-600 font-semibold">{emailError}</p>
+            )}
+          </div>
+
+          <p className="text-xs text-[var(--muted)] leading-relaxed bg-[#FAF3EC] p-3 rounded-xl border border-[#EAD8C7]">
+            🔒 Confidential: Your email address is strictly private and is never disclosed to other members.
+          </p>
+
+          <div className="flex items-center justify-end gap-2 pt-2">
+            <Button
+              variant="secondary"
+              size="sm"
+              onClick={() => setIsEmailModalOpen(false)}
+              className="rounded-xl"
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="primary"
+              size="sm"
+              disabled={isSavingEmail}
+              onClick={async () => {
+                const cleanEmail = emailInput.trim().toLowerCase();
+                const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+                if (!cleanEmail || !emailRegex.test(cleanEmail)) {
+                  setEmailError('Please enter a valid email address.');
+                  return;
+                }
+                setIsSavingEmail(true);
+                try {
+                  await profileService.updateProfile('me', { email: cleanEmail });
+                  setCurrentUser((prev: any) => ({ ...prev, email: cleanEmail }));
+                  toast.success('Email Updated', {
+                    description: 'Your registered email has been successfully updated.',
+                  });
+                  setIsEmailModalOpen(false);
+                } catch (err: any) {
+                  const msg = err?.message || 'Could not update email. It may already be in use.';
+                  setEmailError(msg);
+                  toast.error('Update Failed', {
+                    description: msg,
+                  });
+                } finally {
+                  setIsSavingEmail(false);
+                }
+              }}
+              className="rounded-xl font-bold cursor-pointer"
+            >
+              {isSavingEmail ? (
+                <>
+                  <IconLoader2 className="h-4 w-4 animate-spin mr-1" />
+                  <span>Saving...</span>
+                </>
+              ) : (
+                'Save Email'
+              )}
             </Button>
           </div>
         </div>
