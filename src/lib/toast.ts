@@ -32,7 +32,6 @@ class ToastManager {
 
   constructor() {
     if (typeof window !== "undefined") {
-      // Check for flash toast on load
       try {
         const stored = sessionStorage.getItem(this.flashKey);
         if (stored) {
@@ -68,11 +67,29 @@ class ToastManager {
     this.notify();
   }
 
+  public dismissAll() {
+    this.toasts = [];
+    this.notify();
+  }
+
   public show(
     type: ToastType,
     title: string,
     options?: string | ToastOptions
   ): string {
+    const cleanTitle = (title || "").trim();
+    if (!cleanTitle) return "";
+
+    // DEDUPLICATION: Prevent duplicate toasts with the same title from appearing at the same time
+    const now = Date.now();
+    const existing = this.toasts.find(
+      (t) => t.title.toLowerCase() === cleanTitle.toLowerCase()
+    );
+    if (existing && now - existing.createdAt < 3000) {
+      // Already showing an identical toast recently
+      return existing.id;
+    }
+
     const id = (typeof options === "object" && options?.id) || Math.random().toString(36).substring(2, 9);
     const description =
       typeof options === "string"
@@ -91,7 +108,7 @@ class ToastManager {
       try {
         sessionStorage.setItem(
           this.flashKey,
-          JSON.stringify({ type, title, description, duration })
+          JSON.stringify({ type, title: cleanTitle, description, duration })
         );
       } catch {
         // ignore
@@ -105,17 +122,17 @@ class ToastManager {
     const toastItem: ToastItem = {
       id,
       type,
-      title,
+      title: cleanTitle,
       description,
       duration,
-      createdAt: Date.now(),
+      createdAt: now,
       onClick,
       avatarUrl,
       actionLabel,
     };
 
-    // Keep up to 5 toasts active
-    this.toasts = [toastItem, ...this.toasts.slice(0, 4)];
+    // Keep up to 3 active toasts (instead of cluttering the screen)
+    this.toasts = [toastItem, ...this.toasts.slice(0, 2)];
     this.notify();
 
     if (duration > 0) {
@@ -127,13 +144,33 @@ class ToastManager {
     return id;
   }
 
+  /**
+   * Stores a flash toast in sessionStorage to be displayed ONCE on the next page after redirect.
+   * Does NOT show on the current page to prevent duplicate notifications.
+   */
   public flash(
     type: ToastType,
     title: string,
     options?: string | ToastOptions
   ) {
-    const opts = typeof options === "string" ? { description: options } : options || {};
-    return this.show(type, title, { ...opts, persistOnRedirect: true });
+    if (typeof window !== "undefined") {
+      try {
+        const description =
+          typeof options === "string"
+            ? options
+            : typeof options === "object"
+            ? options.description
+            : undefined;
+        const duration =
+          typeof options === "object" && options?.duration !== undefined
+            ? options.duration
+            : 4500;
+        sessionStorage.setItem(
+          this.flashKey,
+          JSON.stringify({ type, title, description, duration })
+        );
+      } catch {}
+    }
   }
 
   public success(title: string, options?: string | ToastOptions) {

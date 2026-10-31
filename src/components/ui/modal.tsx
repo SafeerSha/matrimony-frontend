@@ -39,13 +39,21 @@ export function Modal({
 
   useEffect(() => {
     if (isOpen) {
+      const origBody = document.body.style.overflow;
+      const origHtml = document.documentElement.style.overflow;
       document.body.style.overflow = "hidden";
+      document.documentElement.style.overflow = "hidden";
+      document.body.style.touchAction = "none";
       window.addEventListener("keydown", handleKeyDown);
     } else {
       document.body.style.overflow = "";
+      document.documentElement.style.overflow = "";
+      document.body.style.touchAction = "";
     }
     return () => {
       document.body.style.overflow = "";
+      document.documentElement.style.overflow = "";
+      document.body.style.touchAction = "";
       window.removeEventListener("keydown", handleKeyDown);
     };
   }, [isOpen, handleKeyDown]);
@@ -73,7 +81,15 @@ export function Modal({
       <div className="flex min-h-full items-center justify-center p-4 sm:p-6">
         {/* Backdrop with blur */}
         <div
-          className="fixed inset-0 bg-black/50 backdrop-blur-sm transition-opacity duration-300 animate-in fade-in"
+          className="fixed inset-0 bg-black/50 backdrop-blur-sm transition-opacity duration-300 animate-in fade-in touch-none overscroll-none"
+          onTouchMove={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+          }}
+          onWheel={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+          }}
           onClick={() => closeOnBackdrop && onClose()}
           aria-hidden="true"
         />

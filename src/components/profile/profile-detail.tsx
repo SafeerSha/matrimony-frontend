@@ -2,6 +2,8 @@
 
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
+import { createPortal } from 'react-dom';
 import {
   IconArrowLeft,
   IconCircleCheck,
@@ -45,6 +47,7 @@ import { VerificationBadge } from '@/components/ui/verification-badge';
 import { ProfileCard } from '@/components/profile/profile-card';
 import { matchesService, profileService } from '@/services';
 import { toast } from '@/lib/toast';
+import { useSubscription } from '@/context/subscription-context';
 import { cn } from '@/lib/cn';
 import type { Profile } from '@/lib/demo-data';
 
@@ -61,13 +64,30 @@ export function ProfileDetail({ id }: { id?: string }) {
   const [isLoading, setIsLoading] = useState(true);
   const [showFloatingDock, setShowFloatingDock] = useState(false);
   const inlineActionsRef = useRef<HTMLDivElement>(null);
+  const { isSubscribed, openChatPrompt } = useSubscription();
+  const [isMounted, setIsMounted] = useState(false);
+  const router = useRouter();
+
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
+
+  const handleChatClick = (e?: React.MouseEvent) => {
+    if (e) e.preventDefault();
+    if (!profile) return;
+    if (!isSubscribed) {
+      openChatPrompt();
+      return;
+    }
+    router.push(`/app/messages?user=${profile.id}`);
+  };
 
   // Show floating dock only once the inline buttons section has scrolled past view
   useEffect(() => {
     const handleScroll = () => {
       if (!inlineActionsRef.current) return;
       const rect = inlineActionsRef.current.getBoundingClientRect();
-      setShowFloatingDock(rect.bottom < 50);
+      setShowFloatingDock(rect.bottom < 60);
     };
 
     window.addEventListener('scroll', handleScroll, { passive: true });
@@ -299,8 +319,12 @@ export function ProfileDetail({ id }: { id?: string }) {
 
   if (isLoading) {
     return (
-      <div className="py-24 text-center">
-        <PageLoader text="Loading profile details..." />
+      <div className="py-4 sm:py-8">
+        <PageLoader
+          text="Loading profile details..."
+          subtitle="Just a moment while we get everything ready"
+          showBackgroundDecor
+        />
       </div>
     );
   }
@@ -625,6 +649,7 @@ export function ProfileDetail({ id }: { id?: string }) {
                     {/* Chat action is the primary prominent button! */}
                     <Link
                       href={`/app/messages?user=${profile.id}`}
+                      onClick={handleChatClick}
                       className="focus-ring flex-1 min-w-0"
                     >
                       <Button
@@ -762,6 +787,7 @@ export function ProfileDetail({ id }: { id?: string }) {
                   {/* Chat action with Premium link */}
                   <Link
                     href={`/app/messages?user=${profile.id}`}
+                    onClick={handleChatClick}
                     className="focus-ring block w-full"
                   >
                     <Button
@@ -1245,96 +1271,113 @@ export function ProfileDetail({ id }: { id?: string }) {
         </div>
       )}
 
-      {/* MOBILE STICKY BOTTOM ACTION DOCK (Floating above bottom navigation dock, shown only once inline actions scroll past) */}
-      <div
-        className={cn(
-          "fixed bottom-[84px] inset-x-0 z-40 flex md:hidden justify-center px-4 pointer-events-none transition-all duration-300 ease-out",
-          showFloatingDock
-            ? "opacity-100 translate-y-0 scale-100"
-            : "opacity-0 translate-y-6 scale-95 pointer-events-none"
-        )}
-      >
-        <div className="w-full max-w-[420px] p-2 rounded-[2rem] bg-white/90 backdrop-blur-2xl border border-white/70 shadow-[0_12px_36px_rgba(33,27,30,0.14)] pointer-events-auto flex items-center gap-2">
-          {isMatched ? (
-            <Link href={`/app/messages?user=${profile.id}`} className="flex-1 min-w-0">
+      {/* MOBILE STICKY BOTTOM ACTION DOCK (Portaled to document.body to remain strictly anchored to viewport above MobileNav) */}
+      {isMounted && createPortal(
+        <div
+          className={cn(
+            "fixed bottom-[calc(4.875rem+env(safe-area-inset-bottom,0px))] inset-x-0 z-40 flex md:hidden justify-center px-4 pointer-events-none transition-all duration-300 ease-out",
+            showFloatingDock
+              ? "opacity-100 translate-y-0 scale-100"
+              : "opacity-0 translate-y-6 scale-95 pointer-events-none"
+          )}
+          aria-label="Profile actions"
+        >
+          <div className="w-full max-w-[420px] p-2 rounded-[2.25rem] bg-white/95 backdrop-blur-2xl border border-[var(--champagne-border)]/80 shadow-[0_14px_40px_rgba(26,12,18,0.14)] pointer-events-auto flex items-center gap-2">
+            {isMatched ? (
               <Button
                 variant="primary"
                 size="md"
-                className="w-full font-bold rounded-2xl text-xs h-11 shadow-sm active-press bg-gradient-to-r from-[var(--primary)] to-[#8E1B3E] px-2.5 sm:px-4"
+                onClick={handleChatClick}
+                className="flex-1 min-w-0 font-bold rounded-2xl text-xs h-11 shadow-sm active-press bg-gradient-to-r from-[var(--primary)] via-[#801835] to-[#5E0E24] text-white px-2.5 sm:px-4"
                 leftIcon={<IconMessageCircle className="h-4 w-4 shrink-0" />}
               >
                 <span className="truncate">Chat with {profile.name.split(' ')[0]}</span>
               </Button>
-            </Link>
-          ) : isInterestReceived ? (
-            <Button
-              variant="primary"
-              size="md"
-              onClick={handleAcceptInterest}
-              className="flex-1 min-w-0 font-bold rounded-2xl text-xs h-11 shadow-sm active-press bg-emerald-600 text-white px-2.5 sm:px-4"
-              leftIcon={<IconCheck className="h-4 w-4 shrink-0" />}
-            >
-              <span className="truncate">Accept Interest</span>
-            </Button>
-          ) : isDeclined ? (
-            <Button
-              variant="secondary"
-              size="md"
-              disabled
-              className="w-full font-bold rounded-2xl text-xs h-11 opacity-80 bg-stone-100 text-stone-500 border border-stone-200 cursor-not-allowed select-none shadow-none"
-              leftIcon={<IconBan className="h-4 w-4 text-stone-400 shrink-0" />}
-            >
-              <span>Declined</span>
-            </Button>
-          ) : (
-            <>
+            ) : isInterestReceived ? (
               <Button
-                variant={isInterestSent ? 'blush' : 'primary'}
+                variant="primary"
                 size="md"
-                disabled={isInterestSent}
-                onClick={handleSendInterest}
-                className="flex-1 min-w-0 font-bold rounded-2xl text-xs h-11 shadow-sm active-press px-2.5 sm:px-4"
-                leftIcon={isInterestSent ? <IconCheck className="h-4 w-4 shrink-0" /> : <IconHeart className="h-4 w-4 fill-white shrink-0" />}
+                onClick={handleAcceptInterest}
+                className="flex-1 min-w-0 font-bold rounded-2xl text-xs h-11 shadow-sm active-press bg-emerald-600 text-white px-2.5 sm:px-4"
+                leftIcon={<IconCheck className="h-4 w-4 shrink-0" />}
               >
-                <span className="truncate">{isInterestSent ? 'Interest Sent' : 'Send Interest'}</span>
+                <span className="truncate">Accept Interest</span>
               </Button>
-
+            ) : isDeclined ? (
               <Button
-                variant={isShortlisted ? 'primary' : 'outline'}
+                variant="secondary"
                 size="md"
-                onClick={handleToggleShortlist}
-                className={cn(
-                  'h-11 w-11 sm:w-auto p-0 sm:px-3.5 rounded-2xl shrink-0 active-press border-[var(--border)] font-bold text-xs flex items-center justify-center gap-1.5',
-                  isShortlisted && 'bg-[var(--primary)] text-white border-[var(--primary)]'
+                disabled
+                className="w-full font-bold rounded-2xl text-xs h-11 opacity-80 bg-stone-100 text-stone-500 border border-stone-200 cursor-not-allowed select-none shadow-none"
+                leftIcon={<IconBan className="h-4 w-4 text-stone-400 shrink-0" />}
+              >
+                <span>Declined</span>
+              </Button>
+            ) : (
+              <>
+                {isInterestSent ? (
+                  <Button
+                    variant="secondary"
+                    size="md"
+                    disabled
+                    className="flex-1 min-w-0 font-bold rounded-2xl text-xs h-11 border border-[var(--champagne-border)] bg-white/95 text-[var(--primary)] shadow-2xs select-none cursor-default px-2.5 sm:px-4"
+                    leftIcon={<IconCheck className="h-4 w-4 stroke-[2.5] text-[var(--primary)] shrink-0" />}
+                  >
+                    <span className="truncate">Interest Sent</span>
+                  </Button>
+                ) : (
+                  <Button
+                    variant="primary"
+                    size="md"
+                    onClick={handleSendInterest}
+                    className="flex-1 min-w-0 font-bold rounded-2xl text-xs h-11 shadow-[0_4px_14px_rgba(122,24,53,0.3),inset_0_1px_1px_rgba(255,255,255,0.25)] active-press bg-gradient-to-r from-[var(--primary)] via-[#801835] to-[#5E0E24] text-white px-2.5 sm:px-4"
+                    leftIcon={<IconHeart className="h-4 w-4 fill-white shrink-0" />}
+                  >
+                    <span className="truncate">Send Interest</span>
+                  </Button>
                 )}
-                aria-label={isShortlisted ? 'Favorited' : 'Favorite'}
-                title={isShortlisted ? 'Favorited' : 'Favorite'}
-                leftIcon={
-                  isShortlisted ? (
-                    <IconStarFilled className="h-4 w-4 text-white shrink-0" />
-                  ) : (
-                    <IconStar className="h-4 w-4 text-[var(--primary)] shrink-0" />
-                  )
-                }
-              >
-                <span className="hidden sm:inline">{isShortlisted ? 'Favorited' : 'Favorite'}</span>
-              </Button>
 
-              <Link href={`/app/messages?user=${profile.id}`} className="shrink-0">
+                {/* Favorite Button */}
+                <Button
+                  variant={isShortlisted ? 'primary' : 'outline'}
+                  size="md"
+                  onClick={handleToggleShortlist}
+                  className={cn(
+                    'h-11 w-11 sm:w-auto p-0 sm:px-3.5 rounded-2xl shrink-0 active-press font-bold text-xs flex items-center justify-center gap-1.5 transition-all',
+                    isShortlisted
+                      ? 'bg-gradient-to-r from-[#D8B28C] via-[#C99757] to-[#9B6C2E] border border-[#EEDCC8] text-white shadow-xs'
+                      : 'bg-white border border-[var(--champagne-border)] text-[var(--muted-strong)] hover:text-[var(--primary)] hover:border-[var(--primary)]'
+                  )}
+                  aria-label={isShortlisted ? 'Favorited' : 'Favorite'}
+                  title={isShortlisted ? 'Favorited' : 'Favorite'}
+                  leftIcon={
+                    isShortlisted ? (
+                      <IconStarFilled className="h-4 w-4 text-white shrink-0" />
+                    ) : (
+                      <IconStar className="h-4 w-4 text-[var(--primary)] shrink-0" />
+                    )
+                  }
+                >
+                  <span className="hidden sm:inline">{isShortlisted ? 'Favorited' : 'Favorite'}</span>
+                </Button>
+
+                {/* Chat Action */}
                 <Button
                   variant="secondary"
                   size="md"
-                  className="h-11 w-11 p-0 rounded-2xl text-xs font-bold border-[var(--border)] flex items-center justify-center active-press"
+                  onClick={handleChatClick}
+                  className="h-11 w-11 p-0 rounded-2xl text-xs font-bold border border-[var(--champagne-border)] bg-white text-[var(--primary)] hover:border-[var(--primary)] flex items-center justify-center active-press"
                   aria-label="Chat"
                   title="Chat"
                 >
                   <IconMessageCircle className="h-4.5 w-4.5 text-[var(--primary)]" />
                 </Button>
-              </Link>
-            </>
-          )}
-        </div>
-      </div>
+              </>
+            )}
+          </div>
+        </div>,
+        document.body
+      )}
     </div>
   );
 }

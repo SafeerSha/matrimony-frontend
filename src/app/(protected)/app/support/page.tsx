@@ -5,6 +5,7 @@ import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { ModernSelect } from '@/components/ui/modern-select';
 import { FeatureGate } from '@/components/ui/under-development';
+import { CONTACT_INFO } from '@/config/contact';
 import { cn } from '@/lib/cn';
 import {
   IconPhone,
@@ -16,6 +17,7 @@ import {
   IconCircleCheck,
   IconSend,
   IconHeart,
+  IconBrandWhatsapp,
 } from '@tabler/icons-react';
 
 export default function SupportPage() {
@@ -138,18 +140,47 @@ export default function SupportPage() {
                     <IconPhone className="h-5 w-5" />
                   </div>
                   <div>
-                    <p className="text-xs font-bold text-[var(--foreground)]">Helpline</p>
-                    <p className="text-sm font-bold text-[#5C1027] mt-0.5">1800-MATRIMONY</p>
-                    <p className="text-[11px] text-[var(--muted)] mt-0.5">Mon–Sat from 9am to 6pm IST</p>
+                    <p className="text-xs font-bold text-[var(--foreground)]">Customer Care</p>
+                    <a
+                      href={CONTACT_INFO.phoneTel}
+                      className="text-sm font-bold text-[#5C1027] hover:underline hover:text-[#7A1835] mt-0.5 block"
+                    >
+                      {CONTACT_INFO.phoneDisplay}
+                    </a>
+                    <p className="text-[11px] text-[var(--muted)] mt-0.5">{CONTACT_INFO.hours}</p>
                   </div>
                 </div>
+
+                <div className="flex gap-3.5">
+                  <div className="h-10 w-10 shrink-0 bg-white border border-[#EAD8C7] rounded-2xl flex items-center justify-center shadow-2xs text-[#25D366]">
+                    <IconBrandWhatsapp className="h-5 w-5" />
+                  </div>
+                  <div>
+                    <p className="text-xs font-bold text-[var(--foreground)]">WhatsApp Support</p>
+                    <a
+                      href={CONTACT_INFO.whatsappUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-sm font-bold text-[#5C1027] hover:underline hover:text-[#7A1835] mt-0.5 block"
+                    >
+                      Chat on WhatsApp
+                    </a>
+                    <p className="text-[11px] text-[var(--muted)] mt-0.5">Quick assistance for inquiries</p>
+                  </div>
+                </div>
+
                 <div className="flex gap-3.5">
                   <div className="h-10 w-10 shrink-0 bg-white border border-[#EAD8C7] rounded-2xl flex items-center justify-center shadow-2xs text-[#7A1835]">
                     <IconMail className="h-5 w-5" />
                   </div>
                   <div>
                     <p className="text-xs font-bold text-[var(--foreground)]">Email Support</p>
-                    <p className="text-sm font-bold text-[#5C1027] mt-0.5">care@ishtamchat.com</p>
+                    <a
+                      href={CONTACT_INFO.emailMailto}
+                      className="text-sm font-bold text-[#5C1027] hover:underline hover:text-[#7A1835] mt-0.5 block"
+                    >
+                      {CONTACT_INFO.email}
+                    </a>
                     <p className="text-[11px] text-[var(--muted)] mt-0.5">Replies typically within 24 hours</p>
                   </div>
                 </div>
@@ -157,9 +188,17 @@ export default function SupportPage() {
             </Card>
 
             <Card className="p-6 shadow-sm border-[var(--border)]">
-              <h2 className="font-bold text-[var(--foreground)] mb-2">Need a quicker answer?</h2>
-              <p className="text-sm text-[var(--muted)] mb-4">IconCheck out our frequently asked questions.</p>
-              <Button variant="outline" className="w-full">Browse Help Center</Button>
+              <h2 className="font-bold text-[var(--foreground)] mb-2">Need immediate assistance?</h2>
+              <p className="text-sm text-[var(--muted)] mb-4">
+                Call our customer care hotline directly at <a href={CONTACT_INFO.phoneTel} className="font-bold text-[#5C1027] hover:underline">{CONTACT_INFO.phoneDisplay}</a> for priority support.
+              </p>
+              <Button
+                variant="outline"
+                className="w-full text-xs font-bold"
+                onClick={() => window.open(CONTACT_INFO.phoneTel, '_self')}
+              >
+                Call Customer Care
+              </Button>
             </Card>
           </div>
         </div>

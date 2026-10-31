@@ -2,6 +2,7 @@
 
 import React from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import {
   IconMessageCircle,
   IconMapPin,
@@ -18,6 +19,7 @@ import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { VerificationBadge } from '@/components/ui/verification-badge';
 import { cn } from '@/lib/cn';
+import { useSubscription } from '@/context/subscription-context';
 import type { Profile } from '@/lib/demo-data';
 
 export interface MutualMatchCardProps {
@@ -45,6 +47,15 @@ export function MutualMatchCard({
 }: MutualMatchCardProps) {
   const [userImgError, setUserImgError] = React.useState(false);
   const [matchImgError, setMatchImgError] = React.useState(false);
+  const router = useRouter();
+  const { isSubscribed, openChatPrompt } = useSubscription();
+
+  const handleChatClick = (e: React.MouseEvent) => {
+    if (!isSubscribed) {
+      e.preventDefault();
+      openChatPrompt();
+    }
+  };
 
   return (
     <Card
@@ -196,7 +207,7 @@ export function MutualMatchCard({
             </Button>
           </Link>
 
-          <Link href={`/app/messages?user=${match.id}`} className="w-full focus-ring">
+          <Link href={`/app/messages?user=${match.id}`} onClick={handleChatClick} className="w-full focus-ring">
             <Button
               variant="primary"
               size="md"

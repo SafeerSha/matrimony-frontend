@@ -30,6 +30,7 @@ import { VerificationBadge } from '@/components/ui/verification-badge';
 import { Skeleton, ProfileCardSkeleton } from '@/components/ui/skeleton';
 import { matchesService, authService, chatService, profileService } from '@/services';
 import { toast } from '@/lib/toast';
+import { useSubscription } from '@/context/subscription-context';
 import { cn } from '@/lib/cn';
 import { type Profile, formatLastActive } from '@/lib/demo-data';
 
@@ -92,6 +93,13 @@ export default function DashboardPage() {
   const [isLoading, setIsLoading] = useState(true);
 
   const newProfilesScrollRef = useRef<HTMLDivElement>(null);
+  const { isSubscribed, openChatPrompt } = useSubscription();
+  const handleChatClick = (e: React.MouseEvent) => {
+    if (!isSubscribed) {
+      e.preventDefault();
+      openChatPrompt();
+    }
+  };
 
   // Time of day greeting
   const getGreeting = () => {
@@ -767,7 +775,7 @@ export default function DashboardPage() {
                 return (
                   <Link
                     key={conv.id}
-                    href={`/app/messages?user=${partnerId}`}
+                    href={`/app/messages?user=${partnerId}`} onClick={handleChatClick}
                     className="focus-ring flex items-center gap-3.5 py-3.5 first:pt-0 last:pb-0 hover:bg-[var(--surface-muted)]/70 -mx-2 px-2 rounded-xl transition-colors"
                   >
                     <Avatar src={pImage} name={pName} size="md" online={isOnline} bordered />

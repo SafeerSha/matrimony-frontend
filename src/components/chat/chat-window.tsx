@@ -36,6 +36,7 @@ import { cn } from '@/lib/cn';
 import { chatService, type Conversation, type Message } from '@/services/chat.service';
 import { matchesService } from '@/services/matches.service';
 import { formatLastActive } from '@/lib/demo-data';
+import { isFreeTrialMode } from '@/config/feature-flags';
 
 interface ChatWindowProps {
   conversation: Conversation;
@@ -501,7 +502,7 @@ export function ChatWindow({
             href="/app/subscription"
             className="focus-ring inline-flex h-11 items-center justify-center gap-2 rounded-2xl bg-[#7A1835] px-7 text-xs sm:text-sm font-bold text-white shadow-sm hover:bg-[#5C1027] transition-all"
           >
-            <span>Upgrade to Premium</span>
+            <span>{isFreeTrialMode() ? 'Activate Free Pass' : 'Upgrade to Premium'}</span>
             <IconCrown className="h-4 w-4 text-[#D8B28C]" />
           </Link>
         </div>

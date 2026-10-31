@@ -19,6 +19,7 @@ import { authService } from '@/services/auth.service';
 import { toast } from '@/lib/toast';
 import { cn } from '@/lib/cn';
 import { FeatureGate } from '@/components/ui/under-development';
+import { useSubscription } from '@/context/subscription-context';
 
 function MessagesContent() {
   const searchParams = useSearchParams();
@@ -31,6 +32,7 @@ function MessagesContent() {
 
   const [isLoadingConversations, setIsLoadingConversations] = useState(true);
   const [isLoadingMessages, setIsLoadingMessages] = useState(false);
+  const { isSubscribed } = useSubscription();
 
   // Mobile View Management: 'list' (shows conversations list) vs 'chat' (full-screen active chat)
   const [mobileView, setMobileView] = useState<'list' | 'chat'>('list');
@@ -517,6 +519,7 @@ function MessagesContent() {
               conversation={selected}
               messages={messages}
               isLoadingMessages={isLoadingMessages}
+              isSubscribed={isSubscribed}
               onSendMessage={handleSendMessage}
               onBack={() => setMobileView('list')}
               onOpenProfile={() => setIsMobileProfileOpen(true)}
