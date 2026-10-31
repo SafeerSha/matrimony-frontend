@@ -951,21 +951,21 @@ export default function DiscoverPage() {
       {/* 1. TOP HEADER & VIEW MODE CONTROLS (Sticky on scroll)    */}
       {/* ======================================================== */}
       <div className="sticky top-16 z-30 py-1.5 sm:py-2.5 bg-transparent pointer-events-none transition-all shrink-0">
-        <div className="flex items-center justify-between w-full max-w-2xl mx-auto gap-1 sm:gap-1 shrink-0 pointer-events-auto">
-          {/* View Switcher: Mobile & Desktop */}
-          <div className="flex items-center h-[36px] sm:h-[38px] bg-white/95 backdrop-blur-xl p-0.5 sm:p-1 rounded-2xl border border-[var(--border)]/90 shadow-[0_4px_16px_rgba(20,10,15,0.08)] shrink-0">
+        <div className="flex items-center justify-between sm:justify-end w-full max-w-2xl mx-auto gap-2 shrink-0 pointer-events-auto">
+          {/* View Switcher: Mobile only (hidden on desktop) */}
+          <div className="flex sm:hidden items-center h-[36px] bg-white/95 backdrop-blur-xl p-0.5 rounded-2xl border border-[var(--border)]/90 shadow-[0_4px_16px_rgba(20,10,15,0.08)] shrink-0">
             <button
               type="button"
               onClick={() => setViewMode('swipe')}
               aria-pressed={viewMode === 'swipe'}
               className={cn(
-                'focus-ring flex items-center gap-1 sm:gap-1.5 px-2 sm:px-3 py-1 sm:py-1.5 h-full rounded-xl text-[11px] sm:text-xs font-bold transition-all active-press select-none sm:hidden cursor-pointer',
+                'focus-ring flex items-center gap-1 px-2.5 py-1 h-full rounded-xl text-[11px] font-bold transition-all active-press select-none cursor-pointer',
                 viewMode === 'swipe'
                   ? 'bg-slate-100 text-[var(--primary)] shadow-xs'
                   : 'text-[var(--muted)] hover:text-[var(--foreground)]'
               )}
             >
-              <IconLayers className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+              <IconLayers className="h-3.5 w-3.5" />
               <span>Swipe</span>
             </button>
 
@@ -974,102 +974,105 @@ export default function DiscoverPage() {
               onClick={() => setViewMode('grid')}
               aria-pressed={viewMode === 'grid'}
               className={cn(
-                'focus-ring flex items-center gap-1 sm:gap-1.5 px-2 sm:px-3 py-1 sm:py-1.5 h-full rounded-xl text-[11px] sm:text-xs font-bold transition-all active-press select-none sm:hidden cursor-pointer',
+                'focus-ring flex items-center gap-1 px-2.5 py-1 h-full rounded-xl text-[11px] font-bold transition-all active-press select-none cursor-pointer',
                 viewMode === 'grid'
                   ? 'bg-slate-100 text-[var(--primary)] shadow-xs'
                   : 'text-[var(--muted)] hover:text-[var(--foreground)]'
               )}
             >
-              <IconLayoutGrid className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+              <IconLayoutGrid className="h-3.5 w-3.5" />
               <span>Grid</span>
             </button>
           </div>
 
-          {/* Option 1: Center Category Dropdown Pill */}
-          <div className="relative shrink-0">
-            <button
-              type="button"
-              onClick={() => setIsCategoryMenuOpen((prev) => !prev)}
-              aria-haspopup="listbox"
-              aria-expanded={isCategoryMenuOpen}
-              className={cn(
-                'focus-ring flex items-center gap-1 sm:gap-1.5 h-[36px] sm:h-[38px] px-2.5 sm:px-3.5 rounded-2xl text-[11px] sm:text-xs font-bold transition-all active-press select-none cursor-pointer border shadow-[0_4px_16px_rgba(20,10,15,0.08)] backdrop-blur-xl',
-                isCategoryMenuOpen || selectedCategory !== 'Marriage'
-                  ? 'bg-gradient-to-r from-[#5B132B] to-[#7B1D3A] text-white border-[#5B132B]/40 shadow-[0_4px_14px_rgba(91,19,43,0.3)]'
-                  : 'bg-white/95 text-stone-800 border-[var(--border)]/90 hover:bg-stone-50'
+          {/* Group Category Dropdown & Filters to keep them nearby */}
+          <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
+            {/* Category Dropdown Pill */}
+            <div className="relative shrink-0">
+              <button
+                type="button"
+                onClick={() => setIsCategoryMenuOpen((prev) => !prev)}
+                aria-haspopup="listbox"
+                aria-expanded={isCategoryMenuOpen}
+                className={cn(
+                  'focus-ring flex items-center gap-1 sm:gap-1.5 h-[36px] sm:h-[38px] px-2.5 sm:px-3.5 rounded-2xl text-[11px] sm:text-xs font-bold transition-all active-press select-none cursor-pointer border shadow-[0_4px_16px_rgba(20,10,15,0.08)] backdrop-blur-xl',
+                  isCategoryMenuOpen || selectedCategory !== 'Marriage'
+                    ? 'bg-gradient-to-r from-[#5B132B] to-[#7B1D3A] text-white border-[#5B132B]/40 shadow-[0_4px_14px_rgba(91,19,43,0.3)]'
+                    : 'bg-white/95 text-stone-800 border-[var(--border)]/90 hover:bg-stone-50'
+                )}
+              >
+                {(() => {
+                  const currentOpt = CATEGORY_OPTIONS.find((c) => c.id === selectedCategory) || CATEGORY_OPTIONS[0];
+                  const Icon = currentOpt.icon;
+                  return (
+                    <>
+                      <Icon className={cn('h-3.5 w-3.5 shrink-0', isCategoryMenuOpen || selectedCategory !== 'Marriage' ? 'text-amber-300' : 'text-[var(--primary)]')} />
+                      <span className="truncate max-w-[70px] xs:max-w-[85px] sm:max-w-none">{currentOpt.label}</span>
+                      <IconChevronDown className={cn('h-3 w-3 sm:h-3.5 sm:w-3.5 shrink-0 transition-transform duration-200', isCategoryMenuOpen && 'rotate-180')} />
+                    </>
+                  );
+                })()}
+              </button>
+
+              {/* Floating Category Menu */}
+              {isCategoryMenuOpen && (
+                <>
+                  <div
+                    className="fixed inset-0 z-40"
+                    onClick={() => setIsCategoryMenuOpen(false)}
+                  />
+                  <div className="absolute left-1/2 -translate-x-1/2 top-[calc(100%+6px)] z-50 w-52 rounded-2xl bg-white/98 backdrop-blur-2xl border border-[var(--border)] p-1.5 shadow-[0_12px_36px_rgba(20,10,15,0.18)] animate-scale-up">
+                    <div className="px-2.5 py-1.5 text-[10px] font-bold uppercase tracking-wider text-[var(--muted)]">
+                      Switch Connection Type
+                    </div>
+                    <div className="space-y-0.5">
+                      {CATEGORY_OPTIONS.map((cat) => {
+                        const isSelected = selectedCategory === cat.id;
+                        const Icon = cat.icon;
+                        return (
+                          <button
+                            key={cat.id}
+                            type="button"
+                            onClick={() => {
+                              handleCategoryChange(cat.id);
+                              setIsCategoryMenuOpen(false);
+                            }}
+                            className={cn(
+                              'w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-semibold transition-colors cursor-pointer select-none',
+                              isSelected
+                                ? 'bg-rose-50 text-[var(--primary)] font-bold'
+                                : 'text-stone-700 hover:bg-stone-100/80 hover:text-stone-900'
+                            )}
+                          >
+                            <div className="flex items-center gap-2">
+                              <Icon className={cn('h-4 w-4 shrink-0', isSelected ? 'text-[var(--primary)]' : 'text-stone-500')} />
+                              <span>{cat.label}</span>
+                            </div>
+                            {isSelected && <IconCheck className="h-3.5 w-3.5 text-[var(--primary)] shrink-0" />}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                </>
               )}
+            </div>
+
+            {/* Search & Filters Trigger Button */}
+            <Button
+              variant={activeFiltersCount > 0 || query ? 'primary' : 'secondary'}
+              onClick={() => setIsFilterOpen(true)}
+              className="h-[36px] sm:h-[38px] px-2.5 sm:px-4 rounded-2xl text-[11px] sm:text-xs font-bold gap-1 sm:gap-2 active-press shadow-[0_4px_16px_rgba(20,10,15,0.08)] bg-white/95 backdrop-blur-xl border border-[var(--border)]/90 shrink-0"
+              leftIcon={<IconAdjustments className="h-3.5 w-3.5" />}
             >
-              {(() => {
-                const currentOpt = CATEGORY_OPTIONS.find((c) => c.id === selectedCategory) || CATEGORY_OPTIONS[0];
-                const Icon = currentOpt.icon;
-                return (
-                  <>
-                    <Icon className={cn('h-3.5 w-3.5 shrink-0', isCategoryMenuOpen || selectedCategory !== 'Marriage' ? 'text-amber-300' : 'text-[var(--primary)]')} />
-                    <span className="truncate max-w-[70px] xs:max-w-[85px] sm:max-w-none">{currentOpt.label}</span>
-                    <IconChevronDown className={cn('h-3 w-3 sm:h-3.5 sm:w-3.5 shrink-0 transition-transform duration-200', isCategoryMenuOpen && 'rotate-180')} />
-                  </>
-                );
-              })()}
-            </button>
-
-            {/* Floating Category Menu */}
-            {isCategoryMenuOpen && (
-              <>
-                <div
-                  className="fixed inset-0 z-40"
-                  onClick={() => setIsCategoryMenuOpen(false)}
-                />
-                <div className="absolute left-1/2 -translate-x-1/2 top-[calc(100%+6px)] z-50 w-52 rounded-2xl bg-white/98 backdrop-blur-2xl border border-[var(--border)] p-1.5 shadow-[0_12px_36px_rgba(20,10,15,0.18)] animate-scale-up">
-                  <div className="px-2.5 py-1.5 text-[10px] font-bold uppercase tracking-wider text-[var(--muted)]">
-                    Switch Connection Type
-                  </div>
-                  <div className="space-y-0.5">
-                    {CATEGORY_OPTIONS.map((cat) => {
-                      const isSelected = selectedCategory === cat.id;
-                      const Icon = cat.icon;
-                      return (
-                        <button
-                          key={cat.id}
-                          type="button"
-                          onClick={() => {
-                            handleCategoryChange(cat.id);
-                            setIsCategoryMenuOpen(false);
-                          }}
-                          className={cn(
-                            'w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-semibold transition-colors cursor-pointer select-none',
-                            isSelected
-                              ? 'bg-rose-50 text-[var(--primary)] font-bold'
-                              : 'text-stone-700 hover:bg-stone-100/80 hover:text-stone-900'
-                          )}
-                        >
-                          <div className="flex items-center gap-2">
-                            <Icon className={cn('h-4 w-4 shrink-0', isSelected ? 'text-[var(--primary)]' : 'text-stone-500')} />
-                            <span>{cat.label}</span>
-                          </div>
-                          {isSelected && <IconCheck className="h-3.5 w-3.5 text-[var(--primary)] shrink-0" />}
-                        </button>
-                      );
-                    })}
-                  </div>
-                </div>
-              </>
-            )}
+              <span>Filters</span>
+              {(activeFiltersCount > 0 || query) && (
+                <span className="grid h-3.5 w-3.5 sm:h-4 sm:w-4 place-items-center rounded-full bg-[var(--primary)] text-white text-[8.5px] sm:text-[9px] font-bold">
+                  {activeFiltersCount + (query ? 1 : 0)}
+                </span>
+              )}
+            </Button>
           </div>
-
-          {/* Search & Filters Trigger Button */}
-          <Button
-            variant={activeFiltersCount > 0 || query ? 'primary' : 'secondary'}
-            onClick={() => setIsFilterOpen(true)}
-            className="h-[36px] sm:h-[38px] px-2.5 sm:px-4 rounded-2xl text-[11px] sm:text-xs font-bold gap-1 sm:gap-2 active-press shadow-[0_4px_16px_rgba(20,10,15,0.08)] bg-white/95 backdrop-blur-xl border border-[var(--border)]/90 shrink-0"
-            leftIcon={<IconAdjustments className="h-3.5 w-3.5" />}
-          >
-            <span>Filters</span>
-            {(activeFiltersCount > 0 || query) && (
-              <span className="grid h-3.5 w-3.5 sm:h-4 sm:w-4 place-items-center rounded-full bg-[var(--primary)] text-white text-[8.5px] sm:text-[9px] font-bold">
-                {activeFiltersCount + (query ? 1 : 0)}
-              </span>
-            )}
-          </Button>
         </div>
       </div>
 
