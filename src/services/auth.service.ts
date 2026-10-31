@@ -213,6 +213,19 @@ export const authService = {
     return res;
   },
 
+  resetPassword: async (payload: {
+    email?: string;
+    phone?: string;
+    otp: string;
+    newPassword: string;
+    confirmPassword?: string;
+  }) => {
+    return await apiFetch<{ success: boolean; message: string }>("/auth/reset-password", {
+      method: "POST",
+      body: JSON.stringify(payload),
+    });
+  },
+
   setPassword: async (password: string) => {
     try {
       const res = await apiFetch<{ success: boolean; message?: string }>("/auth/set-password", {
