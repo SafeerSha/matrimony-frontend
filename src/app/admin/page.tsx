@@ -80,7 +80,7 @@ export default function AdminDashboard() {
   const handleLogout = async () => {
     try {
       await authService.logout();
-    } catch {}
+    } catch { }
     toast.dismissAll();
     toast.flash('info', 'Logged Out', 'You have been signed out of the Admin Portal.');
     window.location.href = '/admin/login';
@@ -198,11 +198,10 @@ export default function AdminDashboard() {
         <nav className="flex-1 p-4 space-y-1.5 overflow-y-auto" aria-label="Admin Navigation">
           <button
             onClick={() => handleSelectTab('analytics')}
-            className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs sm:text-sm font-medium transition-all ${
-              tab === 'analytics'
-                ? 'bg-[var(--primary)] text-white shadow-sm font-semibold'
-                : 'hover:bg-[#3A0A18] text-white/80'
-            }`}
+            className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs sm:text-sm font-medium transition-all ${tab === 'analytics'
+              ? 'bg-[var(--primary)] text-white shadow-sm font-semibold'
+              : 'hover:bg-[#3A0A18] text-white/80'
+              }`}
           >
             <IconActivity className="h-4.5 w-4.5 shrink-0" />
             <span>Platform Overview</span>
@@ -210,45 +209,42 @@ export default function AdminDashboard() {
 
           <button
             onClick={() => handleSelectTab('users')}
-            className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs sm:text-sm font-medium transition-all ${
-              tab === 'users'
-                ? 'bg-[var(--primary)] text-white shadow-sm font-semibold'
-                : 'hover:bg-[#3A0A18] text-white/80'
-            }`}
+            className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs sm:text-sm font-medium transition-all ${tab === 'users'
+              ? 'bg-[var(--primary)] text-white shadow-sm font-semibold'
+              : 'hover:bg-[#3A0A18] text-white/80'
+              }`}
           >
             <IconUsers className="h-4.5 w-4.5 shrink-0" />
             <span>User Management</span>
           </button>
 
-          <button
+          {/* <button
             onClick={() => handleSelectTab('moderation')}
-            className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs sm:text-sm font-medium transition-all ${
-              tab === 'moderation'
+            className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs sm:text-sm font-medium transition-all ${tab === 'moderation'
                 ? 'bg-[var(--primary)] text-white shadow-sm font-semibold'
                 : 'hover:bg-[#3A0A18] text-white/80'
-            }`}
+              }`}
           >
             <div className="flex items-center gap-3">
               <IconShield className="h-4.5 w-4.5 shrink-0" />
               <span>Moderation</span>
             </div>
             <span className="text-[10px] bg-white/10 px-1.5 py-0.5 rounded text-white/60">Mock</span>
-          </button>
+          </button> */}
 
-          <button
+          {/* <button
             onClick={() => handleSelectTab('rm-management')}
-            className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs sm:text-sm font-medium transition-all ${
-              tab === 'rm-management'
+            className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs sm:text-sm font-medium transition-all ${tab === 'rm-management'
                 ? 'bg-[var(--primary)] text-white shadow-sm font-semibold'
                 : 'hover:bg-[#3A0A18] text-white/80'
-            }`}
+              }`}
           >
             <div className="flex items-center gap-3">
               <IconUsers className="h-4.5 w-4.5 shrink-0" />
               <span>RM Management</span>
             </div>
             <span className="text-[10px] bg-white/10 px-1.5 py-0.5 rounded text-white/60">Mock</span>
-          </button>
+          </button> */}
         </nav>
 
         {/* Sidebar Footer with Logout */}

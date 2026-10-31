@@ -28,6 +28,17 @@ interface KpiCardProps {
   accentBorderColor?: string;
 }
 
+function getFriendlySource(rawSource?: string): string | null {
+  if (!rawSource) return null;
+  if (rawSource.includes('User.lastActiveAt')) return 'Live member activity records';
+  if (rawSource.includes('User.createdAt')) return 'Verified user registration records';
+  if (rawSource.includes('User.subscriptionTier')) return 'Active premium subscriptions database';
+  if (rawSource.includes('Paid Members / Active')) return 'Paid subscribers vs. active members ratio';
+  if (rawSource.includes('SubscriptionEvent')) return 'Subscription renewal and cancellation logs';
+  if (rawSource.includes('Stripe') || rawSource.includes('Razorpay')) return 'Payment gateway transactions';
+  return rawSource.replace(/\([^)]*\)/g, '').trim();
+}
+
 export function KpiCard({
   title,
   metric,
@@ -87,6 +98,7 @@ export function KpiCard({
   const isAvailable = metric?.availability === 'available';
   const val = metric?.value;
   const delta = metric?.deltaPct;
+  const friendlySource = getFriendlySource(source);
 
   return (
     <Card
@@ -110,16 +122,16 @@ export function KpiCard({
           <button
             type="button"
             aria-label={`Definition for ${title}`}
-            className="text-[var(--muted)] hover:text-[var(--foreground)] transition-colors p-1"
+            className="text-[var(--muted)] hover:text-[var(--foreground)] transition-colors p-1 cursor-pointer"
           >
             <IconInfoCircle className="h-4 w-4" />
           </button>
           <div className="pointer-events-none absolute right-0 top-full mt-1.5 w-64 rounded-xl bg-[#2A0711] p-3 text-xs text-white opacity-0 shadow-xl border border-[#5E142E] transition-opacity duration-200 group-hover/tooltip:opacity-100 z-50">
             <p className="font-semibold text-white/95 mb-1">{title}</p>
             <p className="text-white/80 leading-relaxed text-[11px]">{definition}</p>
-            {source && (
-              <p className="text-[10px] text-[var(--primary-light)] mt-2 pt-1.5 border-t border-white/10 font-mono">
-                Source: {source}
+            {friendlySource && (
+              <p className="text-[10px] text-[#F29CA3] mt-2 pt-1.5 border-t border-white/10 font-medium">
+                Data source: {friendlySource}
               </p>
             )}
             {!isAvailable && metric?.reason && (
