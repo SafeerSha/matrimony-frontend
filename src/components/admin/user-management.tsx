@@ -15,7 +15,6 @@ import {
   IconPhone,
   IconId,
   IconAlertTriangle,
-  IconTrash,
   IconX,
 } from '@tabler/icons-react';
 import { Card } from '@/components/ui/card';
@@ -121,7 +120,7 @@ function ConfirmDialog({
 
 interface PendingConfirm {
   user: AdminUserListItem;
-  action: 'block' | 'unblock' | 'reactivate' | 'restore' | 'purge';
+  action: 'block' | 'unblock';
 }
 
 const PAGE_SIZE = 15;
@@ -165,7 +164,58 @@ const STATUS_FILTER_OPTIONS: ModernSelectOption[] = [
     label: 'Suspended',
     icon: <span className="h-2 w-2 rounded-full bg-amber-500 inline-block shadow-[0_0_6px_rgba(245,158,11,0.5)]" />,
   },
+  {
+    value: 'DEACTIVATED',
+    label: 'Deactivated',
+    icon: <span className="h-2 w-2 rounded-full bg-slate-400 inline-block" />,
+  },
+  {
+    value: 'DELETED',
+    label: 'Deleted',
+    icon: <span className="h-2 w-2 rounded-full bg-rose-600 inline-block" />,
+  },
 ];
+
+function renderUserStatusBadge(u: AdminUserListItem) {
+  if (u.status === 'DELETED' || u.deletedAt) {
+    return (
+      <Badge tone="default" className="bg-rose-100 text-rose-800 border-rose-200 text-xs font-semibold inline-flex items-center gap-1.5 px-2.5 py-0.5">
+        <span className="h-1.5 w-1.5 rounded-full bg-rose-500 inline-block" />
+        Deleted
+      </Badge>
+    );
+  }
+  if (u.isBanned || u.status === 'BLOCKED') {
+    return (
+      <Badge tone="default" className="bg-red-100 text-red-800 border-red-200 text-xs font-semibold inline-flex items-center gap-1.5 px-2.5 py-0.5">
+        <span className="h-1.5 w-1.5 rounded-full bg-red-500 inline-block" />
+        Blocked
+      </Badge>
+    );
+  }
+  if (u.status === 'SUSPENDED') {
+    return (
+      <Badge tone="default" className="bg-amber-100 text-amber-800 border-amber-200 text-xs font-semibold inline-flex items-center gap-1.5 px-2.5 py-0.5">
+        <span className="h-1.5 w-1.5 rounded-full bg-amber-500 inline-block" />
+        Suspended
+      </Badge>
+    );
+  }
+  if (u.status === 'DEACTIVATED' || u.deactivatedAt) {
+    return (
+      <Badge tone="default" className="bg-slate-100 text-slate-700 border-slate-200 text-xs font-semibold inline-flex items-center gap-1.5 px-2.5 py-0.5">
+        <span className="h-1.5 w-1.5 rounded-full bg-slate-400 inline-block" />
+        Deactivated
+      </Badge>
+    );
+  }
+  return (
+    <Badge tone="default" className="bg-emerald-100 text-emerald-800 border-emerald-200 text-xs font-semibold inline-flex items-center gap-1.5 px-2.5 py-0.5">
+      <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 inline-block" />
+      Active
+    </Badge>
+  );
+}
 
 export function UserManagement() {
   const [users, setUsers] = useState<AdminUserListItem[]>([]);
@@ -277,37 +327,6 @@ export function UserManagement() {
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : 'Error updating subscription tier';
       toast.error('Failed to update plan', message);
-    } finally {
-      setActionLoadingId(null);
-    }
-  };
-
-  const handleStatusChange = async (
-    user: AdminUserListItem,
-    newStatus: 'ACTIVE' | 'BLOCKED' | 'SUSPENDED' | 'DEACTIVATED',
-  ) => {
-    setActionLoadingId(user.id);
-    try {
-      await adminService.updateUserStatus(user.id, newStatus);
-      toast.success(
-        'User State Updated',
-        `${user.firstName ?? user.email ?? 'User'} is now ${newStatus.toLowerCase()}.`,
-      );
-      setUsers((prev) =>
-        prev.map((u) =>
-          u.id === user.id
-            ? {
-                ...u,
-                status: newStatus,
-                isBanned: newStatus === 'BLOCKED',
-                deactivatedAt: newStatus === 'DEACTIVATED' ? new Date().toISOString() : null,
-              }
-            : u,
-        ),
-      );
-    } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : 'Error updating user status';
-      toast.error('Failed to update status', message);
     } finally {
       setActionLoadingId(null);
     }
@@ -559,29 +578,7 @@ export function UserManagement() {
 
                         {/* Status Badge */}
                         <div className="shrink-0">
-                          {isBlocked ? (
-                            <Badge tone="default" className="bg-red-100 text-red-800 border-red-200 text-xs font-bold">
-                              Blocked
-                            </Badge>
-                          ) : u.status === 'ACTIVE' ? (
-                            <Badge tone="success" className="text-xs font-bold">
-                              Active
-                            </Badge>
-                          ) : u.status === 'DEACTIVATED' ? (
-                            <Badge tone="default" className="bg-slate-100 text-slate-700 border-slate-300 text-xs font-bold inline-flex items-center gap-1">
-                              <span className="h-1.5 w-1.5 rounded-full bg-slate-500 inline-block" />
-                              Deactivated
-                            </Badge>
-                          ) : u.status === 'DELETED' ? (
-                            <Badge tone="default" className="bg-rose-100 text-rose-800 border-rose-200 text-xs font-bold inline-flex items-center gap-1">
-                              <span className="h-1.5 w-1.5 rounded-full bg-rose-500 inline-block" />
-                              Deleted
-                            </Badge>
-                          ) : (
-                            <Badge tone="default" className="bg-amber-50 text-amber-700 border-amber-200 text-xs font-bold">
-                              {u.status}
-                            </Badge>
-                          )}
+                          {renderUserStatusBadge(u)}
                         </div>
                       </div>
 
@@ -637,33 +634,13 @@ export function UserManagement() {
                           </button>
                         </div>
 
-                        {/* User State Row (Change state directly inside the card) */}
+                        {/* User Status Row (Read-Only) */}
                         <div className="flex items-center justify-between pt-2 border-t border-[var(--border)] text-xs">
                           <span className="text-[var(--muted-strong)] font-semibold flex items-center gap-1.5">
                             <IconUserCheck className="h-3.5 w-3.5 text-[var(--primary)] shrink-0" />
-                            User State:
+                            User Status:
                           </span>
-                          {u.status === 'DELETED' ? (
-                            <Badge tone="default" className="bg-rose-100 text-rose-800 border-rose-200 text-xs font-bold inline-flex items-center gap-1">
-                              <span className="h-1.5 w-1.5 rounded-full bg-rose-500 inline-block" />
-                              Deleted
-                            </Badge>
-                          ) : (
-                            <div className="relative">
-                              <select
-                                value={isBlocked ? 'BLOCKED' : u.status}
-                                onChange={(e) => handleStatusChange(u, e.target.value as any)}
-                                disabled={isActing}
-                                className="text-xs font-semibold py-1 px-2.5 rounded-lg border border-[var(--border)] bg-white text-[var(--foreground)] outline-none focus:border-[var(--primary)] cursor-pointer shadow-2xs transition-colors"
-                                aria-label={`Change user state for ${displayName}`}
-                              >
-                                <option value="ACTIVE">🟢 Active</option>
-                                <option value="BLOCKED">🚫 Blocked</option>
-                                <option value="SUSPENDED">⚠️ Suspended</option>
-                                <option value="DEACTIVATED">⚪ Deactivated</option>
-                              </select>
-                            </div>
-                          )}
+                          {renderUserStatusBadge(u)}
                         </div>
 
                         {/* Reason / Notes if Deactivated or Deleted */}
@@ -674,68 +651,28 @@ export function UserManagement() {
                         )}
                       </div>
 
-                      {/* Mobile Actions */}
-                      <div className="flex items-center justify-end gap-2 pt-1">
-                        {u.status === 'DEACTIVATED' && (
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            disabled={isActing}
-                            onClick={() => setPendingConfirm({ user: u, action: 'reactivate' })}
-                            className="text-emerald-700 border-emerald-300 hover:bg-emerald-50 text-xs h-8 px-3 flex items-center justify-center gap-1 font-semibold flex-1"
-                          >
-                            <IconRefresh className="h-3.5 w-3.5" />
-                            Reactivate
-                          </Button>
-                        )}
-
-                        {u.status === 'DELETED' && (
-                          <>
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              disabled={isActing}
-                              onClick={() => setPendingConfirm({ user: u, action: 'restore' })}
-                              className="text-emerald-700 border-emerald-300 hover:bg-emerald-50 text-xs h-8 px-3 flex items-center justify-center gap-1 font-semibold flex-1"
-                            >
-                              <IconRefresh className="h-3.5 w-3.5" />
-                              Restore
-                            </Button>
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              disabled={isActing}
-                              onClick={() => setPendingConfirm({ user: u, action: 'purge' })}
-                              className="text-rose-600 border-rose-200 hover:bg-rose-50 text-xs h-8 px-3 flex items-center justify-center gap-1 font-semibold flex-1"
-                            >
-                              <IconTrash className="h-3.5 w-3.5" />
-                              Purge
-                            </Button>
-                          </>
-                        )}
-
-                        {u.status !== 'DELETED' && (
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            disabled={isActing}
-                            onClick={() => confirmBlock(u)}
-                            className={`text-xs h-8 px-3 flex items-center justify-center gap-1 font-semibold flex-1 ${
-                              isBlocked
-                                ? 'text-emerald-700 border-emerald-300 hover:bg-emerald-50'
-                                : 'text-red-600 border-red-200 hover:bg-red-50'
-                            }`}
-                          >
-                            {isActing ? (
-                              <span className="h-3.5 w-3.5 border border-current border-t-transparent rounded-full animate-spin" />
-                            ) : isBlocked ? (
-                              <IconUserCheck className="h-3.5 w-3.5" />
-                            ) : (
-                              <IconBan className="h-3.5 w-3.5" />
-                            )}
-                            {isBlocked ? 'Unblock User' : 'Block User'}
-                          </Button>
-                        )}
+                      {/* Mobile Actions: Only Block / Unblock */}
+                      <div className="pt-1">
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          disabled={isActing}
+                          onClick={() => confirmBlock(u)}
+                          className={`w-full text-xs h-8 px-3 flex items-center justify-center gap-1.5 font-semibold transition-colors ${
+                            isBlocked
+                              ? 'text-emerald-700 border-emerald-300 hover:bg-emerald-50'
+                              : 'text-red-600 border-red-200 hover:bg-red-50'
+                          }`}
+                        >
+                          {isActing ? (
+                            <span className="h-3.5 w-3.5 border border-current border-t-transparent rounded-full animate-spin" />
+                          ) : isBlocked ? (
+                            <IconUserCheck className="h-3.5 w-3.5" />
+                          ) : (
+                            <IconBan className="h-3.5 w-3.5" />
+                          )}
+                          {isBlocked ? 'Unblock User' : 'Block User'}
+                        </Button>
                       </div>
                     </div>
                   );
@@ -864,106 +801,45 @@ export function UserManagement() {
                             </button>
                           </td>
 
-                          {/* Status badge & State selector */}
+                          {/* Status (Read-Only) */}
                           <td className="p-3.5 sm:p-4">
-                            {u.status === 'DELETED' ? (
-                              <div className="space-y-0.5">
-                                <Badge tone="default" className="bg-rose-100 text-rose-800 border-rose-200 font-semibold inline-flex items-center gap-1">
-                                  <span className="h-1.5 w-1.5 rounded-full bg-rose-500 inline-block" />
-                                  Deleted
-                                </Badge>
-                                {u.deletionReason && (
-                                  <p className="text-[10px] text-rose-700/80 truncate max-w-[130px]" title={u.deletionReason}>
-                                    {u.deletionReason}
-                                  </p>
-                                )}
-                              </div>
-                            ) : (
-                              <select
-                                value={isBlocked ? 'BLOCKED' : u.status}
-                                onChange={(e) => handleStatusChange(u, e.target.value as any)}
-                                disabled={isActing}
-                                className="text-xs font-semibold py-1 px-2.5 rounded-lg border border-[var(--border)] bg-white text-[var(--foreground)] outline-none focus:border-[var(--primary)] cursor-pointer shadow-2xs transition-colors"
-                                aria-label={`Change status for ${displayName}`}
-                              >
-                                <option value="ACTIVE">🟢 Active</option>
-                                <option value="BLOCKED">🚫 Blocked</option>
-                                <option value="SUSPENDED">⚠️ Suspended</option>
-                                <option value="DEACTIVATED">⚪ Deactivated</option>
-                              </select>
-                            )}
+                            <div className="space-y-0.5">
+                              {renderUserStatusBadge(u)}
+                              {u.deletionReason && (
+                                <p className="text-[10px] text-rose-700/80 truncate max-w-[130px]" title={u.deletionReason}>
+                                  {u.deletionReason}
+                                </p>
+                              )}
+                            </div>
                           </td>
 
-                          {/* Actions */}
+                          {/* Actions: Only Block / Unblock */}
                           <td className="p-3.5 sm:p-4 text-right">
-                            <div className="flex items-center justify-end gap-1.5 flex-wrap">
-                              {u.status === 'DEACTIVATED' && (
-                                <Button
-                                  size="sm"
-                                  variant="outline"
-                                  disabled={isActing}
-                                  onClick={() => setPendingConfirm({ user: u, action: 'reactivate' })}
-                                  aria-label={`Reactivate ${displayName}`}
-                                  className="text-emerald-700 hover:text-emerald-800 border-emerald-300 hover:bg-emerald-50 text-xs h-8 px-2 flex items-center gap-1"
-                                >
-                                  <IconRefresh className="h-3.5 w-3.5" aria-hidden="true" />
-                                  Reactivate
-                                </Button>
-                              )}
-
-                              {u.status === 'DELETED' && (
-                                <>
-                                  <Button
-                                    size="sm"
-                                    variant="outline"
-                                    disabled={isActing}
-                                    onClick={() => setPendingConfirm({ user: u, action: 'restore' })}
-                                    aria-label={`Restore ${displayName}`}
-                                    className="text-emerald-700 hover:text-emerald-800 border-emerald-300 hover:bg-emerald-50 text-xs h-8 px-2 flex items-center gap-1"
-                                  >
-                                    <IconRefresh className="h-3.5 w-3.5" aria-hidden="true" />
-                                    Restore
-                                  </Button>
-                                  <Button
-                                    size="sm"
-                                    variant="outline"
-                                    disabled={isActing}
-                                    onClick={() => setPendingConfirm({ user: u, action: 'purge' })}
-                                    aria-label={`Purge ${displayName}`}
-                                    className="text-rose-600 hover:text-rose-700 border-rose-200 hover:bg-rose-50 text-xs h-8 px-2 flex items-center gap-1"
-                                  >
-                                    <IconTrash className="h-3.5 w-3.5" aria-hidden="true" />
-                                    Purge
-                                  </Button>
-                                </>
-                              )}
-
-                              {u.status !== 'DELETED' && (
-                                <Button
-                                  size="sm"
-                                  variant="outline"
-                                  disabled={isActing}
-                                  onClick={() => confirmBlock(u)}
-                                  aria-label={isBlocked ? `Unblock ${displayName}` : `Block ${displayName}`}
-                                  className={`text-xs h-8 px-2.5 flex items-center gap-1 ${
-                                    isBlocked
-                                      ? 'text-emerald-700 hover:text-emerald-800 border-emerald-300 hover:bg-emerald-50'
-                                      : 'text-red-600 hover:text-red-700 border-red-200 hover:bg-red-50'
-                                  }`}
-                                >
-                                  {isActing ? (
-                                    <span
-                                      className="h-3.5 w-3.5 border border-current border-t-transparent rounded-full animate-spin"
-                                      aria-hidden="true"
-                                    />
-                                  ) : isBlocked ? (
-                                    <IconUserCheck className="h-3.5 w-3.5" aria-hidden="true" />
-                                  ) : (
-                                    <IconBan className="h-3.5 w-3.5" aria-hidden="true" />
-                                  )}
-                                  {isBlocked ? 'Unblock' : 'Block'}
-                                </Button>
-                              )}
+                            <div className="flex items-center justify-end">
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                disabled={isActing}
+                                onClick={() => confirmBlock(u)}
+                                aria-label={isBlocked ? `Unblock ${displayName}` : `Block ${displayName}`}
+                                className={`text-xs h-8 px-2.5 flex items-center gap-1 font-medium transition-colors ${
+                                  isBlocked
+                                    ? 'text-emerald-700 hover:text-emerald-800 border-emerald-300 hover:bg-emerald-50'
+                                    : 'text-red-600 hover:text-red-700 border-red-200 hover:bg-red-50'
+                                }`}
+                              >
+                                {isActing ? (
+                                  <span
+                                    className="h-3.5 w-3.5 border border-current border-t-transparent rounded-full animate-spin"
+                                    aria-hidden="true"
+                                  />
+                                ) : isBlocked ? (
+                                  <IconUserCheck className="h-3.5 w-3.5" aria-hidden="true" />
+                                ) : (
+                                  <IconBan className="h-3.5 w-3.5" aria-hidden="true" />
+                                )}
+                                {isBlocked ? 'Unblock' : 'Block'}
+                              </Button>
                             </div>
                           </td>
                         </tr>
