@@ -68,7 +68,7 @@ export default function LandingPage() {
           <HeroCommunityPill orientation="vertical" className="flex lg:hidden" />
 
           {/* Desktop View (Option B): Horizontal pills in the top navbar next to Contact & Sign in */}
-          <HeroCommunityPill orientation="horizontal" variant="navbar" className="hidden lg:flex mr-1 xl:mr-2" />
+          <HeroCommunityPill orientation="horizontal" variant="navbar" clickable={false} className="hidden lg:flex mr-1 xl:mr-2" />
 
           <a
             href="#contact"
