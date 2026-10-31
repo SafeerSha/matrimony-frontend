@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useRef } from 'react';
+import Link from 'next/link';
 import {
   IconCamera,
   IconCircleCheck,
@@ -462,20 +463,7 @@ export function MyProfile() {
   const handleSaveDetails = async () => {
     setIsSavingDetails(true);
     try {
-      if (editDraft.email && editDraft.email.trim()) {
-        const cleanEmail = editDraft.email.trim().toLowerCase();
-        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-        if (!emailRegex.test(cleanEmail)) {
-          toast.error('Invalid Email Address', {
-            description: 'Please enter a valid email address (e.g., name@gmail.com).',
-          });
-          setIsSavingDetails(false);
-          return;
-        }
-      }
-
       const payload: Partial<UserProfile> = {
-        email: editDraft.email ? editDraft.email.trim().toLowerCase() : undefined,
         bio: editDraft.bio,
         family: editDraft.family,
         lookingFor: editDraft.lookingFor,
@@ -1202,20 +1190,25 @@ export function MyProfile() {
       >
         <div className="space-y-5 max-h-[72vh] overflow-y-auto px-1 pr-2">
           {/* Registered Email & Contact Account */}
-          <div className="p-3.5 rounded-2xl bg-gradient-to-r from-[#FAF3EC] via-[#FAF0F3] to-[#FFF9F6] border border-[#EAD8C7]">
-            <label className="block text-xs font-bold uppercase tracking-wider text-[#7A1835] mb-1.5">
-              Registered Email (Gmail)
-            </label>
-            <input
-              type="email"
-              value={editDraft.email}
-              onChange={(e) => setEditDraft({ ...editDraft, email: e.target.value })}
-              placeholder="name@gmail.com"
-              className="w-full rounded-xl border border-[#DCCBBA] bg-white px-3.5 py-2.5 text-xs text-[#211B1E] font-medium focus:outline-none focus:ring-2 focus:ring-[#80132E]"
-            />
-            <p className="mt-1.5 text-[11px] text-[#766B6F] leading-relaxed">
-              🔒 Confidential: Used for your account sign in, verification codes, and security alerts. Never displayed to other members.
-            </p>
+          <div className="p-3.5 rounded-2xl bg-gradient-to-r from-[#FAF3EC] via-[#FAF0F3] to-[#FFF9F6] border border-[#EAD8C7] flex items-center justify-between gap-3">
+            <div className="min-w-0 flex-1">
+              <label className="block text-xs font-bold uppercase tracking-wider text-[#7A1835] mb-0.5">
+                Registered Email (Gmail)
+              </label>
+              <div className="text-xs font-bold text-[#211B1E] truncate">
+                {profile?.email || (profile as any)?.user?.email || 'Not specified'}
+              </div>
+              <p className="mt-1 text-[11px] text-[#766B6F] leading-relaxed">
+                🔒 Verified security identifier. To change your email with OTP verification, please use Account Settings.
+              </p>
+            </div>
+            <Link
+              href="/app/settings"
+              className="inline-flex items-center gap-1 text-xs font-bold text-[#80132E] bg-white border border-[#EAD8C7] hover:bg-[#FAF3EC] px-3 py-1.5 rounded-xl shadow-2xs shrink-0 transition-colors"
+            >
+              <IconEdit className="h-3.5 w-3.5" />
+              <span>Change</span>
+            </Link>
           </div>
 
           {/* Location & Mother Tongue */}

@@ -12,6 +12,7 @@ export interface UserProfile {
   userId?: string;
   profileId?: string;
   email?: string;
+  emailOtp?: string;
   phone?: string;
   firstName?: string;
   lastName?: string;

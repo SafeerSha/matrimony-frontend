@@ -29,6 +29,8 @@ import {
   IconSettings,
   IconLoader2,
   IconEdit,
+  IconArrowLeft,
+  IconRefresh,
 } from '@tabler/icons-react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -36,6 +38,7 @@ import { Badge } from '@/components/ui/badge';
 import { Modal } from '@/components/ui/modal';
 import { SectionHeader } from '@/components/ui/section-header';
 import { ModernSelect } from '@/components/ui/modern-select';
+import { ModernOtpInput } from '@/components/ui';
 import { ChangePasswordModal } from '@/components/settings/change-password-modal';
 import { BlockedUsersModal } from '@/components/settings/blocked-users-modal';
 import { FeatureGate } from '@/components/ui/under-development';
@@ -62,9 +65,120 @@ function SettingsContent() {
   // User Account Details
   const [currentUser, setCurrentUser] = useState<any>(null);
   const [isEmailModalOpen, setIsEmailModalOpen] = useState(false);
+  const [emailModalStep, setEmailModalStep] = useState<'input' | 'otp'>('input');
   const [emailInput, setEmailInput] = useState('');
+  const [emailOtp, setEmailOtp] = useState('');
+  const [isSendingEmailOtp, setIsSendingEmailOtp] = useState(false);
   const [isSavingEmail, setIsSavingEmail] = useState(false);
   const [emailError, setEmailError] = useState<string | null>(null);
+  const [emailResendTimer, setEmailResendTimer] = useState(0);
+
+  // Timer effect for OTP resend countdown
+  useEffect(() => {
+    if (emailResendTimer > 0) {
+      const timer = setInterval(() => {
+        setEmailResendTimer((prev) => (prev > 0 ? prev - 1 : 0));
+      }, 1000);
+      return () => clearInterval(timer);
+    }
+  }, [emailResendTimer]);
+
+  const handleOpenEmailModal = () => {
+    setEmailInput('');
+    setEmailOtp('');
+    setEmailModalStep('input');
+    setEmailError(null);
+    setEmailResendTimer(0);
+    setIsEmailModalOpen(true);
+  };
+
+  const handleSendEmailOtp = async () => {
+    const cleanEmail = emailInput.trim().toLowerCase();
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!cleanEmail || !emailRegex.test(cleanEmail)) {
+      setEmailError('Please enter a valid email address (e.g. name@gmail.com).');
+      return;
+    }
+    const currentRegisteredEmail = (currentUser?.email || currentUser?.user?.email || '').trim().toLowerCase();
+    if (currentRegisteredEmail && cleanEmail === currentRegisteredEmail) {
+      setEmailError('New email must be different from your current registered email.');
+      return;
+    }
+
+    setIsSendingEmailOtp(true);
+    setEmailError(null);
+    try {
+      await authService.sendOtp({ email: cleanEmail, purpose: 'change_email' });
+      setEmailModalStep('otp');
+      setEmailResendTimer(60);
+      toast.info('Verification Code Sent', {
+        description: `We've sent a 6-digit verification code to ${cleanEmail}`,
+      });
+    } catch (err: any) {
+      const msg = err?.message || 'Failed to send verification code. Please check the email address and try again.';
+      setEmailError(msg);
+      toast.error('Send Failed', {
+        description: msg,
+      });
+    } finally {
+      setIsSendingEmailOtp(false);
+    }
+  };
+
+  const handleResendEmailOtp = async () => {
+    if (emailResendTimer > 0 || isSendingEmailOtp) return;
+    const cleanEmail = emailInput.trim().toLowerCase();
+    setIsSendingEmailOtp(true);
+    setEmailError(null);
+    try {
+      await authService.sendOtp({ email: cleanEmail, purpose: 'change_email' });
+      setEmailResendTimer(60);
+      toast.info('Code Resent', {
+        description: `A new verification code was sent to ${cleanEmail}`,
+      });
+    } catch (err: any) {
+      const msg = err?.message || 'Failed to resend verification code.';
+      setEmailError(msg);
+      toast.error('Resend Failed', {
+        description: msg,
+      });
+    } finally {
+      setIsSendingEmailOtp(false);
+    }
+  };
+
+  const handleVerifyAndUpdateEmail = async (codeToVerify?: string) => {
+    const cleanEmail = emailInput.trim().toLowerCase();
+    const cleanOtp = (codeToVerify ?? emailOtp).trim();
+    if (!cleanOtp || cleanOtp.length !== 6) {
+      setEmailError('Please enter the 6-digit verification code.');
+      return;
+    }
+
+    setIsSavingEmail(true);
+    setEmailError(null);
+    try {
+      await profileService.updateProfile('me', { email: cleanEmail, emailOtp: cleanOtp });
+      setCurrentUser((prev: any) => ({
+        ...prev,
+        email: cleanEmail,
+        isEmailVerified: true,
+        user: { ...(prev?.user || {}), email: cleanEmail, isEmailVerified: true },
+      }));
+      toast.success('Email Updated', {
+        description: `Your registered email has been successfully updated to ${cleanEmail}.`,
+      });
+      setIsEmailModalOpen(false);
+    } catch (err: any) {
+      const msg = err?.message || 'Invalid or expired verification code. Please check and try again.';
+      setEmailError(msg);
+      toast.error('Verification Failed', {
+        description: msg,
+      });
+    } finally {
+      setIsSavingEmail(false);
+    }
+  };
 
   // Password Security State
   const [isPasswordEnabled, setIsPasswordEnabled] = useState(true);
@@ -379,11 +493,7 @@ function SettingsContent() {
                       <Button
                         variant="secondary"
                         size="xs"
-                        onClick={() => {
-                          setEmailInput(currentUser?.email || (currentUser as any)?.user?.email || '');
-                          setEmailError(null);
-                          setIsEmailModalOpen(true);
-                        }}
+                        onClick={handleOpenEmailModal}
                         className="rounded-xl text-xs font-bold gap-1 shadow-2xs cursor-pointer"
                       >
                         <IconEdit className="h-3.5 w-3.5 text-[var(--primary)]" />
@@ -1181,88 +1291,184 @@ function SettingsContent() {
         </div>
       </Modal>
 
-      {/* CHANGE EMAIL MODAL */}
+      {/* CHANGE EMAIL MODAL WITH OTP VERIFICATION */}
       <Modal
         isOpen={isEmailModalOpen}
-        onClose={() => setIsEmailModalOpen(false)}
+        onClose={() => {
+          if (!isSavingEmail && !isSendingEmailOtp) {
+            setIsEmailModalOpen(false);
+          }
+        }}
         title="Change Registered Email"
-        description="Update the email address associated with your account for sign in and alerts."
+        description={
+          emailModalStep === 'input'
+            ? 'Enter your new email address. We will send a 6-digit verification code to confirm ownership.'
+            : 'Enter the 6-digit verification code sent to your new email to complete the update.'
+        }
       >
-        <div className="space-y-4 pt-1">
-          <div>
-            <label className="block text-xs font-bold uppercase tracking-wider text-[var(--foreground)] mb-1.5">
-              New Email Address (Gmail)
-            </label>
-            <input
-              type="email"
-              value={emailInput}
-              onChange={(e) => {
-                setEmailInput(e.target.value);
-                if (emailError) setEmailError(null);
-              }}
-              placeholder="name@gmail.com"
-              className="w-full rounded-xl border border-[var(--border)] bg-white px-3.5 py-2.5 text-sm text-[var(--foreground)] focus:outline-none focus:ring-2 focus:ring-[var(--primary)]"
-            />
-            {emailError && (
-              <p className="mt-1.5 text-xs text-rose-600 font-semibold">{emailError}</p>
-            )}
-          </div>
+        {emailModalStep === 'input' ? (
+          <div className="space-y-4 pt-1">
+            {/* Current Email Info */}
+            <div className="p-3 rounded-xl bg-[#FAF3EC] border border-[#EAD8C7] flex items-center justify-between gap-2 text-xs">
+              <span className="text-[#766B6F]">Current Email:</span>
+              <span className="font-bold text-[#211B1E] truncate max-w-[220px]">
+                {currentUser?.email || (currentUser as any)?.user?.email || 'Not set'}
+              </span>
+            </div>
 
-          <p className="text-xs text-[var(--muted)] leading-relaxed bg-[#FAF3EC] p-3 rounded-xl border border-[#EAD8C7]">
-            🔒 Confidential: Your email address is strictly private and is never disclosed to other members.
-          </p>
-
-          <div className="flex items-center justify-end gap-2 pt-2">
-            <Button
-              variant="secondary"
-              size="sm"
-              onClick={() => setIsEmailModalOpen(false)}
-              className="rounded-xl"
-            >
-              Cancel
-            </Button>
-            <Button
-              variant="primary"
-              size="sm"
-              disabled={isSavingEmail}
-              onClick={async () => {
-                const cleanEmail = emailInput.trim().toLowerCase();
-                const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-                if (!cleanEmail || !emailRegex.test(cleanEmail)) {
-                  setEmailError('Please enter a valid email address.');
-                  return;
-                }
-                setIsSavingEmail(true);
-                try {
-                  await profileService.updateProfile('me', { email: cleanEmail });
-                  setCurrentUser((prev: any) => ({ ...prev, email: cleanEmail }));
-                  toast.success('Email Updated', {
-                    description: 'Your registered email has been successfully updated.',
-                  });
-                  setIsEmailModalOpen(false);
-                } catch (err: any) {
-                  const msg = err?.message || 'Could not update email. It may already be in use.';
-                  setEmailError(msg);
-                  toast.error('Update Failed', {
-                    description: msg,
-                  });
-                } finally {
-                  setIsSavingEmail(false);
-                }
-              }}
-              className="rounded-xl font-bold cursor-pointer"
-            >
-              {isSavingEmail ? (
-                <>
-                  <IconLoader2 className="h-4 w-4 animate-spin mr-1" />
-                  <span>Saving...</span>
-                </>
-              ) : (
-                'Save Email'
+            <div>
+              <label className="block text-xs font-bold uppercase tracking-wider text-[var(--foreground)] mb-1.5">
+                New Email Address (Gmail)
+              </label>
+              <input
+                type="email"
+                value={emailInput}
+                onChange={(e) => {
+                  setEmailInput(e.target.value);
+                  if (emailError) setEmailError(null);
+                }}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    e.preventDefault();
+                    handleSendEmailOtp();
+                  }
+                }}
+                placeholder="newname@gmail.com"
+                autoFocus
+                className="w-full rounded-xl border border-[var(--border)] bg-white px-3.5 py-2.5 text-sm text-[var(--foreground)] focus:outline-none focus:ring-2 focus:ring-[var(--primary)]"
+              />
+              {emailError && (
+                <p className="mt-1.5 text-xs text-rose-600 font-semibold">{emailError}</p>
               )}
-            </Button>
+            </div>
+
+            <p className="text-xs text-[var(--muted)] leading-relaxed bg-[#FFF9F6] p-3 rounded-xl border border-[#E9DDE0]">
+              🔒 Confidential: Your email address is strictly private, used only for account login, password recovery, and security alerts. It is never displayed to other members.
+            </p>
+
+            <div className="flex items-center justify-end gap-2 pt-2">
+              <Button
+                variant="secondary"
+                size="sm"
+                onClick={() => setIsEmailModalOpen(false)}
+                className="rounded-xl cursor-pointer"
+              >
+                Cancel
+              </Button>
+              <Button
+                variant="primary"
+                size="sm"
+                disabled={isSendingEmailOtp || !emailInput.trim()}
+                onClick={handleSendEmailOtp}
+                className="rounded-xl font-bold cursor-pointer"
+              >
+                {isSendingEmailOtp ? (
+                  <span className="flex items-center gap-2">
+                    <IconLoader2 className="h-4 w-4 animate-spin" />
+                    <span>Sending Code...</span>
+                  </span>
+                ) : (
+                  <span>Send Verification Code</span>
+                )}
+              </Button>
+            </div>
           </div>
-        </div>
+        ) : (
+          <div className="space-y-4 pt-1">
+            {/* Back button & recipient indicator */}
+            <div className="flex items-center justify-between pb-1">
+              <button
+                type="button"
+                onClick={() => {
+                  setEmailModalStep('input');
+                  setEmailOtp('');
+                  setEmailError(null);
+                }}
+                className="inline-flex items-center gap-1 text-xs font-semibold text-[#80132E] hover:underline cursor-pointer"
+              >
+                <IconArrowLeft className="h-3.5 w-3.5" />
+                <span>Edit Email</span>
+              </button>
+              <span className="text-xs text-[#766B6F] font-medium truncate max-w-[200px]">
+                {emailInput.trim().toLowerCase()}
+              </span>
+            </div>
+
+            <div className="p-3 rounded-xl bg-[#FAF3EC] border border-[#EAD8C7] text-xs text-[#211B1E] leading-relaxed">
+              We sent a 6-digit verification code to <span className="font-bold">{emailInput.trim().toLowerCase()}</span>. Please enter the code below to verify ownership.
+            </div>
+
+            <div className="space-y-2">
+              <label className="block text-xs font-bold uppercase tracking-wider text-[var(--foreground)] text-center">
+                Enter 6-Digit Code
+              </label>
+              <div className="flex justify-center py-1">
+                <ModernOtpInput
+                  value={emailOtp}
+                  onChange={(val) => {
+                    setEmailOtp(val);
+                    if (emailError) setEmailError(null);
+                  }}
+                  onComplete={(code) => {
+                    handleVerifyAndUpdateEmail(code);
+                  }}
+                  error={!!emailError}
+                  autoFocus
+                />
+              </div>
+              {emailError && (
+                <p className="text-xs text-rose-600 font-semibold text-center">{emailError}</p>
+              )}
+            </div>
+
+            {/* Resend OTP */}
+            <div className="text-center pt-1">
+              {emailResendTimer > 0 ? (
+                <span className="text-xs text-[#766B6F]">
+                  Resend code in <span className="font-semibold text-[#211B1E]">{emailResendTimer}s</span>
+                </span>
+              ) : (
+                <button
+                  type="button"
+                  onClick={handleResendEmailOtp}
+                  disabled={isSendingEmailOtp}
+                  className="inline-flex items-center gap-1.5 text-xs font-bold text-[#80132E] hover:underline cursor-pointer disabled:opacity-50"
+                >
+                  <IconRefresh className={cn('h-3.5 w-3.5', isSendingEmailOtp && 'animate-spin')} />
+                  <span>Didn't receive the code? Resend Code</span>
+                </button>
+              )}
+            </div>
+
+            <div className="flex items-center justify-end gap-2 pt-2 border-t border-[#E9DDE0]">
+              <Button
+                variant="secondary"
+                size="sm"
+                onClick={() => setIsEmailModalOpen(false)}
+                disabled={isSavingEmail}
+                className="rounded-xl cursor-pointer"
+              >
+                Cancel
+              </Button>
+              <Button
+                variant="primary"
+                size="sm"
+                disabled={isSavingEmail || emailOtp.length !== 6}
+                onClick={() => handleVerifyAndUpdateEmail()}
+                className="rounded-xl font-bold cursor-pointer"
+              >
+                {isSavingEmail ? (
+                  <span className="flex items-center gap-2">
+                    <IconLoader2 className="h-4 w-4 animate-spin" />
+                    <span>Verifying...</span>
+                  </span>
+                ) : (
+                  <span>Verify & Update Email</span>
+                )}
+              </Button>
+            </div>
+          </div>
+        )}
       </Modal>
 
       {/* BLOCKED USERS MODAL */}
