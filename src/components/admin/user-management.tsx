@@ -282,6 +282,37 @@ export function UserManagement() {
     }
   };
 
+  const handleStatusChange = async (
+    user: AdminUserListItem,
+    newStatus: 'ACTIVE' | 'BLOCKED' | 'SUSPENDED' | 'DEACTIVATED',
+  ) => {
+    setActionLoadingId(user.id);
+    try {
+      await adminService.updateUserStatus(user.id, newStatus);
+      toast.success(
+        'User State Updated',
+        `${user.firstName ?? user.email ?? 'User'} is now ${newStatus.toLowerCase()}.`,
+      );
+      setUsers((prev) =>
+        prev.map((u) =>
+          u.id === user.id
+            ? {
+                ...u,
+                status: newStatus,
+                isBanned: newStatus === 'BLOCKED',
+                deactivatedAt: newStatus === 'DEACTIVATED' ? new Date().toISOString() : null,
+              }
+            : u,
+        ),
+      );
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : 'Error updating user status';
+      toast.error('Failed to update status', message);
+    } finally {
+      setActionLoadingId(null);
+    }
+  };
+
   // ── Filters ──────────────────────────────────────────────────────────────────
 
   const handleSearchChange = (value: string) => {
@@ -555,7 +586,7 @@ export function UserManagement() {
                       </div>
 
                       {/* Info Container */}
-                      <div className="space-y-2 text-xs bg-[var(--surface-muted)]/70 rounded-xl p-3 border border-[var(--border)]">
+                      <div className="space-y-2.5 text-xs bg-[var(--surface-muted)]/70 rounded-xl p-3 border border-[var(--border)]">
                         {/* Contact Info */}
                         <div className="space-y-1">
                           {u.email && (
@@ -573,34 +604,66 @@ export function UserManagement() {
                           {!u.email && !u.phone && (
                             <span className="text-[var(--muted)] italic text-[11px]">No contact details</span>
                           )}
-                        </div>
-
-                        {/* Location & Plan Row */}
-                        <div className="flex items-center justify-between pt-2 border-t border-[var(--border)] text-xs gap-2">
-                          <div className="flex items-center gap-1 text-[var(--muted)] truncate">
+                          <div className="flex items-center gap-1.5 text-[var(--muted)] pt-0.5 truncate">
                             <IconMapPin className="h-3.5 w-3.5 text-[var(--primary)] shrink-0" />
                             <span className="truncate">{locationText}</span>
                           </div>
+                        </div>
 
+                        {/* Plan Status Row */}
+                        <div className="flex items-center justify-between pt-2 border-t border-[var(--border)] text-xs">
+                          <span className="text-[var(--muted-strong)] font-semibold flex items-center gap-1.5">
+                            <IconCrown className="h-3.5 w-3.5 text-amber-600 shrink-0" />
+                            Plan Status:
+                          </span>
                           <button
                             type="button"
                             onClick={() => handleToggleTier(u)}
                             disabled={isActing}
-                            className="shrink-0"
-                            title="Click to switch plan tier"
+                            className="group inline-flex items-center gap-1 focus:outline-none"
+                            title="Click to toggle between Basic and Paid"
                           >
                             <Badge
                               tone={isPaid ? 'accent' : 'default'}
-                              className={`cursor-pointer transition-all ${
+                              className={`cursor-pointer transition-all group-hover:scale-105 ${
                                 isPaid
                                   ? 'bg-amber-100 text-amber-900 border-amber-300 font-bold'
                                   : 'bg-slate-100 text-slate-700 font-medium'
                               }`}
                             >
                               {isPaid && <IconCrown className="h-3 w-3 text-amber-600 inline mr-1" />}
-                              {isPaid ? 'Paid' : 'Basic'}
+                              {isPaid ? 'Paid Tier' : 'Basic Tier'}
                             </Badge>
                           </button>
+                        </div>
+
+                        {/* User State Row (Change state directly inside the card) */}
+                        <div className="flex items-center justify-between pt-2 border-t border-[var(--border)] text-xs">
+                          <span className="text-[var(--muted-strong)] font-semibold flex items-center gap-1.5">
+                            <IconUserCheck className="h-3.5 w-3.5 text-[var(--primary)] shrink-0" />
+                            User State:
+                          </span>
+                          {u.status === 'DELETED' ? (
+                            <Badge tone="default" className="bg-rose-100 text-rose-800 border-rose-200 text-xs font-bold inline-flex items-center gap-1">
+                              <span className="h-1.5 w-1.5 rounded-full bg-rose-500 inline-block" />
+                              Deleted
+                            </Badge>
+                          ) : (
+                            <div className="relative">
+                              <select
+                                value={isBlocked ? 'BLOCKED' : u.status}
+                                onChange={(e) => handleStatusChange(u, e.target.value as any)}
+                                disabled={isActing}
+                                className="text-xs font-semibold py-1 px-2.5 rounded-lg border border-[var(--border)] bg-white text-[var(--foreground)] outline-none focus:border-[var(--primary)] cursor-pointer shadow-2xs transition-colors"
+                                aria-label={`Change user state for ${displayName}`}
+                              >
+                                <option value="ACTIVE">🟢 Active</option>
+                                <option value="BLOCKED">🚫 Blocked</option>
+                                <option value="SUSPENDED">⚠️ Suspended</option>
+                                <option value="DEACTIVATED">⚪ Deactivated</option>
+                              </select>
+                            </div>
+                          )}
                         </div>
 
                         {/* Reason / Notes if Deactivated or Deleted */}
@@ -801,27 +864,9 @@ export function UserManagement() {
                             </button>
                           </td>
 
-                          {/* Status badge */}
+                          {/* Status badge & State selector */}
                           <td className="p-3.5 sm:p-4">
-                            {isBlocked ? (
-                              <Badge tone="default" className="bg-red-100 text-red-800 border-red-200 font-semibold">
-                                Blocked
-                              </Badge>
-                            ) : u.status === 'ACTIVE' ? (
-                              <Badge tone="success" className="font-semibold">Active</Badge>
-                            ) : u.status === 'DEACTIVATED' ? (
-                              <div className="space-y-0.5">
-                                <Badge tone="default" className="bg-slate-100 text-slate-700 border-slate-300 font-semibold inline-flex items-center gap-1">
-                                  <span className="h-1.5 w-1.5 rounded-full bg-slate-500 inline-block" />
-                                  Deactivated
-                                </Badge>
-                                {u.deletionReason && (
-                                  <p className="text-[10px] text-[var(--muted)] truncate max-w-[130px]" title={u.deletionReason}>
-                                    {u.deletionReason}
-                                  </p>
-                                )}
-                              </div>
-                            ) : u.status === 'DELETED' ? (
+                            {u.status === 'DELETED' ? (
                               <div className="space-y-0.5">
                                 <Badge tone="default" className="bg-rose-100 text-rose-800 border-rose-200 font-semibold inline-flex items-center gap-1">
                                   <span className="h-1.5 w-1.5 rounded-full bg-rose-500 inline-block" />
@@ -834,9 +879,18 @@ export function UserManagement() {
                                 )}
                               </div>
                             ) : (
-                              <Badge tone="default" className="bg-amber-50 text-amber-700 border-amber-200">
-                                {u.status}
-                              </Badge>
+                              <select
+                                value={isBlocked ? 'BLOCKED' : u.status}
+                                onChange={(e) => handleStatusChange(u, e.target.value as any)}
+                                disabled={isActing}
+                                className="text-xs font-semibold py-1 px-2.5 rounded-lg border border-[var(--border)] bg-white text-[var(--foreground)] outline-none focus:border-[var(--primary)] cursor-pointer shadow-2xs transition-colors"
+                                aria-label={`Change status for ${displayName}`}
+                              >
+                                <option value="ACTIVE">🟢 Active</option>
+                                <option value="BLOCKED">🚫 Blocked</option>
+                                <option value="SUSPENDED">⚠️ Suspended</option>
+                                <option value="DEACTIVATED">⚪ Deactivated</option>
+                              </select>
                             )}
                           </td>
 

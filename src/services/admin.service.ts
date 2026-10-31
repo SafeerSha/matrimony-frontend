@@ -60,6 +60,19 @@ export const adminService = {
     });
   },
 
+  updateUserStatus: (
+    userId: string,
+    status: 'ACTIVE' | 'BLOCKED' | 'SUSPENDED' | 'DEACTIVATED'
+  ) => {
+    return apiFetch<{ id: string; email: string; status: string; isBanned: boolean }>(
+      `/admin/users/${userId}/status`,
+      {
+        method: "PATCH",
+        body: JSON.stringify({ status }),
+      }
+    );
+  },
+
   updateSubscriptionTier: (userId: string, tier: "BASIC" | "PAID") => {
     return apiFetch<{ id: string; email: string; subscriptionTier: string }>(`/admin/users/${userId}/tier`, {
       method: "PATCH",
