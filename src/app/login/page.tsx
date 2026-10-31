@@ -734,7 +734,7 @@ export default function LoginPage() {
                             htmlFor="email"
                             className="block text-[11px] sm:text-xs font-semibold uppercase tracking-wider text-[var(--muted-strong)] mb-1.5"
                           >
-                            Email Address (Gmail / Email)
+                            Email Address (Gmail)
                           </label>
                           <div className="relative flex items-center">
                             <span className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3.5 sm:pl-4 text-[var(--muted)] group-focus-within:text-[var(--primary)] transition-colors">
