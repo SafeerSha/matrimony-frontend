@@ -49,33 +49,52 @@ export default async function middleware(request: NextRequest) {
     return NextResponse.redirect(new URL("/app/discover", request.url));
   }
 
-  const isProtectedPath = pathname.startsWith("/app") || pathname.startsWith("/admin") || pathname.startsWith("/rm");
-
-  if (isProtectedPath) {
+  // Dedicated Admin Login Page: allow unauthenticated visitors, but redirect existing ADMINs directly to /admin
+  if (pathname === "/admin/login") {
     const session = await getSessionPayload(request);
-    
+    const normalizedRole = typeof session?.role === "string" ? session.role.toUpperCase() : "";
+    if (normalizedRole === "ADMIN") {
+      return NextResponse.redirect(new URL("/admin", request.url));
+    }
+    return response;
+  }
+
+  // Protected Admin Portal routes: require authenticated ADMIN, redirecting to /admin/login
+  if (pathname.startsWith("/admin")) {
+    const session = await getSessionPayload(request);
+    const normalizedRole = typeof session?.role === "string" ? session.role.toUpperCase() : "";
+
+    if (!session || normalizedRole !== "ADMIN") {
+      const login = new URL("/admin/login", request.url);
+      login.searchParams.set("next", pathname);
+      return NextResponse.redirect(login);
+    }
+    return response;
+  }
+
+  // Protected Member App routes (/app/*)
+  if (pathname.startsWith("/app")) {
+    const session = await getSessionPayload(request);
     if (!session) {
       const login = new URL("/login", request.url);
       login.searchParams.set("next", pathname);
       return NextResponse.redirect(login);
     }
+    return response;
+  }
 
-    // Role-based authorization (case-insensitive matching backend 'ADMIN' and 'RM')
-    const normalizedRole = typeof session.role === "string" ? session.role.toUpperCase() : "";
+  // Protected RM Portal routes (/rm/*)
+  if (pathname.startsWith("/rm")) {
+    const session = await getSessionPayload(request);
+    const normalizedRole = typeof session?.role === "string" ? session.role.toUpperCase() : "";
 
-    if (pathname.startsWith("/admin") && normalizedRole !== "ADMIN") {
-      const login = new URL("/login", request.url);
-      login.searchParams.set("next", pathname);
-      login.searchParams.set("error", "admin_required");
-      return NextResponse.redirect(login);
-    }
-    
-    if (pathname.startsWith("/rm") && normalizedRole !== "RM" && normalizedRole !== "ADMIN") {
+    if (!session || (normalizedRole !== "RM" && normalizedRole !== "ADMIN")) {
       const login = new URL("/login", request.url);
       login.searchParams.set("next", pathname);
       login.searchParams.set("error", "unauthorized");
       return NextResponse.redirect(login);
     }
+    return response;
   }
 
   return response;

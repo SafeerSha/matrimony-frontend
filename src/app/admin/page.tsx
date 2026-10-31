@@ -35,13 +35,7 @@ export default function AdminDashboard() {
       const token = authService.getAccessToken();
       if (!token) {
         if (isMounted) setIsAuthorized(false);
-        toast.dismissAll();
-        toast.flash(
-          'error',
-          'Access Denied',
-          'Please sign in with an administrator account to access the Admin Portal.'
-        );
-        router.replace('/login?next=/admin&error=admin_required');
+        router.replace('/admin/login?next=/admin');
         return;
       }
 
@@ -57,7 +51,7 @@ export default function AdminDashboard() {
             'Access Denied',
             'You do not have permission to access the Admin Portal. Please sign in with an administrator account.'
           );
-          router.replace('/login?next=/admin&error=admin_required');
+          router.replace('/admin/login?next=/admin');
           return;
         }
 
@@ -66,13 +60,7 @@ export default function AdminDashboard() {
         }
       } catch (err: any) {
         if (isMounted) setIsAuthorized(false);
-        toast.dismissAll();
-        toast.flash(
-          'error',
-          'Access Denied',
-          'You do not have permission to access this resource. Please sign in with an administrator account.'
-        );
-        router.replace('/login?next=/admin&error=admin_required');
+        router.replace('/admin/login?next=/admin');
       }
     }
 

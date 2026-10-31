@@ -223,7 +223,10 @@ export async function apiFetch<T>(
             "Access Denied",
             "You do not have permission to access the Admin Portal. Please sign in with an administrator account."
           );
-          window.location.href = `/login?next=${encodeURIComponent(currentPath)}&error=admin_required`;
+          const targetLogin = currentPath.startsWith("/admin")
+            ? `/admin/login?next=${encodeURIComponent(currentPath)}`
+            : `/login?next=${encodeURIComponent(currentPath)}&error=unauthorized`;
+          window.location.href = targetLogin;
         }
         throw new ApiError(response.status, "You do not have permission to access this resource", body);
       }
