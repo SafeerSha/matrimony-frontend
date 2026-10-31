@@ -18,8 +18,6 @@ import {
   IconLoader2,
   IconBookmark,
   IconSparkles,
-  IconPhone,
-  IconVideo,
   IconMicrophone,
   IconLock,
   IconCalendar,
@@ -112,8 +110,6 @@ export function ChatWindow({
 
     return cleanup;
   }, [conversation.participantId, conversation.id, (conversation as any).online, (conversation as any).lastActiveAt]);
-
-  const matchPercentage = (conversation.participant as any)?.compatibility || 92;
 
   // Categorized Kerala matrimonial initiator hook sentences
   const categorizedHooks = [
@@ -286,18 +282,6 @@ export function ChatWindow({
     }
   };
 
-  const handleAudioCall = () => {
-    toast.success('Voice Call Request Sent', {
-      description: `We notified ${firstName}. An encrypted matrimonial call will connect once accepted.`,
-    });
-  };
-
-  const handleVideoCall = () => {
-    toast.success('Video Call Request Sent', {
-      description: `We notified ${firstName}. An encrypted video call will start once accepted.`,
-    });
-  };
-
   const formatMessageTime = (isoString?: string) => {
     if (!isoString) return '';
     try {
@@ -367,36 +351,12 @@ export function ChatWindow({
                   {formatLastActive(lastActiveAt)}
                 </span>
               )}
-              <span className="text-[#D8B28C] shrink-0">•</span>
-              <span className="text-[#7A1835] font-bold bg-[#FAF3EC] px-1.5 py-0.2 rounded-full text-[10px] shrink-0">
-                {matchPercentage}% Match
-              </span>
             </div>
           </div>
         </div>
 
         {/* Right Header Actions */}
         <div className="flex items-center gap-1 sm:gap-1.5 shrink-0">
-          {/* Audio Call Button */}
-          <button
-            onClick={handleAudioCall}
-            aria-label="Voice Call"
-            title="Start Encrypted Voice Call"
-            className="grid h-9 w-9 place-items-center rounded-xl text-[#766B6F] hover:text-[#7A1835] hover:bg-[#FAF3EC] active:scale-95 transition-all"
-          >
-            <IconPhone className="h-4.5 w-4.5 stroke-[2]" />
-          </button>
-
-          {/* Video Call Button */}
-          <button
-            onClick={handleVideoCall}
-            aria-label="Video Call"
-            title="Start Encrypted Video Call"
-            className="grid h-9 w-9 place-items-center rounded-xl text-[#766B6F] hover:text-[#7A1835] hover:bg-[#FAF3EC] active:scale-95 transition-all"
-          >
-            <IconVideo className="h-4.5 w-4.5 stroke-[2]" />
-          </button>
-
           {/* View Profile Action - Desktop */}
           <button
             onClick={onOpenProfile}
@@ -553,7 +513,7 @@ export function ChatWindow({
               {/* Match tag */}
               <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#FAF3EC] border border-[#EAD8C7] text-[11px] font-bold text-[#7A1835] mb-2 shadow-2xs">
                 <IconSparkles className="h-3.5 w-3.5 text-[#7A1835]" />
-                <span>Connected via Mutual Interest · {matchPercentage}% Match</span>
+                <span>Connected via Mutual Interest</span>
               </div>
 
               <h4 className="font-editorial-title text-base sm:text-lg font-bold text-[#211B1E]">
