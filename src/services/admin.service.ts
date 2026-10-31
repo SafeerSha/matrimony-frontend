@@ -27,6 +27,27 @@ export const adminService = {
     });
   },
 
+  reactivateUser: (userId: string) => {
+    return apiFetch<{ id: string; email: string; status: string; deactivatedAt: string | null }>(
+      `/admin/users/${userId}/reactivate`,
+      { method: "POST" }
+    );
+  },
+
+  restoreUser: (userId: string) => {
+    return apiFetch<{ id: string; email: string; status: string; deletedAt: string | null }>(
+      `/admin/users/${userId}/restore`,
+      { method: "POST" }
+    );
+  },
+
+  purgeUser: (userId: string) => {
+    return apiFetch<{ success: boolean; message: string }>(
+      `/admin/users/${userId}/purge`,
+      { method: "POST" }
+    );
+  },
+
   banUser: (userId: string) => {
     return apiFetch<{ id: string; email: string; isBanned: boolean }>(`/admin/users/${userId}/ban`, {
       method: "POST",

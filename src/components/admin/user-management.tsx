@@ -15,6 +15,7 @@ import {
   IconPhone,
   IconId,
   IconAlertTriangle,
+  IconTrash,
   IconX,
 } from '@tabler/icons-react';
 import { Card } from '@/components/ui/card';
@@ -120,7 +121,7 @@ function ConfirmDialog({
 
 interface PendingConfirm {
   user: AdminUserListItem;
-  action: 'block' | 'unblock';
+  action: 'block' | 'unblock' | 'reactivate' | 'restore' | 'purge';
 }
 
 const PAGE_SIZE = 15;
@@ -175,7 +176,7 @@ export function UserManagement() {
   const [search, setSearch] = useState('');
   const [location, setLocation] = useState('');
   const [plan, setPlan] = useState<'ALL' | 'BASIC' | 'PAID'>('ALL');
-  const [status, setStatus] = useState<'ALL' | 'ACTIVE' | 'BLOCKED' | 'SUSPENDED'>('ALL');
+  const [status, setStatus] = useState<'ALL' | 'ACTIVE' | 'BLOCKED' | 'SUSPENDED' | 'DEACTIVATED' | 'DELETED'>('ALL');
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [totalCount, setTotalCount] = useState(0);

@@ -4,6 +4,9 @@ export interface AdminUserListItem {
   phone: string | null;
   role: string;
   status: string;
+  deactivatedAt?: string | null;
+  deletedAt?: string | null;
+  deletionReason?: string | null;
   subscriptionTier: 'BASIC' | 'PAID' | string;
   isBanned: boolean;
   isPhoneVerified: boolean;
@@ -41,7 +44,7 @@ export interface AdminUserQueryFilters {
   search?: string;
   location?: string;
   plan?: 'ALL' | 'BASIC' | 'PAID';
-  status?: 'ALL' | 'ACTIVE' | 'BLOCKED' | 'SUSPENDED';
+  status?: 'ALL' | 'ACTIVE' | 'BLOCKED' | 'SUSPENDED' | 'DEACTIVATED' | 'DELETED';
 }
 
 export interface AdminUserListResponse {

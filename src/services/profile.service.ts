@@ -104,6 +104,35 @@ export const profileService = {
     });
   },
 
+  deactivateAccount: (reason?: string) => {
+    return apiFetch<{ success: boolean; message: string; status: string }>(
+      "/profiles/me/deactivate",
+      {
+        method: "POST",
+        body: JSON.stringify({ reason }),
+      }
+    );
+  },
+
+  deleteAccount: (reason?: string, feedback?: string) => {
+    return apiFetch<{ success: boolean; message: string; status: string }>(
+      "/profiles/me/delete",
+      {
+        method: "POST",
+        body: JSON.stringify({ reason, feedback }),
+      }
+    );
+  },
+
+  reactivateAccount: () => {
+    return apiFetch<{ success: boolean; message: string; status: string }>(
+      "/profiles/me/reactivate",
+      {
+        method: "POST",
+      }
+    );
+  },
+
   completeOnboarding: (data: {
     email?: string;
     phone?: string;
