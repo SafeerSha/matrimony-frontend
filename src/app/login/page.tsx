@@ -19,6 +19,7 @@ import {
   IconKey,
   IconUserPlus,
   IconRefresh,
+  IconBrandWhatsapp,
 } from "@tabler/icons-react";
 import { Logo } from "@/components/layout/logo";
 import { cn } from "@/lib/cn";
@@ -30,9 +31,11 @@ import { ModernOtpInput } from "@/components/ui";
 import { Modal } from "@/components/ui/modal";
 import { Button } from "@/components/ui/button";
 import { isEmailAuthMode } from "@/config/feature-flags";
+import { CONTACT_INFO } from "@/config/contact";
 
 export default function LoginPage() {
   const [isRegisterModalOpen, setIsRegisterModalOpen] = useState(false);
+  const [isSupportModalOpen, setIsSupportModalOpen] = useState(false);
   const [authMethod, setAuthMethod] = useState<"otp" | "password">(
     isEmailAuthMode() ? "password" : "otp"
   );
@@ -820,12 +823,13 @@ export default function LoginPage() {
                     errorMessage.toLowerCase().includes("blocked")) && (
                     <div className="pt-2 border-t border-red-200/80 text-xs text-red-900 flex items-center justify-between gap-2">
                       <span>Believe this is a mistake or need assistance?</span>
-                      <Link
-                        href="/app/support"
-                        className="font-bold underline hover:text-red-950 transition-colors shrink-0"
+                      <button
+                        type="button"
+                        onClick={() => setIsSupportModalOpen(true)}
+                        className="font-bold underline hover:text-red-950 transition-colors shrink-0 cursor-pointer text-xs"
                       >
                         Contact Support
-                      </Link>
+                      </button>
                     </div>
                   )}
                   {errorMessage.toLowerCase().includes("does not have a password") && (
@@ -1453,6 +1457,112 @@ export default function LoginPage() {
             </div>
           </div>
         )}
+      </Modal>
+
+      {/* Customer Support Modal */}
+      <Modal
+        isOpen={isSupportModalOpen}
+        onClose={() => setIsSupportModalOpen(false)}
+        title="Help & Support Desk"
+        description="Our support team is available to assist you with account access, reviews, and general inquiries."
+        size="md"
+      >
+        <div className="space-y-4 pt-1">
+          {identifier.trim() && (
+            <div className="rounded-xl bg-[var(--surface-muted)] p-3 border border-[var(--border)] text-xs text-[var(--muted-strong)] flex items-center justify-between">
+              <div>
+                <span className="font-semibold text-[var(--foreground)]">Account: </span>
+                <span className="font-mono text-[var(--primary)] font-bold">{identifier.trim()}</span>
+              </div>
+              <span className="text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded bg-rose-100 text-rose-800">
+                Review Request
+              </span>
+            </div>
+          )}
+
+          <div className="space-y-2.5">
+            {/* WhatsApp */}
+            <a
+              href={`${CONTACT_INFO.whatsappUrl}${
+                identifier.trim()
+                  ? `%20regarding%20account%20access%20for%20${encodeURIComponent(identifier.trim())}`
+                  : ''
+              }`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center justify-between p-3.5 rounded-xl border border-emerald-200 bg-emerald-50/70 hover:bg-emerald-100/70 text-emerald-950 transition group cursor-pointer"
+            >
+              <div className="flex items-center gap-3">
+                <div className="h-9 w-9 rounded-full bg-emerald-600 text-white flex items-center justify-center shrink-0 shadow-xs">
+                  <IconBrandWhatsapp className="h-5 w-5" />
+                </div>
+                <div>
+                  <p className="text-sm font-bold text-emerald-950">Chat on WhatsApp</p>
+                  <p className="text-xs text-emerald-700">Quickest response from support team</p>
+                </div>
+              </div>
+              <IconArrowRight className="h-4 w-4 text-emerald-700 group-hover:translate-x-0.5 transition-transform" />
+            </a>
+
+            {/* Helpline */}
+            <a
+              href={CONTACT_INFO.phoneTel}
+              className="flex items-center justify-between p-3.5 rounded-xl border border-[var(--border)] bg-white hover:bg-[var(--surface-muted)] text-[var(--foreground)] transition group cursor-pointer"
+            >
+              <div className="flex items-center gap-3">
+                <div className="h-9 w-9 rounded-full bg-[var(--primary)] text-white flex items-center justify-center shrink-0 shadow-xs">
+                  <IconPhone className="h-5 w-5" />
+                </div>
+                <div>
+                  <p className="text-sm font-bold">Call Customer Helpline</p>
+                  <p className="text-xs text-[var(--muted)]">{CONTACT_INFO.phoneDisplay} • {CONTACT_INFO.hours}</p>
+                </div>
+              </div>
+              <IconArrowRight className="h-4 w-4 text-[var(--muted)] group-hover:translate-x-0.5 transition-transform" />
+            </a>
+
+            {/* Email */}
+            <a
+              href={`mailto:${CONTACT_INFO.email}?subject=${encodeURIComponent(
+                'Account Access Assistance / Ban Review Request'
+              )}&body=${encodeURIComponent(
+                `Hello IshtamChat Support,\n\nI am contacting you regarding my account access.\n\nAccount Identifier: ${
+                  identifier.trim() || '[Please enter your email or mobile]'
+                }\nReason / Details: \n\nThank you.`
+              )}`}
+              className="flex items-center justify-between p-3.5 rounded-xl border border-[var(--border)] bg-white hover:bg-[var(--surface-muted)] text-[var(--foreground)] transition group cursor-pointer"
+            >
+              <div className="flex items-center gap-3">
+                <div className="h-9 w-9 rounded-full bg-slate-700 text-white flex items-center justify-center shrink-0 shadow-xs">
+                  <IconMail className="h-5 w-5" />
+                </div>
+                <div>
+                  <p className="text-sm font-bold">Email Us</p>
+                  <p className="text-xs text-[var(--muted)]">{CONTACT_INFO.email}</p>
+                </div>
+              </div>
+              <IconArrowRight className="h-4 w-4 text-[var(--muted)] group-hover:translate-x-0.5 transition-transform" />
+            </a>
+          </div>
+
+          <div className="pt-2 flex items-center justify-between border-t border-[var(--border)]">
+            <Link
+              href="/support"
+              onClick={() => setIsSupportModalOpen(false)}
+              className="text-xs font-semibold text-[var(--primary)] hover:underline"
+            >
+              View Full Support Page →
+            </Link>
+            <Button
+              variant="secondary"
+              size="sm"
+              onClick={() => setIsSupportModalOpen(false)}
+              className="rounded-xl"
+            >
+              Close
+            </Button>
+          </div>
+        </div>
       </Modal>
 
       {/* Quick Registration Popup Modal */}
