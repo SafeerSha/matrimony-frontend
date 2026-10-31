@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useRef } from 'react';
+import Link from 'next/link';
 import {
   IconCamera,
   IconCircleCheck,
@@ -233,6 +234,7 @@ export function MyProfile() {
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isSavingDetails, setIsSavingDetails] = useState(false);
   const [editDraft, setEditDraft] = useState<{
+    email: string;
     bio: string;
     family: string;
     lookingFor: string;
@@ -252,6 +254,7 @@ export function MyProfile() {
     customLifestyleInput: string;
     customInterestInput: string;
   }>({
+    email: '',
     bio: '',
     family: '',
     lookingFor: '',
@@ -339,6 +342,7 @@ export function MyProfile() {
 
       // Pre-fill edit draft
       setEditDraft({
+        email: combined.email || (combined as any)?.user?.email || '',
         bio: combined.bio || '',
         family: combined.family || '',
         lookingFor: combined.lookingFor || '',
@@ -855,6 +859,27 @@ export function MyProfile() {
                   Active & Searchable
                 </Badge>
               </div>
+
+              {/* Registered Email (Private / Editable) */}
+              <div className="mt-3.5 flex items-center justify-between rounded-2xl bg-white p-3.5 border border-[#EAD8C7] shadow-2xs">
+                <div className="min-w-0 flex-1">
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-[#7A1835] block">
+                    Registered Email (Gmail)
+                  </span>
+                  <span className="text-xs font-bold text-[#211B1E] truncate block mt-0.5">
+                    {profile?.email || (profile as any)?.user?.email || 'Not specified'}
+                  </span>
+                </div>
+                <Button
+                  variant="secondary"
+                  size="xs"
+                  onClick={() => setIsEditModalOpen(true)}
+                  className="rounded-xl text-xs font-bold gap-1 shrink-0 ml-2 shadow-2xs"
+                >
+                  <IconEdit className="h-3.5 w-3.5 text-[var(--primary)]" />
+                  <span>Change</span>
+                </Button>
+              </div>
             </Card>
 
             {/* Quick Photo Gallery Widget */}
@@ -1164,6 +1189,28 @@ export function MyProfile() {
         size="lg"
       >
         <div className="space-y-5 max-h-[72vh] overflow-y-auto px-1 pr-2">
+          {/* Registered Email & Contact Account */}
+          <div className="p-3.5 rounded-2xl bg-gradient-to-r from-[#FAF3EC] via-[#FAF0F3] to-[#FFF9F6] border border-[#EAD8C7] flex items-center justify-between gap-3">
+            <div className="min-w-0 flex-1">
+              <label className="block text-xs font-bold uppercase tracking-wider text-[#7A1835] mb-0.5">
+                Registered Email (Gmail)
+              </label>
+              <div className="text-xs font-bold text-[#211B1E] truncate">
+                {profile?.email || (profile as any)?.user?.email || 'Not specified'}
+              </div>
+              <p className="mt-1 text-[11px] text-[#766B6F] leading-relaxed">
+                🔒 Verified security identifier. To change your email with OTP verification, please use Account Settings.
+              </p>
+            </div>
+            <Link
+              href="/app/settings"
+              className="inline-flex items-center gap-1 text-xs font-bold text-[#80132E] bg-white border border-[#EAD8C7] hover:bg-[#FAF3EC] px-3 py-1.5 rounded-xl shadow-2xs shrink-0 transition-colors"
+            >
+              <IconEdit className="h-3.5 w-3.5" />
+              <span>Change</span>
+            </Link>
+          </div>
+
           {/* Location & Mother Tongue */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>

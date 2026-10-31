@@ -128,6 +128,17 @@ export function HeroSection({ className = "" }: HeroSectionProps) {
     }, 120);
   };
 
+  useEffect(() => {
+    const handleCommunityOpen = (e: Event) => {
+      const customEvent = e as CustomEvent<{ community?: MatrimonyCommunityOption }>;
+      const comm = customEvent.detail?.community;
+      handleSelectLookingForOption("Marriage", comm);
+    };
+
+    window.addEventListener("open-looking-for-community", handleCommunityOpen);
+    return () => window.removeEventListener("open-looking-for-community", handleCommunityOpen);
+  }, []);
+
   return (
     <section
       aria-labelledby="hero-heading"
@@ -226,32 +237,38 @@ export function HeroSection({ className = "" }: HeroSectionProps) {
               </h1>
 
               {/* Subtitle */}
-              <p className="text-xs sm:text-sm text-white/90 leading-relaxed font-normal drop-shadow-[0_1px_6px_rgba(0,0,0,0.85)]">
+              <p className="text-sm sm:text-base text-white/95 leading-relaxed font-normal drop-shadow-[0_1px_6px_rgba(0,0,0,0.85)]">
                 <strong className="font-semibold text-white">Register Free</strong> — Create your profile and discover meaningful connections for Friendship, Marriage, and Living Together.
               </p>
 
-              {/* Action Buttons */}
-              <div className="flex flex-col gap-2.5 pt-1">
+              {/* Action Buttons: Burgundy Register with Sleek Light Loop + Off-White Secondary */}
+              <div className="flex flex-col gap-3 pt-1">
                 <Button
                   onClick={handleOpenLookingFor}
-                  variant="primary"
-                  className="w-full min-h-12 text-sm font-bold shadow-[0_12px_28px_rgba(122,20,40,0.45)] bg-gradient-to-r from-[#7A1428] via-[#8C1D33] to-[#7A1428] hover:from-[#8C1D33] hover:to-[#6E1224] text-white border border-white/20 active:scale-[0.99] transition-all"
-                  rightIcon={<IconArrowRight className="h-4 w-4" aria-hidden="true" />}
+                  className="relative overflow-hidden w-full min-h-12 h-12 text-base sm:text-lg font-bold rounded-2xl bg-gradient-to-r from-[#801835] via-[#8E1738] to-[#5E0E24] hover:from-[#8E1738] hover:to-[#500B1E] text-white border border-rose-300/30 shadow-[0_8px_24px_-4px_rgba(128,24,53,0.55),0_2px_8px_rgba(0,0,0,0.35)] active:scale-[0.985] transition-all duration-150 cursor-pointer"
+                  rightIcon={<IconArrowRight className="h-4 w-4 stroke-[2.2] ml-0.5 relative z-10" aria-hidden="true" />}
                 >
-                  Register Free
+                  <span className="relative z-10">Register Free</span>
+                  {/* Looped Sleek Light Sheen Effect (Slow & Prominent) */}
+                  <span
+                    className="pointer-events-none absolute -inset-y-0 w-3/4 z-0 animate-sleek-shine bg-gradient-to-r from-transparent via-[#FBE3B5]/85 to-transparent skew-x-[-20deg]"
+                    aria-hidden="true"
+                  />
                 </Button>
 
                 <div className="grid grid-cols-2 gap-2.5">
                   <Button
                     href="/login"
-                    className="w-full min-h-11 px-3 text-xs font-semibold rounded-xl bg-white/15 hover:bg-white/25 text-white border border-white/20 backdrop-blur-md transition shadow-sm"
+                    variant="secondary"
+                    className="w-full min-h-11 h-11 px-3 text-sm sm:text-base font-bold rounded-xl !bg-[#FAF7F2] !bg-none hover:!bg-white active:!bg-[#F2ECE4] !text-[#801835] hover:!text-[#5E0E24] border border-[#EDE4DC] shadow-[0_4px_14px_rgba(0,0,0,0.22)] active:scale-[0.985] transition-all duration-150"
                   >
                     Sign In
                   </Button>
 
                   <Button
                     href="#contact"
-                    className="w-full min-h-11 px-3 text-xs font-semibold rounded-xl bg-white/15 hover:bg-white/25 text-white border border-white/20 backdrop-blur-md transition shadow-sm"
+                    variant="secondary"
+                    className="w-full min-h-11 h-11 px-3 text-sm sm:text-base font-bold rounded-xl !bg-[#FAF7F2] !bg-none hover:!bg-white active:!bg-[#F2ECE4] !text-[#801835] hover:!text-[#5E0E24] border border-[#EDE4DC] shadow-[0_4px_14px_rgba(0,0,0,0.22)] active:scale-[0.985] transition-all duration-150"
                   >
                     Contact Us
                   </Button>
@@ -282,7 +299,7 @@ export function HeroSection({ className = "" }: HeroSectionProps) {
             </h1>
 
             <p className="mt-5 sm:mt-6 max-w-xl text-base sm:text-lg leading-relaxed text-[var(--muted)] font-normal">
-              <strong className="font-semibold text-[var(--foreground)]">Register Free</strong> — Create your profile and discover meaningful connections. Explore categories for Friendship, Marriage, and Living Together.
+        Create your profile and discover meaningful connecories for Friendship, Marriage, and Living Together.
             </p>
 
             {/* CTAs */}
@@ -290,17 +307,22 @@ export function HeroSection({ className = "" }: HeroSectionProps) {
               <Button
                 onClick={handleOpenLookingFor}
                 variant="primary"
-                className="w-full sm:w-auto min-h-12 px-6 sm:px-8 text-sm sm:text-base font-semibold shadow-[0_14px_30px_var(--primary-shadow-strong)]"
-                rightIcon={<IconArrowRight className="h-4 w-4" aria-hidden="true" />}
+                className="relative overflow-hidden w-full sm:w-auto min-h-12 px-6 sm:px-8 text-sm sm:text-base font-bold rounded-xl shadow-[0_8px_20px_-3px_rgba(128,19,46,0.35),0_2px_4px_rgba(0,0,0,0.1)] hover:shadow-[0_12px_26px_-3px_rgba(128,19,46,0.45)] hover:-translate-y-0.5 active:scale-[0.985] transition-all duration-150"
+                rightIcon={<IconArrowRight className="h-4 w-4 relative z-10" aria-hidden="true" />}
               >
-                Register Free
+                <span className="relative z-10">Register Free</span>
+                {/* Looped Golden Sleek Light Sheen Effect */}
+                <span
+                  className="pointer-events-none absolute -inset-y-0 w-3/4 z-0 animate-sleek-shine bg-gradient-to-r from-transparent via-[#FBE3B5]/85 to-transparent skew-x-[-20deg]"
+                  aria-hidden="true"
+                />
               </Button>
 
               <div className="grid grid-cols-2 gap-3 w-full sm:w-auto sm:flex sm:items-center sm:gap-3.5">
                 <Button
                   href="/login"
                   variant="secondary"
-                  className="w-full sm:w-auto min-h-12 px-5 sm:px-8 text-sm sm:text-base font-semibold"
+                  className="w-full sm:w-auto min-h-12 px-5 sm:px-8 text-sm sm:text-base font-bold text-[#801835] hover:text-[#5E0E24]"
                 >
                   Sign In
                 </Button>
@@ -308,7 +330,7 @@ export function HeroSection({ className = "" }: HeroSectionProps) {
                 <Button
                   href="#contact"
                   variant="secondary"
-                  className="w-full sm:w-auto min-h-12 px-5 sm:px-7 text-sm sm:text-base font-bold text-[var(--muted-strong)] hover:text-[var(--primary)]"
+                  className="w-full sm:w-auto min-h-12 px-5 sm:px-7 text-sm sm:text-base font-bold text-[#801835] hover:text-[#5E0E24]"
                 >
                   Contact Us
                 </Button>

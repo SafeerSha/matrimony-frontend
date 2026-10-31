@@ -449,6 +449,14 @@ export const CLIENT_INCOME_OPTIONS = [
   "12 lakhs above",
 ];
 
+export const MARITAL_STATUS_OPTIONS = [
+  "Never Married",
+  "Divorced",
+  "Widowed",
+  "Awaiting Divorce",
+  "Annulled",
+];
+
 export const RELIGION_OPTIONS = [
   "Christian",
   "Hindu",

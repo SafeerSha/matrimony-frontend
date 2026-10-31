@@ -7,10 +7,42 @@ import { MobileNav } from "./mobile-nav";
 import { usePathname } from "next/navigation";
 import { authService, profileService, notificationService, chatService, isDraftUser } from "@/services";
 import { CelebrationProvider } from "@/context/celebration-context";
+import { SubscriptionProvider, useSubscription } from "@/context/subscription-context";
+import { UpgradeModal } from "@/components/subscription/upgrade-modal";
+import { SubscriptionPromptSheet } from "@/components/subscription/subscription-prompt-sheet";
 import { toast } from "@/lib/toast";
 
 export interface AppShellProps {
   children: React.ReactNode;
+}
+
+function GlobalUpgradeModal() {
+  const {
+    isUpgradeModalOpen,
+    closeUpgradeModal,
+    isChatPromptOpen,
+    closeChatPrompt,
+    openUpgradeModal,
+    promptOptions,
+  } = useSubscription();
+
+  return (
+    <>
+      <SubscriptionPromptSheet
+        isOpen={isChatPromptOpen}
+        onClose={closeChatPrompt}
+        onViewPlans={() => {
+          closeChatPrompt();
+          openUpgradeModal();
+        }}
+        title={promptOptions?.title}
+        description={promptOptions?.description}
+        features={promptOptions?.features}
+        ctaText={promptOptions?.ctaText}
+      />
+      <UpgradeModal isOpen={isUpgradeModalOpen} onClose={closeUpgradeModal} />
+    </>
+  );
 }
 
 export function AppShell({ children }: AppShellProps) {
@@ -147,44 +179,47 @@ export function AppShell({ children }: AppShellProps) {
 
   return (
     <CelebrationProvider>
-      <div className="relative min-h-screen bg-transparent flex flex-col antialiased selection:bg-[var(--primary-light)] selection:text-[var(--primary-deep)]">
-        {/* Ambient Romantic Background Glows (Warm Ivory + Subtle Burgundy Accents) */}
-        <div
-          className="pointer-events-none fixed inset-0 z-0 overflow-hidden"
-          aria-hidden="true"
-        >
-          <div className="absolute -top-40 right-0 h-[36rem] w-[36rem] rounded-full bg-[radial-gradient(circle,rgba(122,24,53,0.045)_0%,transparent_70%)] blur-3xl" />
-          <div className="absolute top-1/3 -left-32 h-[30rem] w-[30rem] rounded-full bg-[radial-gradient(circle,rgba(216,178,140,0.05)_0%,transparent_70%)] blur-3xl" />
-          <div className="absolute bottom-0 right-1/4 h-[28rem] w-[28rem] rounded-full bg-[radial-gradient(circle,rgba(199,122,139,0.035)_0%,transparent_70%)] blur-3xl" />
-        </div>
-
-        {/* Top Application Header */}
-        <Header user={currentUser} />
-
-        {/* Main Responsive Layout */}
-        <div className="relative z-10 mx-auto flex w-full max-w-[1600px] flex-1 gap-6 px-4 pt-2.5 pb-6 sm:py-6 sm:px-6 lg:px-8 xl:px-10">
-          {/* Desktop & Tablet Sidebar */}
-          <Sidebar
-            unreadMessagesCount={unreadMessagesCount}
-            unreadNotificationsCount={unreadNotificationsCount}
-          />
-
-          {/* Dynamic Page Container */}
-          <main
-            key={pathname}
-            id="main-content"
-            className="min-w-0 flex-1 pb-28 md:pb-12 animate-page-enter"
+      <SubscriptionProvider>
+        <GlobalUpgradeModal />
+        <div className="relative min-h-screen bg-transparent flex flex-col antialiased selection:bg-[var(--primary-light)] selection:text-[var(--primary-deep)]">
+          {/* Ambient Romantic Background Glows (Warm Ivory + Subtle Burgundy Accents) */}
+          <div
+            className="pointer-events-none fixed inset-0 z-0 overflow-hidden"
+            aria-hidden="true"
           >
-            {children}
-          </main>
-        </div>
+            <div className="absolute -top-40 right-0 h-[36rem] w-[36rem] rounded-full bg-[radial-gradient(circle,rgba(122,24,53,0.045)_0%,transparent_70%)] blur-3xl" />
+            <div className="absolute top-1/3 -left-32 h-[30rem] w-[30rem] rounded-full bg-[radial-gradient(circle,rgba(216,178,140,0.05)_0%,transparent_70%)] blur-3xl" />
+            <div className="absolute bottom-0 right-1/4 h-[28rem] w-[28rem] rounded-full bg-[radial-gradient(circle,rgba(199,122,139,0.035)_0%,transparent_70%)] blur-3xl" />
+          </div>
 
-        {/* Mobile Bottom Navigation Dock */}
-        <MobileNav 
-          unreadMessagesCount={unreadMessagesCount}
-          unreadNotificationsCount={unreadNotificationsCount} 
-        />
-      </div>
+          {/* Top Application Header */}
+          <Header user={currentUser} />
+
+          {/* Main Responsive Layout */}
+          <div className="relative z-10 mx-auto flex w-full max-w-[1600px] flex-1 gap-6 px-4 pt-2.5 pb-6 sm:py-6 sm:px-6 lg:px-8 xl:px-10">
+            {/* Desktop & Tablet Sidebar */}
+            <Sidebar
+              unreadMessagesCount={unreadMessagesCount}
+              unreadNotificationsCount={unreadNotificationsCount}
+            />
+
+            {/* Dynamic Page Container */}
+            <main
+              key={pathname}
+              id="main-content"
+              className="min-w-0 flex-1 pb-28 md:pb-12 animate-page-enter"
+            >
+              {children}
+            </main>
+          </div>
+
+          {/* Mobile Bottom Navigation Dock */}
+          <MobileNav 
+            unreadMessagesCount={unreadMessagesCount}
+            unreadNotificationsCount={unreadNotificationsCount} 
+          />
+        </div>
+      </SubscriptionProvider>
     </CelebrationProvider>
   );
 }

@@ -41,7 +41,7 @@ export { isDraftUser, resolvePostAuthRoute } from "@/lib/auth/auth-utils";
 export interface QuickRegisterDto {
   name: string;
   email?: string;
-  phone: string;
+  phone?: string;
   gender?: string;
   lookingFor?: string;
   profileFor: string;
@@ -63,6 +63,7 @@ export const authService = {
   setAccessToken: (token: string, refreshToken?: string) => {
     if (typeof window === "undefined" || !token) return;
     try {
+      sessionStorage.removeItem("is_manual_logout");
       sessionStorage.setItem("accessToken", token);
       localStorage.setItem("accessToken", token);
       sessionStorage.setItem("auth_token_set_at", Date.now().toString());
@@ -116,14 +117,27 @@ export const authService = {
     return res;
   },
 
-  sendOtp: async (phone: string, purpose?: "login" | "register" | string) => {
+  sendOtp: async (
+    target: string | { phone?: string; email?: string; purpose?: string },
+    purpose?: "login" | "register" | string
+  ) => {
+    let payload: any = {};
+    if (typeof target === "string") {
+      if (target.includes("@")) {
+        payload = { email: target.trim().toLowerCase(), ...(purpose ? { purpose } : {}) };
+      } else {
+        payload = { phone: target.trim(), ...(purpose ? { purpose } : {}) };
+      }
+    } else {
+      payload = { ...target };
+      if (payload.email) payload.email = payload.email.trim().toLowerCase();
+      if (purpose && !payload.purpose) payload.purpose = purpose;
+    }
+
     try {
-      return await apiFetch<{ message: string }>("/auth/send-otp", {
+      return await apiFetch<{ message: string; defaultOtp?: string }>("/auth/send-otp", {
         method: "POST",
-        body: JSON.stringify({
-          phone,
-          ...(purpose ? { purpose } : {}),
-        }),
+        body: JSON.stringify(payload),
       });
     } catch (err: any) {
       // Re-throw registered account check failure so login UI can present direct registration link
@@ -140,10 +154,26 @@ export const authService = {
     }
   },
 
-  verifyOtp: async (phone: string, otp: string) => {
+  verifyOtp: async (
+    target: string | { phone?: string; email?: string; otp: string },
+    otpCode?: string
+  ) => {
+    let payload: any = {};
+    if (typeof target === "string") {
+      if (target.includes("@")) {
+        payload = { email: target.trim().toLowerCase(), otp: otpCode };
+      } else {
+        payload = { phone: target.trim(), otp: otpCode };
+      }
+    } else {
+      payload = { ...target };
+      if (payload.email) payload.email = payload.email.trim().toLowerCase();
+      if (otpCode && !payload.otp) payload.otp = otpCode;
+    }
+
     const res = await apiFetch<AuthResponse>("/auth/verify-otp", {
       method: "POST",
-      body: JSON.stringify({ phone, otp }),
+      body: JSON.stringify(payload),
     });
     if (res?.accessToken) {
       authService.setAccessToken(res.accessToken, res.refreshToken);
@@ -167,10 +197,11 @@ export const authService = {
   },
 
   verifyRegistration: async (payload: {
-    phone: string;
-    phoneOtp: string;
+    phone?: string;
+    phoneOtp?: string;
     email?: string;
     emailOtp?: string;
+    otp?: string;
   }) => {
     const res = await apiFetch<AuthResponse>("/auth/verify-registration", {
       method: "POST",
@@ -180,6 +211,19 @@ export const authService = {
       authService.setAccessToken(res.accessToken, res.refreshToken);
     }
     return res;
+  },
+
+  resetPassword: async (payload: {
+    email?: string;
+    phone?: string;
+    otp: string;
+    newPassword: string;
+    confirmPassword?: string;
+  }) => {
+    return await apiFetch<{ success: boolean; message: string }>("/auth/reset-password", {
+      method: "POST",
+      body: JSON.stringify(payload),
+    });
   },
 
   setPassword: async (password: string) => {
@@ -263,7 +307,7 @@ export const authService = {
         return await apiFetch<AuthResponse>("/auth/register", {
           method: "POST",
           body: JSON.stringify({
-            email: data.email || `${data.phone.replace(/\D/g, "")}@ishtamchat.temp`,
+            email: data.email || (data.phone ? `${data.phone.replace(/\D/g, "")}@ishtamchat.temp` : undefined),
             firstName,
             lastName,
             phone: data.phone,

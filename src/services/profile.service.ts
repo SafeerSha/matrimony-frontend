@@ -11,6 +11,9 @@ export interface UserProfile {
   id?: string;
   userId?: string;
   profileId?: string;
+  email?: string;
+  emailOtp?: string;
+  phone?: string;
   firstName?: string;
   lastName?: string;
   name?: string;
@@ -39,6 +42,8 @@ export interface UserProfile {
   employmentStatus?: string;
   annualIncome?: string;
   height?: number;
+  avatarUrl?: string;
+  photoUrl?: string;
   maritalStatus?: string;
   motherTongue?: string;
   city?: string;
@@ -79,7 +84,7 @@ export const profileService = {
     });
   },
 
-  updateProfile: (userId: string | "me", data: Partial<UserProfile>) => {
+  updateProfile: (userId: string | "me", data: Partial<UserProfile> & { height?: string | number; [key: string]: any }) => {
     return apiFetch<UserProfile>(`/profiles/${userId}`, {
       method: "PUT",
       body: JSON.stringify(data),

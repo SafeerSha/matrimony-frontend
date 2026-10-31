@@ -27,19 +27,19 @@ export interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
 
 const variants: Record<ButtonVariant, string> = {
   primary:
-    "bg-[var(--primary)] text-white hover:bg-[var(--primary-deep)] shadow-[0_4px_16px_var(--primary-shadow)] hover:shadow-[0_6px_22px_var(--primary-shadow-strong)] border border-transparent",
+    "bg-gradient-to-r from-[#9E1D3B] via-[var(--primary)] to-[var(--primary-deep)] text-white hover:from-[#AD2344] hover:to-[var(--primary)] shadow-[0_4px_16px_var(--primary-shadow)] hover:shadow-[0_6px_22px_var(--primary-shadow-strong)] border border-white/20 active:scale-[0.985] transition-all duration-150 font-bold",
   secondary:
-    "bg-[var(--surface)] text-[var(--foreground)] border border-[var(--border)] hover:bg-[var(--surface-muted)] hover:border-[var(--border-strong)] shadow-sm",
+    "bg-white text-[var(--foreground)] border border-[var(--border)] hover:bg-[var(--surface-muted)] hover:border-[var(--border-strong)] shadow-sm active:scale-[0.985] transition-all duration-150 font-bold",
   blush:
-    "bg-[var(--blush-light)] text-[var(--blush-deep)] border border-[var(--border)] hover:bg-[var(--blush)] hover:text-white transition-all",
+    "bg-gradient-to-r from-[#FDF2F4] to-[#FCE7EB] text-[var(--blush-deep)] border border-[#F7C6CE] hover:bg-[var(--blush)] hover:text-white shadow-xs active:scale-[0.985] transition-all duration-150 font-bold",
   champagne:
-    "bg-[var(--champagne-light)] text-[var(--accent-foreground)] border border-[var(--champagne-border)] hover:bg-[#FDF3E7] shadow-xs font-semibold",
+    "bg-gradient-to-r from-[#F7E7CE] via-[#EED7B5] to-[#E3C397] text-[#4A2600] border border-[#D8B28C] hover:from-[#FBEADA] hover:to-[#EAD0A9] shadow-xs active:scale-[0.985] transition-all duration-150 font-bold",
   outline:
-    "bg-transparent text-[var(--foreground)] border border-[var(--border)] hover:bg-[var(--surface-muted)] hover:border-[var(--border-strong)]",
+    "bg-transparent text-[var(--foreground)] border border-[var(--border-strong)] hover:bg-[var(--surface-muted)] active:scale-[0.985] transition-all duration-150 font-bold",
   ghost:
-    "bg-transparent text-[var(--muted-strong)] hover:bg-[var(--primary-lighter)] hover:text-[var(--primary)]",
+    "bg-transparent text-[var(--muted-strong)] hover:bg-[var(--primary-lighter)] hover:text-[var(--primary)] active:scale-[0.985] transition-all duration-150 font-bold",
   danger:
-    "bg-rose-50 text-[var(--danger)] border border-rose-200 hover:bg-[var(--danger)] hover:text-white transition-colors"
+    "bg-gradient-to-r from-rose-500 via-rose-600 to-rose-700 text-white hover:from-rose-600 hover:to-rose-800 shadow-[0_4px_14px_rgba(225,29,72,0.3)] border border-rose-600/30 active:scale-[0.985] transition-all duration-150 font-bold"
 };
 
 const sizes: Record<ButtonSize, string> = {

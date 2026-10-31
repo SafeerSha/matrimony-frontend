@@ -47,14 +47,14 @@ export const FEATURE_FLAGS: FeatureFlags = {
     discover: true,
     profile: true,
 
-    // Epic 5 Live Features
+    // Live Features
     matches: true,
-    messages: false,
+    messages: true,
     favorites: true,
-    interests: false,
+    interests: true,
     notifications: false,
-    settings: false,
-    subscription: false,
+    settings: true,
+    subscription: true,
     support: false,
   },
 };
@@ -68,4 +68,62 @@ export function isPageEnabled(pageKey: keyof FeatureFlags['pages']): boolean {
     return true;
   }
   return FEATURE_FLAGS.pages[pageKey] ?? true;
+}
+
+/**
+ * Subscription & Monetization Mode Flag
+ *
+ * Controls whether the application runs in Free Trial mode or Paid Gateway mode:
+ *
+ * - true (DEFAULT / EARLY RELEASE):
+ *   Zero-payment complimentary access mode.
+ *   Users activate full messaging & interaction passes with 1 click.
+ *   Shows "Claim Free Trial" and celebration launch banners.
+ *
+ * - false (PAYMENT GATEWAY LIVE):
+ *   Standard paid subscription mode.
+ *   Prompts users to "Explore Membership Plans" and choose paid pricing (₹500, etc.).
+ *   Wired for direct payment gateway checkout (Razorpay / Stripe).
+ *
+ * To switch modes:
+ * Set NEXT_PUBLIC_ENABLE_FREE_TRIAL=false in your .env file,
+ * OR set ENABLE_FREE_TRIAL_MODE: false directly below.
+ */
+export const SUBSCRIPTION_FLAGS = {
+  ENABLE_FREE_TRIAL_MODE:
+    typeof process !== 'undefined' && process.env.NEXT_PUBLIC_ENABLE_FREE_TRIAL !== undefined
+      ? process.env.NEXT_PUBLIC_ENABLE_FREE_TRIAL === 'true'
+      : true,
+};
+
+export function isFreeTrialMode(): boolean {
+  return SUBSCRIPTION_FLAGS.ENABLE_FREE_TRIAL_MODE;
+}
+
+/**
+ * Authentication & Verification Method Flag
+ *
+ * Controls whether the application verifies users via Email (Gmail) or Mobile SMS:
+ *
+ * - 'EMAIL' (DEFAULT / PRE-SMS RELEASE):
+ *   Temporary launch mode while SMS gateway is not yet configured.
+ *   Users sign up, log in, and verify through their Gmail / Email with a 6-digit code.
+ *   Onboarding cell number is optional / contact-only.
+ *
+ * - 'PHONE' (PRODUCTION SMS MODE):
+ *   Standard Indian 10-digit mobile number + SMS OTP flow.
+ *   Cell number is mandatory and verified via SMS.
+ *
+ * To switch modes:
+ * Set NEXT_PUBLIC_AUTH_METHOD=PHONE in your .env file,
+ * OR toggle PRIMARY_AUTH_METHOD: 'PHONE' below.
+ */
+export const AUTH_FLAGS = {
+  PRIMARY_AUTH_METHOD:
+    (typeof process !== 'undefined' && (process.env.NEXT_PUBLIC_AUTH_METHOD as 'EMAIL' | 'PHONE')) ||
+    'EMAIL',
+};
+
+export function isEmailAuthMode(): boolean {
+  return AUTH_FLAGS.PRIMARY_AUTH_METHOD === 'EMAIL';
 }

@@ -22,7 +22,8 @@ export interface SearchFilters {
   education?: string;
   occupation?: string;
   income?: string;
-  intent?: string;
+  category?: string;
+  
   page?: number;
   limit?: number;
 }

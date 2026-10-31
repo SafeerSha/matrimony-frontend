@@ -10,7 +10,9 @@ export type Profile = {
   employmentStatus?: string;
   annualIncome?: string;
   gender?: string;
+  category?: string;
   profileFor?: string;
+  
   nationality?: string;
   country?: string;
   caste?: string;

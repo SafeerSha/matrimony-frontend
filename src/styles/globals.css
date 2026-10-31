@@ -258,7 +258,7 @@ button, input, textarea, select {
 /* Page Entry Transition */
 @keyframes page-enter {
   0% { opacity: 0; transform: translateY(8px); }
-  100% { opacity: 1; transform: translateY(0); }
+  100% { opacity: 1; transform: none; }
 }
 .animate-page-enter {
   animation: page-enter var(--motion-medium) var(--motion-ease-out) forwards;
@@ -351,6 +351,52 @@ button, input, textarea, select {
   animation: shimmer 2.5s infinite ease-in-out;
 }
 
+
+/* ===== SLEEK CTA SHINE ANIMATION ===== */
+@keyframes sleek-shine {
+  0% {
+    transform: translateX(-200%) skewX(-20deg);
+    opacity: 0;
+  }
+  8% {
+    opacity: 1;
+  }
+  65% {
+    transform: translateX(300%) skewX(-20deg);
+    opacity: 1;
+  }
+  70% {
+    opacity: 0;
+  }
+  100% {
+    transform: translateX(300%) skewX(-20deg);
+    opacity: 0;
+  }
+}
+
+.animate-sleek-shine {
+  animation: sleek-shine 4.8s ease-in-out infinite;
+  will-change: transform, opacity;
+}
+
+
+/* Community Looped Pill Slide-In-Fade Animation */
+@keyframes slide-in-fade {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-slide-in-fade {
+  animation: slide-in-fade 320ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  will-change: transform, opacity;
+}
+
 /* ===== SWIPE HINT ONBOARDING ANIMATIONS ===== */
 @keyframes swipe-hint-lifecycle {
   0% { opacity: 0; }
@@ -433,4 +479,86 @@ button, input, textarea, select {
 }
 .modern-dropdown-scroll::-webkit-scrollbar-thumb:hover {
   background: #7A1835;
+}
+
+
+/* ======================================================== */
+/* ISHTAMCHAT LUXURY ORBITAL LOADER ANIMATIONS              */
+/* ======================================================== */
+@keyframes ishtam-orbit-cw {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes ishtam-orbit-ccw {
+  from {
+    transform: rotate(360deg);
+  }
+  to {
+    transform: rotate(0deg);
+  }
+}
+
+@keyframes ishtam-heart-pulse {
+  0%, 100% {
+    transform: scale(1);
+    filter: drop-shadow(0 4px 10px rgba(122, 24, 53, 0.2));
+  }
+  50% {
+    transform: scale(1.08);
+    filter: drop-shadow(0 6px 16px rgba(122, 24, 53, 0.32));
+  }
+}
+
+@keyframes ishtam-dot-fade {
+  0%, 100% {
+    opacity: 0.25;
+    transform: scale(0.8);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.2);
+  }
+}
+
+.animate-ishtam-orbit-cw {
+  animation: ishtam-orbit-cw 9s linear infinite;
+}
+
+.animate-ishtam-orbit-ccw {
+  animation: ishtam-orbit-ccw 6.5s linear infinite;
+}
+
+.animate-ishtam-heart-pulse {
+  animation: ishtam-heart-pulse 2.2s ease-in-out infinite;
+}
+
+.animate-ishtam-dot-1 {
+  animation: ishtam-dot-fade 1.4s ease-in-out infinite;
+  animation-delay: 0s;
+}
+
+.animate-ishtam-dot-2 {
+  animation: ishtam-dot-fade 1.4s ease-in-out infinite;
+  animation-delay: 0.25s;
+}
+
+.animate-ishtam-dot-3 {
+  animation: ishtam-dot-fade 1.4s ease-in-out infinite;
+  animation-delay: 0.5s;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-ishtam-orbit-cw,
+  .animate-ishtam-orbit-ccw,
+  .animate-ishtam-heart-pulse,
+  .animate-ishtam-dot-1,
+  .animate-ishtam-dot-2,
+  .animate-ishtam-dot-3 {
+    animation: none !important;
+  }
 }

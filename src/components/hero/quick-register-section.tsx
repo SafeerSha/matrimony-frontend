@@ -50,6 +50,9 @@ import { ModernSelect } from "@/components/ui/modern-select";
 
 export function QuickRegisterSection() {
   const router = useRouter();
+  useEffect(() => {
+    router.prefetch("/verify");
+  }, [router]);
   const [profileFor, setProfileFor] = useState("Marriage");
   const [lookingIn, setLookingIn] = useState("Kerala");
   const [createdBy, setCreatedBy] = useState("Myself");
@@ -168,10 +171,21 @@ export function QuickRegisterSection() {
         `Please verify your mobile number to continue.`
       );
       router.push("/verify");
-    } finally {
-      setIsSubmitting(false);
     }
   };
+
+  const isSeekingBride = gender === "Female";
+  const namePlaceholder = isSeekingBride
+    ? lookingIn === "Telugu"
+      ? "e.g. Karthik Reddy"
+      : lookingIn === "Bharat"
+      ? "e.g. Rahul Sharma"
+      : "e.g. Anand Menon"
+    : lookingIn === "Telugu"
+    ? "e.g. Sravani Rao"
+    : lookingIn === "Bharat"
+    ? "e.g. Ananya Verma"
+    : "e.g. Ananya Menon";
 
   return (
     <section
@@ -293,7 +307,7 @@ export function QuickRegisterSection() {
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3.5 sm:gap-4 items-end">
                 {/* 1. Looking For (Interactive 1-Tap Bride / Groom Chips) */}
                 <div>
-                  <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-500 mb-1.5">
+                  <label className="block text-xs sm:text-sm font-bold tracking-wide text-slate-600 mb-1.5">
                     Looking For
                   </label>
                   <div className="h-[52px] p-1 rounded-xl bg-slate-100/80 border border-slate-200/80 flex items-center gap-1">
@@ -329,7 +343,7 @@ export function QuickRegisterSection() {
                 {/* 2. Community / Region (Shown for Marriage, or auto-adapts) */}
                 {profileFor === "Marriage" && (
                   <div>
-                    <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-500 mb-1.5">
+                    <label className="block text-xs sm:text-sm font-bold tracking-wide text-slate-600 mb-1.5">
                       Community
                     </label>
                     <ModernSelect
@@ -367,13 +381,13 @@ export function QuickRegisterSection() {
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-12 gap-3.5 sm:gap-4 items-end pt-1">
                 {/* 4. Full Name (5 cols on lg) */}
                 <div className="lg:col-span-5">
-                  <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-500 mb-1.5">
+                  <label className="block text-xs sm:text-sm font-bold tracking-wide text-slate-600 mb-1.5">
                     Your Full Name
                   </label>
                   <div className="relative">
                     <input
                       type="text"
-                      placeholder="e.g. Anand Menon"
+                      placeholder={namePlaceholder}
                       value={name}
                       onChange={(e) => {
                         setName(e.target.value);
@@ -387,7 +401,7 @@ export function QuickRegisterSection() {
 
                 {/* 5. Mobile Number (4 cols on lg) */}
                 <div className="lg:col-span-4">
-                  <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-500 mb-1.5">
+                  <label className="block text-xs sm:text-sm font-bold tracking-wide text-slate-600 mb-1.5">
                     Mobile Number
                   </label>
                   <div className="relative flex items-center">
@@ -415,7 +429,7 @@ export function QuickRegisterSection() {
                   <button
                     type="submit"
                     disabled={isSubmitting}
-                    className="focus-ring group relative h-[52px] w-full flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-[#80132E] via-[#941c38] to-[#80132E] hover:from-[#6c1027] hover:to-[#7a142c] text-white px-5 font-bold text-sm sm:text-base shadow-[0_12px_28px_rgba(128,19,46,0.28)] border border-[#D89B65]/40 transition-all duration-200 active-press cursor-pointer whitespace-nowrap disabled:opacity-75 disabled:cursor-not-allowed"
+                    className="focus-ring group relative h-[52px] w-full flex items-center justify-center gap-2 rounded-xl bg-gradient-to-b from-[#9E1D3B] via-[#80132E] to-[#680C23] hover:from-[#AB2243] hover:to-[#741029] text-white px-5 font-black text-sm sm:text-base border-t border-white/25 border-x border-[#9E1D3B] border-b-2 border-b-[#450614] shadow-[0_8px_20px_-3px_rgba(0,0,0,0.65),0_2px_5px_rgba(0,0,0,0.4),inset_0_1px_0_rgba(255,255,255,0.2),inset_0_-2px_3px_rgba(0,0,0,0.35)] hover:shadow-[0_12px_28px_-3px_rgba(0,0,0,0.75),0_4px_8px_rgba(0,0,0,0.45)] hover:-translate-y-0.5 active:translate-y-[1.5px] active:shadow-[0_2px_6px_rgba(0,0,0,0.5)] transition-all duration-150 cursor-pointer whitespace-nowrap disabled:opacity-75 disabled:cursor-not-allowed"
                   >
                     {isSubmitting ? (
                       <>
@@ -433,7 +447,7 @@ export function QuickRegisterSection() {
               </div>
 
               {/* Bottom Footer Disclaimers & Micro-Guarantees */}
-              <div className="mt-5 pt-3.5 border-t border-slate-100 flex flex-col md:flex-row items-center justify-between gap-2.5 text-[11px] text-slate-500">
+              <div className="mt-5 pt-3.5 border-t border-slate-100 flex flex-col md:flex-row items-center justify-between gap-2.5 text-xs sm:text-sm text-slate-500">
                 <p className="text-center md:text-left">
                   By clicking Let&apos;s Begin, you agree to our{" "}
                   <Link href="/terms" className="underline hover:text-[#80132E]">
@@ -445,7 +459,7 @@ export function QuickRegisterSection() {
                   </Link>.
                 </p>
 
-                <div className="flex flex-wrap items-center justify-center gap-3 sm:gap-4 text-[11px] font-semibold text-slate-600">
+                <div className="flex flex-wrap items-center justify-center gap-3 sm:gap-4 text-xs sm:text-sm font-semibold text-slate-600">
                   <span className="flex items-center gap-1">
                     <span className="text-emerald-600 font-bold">✓</span> Free Registration
                   </span>

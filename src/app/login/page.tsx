@@ -27,12 +27,18 @@ import { toast } from "@/lib/toast";
 import { resolvePostAuthRoute } from "@/lib/auth/auth-utils";
 import { LookingForModal } from "@/components/hero";
 import { ModernOtpInput } from "@/components/ui";
+import { Modal } from "@/components/ui/modal";
+import { Button } from "@/components/ui/button";
+import { isEmailAuthMode } from "@/config/feature-flags";
 
 export default function LoginPage() {
   const [isRegisterModalOpen, setIsRegisterModalOpen] = useState(false);
-  const [authMethod, setAuthMethod] = useState<"otp" | "password">("otp");
+  const [authMethod, setAuthMethod] = useState<"otp" | "password">(
+    isEmailAuthMode() ? "password" : "otp"
+  );
   const [otpStep, setOtpStep] = useState<"phone" | "code">("phone");
   const [phone, setPhone] = useState("");
+  const [email, setEmail] = useState("");
   const [otp, setOtp] = useState("");
   const [resendTimer, setResendTimer] = useState(30);
 
@@ -56,6 +62,129 @@ export default function LoginPage() {
     type: "phone" | "email";
     message?: string;
   } | null>(null);
+
+  // Forgot / Reset Password State
+  const [isForgotModalOpen, setIsForgotModalOpen] = useState(false);
+  const [forgotStep, setForgotStep] = useState<"input" | "code">("input");
+  const [forgotEmail, setForgotEmail] = useState("");
+  const [forgotOtp, setForgotOtp] = useState("");
+  const [forgotNewPassword, setForgotNewPassword] = useState("");
+  const [forgotConfirmPassword, setForgotConfirmPassword] = useState("");
+  const [showForgotNewPassword, setShowForgotNewPassword] = useState(false);
+  const [isSendingForgotOtp, setIsSendingForgotOtp] = useState(false);
+  const [isResettingPassword, setIsResettingPassword] = useState(false);
+  const [forgotError, setForgotError] = useState<string | null>(null);
+  const [forgotResendTimer, setForgotResendTimer] = useState(0);
+
+  // Forgot password timer
+  useEffect(() => {
+    if (forgotResendTimer > 0) {
+      const timer = setInterval(() => {
+        setForgotResendTimer((prev) => (prev > 0 ? prev - 1 : 0));
+      }, 1000);
+      return () => clearInterval(timer);
+    }
+  }, [forgotResendTimer]);
+
+  const handleOpenForgotPassword = (e?: React.MouseEvent) => {
+    if (e) e.preventDefault();
+    const initialEmail = identifier.includes("@")
+      ? identifier.trim().toLowerCase()
+      : email.trim().toLowerCase();
+    setForgotEmail(initialEmail);
+    setForgotOtp("");
+    setForgotNewPassword("");
+    setForgotConfirmPassword("");
+    setForgotStep("input");
+    setForgotError(null);
+    setForgotResendTimer(0);
+    setIsForgotModalOpen(true);
+  };
+
+  const handleSendForgotOtp = async () => {
+    const cleanEmail = forgotEmail.trim().toLowerCase();
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!cleanEmail || !emailRegex.test(cleanEmail)) {
+      setForgotError("Please enter a valid email address.");
+      return;
+    }
+
+    setIsSendingForgotOtp(true);
+    setForgotError(null);
+    try {
+      await authService.sendOtp({ email: cleanEmail, purpose: "reset_password" });
+      setForgotStep("code");
+      setForgotResendTimer(60);
+      toast.info("Reset Code Sent", `We've sent a 6-digit verification code to ${cleanEmail}`);
+    } catch (err: any) {
+      const msg = err?.message || "Failed to send reset code. Please check your email and try again.";
+      setForgotError(msg);
+      toast.error("Failed to Send", msg);
+    } finally {
+      setIsSendingForgotOtp(false);
+    }
+  };
+
+  const handleResendForgotOtp = async () => {
+    if (forgotResendTimer > 0 || isSendingForgotOtp) return;
+    const cleanEmail = forgotEmail.trim().toLowerCase();
+    setIsSendingForgotOtp(true);
+    setForgotError(null);
+    try {
+      await authService.sendOtp({ email: cleanEmail, purpose: "reset_password" });
+      setForgotResendTimer(60);
+      toast.info("Code Resent", `A new reset code was sent to ${cleanEmail}`);
+    } catch (err: any) {
+      const msg = err?.message || "Failed to resend code.";
+      setForgotError(msg);
+      toast.error("Resend Failed", msg);
+    } finally {
+      setIsSendingForgotOtp(false);
+    }
+  };
+
+  const handleResetPasswordSubmit = async () => {
+    const cleanEmail = forgotEmail.trim().toLowerCase();
+    const cleanOtp = forgotOtp.trim();
+
+    if (!cleanOtp || cleanOtp.length !== 6) {
+      setForgotError("Please enter the 6-digit verification code.");
+      return;
+    }
+
+    if (!forgotNewPassword || forgotNewPassword.length < 8) {
+      setForgotError("Password must be at least 8 characters long.");
+      return;
+    }
+
+    if (forgotNewPassword !== forgotConfirmPassword) {
+      setForgotError("Passwords do not match.");
+      return;
+    }
+
+    setIsResettingPassword(true);
+    setForgotError(null);
+    try {
+      await authService.resetPassword({
+        email: cleanEmail,
+        otp: cleanOtp,
+        newPassword: forgotNewPassword,
+        confirmPassword: forgotConfirmPassword,
+      });
+
+      toast.success("Password Reset Successful", "You can now sign in with your new password.");
+      setIdentifier(cleanEmail);
+      setPassword(forgotNewPassword);
+      setAuthMethod("password");
+      setIsForgotModalOpen(false);
+    } catch (err: any) {
+      const msg = err?.message || "Invalid or expired verification code. Please try again.";
+      setForgotError(msg);
+      toast.error("Reset Failed", msg);
+    } finally {
+      setIsResettingPassword(false);
+    }
+  };
 
   // Helper to determine destination based on user/profile status
   const determineDestination = async (authRes: any) => {
@@ -86,13 +215,74 @@ export default function LoginPage() {
     return resolvePostAuthRoute(checkTarget, "/app/discover");
   };
 
-  // 1. Handle Send OTP
+  // 1. Handle Send OTP (supports Email or Mobile based on Auth Flag)
   const handleSendOtp = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
     setErrorMessage(null);
     setStatusMessage(null);
     setNotRegisteredAccount(null);
+
+    const isEmailAuth = isEmailAuthMode();
+
+    if (isEmailAuth) {
+      const cleanEmail = email.trim().toLowerCase();
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!cleanEmail || !emailRegex.test(cleanEmail)) {
+        setIsLoading(false);
+        setErrorMessage("Please enter a valid email address (e.g. name@gmail.com).");
+        return;
+      }
+
+      try {
+        await authService.sendOtp({ email: cleanEmail, purpose: "login" } as any);
+        setOtpStep("code");
+        setResendTimer(30);
+        toast.info("Verification code sent", `We've sent a 6-digit OTP to ${cleanEmail}`);
+      } catch (err: any) {
+        const isAccountNotFound =
+          err?.status === 404 ||
+          err?.statusCode === 404 ||
+          err?.details?.code === "ACCOUNT_NOT_FOUND" ||
+          err?.code === "ACCOUNT_NOT_FOUND" ||
+          err?.message?.toLowerCase().includes("no account found") ||
+          err?.message?.toLowerCase().includes("register first");
+
+        if (isAccountNotFound) {
+          setNotRegisteredAccount({
+            identifier: cleanEmail,
+            type: "email",
+            message: err.message || "No account found with this email address. Please register first.",
+          });
+          toast.warning(
+            "Account Not Found",
+            "This email address is not registered yet. Please create your profile to continue."
+          );
+          return;
+        }
+
+        const isRateLimited =
+          err?.status === 429 ||
+          err?.statusCode === 429 ||
+          err?.message?.includes("ThrottlerException") ||
+          err?.message?.toLowerCase().includes("too many requests") ||
+          err?.message?.toLowerCase().includes("too many attempts");
+
+        if (isRateLimited) {
+          const rateLimitMsg = "Too many verification requests. For your security, please wait a minute before requesting another code.";
+          setErrorMessage(rateLimitMsg);
+          toast.warning("Please wait a moment", rateLimitMsg);
+          return;
+        }
+
+        const msg = err.message || "Failed to send verification code. Please try again.";
+        setErrorMessage(msg);
+        toast.error("Failed to send OTP", msg);
+      } finally {
+        setIsLoading(false);
+      }
+      return;
+    }
 
     const rawDigits = phone.trim().replace(/\D/g, "");
     const cleanDigits = rawDigits.startsWith("91") && rawDigits.length > 10 ? rawDigits.slice(2) : rawDigits;
@@ -161,12 +351,19 @@ export default function LoginPage() {
     setIsLoading(true);
     setErrorMessage(null);
 
-    try {
-      const rawDigits = phone.trim().replace(/\D/g, "");
-      const cleanDigits = rawDigits.startsWith("91") && rawDigits.length > 10 ? rawDigits.slice(2) : rawDigits;
-      const cleanPhone = `+91 ${cleanDigits}`;
+    const isEmailAuth = isEmailAuthMode();
 
-      const res = await authService.verifyOtp(cleanPhone, code);
+    try {
+      let res;
+      if (isEmailAuth) {
+        const cleanEmail = email.trim().toLowerCase();
+        res = await authService.verifyOtp({ email: cleanEmail, otp: code } as any);
+      } else {
+        const rawDigits = phone.trim().replace(/\D/g, "");
+        const cleanDigits = rawDigits.startsWith("91") && rawDigits.length > 10 ? rawDigits.slice(2) : rawDigits;
+        const cleanPhone = `+91 ${cleanDigits}`;
+        res = await authService.verifyOtp(cleanPhone, code);
+      }
       const { url, isDraft } = await determineDestination(res);
 
       if (isDraft) {
@@ -194,13 +391,17 @@ export default function LoginPage() {
       if (isAccountNotFound) {
         setOtpStep("phone");
         setNotRegisteredAccount({
-          identifier: phone.trim(),
-          type: "phone",
-          message: err.message || "No account found with this mobile number. Please register first.",
+          identifier: isEmailAuth ? email.trim() : phone.trim(),
+          type: isEmailAuth ? "email" : "phone",
+          message: err.message || (isEmailAuth
+            ? "No account found with this email address. Please register first."
+            : "No account found with this mobile number. Please register first."),
         });
         toast.warning(
           "Account Not Found",
-          "This mobile number is not registered. Please create your profile to continue."
+          isEmailAuth
+            ? "This email address is not registered. Please create your profile to continue."
+            : "This mobile number is not registered. Please create your profile to continue."
         );
         setIsLoading(false);
         return;
@@ -464,43 +665,92 @@ export default function LoginPage() {
 
               {/* Auth Mode Switcher (OTP vs Password) */}
               <div className="grid grid-cols-2 p-1 bg-slate-100/80 rounded-xl mb-5 border border-[var(--border)]/60">
-                <button
-                  type="button"
-                  onClick={() => {
-                    setAuthMethod("otp");
-                    setErrorMessage(null);
-                  }}
-                  className={cn(
-                    "flex items-center justify-center gap-1.5 py-2 px-3 text-xs sm:text-sm font-semibold rounded-lg transition-all",
-                    authMethod === "otp"
-                      ? "bg-white text-[var(--foreground)] shadow-sm"
-                      : "text-[var(--muted)] hover:text-[var(--foreground)]"
-                  )}
-                >
-                  <IconDeviceMobile className="h-4 w-4 text-[var(--primary)]" />
-                  <span>Mobile OTP</span>
-                  <span className="hidden sm:inline-block ml-1 text-[10px] bg-emerald-100 text-emerald-800 px-1.5 py-0.2 rounded font-medium">
-                    Fast
-                  </span>
-                </button>
+                {isEmailAuthMode() ? (
+                  <>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setAuthMethod("password");
+                        setErrorMessage(null);
+                        setNotRegisteredAccount(null);
+                      }}
+                      className={cn(
+                        "flex items-center justify-center gap-1.5 py-2 px-3 text-xs sm:text-sm font-semibold rounded-lg transition-all cursor-pointer",
+                        authMethod === "password"
+                          ? "bg-white text-[var(--foreground)] shadow-sm"
+                          : "text-[var(--muted)] hover:text-[var(--foreground)]"
+                      )}
+                    >
+                      <IconKey className="h-4 w-4 text-[var(--primary)]" />
+                      <span>Password</span>
+                      <span className="hidden sm:inline-block ml-1 text-[10px] bg-emerald-100 text-emerald-800 px-1.5 py-0.5 rounded font-medium">
+                        Standard
+                      </span>
+                    </button>
 
-                <button
-                  type="button"
-                  onClick={() => {
-                    setAuthMethod("password");
-                    setErrorMessage(null);
-                    setNotRegisteredAccount(null);
-                  }}
-                  className={cn(
-                    "flex items-center justify-center gap-1.5 py-2 px-3 text-xs sm:text-sm font-semibold rounded-lg transition-all",
-                    authMethod === "password"
-                      ? "bg-white text-[var(--foreground)] shadow-sm"
-                      : "text-[var(--muted)] hover:text-[var(--foreground)]"
-                  )}
-                >
-                  <IconKey className="h-4 w-4 text-[var(--primary)]" />
-                  <span>Password</span>
-                </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setAuthMethod("otp");
+                        setErrorMessage(null);
+                        setNotRegisteredAccount(null);
+                        if (identifier.includes("@") && !email) {
+                          setEmail(identifier.trim().toLowerCase());
+                        }
+                      }}
+                      className={cn(
+                        "flex items-center justify-center gap-1.5 py-2 px-3 text-xs sm:text-sm font-semibold rounded-lg transition-all cursor-pointer",
+                        authMethod === "otp"
+                          ? "bg-white text-[var(--foreground)] shadow-sm"
+                          : "text-[var(--muted)] hover:text-[var(--foreground)]"
+                      )}
+                    >
+                      <IconMail className="h-4 w-4 text-[var(--primary)]" />
+                      <span>Email OTP</span>
+                    </button>
+                  </>
+                ) : (
+                  <>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setAuthMethod("otp");
+                        setErrorMessage(null);
+                        setNotRegisteredAccount(null);
+                      }}
+                      className={cn(
+                        "flex items-center justify-center gap-1.5 py-2 px-3 text-xs sm:text-sm font-semibold rounded-lg transition-all cursor-pointer",
+                        authMethod === "otp"
+                          ? "bg-white text-[var(--foreground)] shadow-sm"
+                          : "text-[var(--muted)] hover:text-[var(--foreground)]"
+                      )}
+                    >
+                      <IconDeviceMobile className="h-4 w-4 text-[var(--primary)]" />
+                      <span>Mobile OTP</span>
+                      <span className="hidden sm:inline-block ml-1 text-[10px] bg-emerald-100 text-emerald-800 px-1.5 py-0.5 rounded font-medium">
+                        Fast
+                      </span>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setAuthMethod("password");
+                        setErrorMessage(null);
+                        setNotRegisteredAccount(null);
+                      }}
+                      className={cn(
+                        "flex items-center justify-center gap-1.5 py-2 px-3 text-xs sm:text-sm font-semibold rounded-lg transition-all cursor-pointer",
+                        authMethod === "password"
+                          ? "bg-white text-[var(--foreground)] shadow-sm"
+                          : "text-[var(--muted)] hover:text-[var(--foreground)]"
+                      )}
+                    >
+                      <IconKey className="h-4 w-4 text-[var(--primary)]" />
+                      <span>Password</span>
+                    </button>
+                  </>
+                )}
               </div>
 
               {/* Upfront Account Not Found & Direct Registration Card */}
@@ -559,9 +809,31 @@ export default function LoginPage() {
               {errorMessage && !notRegisteredAccount && (
                 <div
                   role="alert"
-                  className="mb-4 rounded-xl border border-red-200 bg-red-50/80 p-3 text-xs sm:text-sm text-red-700"
+                  className="mb-4 rounded-xl border border-red-200 bg-red-50/80 p-3.5 text-xs sm:text-sm text-red-700 flex flex-col gap-2 animate-in fade-in duration-200"
                 >
-                  {errorMessage}
+                  <div className="flex items-start gap-2">
+                    <span className="font-semibold text-rose-800">⚠️</span>
+                    <span className="flex-1 leading-relaxed">{errorMessage}</span>
+                  </div>
+                  {errorMessage.toLowerCase().includes("does not have a password") && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (identifier.includes("@") && !email) {
+                          setEmail(identifier.trim().toLowerCase());
+                        } else if (!identifier.includes("@") && !phone) {
+                          setPhone(identifier.replace(/\D/g, "").slice(-10));
+                        }
+                        setAuthMethod("otp");
+                        setErrorMessage(null);
+                        setStatusMessage("You can sign in directly using a one-time verification code.");
+                      }}
+                      className="self-start inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#80132E] text-white text-xs font-bold hover:brightness-110 active:scale-95 transition cursor-pointer shadow-sm"
+                    >
+                      <span>Sign in via {isEmailAuthMode() ? "Email OTP" : "Mobile OTP"} instead</span>
+                      <IconArrowRight className="h-3.5 w-3.5" />
+                    </button>
+                  )}
                 </div>
               )}
 
@@ -581,56 +853,104 @@ export default function LoginPage() {
                 <div>
                   {otpStep === "phone" ? (
                     <form className="space-y-4" onSubmit={handleSendOtp}>
-                      <div className="group">
-                        <label
-                          htmlFor="phone"
-                          className="block text-[11px] sm:text-xs font-semibold uppercase tracking-wider text-[var(--muted-strong)] mb-1.5"
-                        >
-                          Mobile Number
-                        </label>
-                        <div className="relative flex items-center">
-                          <span className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3.5 sm:pl-4 text-[var(--muted)] group-focus-within:text-[var(--primary)] transition-colors">
-                            <IconPhone className="h-5 w-5" aria-hidden="true" />
-                          </span>
-                          <div className="pointer-events-none absolute left-11 sm:left-12 flex items-center pr-2.5 border-r border-slate-200 select-none">
-                            <span className="text-sm sm:text-base font-bold text-[var(--foreground)]">+91</span>
+                      {isEmailAuthMode() ? (
+                        <div className="group">
+                          <label
+                            htmlFor="email"
+                            className="block text-[11px] sm:text-xs font-semibold uppercase tracking-wider text-[var(--muted-strong)] mb-1.5"
+                          >
+                            Email Address (Gmail)
+                          </label>
+                          <div className="relative flex items-center">
+                            <span className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3.5 sm:pl-4 text-[var(--muted)] group-focus-within:text-[var(--primary)] transition-colors">
+                              <IconMail className="h-5 w-5" aria-hidden="true" />
+                            </span>
+                            <input
+                              id="email"
+                              type="email"
+                              autoComplete="email"
+                              required
+                              value={email}
+                              onChange={(e) => {
+                                setNotRegisteredAccount(null);
+                                setErrorMessage(null);
+                                setEmail(e.target.value);
+                              }}
+                              placeholder="name@gmail.com"
+                              className={cn(
+                                "h-12 sm:h-12.5 lg:h-13 w-full rounded-xl border pl-11 pr-4 text-sm sm:text-base font-medium",
+                                "text-[var(--foreground)] placeholder:text-[var(--muted-light)]",
+                                "outline-none transition-all duration-200",
+                                notRegisteredAccount
+                                  ? "border-amber-400 bg-amber-50/20 focus:border-amber-500 focus:ring-4 focus:ring-amber-500/10"
+                                  : "border-[var(--border)] bg-slate-50/70 focus:bg-white focus:border-[var(--primary)] focus:ring-4 focus:ring-[var(--primary)]/10"
+                              )}
+                              disabled={isLoading}
+                            />
                           </div>
-                          <input
-                            id="phone"
-                            type="tel"
-                            maxLength={10}
-                            required
-                            value={phone}
-                            onChange={(e) => {
-                              setNotRegisteredAccount(null);
-                              setErrorMessage(null);
-                              let val = e.target.value.replace(/\D/g, "");
-                              if (val.startsWith("91") && val.length > 10) {
-                                val = val.slice(2);
-                              }
-                              setPhone(val.slice(0, 10));
-                            }}
-                            placeholder="98765 43210"
-                            className={cn(
-                              "h-12 sm:h-12.5 lg:h-13 w-full rounded-xl border pl-23 sm:pl-24 pr-4 text-sm sm:text-base font-medium",
-                              "text-[var(--foreground)] placeholder:text-[var(--muted-light)]",
-                              "outline-none transition-all duration-200",
-                              notRegisteredAccount
-                                ? "border-amber-400 bg-amber-50/20 focus:border-amber-500 focus:ring-4 focus:ring-amber-500/10"
-                                : "border-[var(--border)] bg-slate-50/70 focus:bg-white focus:border-[var(--primary)] focus:ring-4 focus:ring-[var(--primary)]/10"
-                            )}
-                          />
+                          {notRegisteredAccount ? (
+                            <p className="mt-1.5 text-[11px] text-amber-800 font-medium">
+                              ⚠️ Email not registered yet. Click &apos;Create Free Profile Now&apos; above to register.
+                            </p>
+                          ) : (
+                            <p className="mt-1.5 text-[11px] text-[var(--muted)]">
+                              We will send a 6-digit one-time verification code to your email.
+                            </p>
+                          )}
                         </div>
-                        {notRegisteredAccount ? (
-                          <p className="mt-1.5 text-[11px] text-amber-800 font-medium">
-                            ⚠️ Mobile number not found. Click &apos;Create Free Profile Now&apos; above to register.
-                          </p>
-                        ) : (
-                          <p className="mt-1.5 text-[11px] text-[var(--muted)]">
-                            We will send a 6-digit one-time password to verify your number.
-                          </p>
-                        )}
-                      </div>
+                      ) : (
+                        <div className="group">
+                          <label
+                            htmlFor="phone"
+                            className="block text-[11px] sm:text-xs font-semibold uppercase tracking-wider text-[var(--muted-strong)] mb-1.5"
+                          >
+                            Mobile Number
+                          </label>
+                          <div className="relative flex items-center">
+                            <span className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3.5 sm:pl-4 text-[var(--muted)] group-focus-within:text-[var(--primary)] transition-colors">
+                              <IconPhone className="h-5 w-5" aria-hidden="true" />
+                            </span>
+                            <div className="pointer-events-none absolute left-11 sm:left-12 flex items-center pr-2.5 border-r border-slate-200 select-none">
+                              <span className="text-sm sm:text-base font-bold text-[var(--foreground)]">+91</span>
+                            </div>
+                            <input
+                              id="phone"
+                              type="tel"
+                              maxLength={10}
+                              required
+                              value={phone}
+                              onChange={(e) => {
+                                setNotRegisteredAccount(null);
+                                setErrorMessage(null);
+                                let val = e.target.value.replace(/\D/g, "");
+                                if (val.startsWith("91") && val.length > 10) {
+                                  val = val.slice(2);
+                                }
+                                setPhone(val.slice(0, 10));
+                              }}
+                              placeholder="98765 43210"
+                              className={cn(
+                                "h-12 sm:h-12.5 lg:h-13 w-full rounded-xl border pl-23 sm:pl-24 pr-4 text-sm sm:text-base font-medium",
+                                "text-[var(--foreground)] placeholder:text-[var(--muted-light)]",
+                                "outline-none transition-all duration-200",
+                                notRegisteredAccount
+                                  ? "border-amber-400 bg-amber-50/20 focus:border-amber-500 focus:ring-4 focus:ring-amber-500/10"
+                                  : "border-[var(--border)] bg-slate-50/70 focus:bg-white focus:border-[var(--primary)] focus:ring-4 focus:ring-[var(--primary)]/10"
+                              )}
+                              disabled={isLoading}
+                            />
+                          </div>
+                          {notRegisteredAccount ? (
+                            <p className="mt-1.5 text-[11px] text-amber-800 font-medium">
+                              ⚠️ Mobile number not found. Click &apos;Create Free Profile Now&apos; above to register.
+                            </p>
+                          ) : (
+                            <p className="mt-1.5 text-[11px] text-[var(--muted)]">
+                              We will send a 6-digit one-time password to verify your number.
+                            </p>
+                          )}
+                        </div>
+                      )}
 
 
                       <div className="pt-2">
@@ -681,11 +1001,11 @@ export default function LoginPage() {
                             }}
                             className="text-xs font-semibold text-[var(--primary)] hover:underline cursor-pointer"
                           >
-                            Change number
+                            {isEmailAuthMode() ? "Change email" : "Change number"}
                           </button>
                         </div>
                         <p className="text-xs text-[var(--muted)] mb-3">
-                          Sent to <span className="font-semibold text-[var(--foreground)]">+91 {phone.replace(/\D/g, "").slice(-10)}</span>
+                          Sent to <span className="font-semibold text-[var(--foreground)]">{isEmailAuthMode() ? email : `+91 ${phone.replace(/\D/g, "").slice(-10)}`}</span>
                         </p>
 
                         {/* Modern Segmented 3-3 Pin Input */}
@@ -816,18 +1136,13 @@ export default function LoginPage() {
                       >
                         Password
                       </label>
-                      <a
-                        href="#forgot"
-                        onClick={(e) => {
-                          e.preventDefault();
-                          setStatusMessage(
-                            "Tip: You can instantly sign in using the Mobile OTP tab without a password!"
-                          );
-                        }}
-                        className="text-xs font-medium text-[var(--primary)] hover:text-[var(--primary-deep)] hover:underline focus-ring rounded"
+                      <button
+                        type="button"
+                        onClick={handleOpenForgotPassword}
+                        className="text-xs font-medium text-[var(--primary)] hover:text-[var(--primary-deep)] hover:underline focus-ring rounded cursor-pointer bg-transparent border-0 p-0"
                       >
                         Forgot password?
-                      </a>
+                      </button>
                     </div>
 
                     <div className="relative">
@@ -912,6 +1227,220 @@ export default function LoginPage() {
           </div>
         </div>
       </div>
+
+      {/* Dedicated Forgot / Reset Password Modal */}
+      <Modal
+        isOpen={isForgotModalOpen}
+        onClose={() => {
+          if (!isSendingForgotOtp && !isResettingPassword) {
+            setIsForgotModalOpen(false);
+          }
+        }}
+        title="Reset Account Password"
+        description={
+          forgotStep === "input"
+            ? "Enter your registered email address to receive a 6-digit verification code."
+            : "Enter the 6-digit code sent to your email and choose a new password."
+        }
+      >
+        {forgotStep === "input" ? (
+          <div className="space-y-4 pt-1">
+            <div>
+              <label className="block text-xs font-bold uppercase tracking-wider text-[var(--foreground)] mb-1.5">
+                Registered Email Address
+              </label>
+              <div className="relative">
+                <span className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3.5 text-[var(--muted)]">
+                  <IconMail className="h-4 w-4" />
+                </span>
+                <input
+                  type="email"
+                  value={forgotEmail}
+                  onChange={(e) => {
+                    setForgotEmail(e.target.value);
+                    if (forgotError) setForgotError(null);
+                  }}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") {
+                      e.preventDefault();
+                      handleSendForgotOtp();
+                    }
+                  }}
+                  placeholder="name@gmail.com"
+                  autoFocus
+                  className="w-full rounded-xl border border-[var(--border)] bg-white pl-10 pr-3.5 py-2.5 text-sm text-[var(--foreground)] focus:outline-none focus:ring-2 focus:ring-[var(--primary)]"
+                />
+              </div>
+              {forgotError && (
+                <p className="mt-1.5 text-xs text-rose-600 font-semibold">{forgotError}</p>
+              )}
+            </div>
+
+            <p className="text-xs text-[var(--muted)] leading-relaxed bg-[#FAF3EC] p-3 rounded-xl border border-[#EAD8C7]">
+              🔒 We will send a one-time 6-digit verification code to your email to confirm ownership before resetting your password.
+            </p>
+
+            <div className="flex items-center justify-end gap-2 pt-2">
+              <Button
+                variant="secondary"
+                size="sm"
+                onClick={() => setIsForgotModalOpen(false)}
+                className="rounded-xl cursor-pointer"
+              >
+                Cancel
+              </Button>
+              <Button
+                variant="primary"
+                size="sm"
+                disabled={isSendingForgotOtp || !forgotEmail.trim()}
+                onClick={handleSendForgotOtp}
+                className="rounded-xl font-bold cursor-pointer"
+              >
+                {isSendingForgotOtp ? (
+                  <span className="flex items-center gap-2">
+                    <IconLoader2 className="h-4 w-4 animate-spin" />
+                    <span>Sending Code...</span>
+                  </span>
+                ) : (
+                  <span>Send Reset Code</span>
+                )}
+              </Button>
+            </div>
+          </div>
+        ) : (
+          <div className="space-y-4 pt-1">
+            {/* Header / edit link */}
+            <div className="flex items-center justify-between pb-1">
+              <button
+                type="button"
+                onClick={() => {
+                  setForgotStep("input");
+                  setForgotOtp("");
+                  setForgotError(null);
+                }}
+                className="inline-flex items-center gap-1 text-xs font-semibold text-[#80132E] hover:underline cursor-pointer"
+              >
+                <IconArrowLeft className="h-3.5 w-3.5" />
+                <span>Change Email</span>
+              </button>
+              <span className="text-xs text-[#766B6F] font-medium truncate max-w-[200px]">
+                {forgotEmail.trim().toLowerCase()}
+              </span>
+            </div>
+
+            {/* OTP Section */}
+            <div className="space-y-2">
+              <label className="block text-xs font-bold uppercase tracking-wider text-[var(--foreground)] text-center">
+                Enter 6-Digit Code
+              </label>
+              <div className="flex justify-center py-1">
+                <ModernOtpInput
+                  value={forgotOtp}
+                  onChange={(val) => {
+                    setForgotOtp(val);
+                    if (forgotError) setForgotError(null);
+                  }}
+                  error={!!forgotError}
+                  autoFocus
+                />
+              </div>
+              <div className="text-center pt-0.5">
+                {forgotResendTimer > 0 ? (
+                  <span className="text-xs text-[#766B6F]">
+                    Resend code in <span className="font-semibold text-[#211B1E]">{forgotResendTimer}s</span>
+                  </span>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={handleResendForgotOtp}
+                    disabled={isSendingForgotOtp}
+                    className="inline-flex items-center gap-1 text-xs font-bold text-[#80132E] hover:underline cursor-pointer"
+                  >
+                    <IconRefresh className={cn("h-3.5 w-3.5", isSendingForgotOtp && "animate-spin")} />
+                    <span>Resend Code</span>
+                  </button>
+                )}
+              </div>
+            </div>
+
+            {/* New Password fields */}
+            <div className="space-y-3 pt-2 border-t border-[var(--border)]">
+              <div>
+                <label className="block text-xs font-bold uppercase tracking-wider text-[var(--foreground)] mb-1">
+                  New Password
+                </label>
+                <div className="relative">
+                  <input
+                    type={showForgotNewPassword ? "text" : "password"}
+                    value={forgotNewPassword}
+                    onChange={(e) => {
+                      setForgotNewPassword(e.target.value);
+                      if (forgotError) setForgotError(null);
+                    }}
+                    placeholder="Minimum 8 characters"
+                    className="w-full rounded-xl border border-[var(--border)] bg-white px-3.5 py-2.5 pr-10 text-sm text-[var(--foreground)] focus:outline-none focus:ring-2 focus:ring-[var(--primary)]"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowForgotNewPassword(!showForgotNewPassword)}
+                    className="absolute inset-y-0 right-0 flex items-center pr-3 text-[var(--muted)] hover:text-[var(--foreground)] cursor-pointer"
+                  >
+                    {showForgotNewPassword ? <IconEyeOff className="h-4 w-4" /> : <IconEye className="h-4 w-4" />}
+                  </button>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold uppercase tracking-wider text-[var(--foreground)] mb-1">
+                  Confirm New Password
+                </label>
+                <input
+                  type={showForgotNewPassword ? "text" : "password"}
+                  value={forgotConfirmPassword}
+                  onChange={(e) => {
+                    setForgotConfirmPassword(e.target.value);
+                    if (forgotError) setForgotError(null);
+                  }}
+                  placeholder="Re-enter your new password"
+                  className="w-full rounded-xl border border-[var(--border)] bg-white px-3.5 py-2.5 text-sm text-[var(--foreground)] focus:outline-none focus:ring-2 focus:ring-[var(--primary)]"
+                />
+              </div>
+
+              {forgotError && (
+                <p className="text-xs text-rose-600 font-semibold">{forgotError}</p>
+              )}
+            </div>
+
+            <div className="flex items-center justify-end gap-2 pt-2 border-t border-[var(--border)]">
+              <Button
+                variant="secondary"
+                size="sm"
+                onClick={() => setIsForgotModalOpen(false)}
+                disabled={isResettingPassword}
+                className="rounded-xl cursor-pointer"
+              >
+                Cancel
+              </Button>
+              <Button
+                variant="primary"
+                size="sm"
+                disabled={isResettingPassword || forgotOtp.length !== 6 || forgotNewPassword.length < 8}
+                onClick={handleResetPasswordSubmit}
+                className="rounded-xl font-bold cursor-pointer"
+              >
+                {isResettingPassword ? (
+                  <span className="flex items-center gap-2">
+                    <IconLoader2 className="h-4 w-4 animate-spin" />
+                    <span>Resetting...</span>
+                  </span>
+                ) : (
+                  <span>Reset Password</span>
+                )}
+              </Button>
+            </div>
+          </div>
+        )}
+      </Modal>
 
       {/* Quick Registration Popup Modal */}
       <LookingForModal

@@ -26,6 +26,9 @@ import {
   IconStarFilled,
   IconHeartFilled,
   IconRotateClockwise,
+  IconHeartHandshake,
+  IconHomeHeart,
+  IconSparkles,
 } from '@tabler/icons-react';
 import { Avatar } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
@@ -41,12 +44,25 @@ import { VerificationBadge } from '@/components/ui/verification-badge';
 import { ProfileCardSkeleton, SwipeCardSkeleton } from '@/components/ui/skeleton';
 import { matchesService, profileService, isDraftUser } from '@/services';
 import { toast } from '@/lib/toast';
+import { useSubscription } from '@/context/subscription-context';
 import { cn } from '@/lib/cn';
 import { SwipeCard } from '@/components/discovery/swipe-card';
 import { type Profile, formatLastActive } from '@/lib/demo-data';
 
 export type DiscoveryViewMode = 'swipe' | 'grid';
 export type SortOption = 'recommended' | 'recent' | 'new' | 'nearby';
+export type DiscoveryCategory = 'Marriage' | 'Friendship' | 'Living Together';
+
+export const CATEGORY_OPTIONS: Array<{
+  id: DiscoveryCategory;
+  label: string;
+  icon: React.ComponentType<{ className?: string }>;
+  tag: string;
+}> = [
+  { id: 'Marriage', label: 'Marriage', icon: IconHeartHandshake, tag: '💍' },
+  { id: 'Friendship', label: 'Friendship', icon: IconUsers, tag: '👥' },
+  { id: 'Living Together', label: 'Living Together', icon: IconHomeHeart, tag: '🏡' },
+];
 
 export const HEIGHT_OPTIONS = [
   "4'10\"", "4'11\"", "5'0\"", "5'1\"", "5'2\"", "5'3\"", "5'4\"", "5'5\"",
@@ -101,6 +117,17 @@ function SafeDiscoverImage({ profile }: { profile: Profile }) {
 
 export default function DiscoverPage() {
   const router = useRouter();
+  const { isSubscribed, openUpgradeModal, openChatPrompt, openSubscriptionPrompt } = useSubscription();
+
+  const handleChatClick = (profileId: string) => (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (!isSubscribed) {
+      e.preventDefault();
+      openChatPrompt();
+    } else {
+      router.push(`/app/messages?user=${profileId}`);
+    }
+  };
   // Discovery view mode: 'grid' by default across mobile & desktop
   const [viewMode, setViewMode] = useState<DiscoveryViewMode>('grid');
 
@@ -116,8 +143,11 @@ export default function DiscoverPage() {
   const [maxAge, setMaxAge] = useState(35);
   const [minHeight, setMinHeight] = useState<string>("4'10\"");
   const [maxHeight, setMaxHeight] = useState<string>("6'4\"");
+  const [selectedCategory, setSelectedCategory] = useState<DiscoveryCategory>('Marriage');
+  const [isCategoryMenuOpen, setIsCategoryMenuOpen] = useState<boolean>(false);
   const [selectedGender, setSelectedGender] = useState<'any' | 'women' | 'men'>('any');
   const [myGender, setMyGender] = useState<string>('');
+  const [isFriendshipUser, setIsFriendshipUser] = useState<boolean>(false);
   const [selectedReligion, setSelectedReligion] = useState<string>('Any');
   const [selectedCaste, setSelectedCaste] = useState<string>('Any');
   const [selectedEducation, setSelectedEducation] = useState<string>('Any');
@@ -170,11 +200,27 @@ export default function DiscoverPage() {
           return;
         }
         const g = (profile.profile?.gender || profile.gender || '').toLowerCase().trim();
+        const cat = (
+          profile.profile?.category ||
+          profile.category ||
+          profile.profile?.profileFor ||
+          profile.profileFor ||
+          profile.profile?.lookingFor ||
+          profile.lookingFor ||
+          ''
+        ).toLowerCase().trim();
+        const isFriends = cat.includes('friend');
+        setIsFriendshipUser(isFriends);
         setMyGender(g);
-        if (g === 'male' || g === 'man') {
+        if (isFriends) {
+          // Friendship users see all genders by default
+          setSelectedGender('any');
+        } else if (g === 'male' || g === 'man') {
           setSelectedGender('women');
         } else if (g === 'female' || g === 'woman') {
           setSelectedGender('men');
+        } else {
+          setSelectedGender('any');
         }
       })
       .catch(() => {});
@@ -191,6 +237,7 @@ export default function DiscoverPage() {
         religion: selectedReligion === 'Any' ? undefined : selectedReligion,
         maritalStatus: selectedMaritalStatus === 'Any' ? undefined : selectedMaritalStatus,
         gender: selectedGender !== 'any' ? selectedGender : undefined,
+        category: selectedCategory,
       })
       .then((res: any) => {
         const rawList = (Array.isArray(res) ? res : res?.data || []).filter(
@@ -303,7 +350,7 @@ export default function DiscoverPage() {
       .finally(() => {
         setIsLoading(false);
       });
-  }, [city, minAge, maxAge, selectedReligion, selectedMaritalStatus, selectedGender]);
+  }, [city, minAge, maxAge, selectedReligion, selectedMaritalStatus, selectedGender, selectedCategory]);
 
   // Filter & Sort computation
   const filteredProfiles = useMemo(() => {
@@ -318,11 +365,22 @@ export default function DiscoverPage() {
         const matchesCity = city === 'All locations' || p.city.toLowerCase() === city.toLowerCase();
         const matchesAge = p.age >= minAge && p.age <= maxAge;
 
-        // Foundation Matchmaking Gender match
+        // Cross-Category Match
+        const pCat = ((p as any).category || (p as any).profileFor || (p as any).lookingFor || '').toLowerCase();
+        const matchesCategory =
+          selectedCategory === 'Friendship'
+            ? pCat.includes('friend')
+            : selectedCategory === 'Living Together'
+            ? pCat.includes('living')
+            : (pCat.includes('marr') || (!pCat.includes('friend') && !pCat.includes('living')));
+
+        // Foundation Matchmaking Gender match (All genders for friendship)
         const pGender = (p.gender || (p as any).sex || '').toLowerCase();
         const effectiveGender =
           selectedGender !== 'any'
             ? selectedGender
+            : selectedCategory === 'Friendship'
+            ? 'any'
             : myGender === 'male' || myGender === 'man'
             ? 'women'
             : myGender === 'female' || myGender === 'woman'
@@ -392,6 +450,7 @@ export default function DiscoverPage() {
           pDiet.includes(selectedDiet.toLowerCase());
 
         return (
+          matchesCategory &&
           matchesQuery &&
           matchesCity &&
           matchesAge &&
@@ -458,12 +517,13 @@ export default function DiscoverPage() {
     if (city !== 'All locations') count++;
     if (minAge !== 21 || maxAge !== 35) count++;
     if (minHeight !== "4'10\"" || maxHeight !== "6'4\"") count++;
-    const defaultOppositeGender =
-      myGender === 'male' || myGender === 'man'
-        ? 'women'
-        : myGender === 'female' || myGender === 'woman'
-        ? 'men'
-        : 'any';
+    const defaultOppositeGender = isFriendshipUser
+      ? 'any'
+      : myGender === 'male' || myGender === 'man'
+      ? 'women'
+      : myGender === 'female' || myGender === 'woman'
+      ? 'men'
+      : 'any';
     if (selectedGender !== defaultOppositeGender && selectedGender !== 'any') count++;
     if (selectedReligion !== 'Any') count++;
     if (selectedCaste !== 'Any') count++;
@@ -494,6 +554,22 @@ export default function DiscoverPage() {
     selectedDiet,
   ]);
 
+  const handleCategoryChange = (cat: DiscoveryCategory) => {
+    if (cat === selectedCategory) return;
+    setSelectedCategory(cat);
+    if (cat === 'Friendship') {
+      setSelectedGender('any');
+    } else if (cat === 'Marriage' || cat === 'Living Together') {
+      if (myGender === 'male' || myGender === 'man') {
+        setSelectedGender('women');
+      } else if (myGender === 'female' || myGender === 'woman') {
+        setSelectedGender('men');
+      } else {
+        setSelectedGender('any');
+      }
+    }
+  };
+
   const handleResetFilters = () => {
     setQuery('');
     setCity('All locations');
@@ -501,12 +577,13 @@ export default function DiscoverPage() {
     setMaxAge(35);
     setMinHeight("4'10\"");
     setMaxHeight("6'4\"");
-    const defaultOppositeGender =
-      myGender === 'male' || myGender === 'man'
-        ? 'women'
-        : myGender === 'female' || myGender === 'woman'
-        ? 'men'
-        : 'any';
+    const defaultOppositeGender = isFriendshipUser
+      ? 'any'
+      : myGender === 'male' || myGender === 'man'
+      ? 'women'
+      : myGender === 'female' || myGender === 'woman'
+      ? 'men'
+      : 'any';
     setSelectedGender(defaultOppositeGender);
     setSelectedReligion('Any');
     setSelectedCaste('Any');
@@ -579,8 +656,20 @@ export default function DiscoverPage() {
       } else {
         await matchesService.sendInterest(id);
       }
-    } catch (err) {
+    } catch (err: any) {
       console.warn('Failed sending interest in background:', err);
+      if (err?.message?.includes('Daily interest limit') || err?.message?.includes('quota') || err?.message?.includes('upgrade')) {
+        setSentInterestIds((prev) => {
+          const next = new Set(prev);
+          next.delete(id);
+          return next;
+        });
+        toast.warning('Daily Limit Reached', 'You have used your free daily interests. Upgrade to a subscription plan for unlimited requests!');
+        openSubscriptionPrompt({
+          title: 'Daily Limit Reached',
+          description: 'You have used your free daily interest requests. Choose a subscription plan for unlimited requests, priority matchmaking, and direct chat.',
+        });
+      }
     }
   };
 
@@ -717,84 +806,79 @@ export default function DiscoverPage() {
           </p>
         )}
 
-        {/* Matrimonial Discovery Actions Floating in Overlay */}
+        {/* Matrimonial Discovery Actions: Option 1 Hero Connect Pill + Left Quick-Actions */}
         <div 
-          className="w-full pt-2 flex items-center justify-center gap-3 sm:gap-4 px-2"
+          className="w-full pt-2.5 sm:pt-3.5 flex items-center gap-2 sm:gap-2.5 max-w-full"
           data-prevent-swipe="true"
           onClick={(e) => e.stopPropagation()}
           onPointerDown={(e) => e.stopPropagation()}
         >
-          {/* Pass button: Large circle */}
-          <Button
-            variant="secondary"
-            size="icon"
-            onClick={(e) => {
-              e.stopPropagation();
-              if (triggerSwipe) {
-                triggerSwipe('left');
-              } else {
-                handlePass(profile.id);
-              }
-            }}
-            className="rounded-full aspect-square h-12 w-12 sm:h-14 sm:w-14 shrink-0 p-0 flex items-center justify-center bg-white/95 backdrop-blur-md text-rose-600 border border-white/70 hover:bg-white hover:scale-110 active-press shadow-lg hover:shadow-xl transition-all"
-            title="Pass"
-            aria-label="Pass"
-          >
-            <IconX className="h-6 w-6 sm:h-6.5 sm:w-6.5 stroke-[2.3]" />
-          </Button>
-
-          {/* Chat button: Smaller circle, icon only, no label */}
-          <Link
-            href={`/app/messages?user=${profile.id}`}
-            className="focus-ring rounded-full shrink-0"
-            onClick={(e) => e.stopPropagation()}
-            title={`Chat with ${profile.name}`}
-            aria-label="Chat"
-          >
+          {/* Left Quick Actions: Pass, Chat, Star */}
+          <div className="flex items-center gap-2 sm:gap-2.5 shrink-0">
+            {/* Pass button: Large round icon button */}
             <Button
               variant="secondary"
               size="icon"
-              className="rounded-full aspect-square h-9.5 w-9.5 sm:h-11 sm:w-11 shrink-0 p-0 bg-white/95 backdrop-blur-md text-[var(--foreground)] border border-white/60 shadow-md hover:bg-white hover:scale-110 active-press flex items-center justify-center transition-all"
+              onClick={(e) => {
+                e.stopPropagation();
+                if (triggerSwipe) {
+                  triggerSwipe('left');
+                } else {
+                  handlePass(profile.id);
+                }
+              }}
+              className="rounded-full aspect-square h-11 w-11 sm:h-12 sm:w-12 shrink-0 p-0 flex items-center justify-center bg-white/95 backdrop-blur-md text-rose-600 border border-white/70 hover:bg-white hover:scale-105 active-press shadow-md hover:shadow-lg transition-all"
+              title="Pass"
+              aria-label="Pass"
+            >
+              <IconX className="h-5.5 w-5.5 sm:h-6 sm:w-6 stroke-[2.3]" />
+            </Button>
+
+            {/* Chat button: Round icon button */}
+            <Button
+              variant="secondary"
+              size="icon"
+              onClick={handleChatClick(profile.id)}
+              className="rounded-full aspect-square h-10 w-10 sm:h-11 sm:w-11 shrink-0 p-0 bg-white/95 backdrop-blur-md text-[var(--foreground)] border border-white/60 shadow-md hover:bg-white hover:scale-105 active-press flex items-center justify-center transition-all"
               title={`Chat with ${profile.name}`}
               aria-label="Chat"
             >
               <IconMessageCircleFilled className="h-4.5 w-4.5 sm:h-5 sm:w-5 text-[var(--primary)] shrink-0" />
             </Button>
-          </Link>
 
-          {/* Favorite button: Smaller circle, icon only, no label */}
-          <Button
-            variant={
-              shortlistedIds.has(profile.id) ? 'primary' : 'outline'
-            }
-            size="icon"
-            onClick={(e) => {
-              e.stopPropagation();
-              handleShortlist(profile.id, profile.name);
-            }}
-            className={cn(
-              'rounded-full aspect-square h-9.5 w-9.5 sm:h-11 sm:w-11 shrink-0 p-0 border shadow-md active-press transition-all flex items-center justify-center',
-              shortlistedIds.has(profile.id)
-                ? 'bg-[var(--primary)] text-white border-transparent hover:brightness-110 hover:scale-110'
-                : 'bg-white/95 backdrop-blur-md text-[var(--foreground)] border border-white/60 hover:bg-white hover:scale-110'
-            )}
-            title={shortlistedIds.has(profile.id) ? 'Favorited' : `Add ${profile.name} to favorites`}
-            aria-label={shortlistedIds.has(profile.id) ? 'Favorited' : 'Favorite'}
-          >
-            <IconStarFilled
+            {/* Favorite button: Round icon button */}
+            <Button
+              variant={
+                shortlistedIds.has(profile.id) ? 'primary' : 'outline'
+              }
+              size="icon"
+              onClick={(e) => {
+                e.stopPropagation();
+                handleShortlist(profile.id, profile.name);
+              }}
               className={cn(
-                'h-4.5 w-4.5 sm:h-5 sm:w-5 shrink-0',
+                'rounded-full aspect-square h-10 w-10 sm:h-11 sm:w-11 shrink-0 p-0 border shadow-md active-press transition-all flex items-center justify-center',
                 shortlistedIds.has(profile.id)
-                  ? 'text-white'
-                  : 'text-[var(--primary)]'
+                  ? 'bg-gradient-to-tr from-[#D8B28C] via-[#C99757] to-[#9B6C2E] text-white border-[#EEDCC8]/60 hover:brightness-110 hover:scale-105 shadow-amber-950/20'
+                  : 'bg-white/95 backdrop-blur-md text-[var(--foreground)] border border-white/60 hover:bg-white hover:scale-105'
               )}
-            />
-          </Button>
+              title={shortlistedIds.has(profile.id) ? 'Favorited' : `Add ${profile.name} to favorites`}
+              aria-label={shortlistedIds.has(profile.id) ? 'Favorited' : 'Favorite'}
+            >
+              <IconStarFilled
+                className={cn(
+                  'h-4.5 w-4.5 sm:h-5 sm:w-5 shrink-0',
+                  shortlistedIds.has(profile.id)
+                    ? 'text-white'
+                    : 'text-[#C99757]'
+                )}
+              />
+            </Button>
+          </div>
 
-          {/* Send Interest button: Large circle */}
+          {/* Right Hero Action: 3D Expandable "Send Interest" Pill Button in Luxury Burgundy */}
           <Button
-            variant="secondary"
-            size="icon"
+            variant={sentInterestIds.has(profile.id) ? "secondary" : "primary"}
             disabled={sentInterestIds.has(profile.id)}
             onClick={(e) => {
               e.stopPropagation();
@@ -806,15 +890,25 @@ export default function DiscoverPage() {
               }
             }}
             className={cn(
-              "rounded-full aspect-square h-12 w-12 sm:h-14 sm:w-14 shrink-0 p-0 flex items-center justify-center backdrop-blur-md transition-all",
+              "flex-1 min-w-0 h-11 sm:h-12 rounded-full px-3 sm:px-4 font-bold text-xs sm:text-sm flex items-center justify-center gap-1.5 sm:gap-2 transition-all duration-150 select-none truncate",
               sentInterestIds.has(profile.id)
-                ? "bg-rose-50 border border-rose-200 text-rose-300 opacity-60 cursor-default"
-                : "bg-white/95 text-rose-600 border border-white/70 hover:bg-white hover:scale-110 active-press shadow-lg hover:shadow-xl"
+                ? "bg-white/95 backdrop-blur-md border border-[var(--champagne-border)] text-[var(--primary)] shadow-sm cursor-default"
+                : "bg-gradient-to-b from-[#9E1D3B] via-[#801835] to-[#5E0E24] text-white border-t border-t-white/35 border-x border-x-[#72122B]/60 border-b-[3.5px] sm:border-b-[4px] border-b-[#420816] shadow-[0_4px_14px_rgba(94,14,36,0.5),inset_0_1.5px_1px_rgba(255,255,255,0.35)] hover:brightness-110 hover:-translate-y-0.5 hover:shadow-[0_6px_20px_rgba(94,14,36,0.6),inset_0_1.5px_1px_rgba(255,255,255,0.35)] active:scale-100 active:translate-y-[2px] active:border-b-[1px] active:shadow-[0_2px_6px_rgba(94,14,36,0.35)]"
             )}
             title={sentInterestIds.has(profile.id) ? "Interest already sent" : "Send Interest"}
             aria-label="Send Interest"
           >
-            <IconHeart className={cn("h-6 w-6 sm:h-6.5 sm:w-6.5 fill-rose-600", sentInterestIds.has(profile.id) && "opacity-50")} />
+            {sentInterestIds.has(profile.id) ? (
+              <>
+                <IconCheck className="h-4 w-4 sm:h-4.5 sm:w-4.5 shrink-0 stroke-[2.8] text-[var(--primary)]" />
+                <span className="truncate text-[var(--primary)] font-bold">Interest Sent</span>
+              </>
+            ) : (
+              <>
+                <IconHeartFilled className="h-4 w-4 sm:h-4.5 sm:w-4.5 shrink-0 text-white drop-shadow-[0_1px_1.5px_rgba(0,0,0,0.35)]" />
+                <span className="truncate tracking-wide drop-shadow-[0_1px_1.5px_rgba(0,0,0,0.35)]">Send Interest</span>
+              </>
+            )}
           </Button>
         </div>
       </div>
@@ -857,21 +951,21 @@ export default function DiscoverPage() {
       {/* 1. TOP HEADER & VIEW MODE CONTROLS (Sticky on scroll)    */}
       {/* ======================================================== */}
       <div className="sticky top-16 z-30 py-1.5 sm:py-2.5 bg-transparent pointer-events-none transition-all shrink-0">
-        <div className="flex items-center justify-between w-full gap-2 shrink-0 pointer-events-auto">
+        <div className="flex items-center justify-between w-full max-w-2xl mx-auto gap-1 sm:gap-1 shrink-0 pointer-events-auto">
           {/* View Switcher: Mobile & Desktop */}
-          <div className="flex items-center h-[38px] bg-white/95 backdrop-blur-xl p-1 rounded-2xl border border-[var(--border)]/90 shadow-[0_4px_16px_rgba(20,10,15,0.08)]">
+          <div className="flex items-center h-[36px] sm:h-[38px] bg-white/95 backdrop-blur-xl p-0.5 sm:p-1 rounded-2xl border border-[var(--border)]/90 shadow-[0_4px_16px_rgba(20,10,15,0.08)] shrink-0">
             <button
               type="button"
-               onClick={() => setViewMode('swipe')}
-               aria-pressed={viewMode === 'swipe'}
-               className={cn(
-                 'focus-ring flex items-center gap-1.5 px-3 py-1.5 h-full rounded-xl text-xs font-bold transition-all active-press select-none sm:hidden cursor-pointer',
-                 viewMode === 'swipe'
+              onClick={() => setViewMode('swipe')}
+              aria-pressed={viewMode === 'swipe'}
+              className={cn(
+                'focus-ring flex items-center gap-1 sm:gap-1.5 px-2 sm:px-3 py-1 sm:py-1.5 h-full rounded-xl text-[11px] sm:text-xs font-bold transition-all active-press select-none sm:hidden cursor-pointer',
+                viewMode === 'swipe'
                   ? 'bg-slate-100 text-[var(--primary)] shadow-xs'
                   : 'text-[var(--muted)] hover:text-[var(--foreground)]'
               )}
             >
-              <IconLayers className="h-4 w-4" />
+              <IconLayers className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
               <span>Swipe</span>
             </button>
 
@@ -880,27 +974,98 @@ export default function DiscoverPage() {
               onClick={() => setViewMode('grid')}
               aria-pressed={viewMode === 'grid'}
               className={cn(
-                'focus-ring flex items-center gap-1.5 px-3 py-1.5 h-full rounded-xl text-xs font-bold transition-all active-press select-none sm:hidden cursor-pointer',
+                'focus-ring flex items-center gap-1 sm:gap-1.5 px-2 sm:px-3 py-1 sm:py-1.5 h-full rounded-xl text-[11px] sm:text-xs font-bold transition-all active-press select-none sm:hidden cursor-pointer',
                 viewMode === 'grid'
                   ? 'bg-slate-100 text-[var(--primary)] shadow-xs'
                   : 'text-[var(--muted)] hover:text-[var(--foreground)]'
               )}
             >
-              <IconLayoutGrid className="h-4 w-4" />
+              <IconLayoutGrid className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
               <span>Grid</span>
             </button>
+          </div>
+
+          {/* Option 1: Center Category Dropdown Pill */}
+          <div className="relative shrink-0">
+            <button
+              type="button"
+              onClick={() => setIsCategoryMenuOpen((prev) => !prev)}
+              aria-haspopup="listbox"
+              aria-expanded={isCategoryMenuOpen}
+              className={cn(
+                'focus-ring flex items-center gap-1 sm:gap-1.5 h-[36px] sm:h-[38px] px-2.5 sm:px-3.5 rounded-2xl text-[11px] sm:text-xs font-bold transition-all active-press select-none cursor-pointer border shadow-[0_4px_16px_rgba(20,10,15,0.08)] backdrop-blur-xl',
+                isCategoryMenuOpen || selectedCategory !== 'Marriage'
+                  ? 'bg-gradient-to-r from-[#5B132B] to-[#7B1D3A] text-white border-[#5B132B]/40 shadow-[0_4px_14px_rgba(91,19,43,0.3)]'
+                  : 'bg-white/95 text-stone-800 border-[var(--border)]/90 hover:bg-stone-50'
+              )}
+            >
+              {(() => {
+                const currentOpt = CATEGORY_OPTIONS.find((c) => c.id === selectedCategory) || CATEGORY_OPTIONS[0];
+                const Icon = currentOpt.icon;
+                return (
+                  <>
+                    <Icon className={cn('h-3.5 w-3.5 shrink-0', isCategoryMenuOpen || selectedCategory !== 'Marriage' ? 'text-amber-300' : 'text-[var(--primary)]')} />
+                    <span className="truncate max-w-[70px] xs:max-w-[85px] sm:max-w-none">{currentOpt.label}</span>
+                    <IconChevronDown className={cn('h-3 w-3 sm:h-3.5 sm:w-3.5 shrink-0 transition-transform duration-200', isCategoryMenuOpen && 'rotate-180')} />
+                  </>
+                );
+              })()}
+            </button>
+
+            {/* Floating Category Menu */}
+            {isCategoryMenuOpen && (
+              <>
+                <div
+                  className="fixed inset-0 z-40"
+                  onClick={() => setIsCategoryMenuOpen(false)}
+                />
+                <div className="absolute left-1/2 -translate-x-1/2 top-[calc(100%+6px)] z-50 w-52 rounded-2xl bg-white/98 backdrop-blur-2xl border border-[var(--border)] p-1.5 shadow-[0_12px_36px_rgba(20,10,15,0.18)] animate-scale-up">
+                  <div className="px-2.5 py-1.5 text-[10px] font-bold uppercase tracking-wider text-[var(--muted)]">
+                    Switch Connection Type
+                  </div>
+                  <div className="space-y-0.5">
+                    {CATEGORY_OPTIONS.map((cat) => {
+                      const isSelected = selectedCategory === cat.id;
+                      const Icon = cat.icon;
+                      return (
+                        <button
+                          key={cat.id}
+                          type="button"
+                          onClick={() => {
+                            handleCategoryChange(cat.id);
+                            setIsCategoryMenuOpen(false);
+                          }}
+                          className={cn(
+                            'w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-semibold transition-colors cursor-pointer select-none',
+                            isSelected
+                              ? 'bg-rose-50 text-[var(--primary)] font-bold'
+                              : 'text-stone-700 hover:bg-stone-100/80 hover:text-stone-900'
+                          )}
+                        >
+                          <div className="flex items-center gap-2">
+                            <Icon className={cn('h-4 w-4 shrink-0', isSelected ? 'text-[var(--primary)]' : 'text-stone-500')} />
+                            <span>{cat.label}</span>
+                          </div>
+                          {isSelected && <IconCheck className="h-3.5 w-3.5 text-[var(--primary)] shrink-0" />}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              </>
+            )}
           </div>
 
           {/* Search & Filters Trigger Button */}
           <Button
             variant={activeFiltersCount > 0 || query ? 'primary' : 'secondary'}
             onClick={() => setIsFilterOpen(true)}
-            className="h-[38px] px-4 rounded-2xl text-xs font-bold gap-2 active-press shadow-[0_4px_16px_rgba(20,10,15,0.08)] bg-white/95 backdrop-blur-xl border border-[var(--border)]/90"
+            className="h-[36px] sm:h-[38px] px-2.5 sm:px-4 rounded-2xl text-[11px] sm:text-xs font-bold gap-1 sm:gap-2 active-press shadow-[0_4px_16px_rgba(20,10,15,0.08)] bg-white/95 backdrop-blur-xl border border-[var(--border)]/90 shrink-0"
             leftIcon={<IconAdjustments className="h-3.5 w-3.5" />}
           >
-            <span>Search & Filters</span>
+            <span>Filters</span>
             {(activeFiltersCount > 0 || query) && (
-              <span className="grid h-4 w-4 place-items-center rounded-full bg-[var(--primary)] text-white text-[9px] font-bold">
+              <span className="grid h-3.5 w-3.5 sm:h-4 sm:w-4 place-items-center rounded-full bg-[var(--primary)] text-white text-[8.5px] sm:text-[9px] font-bold">
                 {activeFiltersCount + (query ? 1 : 0)}
               </span>
             )}
@@ -1171,71 +1336,66 @@ export default function DiscoverPage() {
                       </p>
                     )}
 
-                    {/* Matrimonial Discovery Actions Floating in Overlay */}
-                    <div className="w-full pt-2.5 flex items-center justify-center gap-3 sm:gap-3.5 lg:gap-4 px-2">
-                      {/* Pass button: Large circle */}
-                      <Button
-                        variant="secondary"
-                        size="icon"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handlePass(profile.id);
-                        }}
-                        className="rounded-full aspect-square h-12 w-12 sm:h-13 sm:w-13 md:h-13 md:w-13 shrink-0 p-0 flex items-center justify-center bg-white/95 backdrop-blur-md text-rose-600 border border-white/70 hover:bg-white hover:scale-110 active-press shadow-lg hover:shadow-xl transition-all"
-                        title="Pass"
-                        aria-label="Pass"
-                      >
-                        <IconX className="h-5.5 w-5.5 sm:h-6 sm:w-6 stroke-[2.3]" />
-                      </Button>
-
-                      {/* Chat button: Smaller circle, icon only, no label */}
-                      <Link
-                        href={`/app/messages?user=${profile.id}`}
-                        onClick={(e) => e.stopPropagation()}
-                        className="focus-ring rounded-full shrink-0"
-                        title={`Chat with ${profile.name}`}
-                        aria-label="Chat"
-                      >
+                    {/* Matrimonial Discovery Actions: Option 1 Hero Connect Pill + Left Quick-Actions */}
+                    <div className="w-full pt-2.5 sm:pt-3 flex items-center gap-1.5 sm:gap-2 max-w-full">
+                      {/* Left Quick Actions: Pass, Chat, Star */}
+                      <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
+                        {/* Pass button: Round icon button */}
                         <Button
                           variant="secondary"
                           size="icon"
-                          className="rounded-full aspect-square h-9.5 w-9.5 sm:h-10 sm:w-10 md:h-10 md:w-10 shrink-0 p-0 bg-white/95 backdrop-blur-md text-[var(--foreground)] border border-white/60 shadow-md hover:bg-white hover:scale-110 active-press flex items-center justify-center transition-all"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handlePass(profile.id);
+                          }}
+                          className="rounded-full aspect-square h-10 w-10 sm:h-11 sm:w-11 md:h-11 md:w-11 shrink-0 p-0 flex items-center justify-center bg-white/95 backdrop-blur-md text-rose-600 border border-white/70 hover:bg-white hover:scale-105 active-press shadow-md hover:shadow-lg transition-all"
+                          title="Pass"
+                          aria-label="Pass"
+                        >
+                          <IconX className="h-5 w-5 sm:h-5.5 sm:w-5.5 stroke-[2.3]" />
+                        </Button>
+
+                        {/* Chat button: Round icon button */}
+                        <Button
+                          variant="secondary"
+                          size="icon"
+                          onClick={handleChatClick(profile.id)}
+                          className="rounded-full aspect-square h-9 w-9 sm:h-9.5 sm:w-9.5 md:h-9.5 md:w-9.5 shrink-0 p-0 bg-white/95 backdrop-blur-md text-[var(--foreground)] border border-white/60 shadow-sm hover:bg-white hover:scale-105 active-press flex items-center justify-center transition-all"
                           title={`Chat with ${profile.name}`}
                           aria-label="Chat"
                         >
-                          <IconMessageCircleFilled className="h-4.5 w-4.5 text-[var(--primary)] shrink-0" />
+                          <IconMessageCircleFilled className="h-4 w-4 sm:h-4.5 sm:w-4.5 text-[var(--primary)] shrink-0" />
                         </Button>
-                      </Link>
 
-                      {/* Favorite button: Smaller circle, icon only, no label */}
-                      <Button
-                        variant={isShortlisted ? 'primary' : 'outline'}
-                        size="icon"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleShortlist(profile.id, profile.name);
-                        }}
-                        className={cn(
-                          'rounded-full aspect-square h-9.5 w-9.5 sm:h-10 sm:w-10 md:h-10 md:w-10 shrink-0 p-0 border shadow-md active-press transition-all flex items-center justify-center',
-                          isShortlisted
-                            ? 'bg-[var(--primary)] text-white border-transparent hover:brightness-110 hover:scale-110'
-                            : 'bg-white/95 backdrop-blur-md text-[var(--foreground)] border border-white/60 hover:bg-white hover:scale-110'
-                        )}
-                        title={isShortlisted ? 'Favorited' : `Add ${profile.name} to favorites`}
-                        aria-label={isShortlisted ? 'Favorited' : 'Favorite'}
-                      >
-                        <IconStarFilled
+                        {/* Favorite button: Round icon button */}
+                        <Button
+                          variant={isShortlisted ? 'primary' : 'outline'}
+                          size="icon"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleShortlist(profile.id, profile.name);
+                          }}
                           className={cn(
-                            'h-4.5 w-4.5 shrink-0',
-                            isShortlisted ? 'text-white' : 'text-[var(--primary)]'
+                            'rounded-full aspect-square h-9 w-9 sm:h-9.5 sm:w-9.5 md:h-9.5 md:w-9.5 shrink-0 p-0 border shadow-sm active-press transition-all flex items-center justify-center',
+                            isShortlisted
+                              ? 'bg-gradient-to-tr from-[#D8B28C] via-[#C99757] to-[#9B6C2E] text-white border-[#EEDCC8]/60 hover:brightness-110 hover:scale-105 shadow-amber-950/20'
+                              : 'bg-white/95 backdrop-blur-md text-[var(--foreground)] border border-white/60 hover:bg-white hover:scale-105'
                           )}
-                        />
-                      </Button>
+                          title={isShortlisted ? 'Favorited' : `Add ${profile.name} to favorites`}
+                          aria-label={isShortlisted ? 'Favorited' : 'Favorite'}
+                        >
+                          <IconStarFilled
+                            className={cn(
+                              'h-4 w-4 sm:h-4.5 sm:w-4.5 shrink-0',
+                              isShortlisted ? 'text-white' : 'text-[#C99757]'
+                            )}
+                          />
+                        </Button>
+                      </div>
 
-                      {/* Send Interest button: Large circle */}
+                      {/* Right Hero Action: 3D Expandable "Send Interest" / "Accept" Pill Button in Luxury Burgundy */}
                       <Button
-                        variant="secondary"
-                        size="icon"
+                        variant={isInterestSent ? "secondary" : "primary"}
                         disabled={isInterestSent}
                         onClick={(e) => {
                           e.stopPropagation();
@@ -1243,12 +1403,12 @@ export default function DiscoverPage() {
                           handleSendInterest(profile.id, profile.name);
                         }}
                         className={cn(
-                          "rounded-full aspect-square h-12 w-12 sm:h-13 sm:w-13 md:h-13 md:w-13 shrink-0 p-0 flex items-center justify-center backdrop-blur-md transition-all",
+                          "flex-1 min-w-0 h-10 sm:h-11 md:h-11 rounded-full px-2.5 sm:px-3 font-bold text-xs sm:text-sm flex items-center justify-center gap-1 sm:gap-1.5 transition-all duration-150 select-none truncate",
                           isInterestSent
-                            ? "bg-rose-50 border border-rose-200 text-rose-300 opacity-60 cursor-default"
+                            ? "bg-white/95 backdrop-blur-md border border-[var(--champagne-border)] text-[var(--primary)] shadow-sm cursor-default"
                             : isInterestReceived
-                            ? "bg-gradient-to-tr from-rose-500 to-pink-600 text-white border border-rose-300 hover:scale-110 active-press shadow-lg hover:shadow-xl"
-                            : "bg-white/95 text-rose-600 border border-white/70 hover:bg-white hover:scale-110 active-press shadow-lg hover:shadow-xl"
+                            ? "bg-gradient-to-b from-emerald-500 via-emerald-600 to-teal-700 text-white border-t border-t-white/40 border-x border-x-emerald-600/50 border-b-[3px] border-b-teal-950 shadow-[0_4px_12px_rgba(16,185,129,0.45),inset_0_1.5px_1px_rgba(255,255,255,0.4)] hover:brightness-105 active:scale-100 active:translate-y-[2px] active:border-b-[1px] active:shadow-[0_2px_5px_rgba(16,185,129,0.35)]"
+                            : "bg-gradient-to-b from-[#9E1D3B] via-[#801835] to-[#5E0E24] text-white border-t border-t-white/35 border-x border-x-[#72122B]/60 border-b-[3px] sm:border-b-[3.5px] border-b-[#420816] shadow-[0_4px_12px_rgba(94,14,36,0.5),inset_0_1.5px_1px_rgba(255,255,255,0.35)] hover:brightness-110 hover:-translate-y-0.5 hover:shadow-[0_5px_16px_rgba(94,14,36,0.6),inset_0_1.5px_1px_rgba(255,255,255,0.35)] active:scale-100 active:translate-y-[2px] active:border-b-[1px] active:shadow-[0_2px_5px_rgba(94,14,36,0.3)]"
                         )}
                         title={
                           isInterestSent
@@ -1259,16 +1419,22 @@ export default function DiscoverPage() {
                         }
                         aria-label="Send Interest"
                       >
-                        <IconHeart
-                          className={cn(
-                            "h-5.5 w-5.5 sm:h-6 sm:w-6",
-                            isInterestSent
-                              ? "fill-rose-600 opacity-50"
-                              : isInterestReceived
-                              ? "fill-white text-white"
-                              : "fill-rose-600"
-                          )}
-                        />
+                        {isInterestSent ? (
+                          <>
+                            <IconCheck className="h-3.5 w-3.5 sm:h-4 sm:w-4 shrink-0 stroke-[2.8] text-[var(--primary)]" />
+                            <span className="truncate text-[var(--primary)] font-bold">Sent</span>
+                          </>
+                        ) : isInterestReceived ? (
+                          <>
+                            <IconHeartFilled className="h-3.5 w-3.5 sm:h-4 sm:w-4 shrink-0 text-white drop-shadow-[0_1px_1.5px_rgba(0,0,0,0.35)]" />
+                            <span className="truncate tracking-wide drop-shadow-[0_1px_1.5px_rgba(0,0,0,0.35)]">Accept</span>
+                          </>
+                        ) : (
+                          <>
+                            <IconHeartFilled className="h-3.5 w-3.5 sm:h-4 sm:w-4 shrink-0 text-white drop-shadow-[0_1px_1.5px_rgba(0,0,0,0.35)]" />
+                            <span className="truncate tracking-wide drop-shadow-[0_1px_1.5px_rgba(0,0,0,0.35)]">Connect</span>
+                          </>
+                        )}
                       </Button>
                     </div>
                   </div>
@@ -1287,7 +1453,7 @@ export default function DiscoverPage() {
         isOpen={isFilterOpen}
         onClose={() => setIsFilterOpen(false)}
         title="Refine Partner Preferences"
-        description="Filter verified matrimonial profiles based on your values and criteria."
+        // description="Filter verified matrimonial profiles based on your values and criteria."
         footer={
           <div className="flex items-center justify-between gap-3 w-full">
             <Button
@@ -1442,17 +1608,32 @@ export default function DiscoverPage() {
                 Looking for
               </label>
               <span className="text-[10px] font-semibold text-[var(--accent)] bg-[var(--accent-light)]/20 px-2 py-0.5 rounded-full">
-                Foundation Matchmaking
+                {selectedCategory === 'Friendship'
+                  ? 'Friendship Connections'
+                  : selectedCategory === 'Living Together'
+                  ? 'Living Together'
+                  : 'Foundation Matchmaking'}
               </span>
             </div>
             <div className="flex flex-wrap gap-2">
-              {(myGender === 'male' || myGender === 'man'
-                ? [{ value: 'women', label: 'Seeking Brides (Women)' }]
-                : myGender === 'female' || myGender === 'woman'
-                ? [{ value: 'men', label: 'Seeking Grooms (Men)' }]
-                : [
+              {(selectedCategory === 'Friendship'
+                ? [
+                    { value: 'any', label: 'All Genders (Friends)' },
+                    { value: 'women', label: 'Women' },
+                    { value: 'men', label: 'Men' },
+                  ]
+                : myGender === 'male' || myGender === 'man'
+                ? [
                     { value: 'women', label: 'Seeking Brides (Women)' },
+                  ]
+                : myGender === 'female' || myGender === 'woman'
+                ? [
                     { value: 'men', label: 'Seeking Grooms (Men)' },
+                  ]
+                : [
+                    { value: 'any', label: 'All Genders' },
+                    { value: 'women', label: 'Women' },
+                    { value: 'men', label: 'Men' },
                   ]
               ).map((g) => (
                 <Chip

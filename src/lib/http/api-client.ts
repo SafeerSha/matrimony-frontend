@@ -120,7 +120,17 @@ export async function apiFetch<T>(
         path.includes("/auth/refresh") ||
         path.includes("/auth/register") ||
         path.includes("/auth/verify-otp") ||
-        path.includes("/auth/quick-register");
+        path.includes("/auth/quick-register") ||
+        path.includes("/auth/logout");
+
+      const isManualLogout =
+        typeof window !== "undefined" &&
+        sessionStorage.getItem("is_manual_logout") === "true";
+
+      // If user is intentionally logging out or calling an auth endpoint, suppress 401 session expiration handling
+      if (isManualLogout || isAuthEndpoint) {
+        throw new ApiError(response.status, "Unauthorized", body);
+      }
 
       const currentPath = window.location.pathname;
       const isAuthPage = currentPath.startsWith("/login") || currentPath.startsWith("/register");
@@ -166,7 +176,7 @@ export async function apiFetch<T>(
       }
 
       // Only redirect if this isn't an explicit login submission or already on an auth page, and grace period has elapsed
-      if (!isAuthEndpoint && !isAuthPage && !isRedirectingToLogin && !isWithinGracePeriod) {
+      if (!isAuthEndpoint && !isAuthPage && !isRedirectingToLogin && !isWithinGracePeriod && !isManualLogout) {
         isRedirectingToLogin = true;
 
         try {
@@ -181,23 +191,15 @@ export async function apiFetch<T>(
         const currentFullUrl = window.location.pathname + window.location.search;
         const loginUrl = `/login?next=${encodeURIComponent(currentFullUrl)}`;
 
-        // Show toast notification immediately on screen so the user clearly sees what happened
-        toast.warning(
-          "Session Expired",
-          "Your session has ended. Redirecting to login..."
-        );
-
-        // Also prepare flash toast so it re-displays on the login page
+        // Dismiss existing toasts and prepare ONE clean flash toast for the login page
+        toast.dismissAll();
         toast.flash(
           "warning",
           "Session Expired",
           "Your session has ended. Please sign in again to continue."
         );
 
-        // Delay redirect briefly (1.2s) so the user sees the toast notification and message
-        setTimeout(() => {
-          window.location.href = loginUrl;
-        }, 1200);
+        window.location.href = loginUrl;
       }
     }
 

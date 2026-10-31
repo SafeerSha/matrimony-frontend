@@ -24,17 +24,17 @@ const sizes: Record<AvatarSize, { container: string; text: string; badge: string
 };
 
 const AVATAR_GRADIENTS = [
-  "from-[#80132E] to-[#A81E41] text-white",
   "from-[#5C1027] to-[#80132E] text-white",
-  "from-[#8C5D30] to-[#B27C4B] text-white",
-  "from-[#1F4E5B] to-[#2E7385] text-white",
-  "from-[#4A2B68] to-[#6E3C98] text-white",
-  "from-[#8A3B14] to-[#B95525] text-white",
-  "from-[#2B543D] to-[#3B7455] text-white",
+  "from-[#80132E] to-[#A81E41] text-white",
+  "from-[#4A0E1F] to-[#6B142D] text-white",
+  "from-[#68132B] to-[#8E1C3C] text-white",
+  "from-[#7B1834] to-[#A32347] text-white",
+  "from-[#561226] to-[#781B37] text-white",
+  "from-[#8C1D3B] to-[#B5274E] text-white",
 ];
 
-function getAvatarGradient(name: string): string {
-  if (!name) return AVATAR_GRADIENTS[0];
+function getAvatarGradient(name?: string): string {
+  if (!name || !name.trim()) return AVATAR_GRADIENTS[0];
   let hash = 0;
   for (let i = 0; i < name.length; i++) {
     hash = name.charCodeAt(i) + ((hash << 5) - hash);
