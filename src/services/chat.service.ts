@@ -21,6 +21,7 @@ export interface Conversation {
   lastMessage?: Message;
   unreadCount: number;
   updatedAt: string;
+  isProvisional?: boolean;
 }
 
 class ChatService {

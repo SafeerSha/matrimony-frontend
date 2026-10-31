@@ -58,6 +58,25 @@ export function ChatWindow({
 }: ChatWindowProps) {
   const [text, setText] = useState('');
   const [isSending, setIsSending] = useState(false);
+  const [isSendingInterest, setIsSendingInterest] = useState(false);
+  const [interestSent, setInterestSent] = useState(false);
+
+  const handleSendInterest = async () => {
+    const contactId = conversation.participantId || conversation.id;
+    if (!contactId || isSendingInterest || interestSent) return;
+    setIsSendingInterest(true);
+    try {
+      await matchesService.sendInterest(contactId);
+      setInterestSent(true);
+      toast.success('Interest Sent!', {
+        description: `Your interest has been expressed to ${firstName}. Once accepted, chat will activate.`,
+      });
+    } catch (err: any) {
+      toast.error('Could not send interest', err?.message || 'Please try again.');
+    } finally {
+      setIsSendingInterest(false);
+    }
+  };
   const [showMenu, setShowMenu] = useState(false);
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const [showHooks, setShowHooks] = useState(false);
@@ -507,18 +526,48 @@ export function ChatWindow({
                 </div>
               </div>
 
-              {/* Match tag */}
-              <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#FAF3EC] border border-[#EAD8C7] text-[11px] font-bold text-[#7A1835] mb-2 shadow-2xs">
-                <IconSparkles className="h-3.5 w-3.5 text-[#7A1835]" />
-                <span>Connected via Mutual Interest</span>
-              </div>
+              {/* Match tag / Connection state */}
+              {(conversation as any)?.isProvisional ? (
+                <>
+                  <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#FAF3EC] border border-[#EAD8C7] text-[11px] font-bold text-[#7A1835] mb-2 shadow-2xs">
+                    <IconSparkles className="h-3.5 w-3.5 text-[#7A1835]" />
+                    <span>Connect to Start Chat</span>
+                  </div>
 
-              <h4 className="font-editorial-title text-base sm:text-lg font-bold text-[#211B1E]">
-                Connected with {participantName}
-              </h4>
-              <p className="mt-1 text-xs text-[#766B6F] leading-relaxed max-w-xs mx-auto">
-                Both of you accepted each other's interest. A sincere, courteous note starts a wonderful new chapter.
-              </p>
+                  <h4 className="font-editorial-title text-base sm:text-lg font-bold text-[#211B1E]">
+                    Connect with {participantName}
+                  </h4>
+                  <p className="mt-1 text-xs text-[#766B6F] leading-relaxed max-w-xs mx-auto">
+                    Mutual connection is required to exchange messages. Express interest to connect with {firstName}.
+                  </p>
+
+                  <div className="mt-3 flex justify-center">
+                    <Button
+                      size="sm"
+                      onClick={handleSendInterest}
+                      disabled={isSendingInterest || interestSent}
+                      className="rounded-full bg-gradient-to-r from-[#7A1835] to-[#9E2045] text-white hover:brightness-110 shadow-xs px-4 py-1.5 text-xs font-bold active:scale-95 transition-all"
+                    >
+                      <IconHeart className="h-3.5 w-3.5 mr-1 text-white fill-white" />
+                      {interestSent ? 'Interest Expressed' : isSendingInterest ? 'Sending...' : 'Express Interest'}
+                    </Button>
+                  </div>
+                </>
+              ) : (
+                <>
+                  <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#FAF3EC] border border-[#EAD8C7] text-[11px] font-bold text-[#7A1835] mb-2 shadow-2xs">
+                    <IconSparkles className="h-3.5 w-3.5 text-[#7A1835]" />
+                    <span>Connected via Mutual Interest</span>
+                  </div>
+
+                  <h4 className="font-editorial-title text-base sm:text-lg font-bold text-[#211B1E]">
+                    Connected with {participantName}
+                  </h4>
+                  <p className="mt-1 text-xs text-[#766B6F] leading-relaxed max-w-xs mx-auto">
+                    Both of you accepted each other's interest. A sincere, courteous note starts a wonderful new chapter.
+                  </p>
+                </>
+              )}
             </div>
 
             {/* Date Separator Pill */}

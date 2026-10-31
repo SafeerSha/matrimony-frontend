@@ -230,6 +230,7 @@ function MessagesContent() {
                 online: Boolean((prof as any).isOnline),
                 isOnline: Boolean((prof as any).isOnline),
                 lastActiveAt: (prof as any).lastActiveAt,
+                isProvisional: true,
               } as any;
 
               setConversations([provisionalConv, ...list.filter((c) => c.participantId !== participantId)]);
@@ -254,6 +255,7 @@ function MessagesContent() {
                 },
                 unreadCount: 0,
                 updatedAt: new Date().toISOString(),
+                isProvisional: true,
               };
               setConversations([fallbackConv, ...list.filter((c) => c.participantId !== targetUserId)]);
               setSelected(fallbackConv);
@@ -412,6 +414,8 @@ function MessagesContent() {
       )
     );
 
+    const previousLastMessage = selected.lastMessage;
+
     try {
       const serverMsg = await chatService.sendMessage(participantId, content);
       if (serverMsg && serverMsg.id) {
@@ -421,6 +425,18 @@ function MessagesContent() {
       }
     } catch (err: any) {
       console.warn('Chat send message issue:', err);
+      // Immediately remove failed optimistic message from chat history
+      setMessages((prev) => prev.filter((m) => m.id !== tempId));
+
+      // Revert conversation list preview
+      setConversations((prev) =>
+        prev.map((c) =>
+          c.id === selected.id || c.participantId === participantId
+            ? { ...c, lastMessage: previousLastMessage }
+            : c
+        )
+      );
+
       toast.error('Message delivery note', err?.message || 'Could not verify delivery to server.');
     }
   };
