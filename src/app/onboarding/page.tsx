@@ -2259,11 +2259,12 @@ export default function OnboardingPage() {
                     </div>
                     <div className="text-xs text-emerald-950 leading-relaxed">
                       <p className="font-semibold text-emerald-900">
-                        Mobile OTP login is already active
+                        {isEmailAuthMode() ? "Recommended: Set your account password" : "Mobile OTP login is already active"}
                       </p>
                       <p className="mt-0.5 text-emerald-800/90">
-                        If you prefer not to create a password right now, feel free to skip this step.
-                        You can sign in anytime via SMS OTP.
+                        {isEmailAuthMode()
+                          ? "Set a password to easily sign in anytime using your email address. You can also sign in via Email OTP."
+                          : "If you prefer not to create a password right now, feel free to skip this step. You can sign in anytime via SMS OTP."}
                       </p>
                     </div>
                   </div>

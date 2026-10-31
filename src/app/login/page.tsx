@@ -31,7 +31,9 @@ import { isEmailAuthMode } from "@/config/feature-flags";
 
 export default function LoginPage() {
   const [isRegisterModalOpen, setIsRegisterModalOpen] = useState(false);
-  const [authMethod, setAuthMethod] = useState<"otp" | "password">("otp");
+  const [authMethod, setAuthMethod] = useState<"otp" | "password">(
+    isEmailAuthMode() ? "password" : "otp"
+  );
   const [otpStep, setOtpStep] = useState<"phone" | "code">("phone");
   const [phone, setPhone] = useState("");
   const [email, setEmail] = useState("");
@@ -538,43 +540,92 @@ export default function LoginPage() {
 
               {/* Auth Mode Switcher (OTP vs Password) */}
               <div className="grid grid-cols-2 p-1 bg-slate-100/80 rounded-xl mb-5 border border-[var(--border)]/60">
-                <button
-                  type="button"
-                  onClick={() => {
-                    setAuthMethod("otp");
-                    setErrorMessage(null);
-                  }}
-                  className={cn(
-                    "flex items-center justify-center gap-1.5 py-2 px-3 text-xs sm:text-sm font-semibold rounded-lg transition-all",
-                    authMethod === "otp"
-                      ? "bg-white text-[var(--foreground)] shadow-sm"
-                      : "text-[var(--muted)] hover:text-[var(--foreground)]"
-                  )}
-                >
-                  <IconDeviceMobile className="h-4 w-4 text-[var(--primary)]" />
-                  <span>{isEmailAuthMode() ? "Email OTP" : "Mobile OTP"}</span>
-                  <span className="hidden sm:inline-block ml-1 text-[10px] bg-emerald-100 text-emerald-800 px-1.5 py-0.2 rounded font-medium">
-                    Fast
-                  </span>
-                </button>
+                {isEmailAuthMode() ? (
+                  <>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setAuthMethod("password");
+                        setErrorMessage(null);
+                        setNotRegisteredAccount(null);
+                      }}
+                      className={cn(
+                        "flex items-center justify-center gap-1.5 py-2 px-3 text-xs sm:text-sm font-semibold rounded-lg transition-all cursor-pointer",
+                        authMethod === "password"
+                          ? "bg-white text-[var(--foreground)] shadow-sm"
+                          : "text-[var(--muted)] hover:text-[var(--foreground)]"
+                      )}
+                    >
+                      <IconKey className="h-4 w-4 text-[var(--primary)]" />
+                      <span>Password</span>
+                      <span className="hidden sm:inline-block ml-1 text-[10px] bg-emerald-100 text-emerald-800 px-1.5 py-0.5 rounded font-medium">
+                        Standard
+                      </span>
+                    </button>
 
-                <button
-                  type="button"
-                  onClick={() => {
-                    setAuthMethod("password");
-                    setErrorMessage(null);
-                    setNotRegisteredAccount(null);
-                  }}
-                  className={cn(
-                    "flex items-center justify-center gap-1.5 py-2 px-3 text-xs sm:text-sm font-semibold rounded-lg transition-all",
-                    authMethod === "password"
-                      ? "bg-white text-[var(--foreground)] shadow-sm"
-                      : "text-[var(--muted)] hover:text-[var(--foreground)]"
-                  )}
-                >
-                  <IconKey className="h-4 w-4 text-[var(--primary)]" />
-                  <span>Password</span>
-                </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setAuthMethod("otp");
+                        setErrorMessage(null);
+                        setNotRegisteredAccount(null);
+                        if (identifier.includes("@") && !email) {
+                          setEmail(identifier.trim().toLowerCase());
+                        }
+                      }}
+                      className={cn(
+                        "flex items-center justify-center gap-1.5 py-2 px-3 text-xs sm:text-sm font-semibold rounded-lg transition-all cursor-pointer",
+                        authMethod === "otp"
+                          ? "bg-white text-[var(--foreground)] shadow-sm"
+                          : "text-[var(--muted)] hover:text-[var(--foreground)]"
+                      )}
+                    >
+                      <IconMail className="h-4 w-4 text-[var(--primary)]" />
+                      <span>Email OTP</span>
+                    </button>
+                  </>
+                ) : (
+                  <>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setAuthMethod("otp");
+                        setErrorMessage(null);
+                        setNotRegisteredAccount(null);
+                      }}
+                      className={cn(
+                        "flex items-center justify-center gap-1.5 py-2 px-3 text-xs sm:text-sm font-semibold rounded-lg transition-all cursor-pointer",
+                        authMethod === "otp"
+                          ? "bg-white text-[var(--foreground)] shadow-sm"
+                          : "text-[var(--muted)] hover:text-[var(--foreground)]"
+                      )}
+                    >
+                      <IconDeviceMobile className="h-4 w-4 text-[var(--primary)]" />
+                      <span>Mobile OTP</span>
+                      <span className="hidden sm:inline-block ml-1 text-[10px] bg-emerald-100 text-emerald-800 px-1.5 py-0.5 rounded font-medium">
+                        Fast
+                      </span>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setAuthMethod("password");
+                        setErrorMessage(null);
+                        setNotRegisteredAccount(null);
+                      }}
+                      className={cn(
+                        "flex items-center justify-center gap-1.5 py-2 px-3 text-xs sm:text-sm font-semibold rounded-lg transition-all cursor-pointer",
+                        authMethod === "password"
+                          ? "bg-white text-[var(--foreground)] shadow-sm"
+                          : "text-[var(--muted)] hover:text-[var(--foreground)]"
+                      )}
+                    >
+                      <IconKey className="h-4 w-4 text-[var(--primary)]" />
+                      <span>Password</span>
+                    </button>
+                  </>
+                )}
               </div>
 
               {/* Upfront Account Not Found & Direct Registration Card */}
@@ -633,9 +684,31 @@ export default function LoginPage() {
               {errorMessage && !notRegisteredAccount && (
                 <div
                   role="alert"
-                  className="mb-4 rounded-xl border border-red-200 bg-red-50/80 p-3 text-xs sm:text-sm text-red-700"
+                  className="mb-4 rounded-xl border border-red-200 bg-red-50/80 p-3.5 text-xs sm:text-sm text-red-700 flex flex-col gap-2 animate-in fade-in duration-200"
                 >
-                  {errorMessage}
+                  <div className="flex items-start gap-2">
+                    <span className="font-semibold text-rose-800">⚠️</span>
+                    <span className="flex-1 leading-relaxed">{errorMessage}</span>
+                  </div>
+                  {errorMessage.toLowerCase().includes("does not have a password") && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (identifier.includes("@") && !email) {
+                          setEmail(identifier.trim().toLowerCase());
+                        } else if (!identifier.includes("@") && !phone) {
+                          setPhone(identifier.replace(/\D/g, "").slice(-10));
+                        }
+                        setAuthMethod("otp");
+                        setErrorMessage(null);
+                        setStatusMessage("You can sign in directly using a one-time verification code.");
+                      }}
+                      className="self-start inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#80132E] text-white text-xs font-bold hover:brightness-110 active:scale-95 transition cursor-pointer shadow-sm"
+                    >
+                      <span>Sign in via {isEmailAuthMode() ? "Email OTP" : "Mobile OTP"} instead</span>
+                      <IconArrowRight className="h-3.5 w-3.5" />
+                    </button>
+                  )}
                 </div>
               )}
 
@@ -942,11 +1015,24 @@ export default function LoginPage() {
                         href="#forgot"
                         onClick={(e) => {
                           e.preventDefault();
-                          setStatusMessage(
-                            "Tip: You can instantly sign in using the Mobile OTP tab without a password!"
-                          );
+                          if (isEmailAuthMode()) {
+                            if (identifier.includes("@") && !email) {
+                              setEmail(identifier.trim().toLowerCase());
+                            }
+                            setAuthMethod("otp");
+                            setErrorMessage(null);
+                            setStatusMessage(
+                              "We've switched you to Email OTP. Enter your email to receive a 6-digit one-time sign in code."
+                            );
+                          } else {
+                            setAuthMethod("otp");
+                            setErrorMessage(null);
+                            setStatusMessage(
+                              "Tip: You can instantly sign in using the Mobile OTP tab without a password!"
+                            );
+                          }
                         }}
-                        className="text-xs font-medium text-[var(--primary)] hover:text-[var(--primary-deep)] hover:underline focus-ring rounded"
+                        className="text-xs font-medium text-[var(--primary)] hover:text-[var(--primary-deep)] hover:underline focus-ring rounded cursor-pointer"
                       >
                         Forgot password?
                       </a>
