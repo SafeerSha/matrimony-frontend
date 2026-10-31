@@ -203,6 +203,35 @@ export async function apiFetch<T>(
       }
     }
 
+    // Intercept 403 Forbidden (Insufficient permissions on protected admin/staff resources)
+    if (response.status === 403 && typeof window !== "undefined") {
+      const currentPath = window.location.pathname;
+      const isAuthEndpoint =
+        path.includes("/auth/login") ||
+        path.includes("/auth/refresh") ||
+        path.includes("/auth/register") ||
+        path.includes("/auth/verify-otp") ||
+        path.includes("/auth/quick-register") ||
+        path.includes("/auth/logout");
+
+      if (!isAuthEndpoint && (currentPath.startsWith("/admin") || currentPath.startsWith("/rm"))) {
+        if (!isRedirectingToLogin) {
+          isRedirectingToLogin = true;
+          toast.dismissAll();
+          toast.flash(
+            "error",
+            "Access Denied",
+            "You do not have permission to access the Admin Portal. Please sign in with an administrator account."
+          );
+          const targetLogin = currentPath.startsWith("/admin")
+            ? `/admin/login?next=${encodeURIComponent(currentPath)}`
+            : `/login?next=${encodeURIComponent(currentPath)}&error=unauthorized`;
+          window.location.href = targetLogin;
+        }
+        throw new ApiError(response.status, "You do not have permission to access this resource", body);
+      }
+    }
+
     function formatApiErrorMessage(status: number, rawMessage: string): string {
       if (
         status === 429 ||

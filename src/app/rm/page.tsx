@@ -1,26 +1,97 @@
 'use client';
-import { useState } from 'react';
+
+import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import {
   IconUsers,
   IconHeart,
   IconCalendar,
   IconSearch,
-  IconPhone,
-  IconMail,
-  IconMessageCircle,
-  IconDots as IconMoreHorizontal,
-  IconCircleCheck,
-  IconChevronRight,
-  IconClock,
   IconShield,
+  IconLoader2,
 } from '@tabler/icons-react';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import { Avatar } from '@/components/ui/avatar';
+import { authService } from '@/services/auth.service';
+import { toast } from '@/lib/toast';
 
 export default function RMDashboard() {
+  const router = useRouter();
+  const [isAuthorized, setIsAuthorized] = useState<boolean | null>(null);
   const [tab, setTab] = useState<'clients' | 'followups' | 'shortlists'>('clients');
+
+  useEffect(() => {
+    let isMounted = true;
+
+    async function verifyRmAccess() {
+      const token = authService.getAccessToken();
+      if (!token) {
+        if (isMounted) setIsAuthorized(false);
+        toast.dismissAll();
+        toast.flash(
+          'error',
+          'Access Denied',
+          'Please sign in with an authorized account to access the RM Portal.'
+        );
+        router.replace('/login?next=/rm&error=unauthorized');
+        return;
+      }
+
+      try {
+        const user = await authService.getCurrentUser();
+        const role = typeof user?.role === 'string' ? user.role.toUpperCase() : '';
+
+        if (role !== 'RM' && role !== 'ADMIN') {
+          if (isMounted) setIsAuthorized(false);
+          toast.dismissAll();
+          toast.flash(
+            'error',
+            'Access Denied',
+            'You do not have permission to access the RM Portal. Please sign in with an authorized account.'
+          );
+          router.replace('/login?next=/rm&error=unauthorized');
+          return;
+        }
+
+        if (isMounted) {
+          setIsAuthorized(true);
+        }
+      } catch {
+        if (isMounted) setIsAuthorized(false);
+        toast.dismissAll();
+        toast.flash(
+          'error',
+          'Access Denied',
+          'You do not have permission to access this resource. Please sign in with an authorized account.'
+        );
+        router.replace('/login?next=/rm&error=unauthorized');
+      }
+    }
+
+    verifyRmAccess();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [router]);
+
+  if (isAuthorized !== true) {
+    return (
+      <div className="min-h-screen bg-[var(--background)] flex flex-col items-center justify-center p-6 text-center select-none">
+        <div className="flex flex-col items-center gap-4 max-w-sm">
+          <div className="h-12 w-12 rounded-2xl bg-[var(--surface-muted)] border border-[var(--border)] grid place-items-center text-[var(--primary)] shadow-xs">
+            <IconLoader2 className="h-6 w-6 animate-spin" />
+          </div>
+          <div>
+            <h3 className="text-base font-bold text-[var(--foreground)] tracking-tight">Verifying RM Authorization</h3>
+            <p className="text-xs text-[var(--muted)] mt-1">
+              Checking access permissions for the RM Portal…
+            </p>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-[var(--background)] flex">
@@ -31,7 +102,10 @@ export default function RMDashboard() {
             <IconShield className="h-5 w-5" />
           </div>
           <div>
-            <h2 className="text-sm font-bold text-[var(--foreground)] tracking-tight">RM Portal</h2>
+            <div className="flex items-center gap-1.5">
+              <h2 className="text-sm font-bold text-[var(--foreground)] tracking-tight">RM Portal</h2>
+              <Badge tone="default" size="sm" className="bg-amber-100 text-amber-800 text-[9px] py-0 px-1">Mock</Badge>
+            </div>
             <p className="text-xs text-[var(--muted)]">Sarah Jenkins</p>
           </div>
         </div>

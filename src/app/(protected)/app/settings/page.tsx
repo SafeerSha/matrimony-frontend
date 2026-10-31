@@ -62,6 +62,38 @@ function SettingsContent() {
   const [isDisableConfirmOpen, setIsDisableConfirmOpen] = useState(false);
   const [isBlockedModalOpen, setIsBlockedModalOpen] = useState(false);
 
+  // Account Lifecycle (Deactivate / Delete)
+  const [accountActionModal, setAccountActionModal] = useState(false);
+  const [accountActionType, setAccountActionType] = useState<'deactivate' | 'delete'>('deactivate');
+  const [accountActionReason, setAccountActionReason] = useState('Taking a temporary break');
+  const [accountActionFeedback, setAccountActionFeedback] = useState('');
+  const [accountActionLoading, setAccountActionLoading] = useState(false);
+
+  const handleAccountActionSubmit = async () => {
+    setAccountActionLoading(true);
+    try {
+      if (accountActionType === 'deactivate') {
+        await profileService.deactivateAccount(accountActionReason);
+        toast.info('Account Deactivated', {
+          description: 'Your profile has been paused. Sign in anytime to reactivate.',
+        });
+      } else {
+        await profileService.deleteAccount(accountActionReason, accountActionFeedback);
+        toast.warning('Account Deleted', {
+          description: 'Your profile has been scheduled for deletion.',
+        });
+      }
+      setAccountActionModal(false);
+      await authService.logout().catch(() => {});
+      window.location.href = '/login';
+    } catch (err: any) {
+      const msg = err?.message || 'Could not complete account action.';
+      toast.error('Action Failed', { description: msg });
+    } finally {
+      setAccountActionLoading(false);
+    }
+  };
+
   // User Account Details
   const [currentUser, setCurrentUser] = useState<any>(null);
   const [isEmailModalOpen, setIsEmailModalOpen] = useState(false);
@@ -1238,6 +1270,151 @@ function SettingsContent() {
           )}
         </main>
       </div>
+
+
+      {/* ACCOUNT DEACTIVATE / DELETE LIFECYCLE MODAL */}
+      <Modal
+        isOpen={accountActionModal}
+        onClose={() => !accountActionLoading && setAccountActionModal(false)}
+        title={accountActionType === 'deactivate' ? 'Deactivate Your Profile' : 'Delete Your Account'}
+        description={
+          accountActionType === 'deactivate'
+            ? 'Temporarily pause your profile visibility. You can return anytime.'
+            : 'Permanently remove your account and matrimonial profile.'
+        }
+        size="md"
+      >
+        <div className="space-y-4 pt-1">
+          {/* Action Type Selector */}
+          <div className="grid grid-cols-2 gap-2 p-1 bg-slate-100 rounded-2xl">
+            <button
+              type="button"
+              onClick={() => {
+                setAccountActionType('deactivate');
+                setAccountActionReason('Taking a temporary break');
+              }}
+              className={`py-2 px-3 text-xs font-bold rounded-xl transition-all ${
+                accountActionType === 'deactivate'
+                  ? 'bg-white text-slate-800 shadow-xs'
+                  : 'text-slate-500 hover:text-slate-800'
+              }`}
+            >
+              Pause Profile
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setAccountActionType('delete');
+                setAccountActionReason('Found my match on IshtamChat');
+              }}
+              className={`py-2 px-3 text-xs font-bold rounded-xl transition-all ${
+                accountActionType === 'delete'
+                  ? 'bg-red-600 text-white shadow-xs'
+                  : 'text-slate-500 hover:text-red-600'
+              }`}
+            >
+              Delete Account
+            </button>
+          </div>
+
+          {accountActionType === 'deactivate' ? (
+            <div className="rounded-2xl bg-amber-50/70 border border-amber-200/80 p-3 text-xs text-amber-900 leading-relaxed">
+              <p className="font-semibold mb-1">What happens when you deactivate?</p>
+              <ul className="list-disc pl-4 space-y-0.5 text-[11px] text-amber-800">
+                <li>Your profile is hidden from all discovery and search recommendations.</li>
+                <li>Your chats, matches, and uploaded photos remain completely safe.</li>
+                <li>You can reactivate your profile anytime simply by signing back in.</li>
+              </ul>
+            </div>
+          ) : (
+            <div className="rounded-2xl bg-red-50/70 border border-red-200/80 p-3 text-xs text-red-900 leading-relaxed">
+              <p className="font-semibold mb-1">Important: Account Deletion Policy</p>
+              <ul className="list-disc pl-4 space-y-0.5 text-[11px] text-red-800">
+                <li>Your profile and conversations will be immediately deactivated.</li>
+                <li>A 30-day grace period applies: contact support anytime to cancel.</li>
+                <li>After 30 days, personal data and photos are permanently purged.</li>
+              </ul>
+            </div>
+          )}
+
+          {/* Reason Selection */}
+          <div>
+            <label className="block text-xs font-semibold text-slate-700 mb-1.5">
+              Reason for {accountActionType === 'deactivate' ? 'deactivating' : 'leaving'}
+            </label>
+            <select
+              value={accountActionReason}
+              onChange={(e) => setAccountActionReason(e.target.value)}
+              className="w-full h-10 px-3 text-xs rounded-xl border border-slate-200 bg-white text-slate-800 outline-none focus:border-[#80132E] font-medium"
+            >
+              {accountActionType === 'deactivate' ? (
+                <>
+                  <option value="Taking a temporary break">Taking a temporary break</option>
+                  <option value="Dating someone exclusively">Dating someone exclusively</option>
+                  <option value="Too busy with career/studies">Too busy with career / studies</option>
+                  <option value="Privacy preference">Privacy preference</option>
+                  <option value="Other reason">Other reason</option>
+                </>
+              ) : (
+                <>
+                  <option value="Found my match on IshtamChat">Found my match on IshtamChat! 💍</option>
+                  <option value="Found partner outside platform">Found partner outside platform</option>
+                  <option value="Did not find suitable matches">Did not find suitable matches</option>
+                  <option value="Privacy or safety concerns">Privacy or safety concerns</option>
+                  <option value="Closing matrimonial search">Closing matrimonial search</option>
+                </>
+              )}
+            </select>
+          </div>
+
+          {/* Feedback */}
+          <div>
+            <label className="block text-xs font-semibold text-slate-700 mb-1.5">
+              Additional notes or feedback (Optional)
+            </label>
+            <textarea
+              value={accountActionFeedback}
+              onChange={(e) => setAccountActionFeedback(e.target.value)}
+              placeholder="Tell us about your experience..."
+              rows={2}
+              maxLength={200}
+              className="w-full p-2.5 text-xs rounded-xl border border-slate-200 bg-white text-slate-800 outline-none focus:border-[#80132E] resize-none"
+            />
+          </div>
+
+          {/* Actions */}
+          <div className="flex justify-end gap-2 pt-2 border-t border-slate-100">
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              disabled={accountActionLoading}
+              onClick={() => setAccountActionModal(false)}
+            >
+              Cancel
+            </Button>
+            <Button
+              type="button"
+              variant={accountActionType === 'deactivate' ? 'primary' : 'danger'}
+              size="sm"
+              disabled={accountActionLoading}
+              onClick={handleAccountActionSubmit}
+              className={accountActionType === 'deactivate' ? 'bg-[#80132E] text-white hover:bg-[#680F25]' : 'bg-red-600 text-white hover:bg-red-700'}
+            >
+              {accountActionLoading ? (
+                <span className="flex items-center gap-1.5">
+                  <IconLoader2 className="h-3.5 w-3.5 animate-spin" />
+                  Processing…
+                </span>
+              ) : accountActionType === 'deactivate' ? (
+                'Pause Profile'
+              ) : (
+                'Confirm Deletion'
+              )}
+            </Button>
+          </div>
+        </div>
+      </Modal>
 
       {/* CHANGE PASSWORD MODAL */}
       <ChangePasswordModal
