@@ -815,6 +815,19 @@ export default function LoginPage() {
                     <span className="font-semibold text-rose-800">⚠️</span>
                     <span className="flex-1 leading-relaxed">{errorMessage}</span>
                   </div>
+                  {(errorMessage.toLowerCase().includes("banned") ||
+                    errorMessage.toLowerCase().includes("suspended") ||
+                    errorMessage.toLowerCase().includes("blocked")) && (
+                    <div className="pt-2 border-t border-red-200/80 text-xs text-red-900 flex items-center justify-between gap-2">
+                      <span>Believe this is a mistake or need assistance?</span>
+                      <Link
+                        href="/app/support"
+                        className="font-bold underline hover:text-red-950 transition-colors shrink-0"
+                      >
+                        Contact Support
+                      </Link>
+                    </div>
+                  )}
                   {errorMessage.toLowerCase().includes("does not have a password") && (
                     <button
                       type="button"

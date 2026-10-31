@@ -75,9 +75,8 @@ function ConfirmDialog({
       <div className="relative z-10 w-full max-w-sm rounded-2xl border border-[var(--border)] bg-[var(--surface)] shadow-2xl p-6 animate-in zoom-in-95 fade-in duration-150">
         <div className="flex items-start gap-3 mb-4">
           <div
-            className={`flex-shrink-0 rounded-full p-2 ${
-              variant === 'danger' ? 'bg-red-100 text-red-600' : 'bg-amber-100 text-amber-600'
-            }`}
+            className={`flex-shrink-0 rounded-full p-2 ${variant === 'danger' ? 'bg-red-100 text-red-600' : 'bg-amber-100 text-amber-600'
+              }`}
           >
             <IconAlertTriangle className="h-5 w-5" aria-hidden="true" />
           </div>
@@ -540,9 +539,8 @@ export function UserManagement() {
                   return (
                     <div
                       key={u.id}
-                      className={`p-4 space-y-3 transition-colors ${
-                        isBlocked ? 'bg-red-50/40 dark:bg-red-950/20' : ''
-                      }`}
+                      className={`p-4 space-y-3 transition-colors ${isBlocked ? 'bg-red-50/40 dark:bg-red-950/20' : ''
+                        }`}
                     >
                       {/* Header: Avatar, Name, Role, Status */}
                       <div className="flex items-start justify-between gap-2.5">
@@ -622,25 +620,15 @@ export function UserManagement() {
                           >
                             <Badge
                               tone={isPaid ? 'accent' : 'default'}
-                              className={`cursor-pointer transition-all group-hover:scale-105 ${
-                                isPaid
+                              className={`cursor-pointer transition-all group-hover:scale-105 ${isPaid
                                   ? 'bg-amber-100 text-amber-900 border-amber-300 font-bold'
                                   : 'bg-slate-100 text-slate-700 font-medium'
-                              }`}
+                                }`}
                             >
                               {isPaid && <IconCrown className="h-3 w-3 text-amber-600 inline mr-1" />}
                               {isPaid ? 'Paid Tier' : 'Basic Tier'}
                             </Badge>
                           </button>
-                        </div>
-
-                        {/* User Status Row (Read-Only) */}
-                        <div className="flex items-center justify-between pt-2 border-t border-[var(--border)] text-xs">
-                          <span className="text-[var(--muted-strong)] font-semibold flex items-center gap-1.5">
-                            <IconUserCheck className="h-3.5 w-3.5 text-[var(--primary)] shrink-0" />
-                            User Status:
-                          </span>
-                          {renderUserStatusBadge(u)}
                         </div>
 
                         {/* Reason / Notes if Deactivated or Deleted */}
@@ -658,11 +646,10 @@ export function UserManagement() {
                           variant="outline"
                           disabled={isActing}
                           onClick={() => confirmBlock(u)}
-                          className={`w-full text-xs h-8 px-3 flex items-center justify-center gap-1.5 font-semibold transition-colors ${
-                            isBlocked
+                          className={`w-full text-xs h-8 px-3 flex items-center justify-center gap-1.5 font-semibold transition-colors ${isBlocked
                               ? 'text-emerald-700 border-emerald-300 hover:bg-emerald-50'
                               : 'text-red-600 border-red-200 hover:bg-red-50'
-                          }`}
+                            }`}
                         >
                           {isActing ? (
                             <span className="h-3.5 w-3.5 border border-current border-t-transparent rounded-full animate-spin" />
@@ -711,9 +698,8 @@ export function UserManagement() {
                       return (
                         <tr
                           key={u.id}
-                          className={`hover:bg-[var(--surface-muted)]/50 transition-colors ${
-                            isBlocked ? 'bg-red-50/40 dark:bg-red-950/20' : ''
-                          }`}
+                          className={`hover:bg-[var(--surface-muted)]/50 transition-colors ${isBlocked ? 'bg-red-50/40 dark:bg-red-950/20' : ''
+                            }`}
                         >
                           {/* Name & Avatar */}
                           <td className="p-3.5 sm:p-4">
@@ -789,11 +775,10 @@ export function UserManagement() {
                             >
                               <Badge
                                 tone={isPaid ? 'accent' : 'default'}
-                                className={`cursor-pointer transition-all group-hover:scale-105 ${
-                                  isPaid
+                                className={`cursor-pointer transition-all group-hover:scale-105 ${isPaid
                                     ? 'bg-amber-100 text-amber-900 border-amber-300 font-semibold'
                                     : 'bg-slate-100 text-slate-700 font-medium'
-                                }`}
+                                  }`}
                               >
                                 {isPaid && <IconCrown className="h-3 w-3 text-amber-600 inline mr-1" aria-hidden="true" />}
                                 {isPaid ? 'Paid' : 'Basic'}
@@ -822,11 +807,10 @@ export function UserManagement() {
                                 disabled={isActing}
                                 onClick={() => confirmBlock(u)}
                                 aria-label={isBlocked ? `Unblock ${displayName}` : `Block ${displayName}`}
-                                className={`text-xs h-8 px-2.5 flex items-center gap-1 font-medium transition-colors ${
-                                  isBlocked
+                                className={`text-xs h-8 px-2.5 flex items-center gap-1 font-medium transition-colors ${isBlocked
                                     ? 'text-emerald-700 hover:text-emerald-800 border-emerald-300 hover:bg-emerald-50'
                                     : 'text-red-600 hover:text-red-700 border-red-200 hover:bg-red-50'
-                                }`}
+                                  }`}
                               >
                                 {isActing ? (
                                   <span
