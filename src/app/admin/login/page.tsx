@@ -37,7 +37,7 @@ function AdminLoginForm() {
       try {
         const user = await authService.getCurrentUser();
         if (isMounted && user?.role?.toUpperCase() === 'ADMIN') {
-          router.replace(nextUrl);
+          window.location.href = nextUrl || '/admin';
         }
       } catch {
         // Not authenticated or expired session; remain on login form
@@ -48,7 +48,7 @@ function AdminLoginForm() {
     return () => {
       isMounted = false;
     };
-  }, [router, nextUrl]);
+  }, [nextUrl]);
 
   // Form submission handler
   const handleSubmit = async (e: React.FormEvent) => {
@@ -89,7 +89,10 @@ function AdminLoginForm() {
         description: 'Welcome to the Admin Portal.',
       });
 
-      router.replace(nextUrl);
+      // Perform a full top-level navigation so all fresh cookies are dispatched
+      setTimeout(() => {
+        window.location.href = nextUrl || '/admin';
+      }, 150);
     } catch (err: any) {
       const msg =
         err?.message ||
