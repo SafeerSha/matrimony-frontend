@@ -24,6 +24,7 @@ export interface ModernSelectProps {
   maxHeight?: string;
   icon?: React.ReactNode;
   label?: string;
+  ariaLabel?: string;
   error?: string;
   name?: string;
   required?: boolean;
@@ -43,6 +44,7 @@ export function ModernSelect({
   maxHeight = "max-h-[175px]",
   icon,
   label,
+  ariaLabel,
   error,
   name,
   required = false,
@@ -120,12 +122,13 @@ export function ModernSelect({
       {/* Hidden input for form support */}
       {name && <input type="hidden" name={name} value={normalizedValue} required={required} />}
 
-      <div ref={containerRef} className="relative w-full">
+      <div ref={containerRef} className={cn("relative w-full", isOpen && "z-30")}>
         <button
           ref={triggerRef}
           id={generatedId}
           type="button"
           disabled={disabled}
+          aria-label={ariaLabel || label || (typeof placeholder === "string" ? placeholder : undefined)}
           aria-haspopup="listbox"
           aria-expanded={isOpen}
           onClick={() => !disabled && setIsOpen(!isOpen)}

@@ -24,6 +24,7 @@ import { Avatar } from '@/components/ui/avatar';
 import { adminService } from '@/services/admin.service';
 import type { AdminUserListItem, AdminUserQueryFilters } from '@/types/admin-user';
 import { toast } from '@/lib/toast';
+import { ModernSelect, type ModernSelectOption } from '@/components/ui/modern-select';
 
 // ─── Confirmation Dialog ───────────────────────────────────────────────────────
 
@@ -123,6 +124,47 @@ interface PendingConfirm {
 }
 
 const PAGE_SIZE = 15;
+
+const PLAN_FILTER_OPTIONS: ModernSelectOption[] = [
+  {
+    value: 'ALL',
+    label: 'All Plans',
+    icon: <span className="h-2 w-2 rounded-full bg-slate-400 inline-block" />,
+  },
+  {
+    value: 'PAID',
+    label: 'Paid / Premium',
+    icon: <IconCrown className="h-3.5 w-3.5 text-amber-500 shrink-0" />,
+  },
+  {
+    value: 'BASIC',
+    label: 'Basic / Free',
+    icon: <span className="h-2 w-2 rounded-full bg-slate-400 inline-block" />,
+  },
+];
+
+const STATUS_FILTER_OPTIONS: ModernSelectOption[] = [
+  {
+    value: 'ALL',
+    label: 'All Statuses',
+    icon: <span className="h-2 w-2 rounded-full bg-slate-400 inline-block" />,
+  },
+  {
+    value: 'ACTIVE',
+    label: 'Active',
+    icon: <span className="h-2 w-2 rounded-full bg-emerald-500 inline-block shadow-[0_0_6px_rgba(16,185,129,0.5)]" />,
+  },
+  {
+    value: 'BLOCKED',
+    label: 'Blocked',
+    icon: <span className="h-2 w-2 rounded-full bg-rose-500 inline-block shadow-[0_0_6px_rgba(244,63,94,0.5)]" />,
+  },
+  {
+    value: 'SUSPENDED',
+    label: 'Suspended',
+    icon: <span className="h-2 w-2 rounded-full bg-amber-500 inline-block shadow-[0_0_6px_rgba(245,158,11,0.5)]" />,
+  },
+];
 
 export function UserManagement() {
   const [users, setUsers] = useState<AdminUserListItem[]>([]);
@@ -308,7 +350,7 @@ export function UserManagement() {
         </div>
 
         {/* ── Filters ── */}
-        <Card className="p-4 sm:p-5 border border-[var(--border)] shadow-xs bg-[var(--surface)]">
+        <Card className="relative z-10 p-4 sm:p-5 border border-[var(--border)] shadow-xs bg-[var(--surface)]">
           <fieldset>
             <legend className="sr-only">Filter users</legend>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
@@ -348,43 +390,32 @@ export function UserManagement() {
 
               {/* Plan */}
               <div>
-                <label htmlFor="um-plan" className="sr-only">
-                  Filter by plan
-                </label>
-                <select
-                  id="um-plan"
+                <ModernSelect
                   value={plan}
-                  onChange={(e) => {
-                    setPlan(e.target.value as 'ALL' | 'BASIC' | 'PAID');
+                  onChange={(val) => {
+                    setPlan(val as 'ALL' | 'BASIC' | 'PAID');
                     setPage(1);
                   }}
-                  className="w-full h-10 px-3 text-xs sm:text-sm rounded-xl border border-[var(--border)] bg-[var(--background)] text-[var(--foreground)] outline-none focus:border-[var(--primary)] font-medium"
-                >
-                  <option value="ALL">All Plans</option>
-                  <option value="PAID">Paid / Premium</option>
-                  <option value="BASIC">Basic / Free</option>
-                </select>
+                  options={PLAN_FILTER_OPTIONS}
+                  size="sm"
+                  ariaLabel="Filter by plan"
+                  triggerClassName="border-[var(--border)] bg-[var(--background)] hover:border-[var(--primary)]/50 text-xs sm:text-sm font-medium"
+                />
               </div>
 
               {/* Status */}
               <div>
-                <label htmlFor="um-status" className="sr-only">
-                  Filter by status
-                </label>
-                <select
-                  id="um-status"
+                <ModernSelect
                   value={status}
-                  onChange={(e) => {
-                    setStatus(e.target.value as 'ALL' | 'ACTIVE' | 'BLOCKED' | 'SUSPENDED');
+                  onChange={(val) => {
+                    setStatus(val as 'ALL' | 'ACTIVE' | 'BLOCKED' | 'SUSPENDED');
                     setPage(1);
                   }}
-                  className="w-full h-10 px-3 text-xs sm:text-sm rounded-xl border border-[var(--border)] bg-[var(--background)] text-[var(--foreground)] outline-none focus:border-[var(--primary)] font-medium"
-                >
-                  <option value="ALL">All Statuses</option>
-                  <option value="ACTIVE">Active</option>
-                  <option value="BLOCKED">Blocked</option>
-                  <option value="SUSPENDED">Suspended</option>
-                </select>
+                  options={STATUS_FILTER_OPTIONS}
+                  size="sm"
+                  ariaLabel="Filter by status"
+                  triggerClassName="border-[var(--border)] bg-[var(--background)] hover:border-[var(--primary)]/50 text-xs sm:text-sm font-medium"
+                />
               </div>
             </div>
 
