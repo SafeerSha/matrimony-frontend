@@ -27,12 +27,14 @@ import { toast } from "@/lib/toast";
 import { resolvePostAuthRoute } from "@/lib/auth/auth-utils";
 import { LookingForModal } from "@/components/hero";
 import { ModernOtpInput } from "@/components/ui";
+import { isEmailAuthMode } from "@/config/feature-flags";
 
 export default function LoginPage() {
   const [isRegisterModalOpen, setIsRegisterModalOpen] = useState(false);
   const [authMethod, setAuthMethod] = useState<"otp" | "password">("otp");
   const [otpStep, setOtpStep] = useState<"phone" | "code">("phone");
   const [phone, setPhone] = useState("");
+  const [email, setEmail] = useState("");
   const [otp, setOtp] = useState("");
   const [resendTimer, setResendTimer] = useState(30);
 
@@ -86,13 +88,74 @@ export default function LoginPage() {
     return resolvePostAuthRoute(checkTarget, "/app/discover");
   };
 
-  // 1. Handle Send OTP
+  // 1. Handle Send OTP (supports Email or Mobile based on Auth Flag)
   const handleSendOtp = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
     setErrorMessage(null);
     setStatusMessage(null);
     setNotRegisteredAccount(null);
+
+    const isEmailAuth = isEmailAuthMode();
+
+    if (isEmailAuth) {
+      const cleanEmail = email.trim().toLowerCase();
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!cleanEmail || !emailRegex.test(cleanEmail)) {
+        setIsLoading(false);
+        setErrorMessage("Please enter a valid email address (e.g. name@gmail.com).");
+        return;
+      }
+
+      try {
+        await authService.sendOtp({ email: cleanEmail, purpose: "login" } as any);
+        setOtpStep("code");
+        setResendTimer(30);
+        toast.info("Verification code sent", `We've sent a 6-digit OTP to ${cleanEmail}`);
+      } catch (err: any) {
+        const isAccountNotFound =
+          err?.status === 404 ||
+          err?.statusCode === 404 ||
+          err?.details?.code === "ACCOUNT_NOT_FOUND" ||
+          err?.code === "ACCOUNT_NOT_FOUND" ||
+          err?.message?.toLowerCase().includes("no account found") ||
+          err?.message?.toLowerCase().includes("register first");
+
+        if (isAccountNotFound) {
+          setNotRegisteredAccount({
+            identifier: cleanEmail,
+            type: "email",
+            message: err.message || "No account found with this email address. Please register first.",
+          });
+          toast.warning(
+            "Account Not Found",
+            "This email address is not registered yet. Please create your profile to continue."
+          );
+          return;
+        }
+
+        const isRateLimited =
+          err?.status === 429 ||
+          err?.statusCode === 429 ||
+          err?.message?.includes("ThrottlerException") ||
+          err?.message?.toLowerCase().includes("too many requests") ||
+          err?.message?.toLowerCase().includes("too many attempts");
+
+        if (isRateLimited) {
+          const rateLimitMsg = "Too many verification requests. For your security, please wait a minute before requesting another code.";
+          setErrorMessage(rateLimitMsg);
+          toast.warning("Please wait a moment", rateLimitMsg);
+          return;
+        }
+
+        const msg = err.message || "Failed to send verification code. Please try again.";
+        setErrorMessage(msg);
+        toast.error("Failed to send OTP", msg);
+      } finally {
+        setIsLoading(false);
+      }
+      return;
+    }
 
     const rawDigits = phone.trim().replace(/\D/g, "");
     const cleanDigits = rawDigits.startsWith("91") && rawDigits.length > 10 ? rawDigits.slice(2) : rawDigits;
@@ -161,12 +224,19 @@ export default function LoginPage() {
     setIsLoading(true);
     setErrorMessage(null);
 
-    try {
-      const rawDigits = phone.trim().replace(/\D/g, "");
-      const cleanDigits = rawDigits.startsWith("91") && rawDigits.length > 10 ? rawDigits.slice(2) : rawDigits;
-      const cleanPhone = `+91 ${cleanDigits}`;
+    const isEmailAuth = isEmailAuthMode();
 
-      const res = await authService.verifyOtp(cleanPhone, code);
+    try {
+      let res;
+      if (isEmailAuth) {
+        const cleanEmail = email.trim().toLowerCase();
+        res = await authService.verifyOtp({ email: cleanEmail, otp: code } as any);
+      } else {
+        const rawDigits = phone.trim().replace(/\D/g, "");
+        const cleanDigits = rawDigits.startsWith("91") && rawDigits.length > 10 ? rawDigits.slice(2) : rawDigits;
+        const cleanPhone = `+91 ${cleanDigits}`;
+        res = await authService.verifyOtp(cleanPhone, code);
+      }
       const { url, isDraft } = await determineDestination(res);
 
       if (isDraft) {
@@ -194,13 +264,17 @@ export default function LoginPage() {
       if (isAccountNotFound) {
         setOtpStep("phone");
         setNotRegisteredAccount({
-          identifier: phone.trim(),
-          type: "phone",
-          message: err.message || "No account found with this mobile number. Please register first.",
+          identifier: isEmailAuth ? email.trim() : phone.trim(),
+          type: isEmailAuth ? "email" : "phone",
+          message: err.message || (isEmailAuth
+            ? "No account found with this email address. Please register first."
+            : "No account found with this mobile number. Please register first."),
         });
         toast.warning(
           "Account Not Found",
-          "This mobile number is not registered. Please create your profile to continue."
+          isEmailAuth
+            ? "This email address is not registered. Please create your profile to continue."
+            : "This mobile number is not registered. Please create your profile to continue."
         );
         setIsLoading(false);
         return;
@@ -478,7 +552,7 @@ export default function LoginPage() {
                   )}
                 >
                   <IconDeviceMobile className="h-4 w-4 text-[var(--primary)]" />
-                  <span>Mobile OTP</span>
+                  <span>{isEmailAuthMode() ? "Email OTP" : "Mobile OTP"}</span>
                   <span className="hidden sm:inline-block ml-1 text-[10px] bg-emerald-100 text-emerald-800 px-1.5 py-0.2 rounded font-medium">
                     Fast
                   </span>
@@ -581,56 +655,104 @@ export default function LoginPage() {
                 <div>
                   {otpStep === "phone" ? (
                     <form className="space-y-4" onSubmit={handleSendOtp}>
-                      <div className="group">
-                        <label
-                          htmlFor="phone"
-                          className="block text-[11px] sm:text-xs font-semibold uppercase tracking-wider text-[var(--muted-strong)] mb-1.5"
-                        >
-                          Mobile Number
-                        </label>
-                        <div className="relative flex items-center">
-                          <span className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3.5 sm:pl-4 text-[var(--muted)] group-focus-within:text-[var(--primary)] transition-colors">
-                            <IconPhone className="h-5 w-5" aria-hidden="true" />
-                          </span>
-                          <div className="pointer-events-none absolute left-11 sm:left-12 flex items-center pr-2.5 border-r border-slate-200 select-none">
-                            <span className="text-sm sm:text-base font-bold text-[var(--foreground)]">+91</span>
+                      {isEmailAuthMode() ? (
+                        <div className="group">
+                          <label
+                            htmlFor="email"
+                            className="block text-[11px] sm:text-xs font-semibold uppercase tracking-wider text-[var(--muted-strong)] mb-1.5"
+                          >
+                            Email Address (Gmail / Email)
+                          </label>
+                          <div className="relative flex items-center">
+                            <span className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3.5 sm:pl-4 text-[var(--muted)] group-focus-within:text-[var(--primary)] transition-colors">
+                              <IconMail className="h-5 w-5" aria-hidden="true" />
+                            </span>
+                            <input
+                              id="email"
+                              type="email"
+                              autoComplete="email"
+                              required
+                              value={email}
+                              onChange={(e) => {
+                                setNotRegisteredAccount(null);
+                                setErrorMessage(null);
+                                setEmail(e.target.value);
+                              }}
+                              placeholder="name@gmail.com"
+                              className={cn(
+                                "h-12 sm:h-12.5 lg:h-13 w-full rounded-xl border pl-11 pr-4 text-sm sm:text-base font-medium",
+                                "text-[var(--foreground)] placeholder:text-[var(--muted-light)]",
+                                "outline-none transition-all duration-200",
+                                notRegisteredAccount
+                                  ? "border-amber-400 bg-amber-50/20 focus:border-amber-500 focus:ring-4 focus:ring-amber-500/10"
+                                  : "border-[var(--border)] bg-slate-50/70 focus:bg-white focus:border-[var(--primary)] focus:ring-4 focus:ring-[var(--primary)]/10"
+                              )}
+                              disabled={isLoading}
+                            />
                           </div>
-                          <input
-                            id="phone"
-                            type="tel"
-                            maxLength={10}
-                            required
-                            value={phone}
-                            onChange={(e) => {
-                              setNotRegisteredAccount(null);
-                              setErrorMessage(null);
-                              let val = e.target.value.replace(/\D/g, "");
-                              if (val.startsWith("91") && val.length > 10) {
-                                val = val.slice(2);
-                              }
-                              setPhone(val.slice(0, 10));
-                            }}
-                            placeholder="98765 43210"
-                            className={cn(
-                              "h-12 sm:h-12.5 lg:h-13 w-full rounded-xl border pl-23 sm:pl-24 pr-4 text-sm sm:text-base font-medium",
-                              "text-[var(--foreground)] placeholder:text-[var(--muted-light)]",
-                              "outline-none transition-all duration-200",
-                              notRegisteredAccount
-                                ? "border-amber-400 bg-amber-50/20 focus:border-amber-500 focus:ring-4 focus:ring-amber-500/10"
-                                : "border-[var(--border)] bg-slate-50/70 focus:bg-white focus:border-[var(--primary)] focus:ring-4 focus:ring-[var(--primary)]/10"
-                            )}
-                          />
+                          {notRegisteredAccount ? (
+                            <p className="mt-1.5 text-[11px] text-amber-800 font-medium">
+                              ⚠️ Email not registered yet. Click &apos;Create Free Profile Now&apos; above to register.
+                            </p>
+                          ) : (
+                            <p className="mt-1.5 text-[11px] text-[var(--muted)]">
+                              We will send a 6-digit one-time verification code to your email.
+                            </p>
+                          )}
                         </div>
-                        {notRegisteredAccount ? (
-                          <p className="mt-1.5 text-[11px] text-amber-800 font-medium">
-                            ⚠️ Mobile number not found. Click &apos;Create Free Profile Now&apos; above to register.
-                          </p>
-                        ) : (
-                          <p className="mt-1.5 text-[11px] text-[var(--muted)]">
-                            We will send a 6-digit one-time password to verify your number.
-                          </p>
-                        )}
-                      </div>
+                      ) : (
+                        <div className="group">
+                          <label
+                            htmlFor="phone"
+                            className="block text-[11px] sm:text-xs font-semibold uppercase tracking-wider text-[var(--muted-strong)] mb-1.5"
+                          >
+                            Mobile Number
+                          </label>
+                          <div className="relative flex items-center">
+                            <span className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3.5 sm:pl-4 text-[var(--muted)] group-focus-within:text-[var(--primary)] transition-colors">
+                              <IconPhone className="h-5 w-5" aria-hidden="true" />
+                            </span>
+                            <div className="pointer-events-none absolute left-11 sm:left-12 flex items-center pr-2.5 border-r border-slate-200 select-none">
+                              <span className="text-sm sm:text-base font-bold text-[var(--foreground)]">+91</span>
+                            </div>
+                            <input
+                              id="phone"
+                              type="tel"
+                              maxLength={10}
+                              required
+                              value={phone}
+                              onChange={(e) => {
+                                setNotRegisteredAccount(null);
+                                setErrorMessage(null);
+                                let val = e.target.value.replace(/\D/g, "");
+                                if (val.startsWith("91") && val.length > 10) {
+                                  val = val.slice(2);
+                                }
+                                setPhone(val.slice(0, 10));
+                              }}
+                              placeholder="98765 43210"
+                              className={cn(
+                                "h-12 sm:h-12.5 lg:h-13 w-full rounded-xl border pl-23 sm:pl-24 pr-4 text-sm sm:text-base font-medium",
+                                "text-[var(--foreground)] placeholder:text-[var(--muted-light)]",
+                                "outline-none transition-all duration-200",
+                                notRegisteredAccount
+                                  ? "border-amber-400 bg-amber-50/20 focus:border-amber-500 focus:ring-4 focus:ring-amber-500/10"
+                                  : "border-[var(--border)] bg-slate-50/70 focus:bg-white focus:border-[var(--primary)] focus:ring-4 focus:ring-[var(--primary)]/10"
+                              )}
+                              disabled={isLoading}
+                            />
+                          </div>
+                          {notRegisteredAccount ? (
+                            <p className="mt-1.5 text-[11px] text-amber-800 font-medium">
+                              ⚠️ Mobile number not found. Click &apos;Create Free Profile Now&apos; above to register.
+                            </p>
+                          ) : (
+                            <p className="mt-1.5 text-[11px] text-[var(--muted)]">
+                              We will send a 6-digit one-time password to verify your number.
+                            </p>
+                          )}
+                        </div>
+                      )}
 
 
                       <div className="pt-2">
@@ -681,11 +803,11 @@ export default function LoginPage() {
                             }}
                             className="text-xs font-semibold text-[var(--primary)] hover:underline cursor-pointer"
                           >
-                            Change number
+                            {isEmailAuthMode() ? "Change email" : "Change number"}
                           </button>
                         </div>
                         <p className="text-xs text-[var(--muted)] mb-3">
-                          Sent to <span className="font-semibold text-[var(--foreground)]">+91 {phone.replace(/\D/g, "").slice(-10)}</span>
+                          Sent to <span className="font-semibold text-[var(--foreground)]">{isEmailAuthMode() ? email : `+91 ${phone.replace(/\D/g, "").slice(-10)}`}</span>
                         </p>
 
                         {/* Modern Segmented 3-3 Pin Input */}

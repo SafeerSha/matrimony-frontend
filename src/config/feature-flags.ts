@@ -99,3 +99,31 @@ export const SUBSCRIPTION_FLAGS = {
 export function isFreeTrialMode(): boolean {
   return SUBSCRIPTION_FLAGS.ENABLE_FREE_TRIAL_MODE;
 }
+
+/**
+ * Authentication & Verification Method Flag
+ *
+ * Controls whether the application verifies users via Email (Gmail) or Mobile SMS:
+ *
+ * - 'EMAIL' (DEFAULT / PRE-SMS RELEASE):
+ *   Temporary launch mode while SMS gateway is not yet configured.
+ *   Users sign up, log in, and verify through their Gmail / Email with a 6-digit code.
+ *   Onboarding cell number is optional / contact-only.
+ *
+ * - 'PHONE' (PRODUCTION SMS MODE):
+ *   Standard Indian 10-digit mobile number + SMS OTP flow.
+ *   Cell number is mandatory and verified via SMS.
+ *
+ * To switch modes:
+ * Set NEXT_PUBLIC_AUTH_METHOD=PHONE in your .env file,
+ * OR toggle PRIMARY_AUTH_METHOD: 'PHONE' below.
+ */
+export const AUTH_FLAGS = {
+  PRIMARY_AUTH_METHOD:
+    (typeof process !== 'undefined' && (process.env.NEXT_PUBLIC_AUTH_METHOD as 'EMAIL' | 'PHONE')) ||
+    'EMAIL',
+};
+
+export function isEmailAuthMode(): boolean {
+  return AUTH_FLAGS.PRIMARY_AUTH_METHOD === 'EMAIL';
+}

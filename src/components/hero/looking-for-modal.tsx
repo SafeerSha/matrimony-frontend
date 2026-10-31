@@ -15,7 +15,9 @@ import {
   IconLoader2,
   IconArrowRight,
   IconShieldCheck,
+  IconMail,
 } from "@tabler/icons-react";
+import { isEmailAuthMode } from "@/config/feature-flags";
 import { cn } from "@/lib/cn";
 import { authService, type QuickRegisterDto } from "@/services";
 import { toast } from "@/lib/toast";
@@ -148,6 +150,7 @@ export function LookingForModal({
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
   const [phone, setPhone] = useState(initialPhone ? initialPhone.replace(/\D/g, "").slice(-10) : "");
+  const [email, setEmail] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -169,6 +172,7 @@ export function LookingForModal({
       setSelectedMatrimony(null);
       setError(null);
       setIsSubmitting(false);
+      setEmail("");
 
       if (initialPhone) {
         setPhone(initialPhone.replace(/\D/g, "").slice(-10));
@@ -273,14 +277,27 @@ export function LookingForModal({
       return;
     }
 
-    const cleanPhone = phone.replace(/\D/g, "");
-    if (!cleanPhone || cleanPhone.length !== 10) {
-      setError("Please enter a valid 10-digit mobile number");
-      return;
+    const isEmailAuth = isEmailAuthMode();
+    let cleanPhone = "";
+    let cleanEmail = "";
+
+    if (isEmailAuth) {
+      cleanEmail = email.trim().toLowerCase();
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!cleanEmail || !emailRegex.test(cleanEmail)) {
+        setError("Please enter a valid email address (e.g. name@gmail.com)");
+        return;
+      }
+    } else {
+      cleanPhone = phone.replace(/\D/g, "");
+      if (!cleanPhone || cleanPhone.length !== 10) {
+        setError("Please enter a valid 10-digit mobile number");
+        return;
+      }
     }
 
     const fullName = `${trimmedFirst} ${trimmedLast}`;
-    const fullPhone = `+91 ${cleanPhone}`;
+    const fullPhone = cleanPhone ? `+91 ${cleanPhone}` : undefined;
 
     const isByLocked = selectedCategory === "Friendship" || selectedCategory === "Living-together";
     const finalCreatedBy = isByLocked ? "Myself" : createdBy;
@@ -296,7 +313,7 @@ export function LookingForModal({
 
     const payload: QuickRegisterDto = {
       name: fullName,
-      phone: fullPhone,
+      ...(isEmailAuth ? { email: cleanEmail } : { phone: fullPhone }),
       profileFor: normalizedCategory,
       category: normalizedCategory,
       gender: derivedUserGender,
@@ -319,29 +336,48 @@ export function LookingForModal({
 
     try {
       await authService.quickRegister(payload);
-      authService.sendOtp(fullPhone).catch(() => {});
-
-      toast.info(
-        "Verification Code Sent",
-        `We've sent a 6-digit verification code to ${fullPhone}.`
-      );
-      // Navigate directly to /verify without dismissing the modal beforehand to eliminate landing page flash
-      router.push("/verify");
+      if (isEmailAuth) {
+        authService.sendOtp({ email: cleanEmail, purpose: "register" }).catch(() => {});
+        toast.info(
+          "Verification Code Sent",
+          `We've sent a 6-digit verification code to ${cleanEmail}.`
+        );
+        router.push(`/verify?email=${encodeURIComponent(cleanEmail)}&name=${encodeURIComponent(fullName)}`);
+      } else {
+        authService.sendOtp(fullPhone!).catch(() => {});
+        toast.info(
+          "Verification Code Sent",
+          `We've sent a 6-digit verification code to ${fullPhone}.`
+        );
+        router.push("/verify");
+      }
     } catch (err: any) {
       if (err?.status === 409) {
-        setError("An account with this mobile number already exists. Please sign in.");
+        setError(
+          isEmailAuth
+            ? "An account with this email address already exists. Please sign in."
+            : "An account with this mobile number already exists. Please sign in."
+        );
         toast.warning("Account exists", "Please sign in to access your profile.");
         setIsSubmitting(false);
         return;
       }
       console.warn("Backend notice (proceeding with local draft):", err);
-      authService.sendOtp(fullPhone).catch(() => {});
-      toast.info(
-        "Verification Code Sent",
-        `Please verify your mobile number to continue.`
-      );
-      // Navigate directly to /verify without dismissing the modal beforehand
-      router.push("/verify");
+      if (isEmailAuth) {
+        authService.sendOtp({ email: cleanEmail, purpose: "register" }).catch(() => {});
+        toast.info(
+          "Verification Code Sent",
+          `Please verify your email address to continue.`
+        );
+        router.push(`/verify?email=${encodeURIComponent(cleanEmail)}&name=${encodeURIComponent(fullName)}`);
+      } else {
+        authService.sendOtp(fullPhone!).catch(() => {});
+        toast.info(
+          "Verification Code Sent",
+          `Please verify your mobile number to continue.`
+        );
+        router.push("/verify");
+      }
     }
   };
 
@@ -747,29 +783,53 @@ export function LookingForModal({
           </div>
         </div>
 
-        {/* Mobile Number Field */}
-        <div>
-          <label className="block text-xs sm:text-sm font-bold text-[#3B1520] mb-1.5 tracking-wide">
-            Mobile Number
-          </label>
-          <div className="relative flex items-center">
-            <div className="absolute left-3.5 flex items-center gap-1.5 text-sm sm:text-base font-bold text-[#80132E] pointer-events-none select-none">
-              <span>🇮🇳 +91</span>
+        {/* Contact Input Field - Switched by Auth Mode Flag */}
+        {isEmailAuthMode() ? (
+          <div>
+            <label className="block text-xs sm:text-sm font-bold text-[#3B1520] mb-1.5 tracking-wide">
+              Email Address (for verification code)
+            </label>
+            <div className="relative flex items-center">
+              <div className="absolute left-3.5 flex items-center text-[#80132E] pointer-events-none select-none">
+                <IconMail className="w-5 h-5 text-[#80132E]" />
+              </div>
+              <input
+                type="email"
+                autoComplete="email"
+                value={email}
+                onChange={(e) => {
+                  setEmail(e.target.value);
+                  if (error) setError(null);
+                }}
+                placeholder="you@gmail.com"
+                className="h-12 w-full pl-11 pr-4 rounded-xl border border-[#DCCBBA] bg-white text-[#180D12] placeholder:text-neutral-400 text-sm sm:text-base font-medium focus:outline-none focus:border-[#80132E] focus:ring-2 focus:ring-[#80132E]/20 transition-all shadow-2xs"
+              />
             </div>
-            <input
-              type="tel"
-              inputMode="numeric"
-              maxLength={10}
-              value={phone}
-              onChange={(e) => {
-                setPhone(e.target.value.replace(/\D/g, ""));
-                if (error) setError(null);
-              }}
-              placeholder="98765 43210"
-              className="h-12 w-full pl-20 pr-4 rounded-xl border border-[#DCCBBA] bg-white text-[#180D12] placeholder:text-neutral-400 text-sm sm:text-base font-medium focus:outline-none focus:border-[#80132E] focus:ring-2 focus:ring-[#80132E]/20 transition-all shadow-2xs"
-            />
           </div>
-        </div>
+        ) : (
+          <div>
+            <label className="block text-xs sm:text-sm font-bold text-[#3B1520] mb-1.5 tracking-wide">
+              Mobile Number
+            </label>
+            <div className="relative flex items-center">
+              <div className="absolute left-3.5 flex items-center gap-1.5 text-sm sm:text-base font-bold text-[#80132E] pointer-events-none select-none">
+                <span>🇮🇳 +91</span>
+              </div>
+              <input
+                type="tel"
+                inputMode="numeric"
+                maxLength={10}
+                value={phone}
+                onChange={(e) => {
+                  setPhone(e.target.value.replace(/\D/g, ""));
+                  if (error) setError(null);
+                }}
+                placeholder="98765 43210"
+                className="h-12 w-full pl-20 pr-4 rounded-xl border border-[#DCCBBA] bg-white text-[#180D12] placeholder:text-neutral-400 text-sm sm:text-base font-medium focus:outline-none focus:border-[#80132E] focus:ring-2 focus:ring-[#80132E]/20 transition-all shadow-2xs"
+              />
+            </div>
+          </div>
+        )}
 
         {/* Error Message Alert */}
         {error && (

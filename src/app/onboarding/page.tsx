@@ -36,6 +36,7 @@ import {
 import { Logo } from "@/components/layout/logo";
 import { cn } from "@/lib/cn";
 import { profileService, mediaService, authService, isDraftUser } from "@/services";
+import { isEmailAuthMode } from "@/config/feature-flags";
 import { toast } from "@/lib/toast";
 import {
   DatePicker,
@@ -189,8 +190,9 @@ export default function OnboardingPage() {
       setError("Permanent Address is mandatory. (Note: It will remain confidential and hidden from other users).");
       return false;
     }
+    const isEmailAuth = isEmailAuthMode();
     const phoneVal = (data.phone || draftInfo?.phone || "").trim();
-    if (!phoneVal) {
+    if (!isEmailAuth && !phoneVal) {
       setError("Cell number is mandatory. (Note: It will remain confidential and hidden from other users).");
       return false;
     }
@@ -439,9 +441,10 @@ export default function OnboardingPage() {
         return;
       }
 
-      // 6. Cell Number - Strictly Mandatory
+      // 6. Cell Number - Mandatory in SMS mode, optional in Email mode
+      const isEmailAuth = isEmailAuthMode();
       const phoneVal = (formData.get("phone") as string || profileData.phone || draftInfo?.phone || "").trim();
-      if (!phoneVal) {
+      if (!isEmailAuth && !phoneVal) {
         setError("Cell number is mandatory. (Note: It will remain confidential and hidden from other users).");
         return;
       }
@@ -1713,7 +1716,7 @@ export default function OnboardingPage() {
                           <div>
                             <div className="flex items-center justify-between mb-1.5">
                               <label className="block text-xs font-semibold uppercase tracking-wider text-[var(--muted-strong)]">
-                                6. Cell Number <span className="text-rose-500">*</span>
+                                6. Cell Number {isEmailAuthMode() ? <span className="text-[10px] text-slate-400 normal-case font-normal">(Optional)</span> : <span className="text-rose-500">*</span>}
                               </label>
                               {/* <span className="text-[11px] font-medium text-[var(--muted)] flex items-center gap-1">
                                 <IconLock className="w-3 h-3 text-[var(--muted)]" /> Hidden
@@ -1723,7 +1726,7 @@ export default function OnboardingPage() {
                               <input
                                 name="phone"
                                 type="tel"
-                                required
+                                required={!isEmailAuthMode()}
                                 value={profileData.phone ?? draftInfo?.phone ?? ""}
                                 onChange={(e) =>
                                   setProfileData((prev: any) => ({ ...prev, phone: e.target.value }))

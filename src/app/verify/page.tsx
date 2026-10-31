@@ -21,6 +21,7 @@ import { cn } from "@/lib/cn";
 import { authService, resolvePostAuthRoute } from "@/services";
 import { toast } from "@/lib/toast";
 import { ModernOtpInput } from "@/components/ui";
+import { isEmailAuthMode } from "@/config/feature-flags";
 
 export default function VerifyPage() {
   const router = useRouter();
@@ -135,8 +136,66 @@ export default function VerifyPage() {
     setIsLoading(true);
     setErrorMessage(null);
 
+    const isEmailAuth = isEmailAuthMode();
     const cleanPhoneOtp = phoneOtp.trim();
     const cleanEmailOtp = emailOtp.trim();
+
+    if (isEmailAuth) {
+      if (cleanEmailOtp.length !== 6) {
+        setIsLoading(false);
+        setErrorMessage("Please enter the complete 6-digit email verification code.");
+        return;
+      }
+
+      try {
+        const res = await authService.verifyRegistration({
+          email: email || undefined,
+          emailOtp: cleanEmailOtp,
+          otp: cleanEmailOtp,
+        });
+
+        const { url, isDraft } = resolvePostAuthRoute(res, "/app/discover");
+
+        if (isDraft) {
+          toast.flash(
+            "info",
+            "Complete Your Profile",
+            "Please finish setting up your profile to start exploring compatible matches."
+          );
+        } else {
+          toast.flash(
+            "success",
+            "Verification Successful!",
+            "Your email address has been verified. Welcome to IshtamChat!"
+          );
+        }
+
+        setTimeout(() => {
+          router.push(url);
+        }, 500);
+      } catch (err: any) {
+        const isRateLimited =
+          err?.status === 429 ||
+          err?.statusCode === 429 ||
+          err?.message?.includes("ThrottlerException") ||
+          err?.message?.toLowerCase().includes("too many requests") ||
+          err?.message?.toLowerCase().includes("too many attempts");
+
+        if (isRateLimited) {
+          const rateLimitMsg = "Too many attempts. For your security, please wait a moment before trying again.";
+          setErrorMessage(rateLimitMsg);
+          toast.warning("Please wait a moment", rateLimitMsg);
+          setIsLoading(false);
+          return;
+        }
+
+        const msg = err.message || "Verification code is invalid or has expired.";
+        setErrorMessage(msg);
+        toast.error("Verification failed", msg);
+        setIsLoading(false);
+      }
+      return;
+    }
 
     if (cleanPhoneOtp.length !== 6) {
       setIsLoading(false);
@@ -328,7 +387,7 @@ export default function VerifyPage() {
               <div className="hidden lg:flex items-center justify-between">
                 <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200/70">
                   <IconCircleCheck className="h-3.5 w-3.5" />
-                  {email ? "Two-Step Verification" : "Mobile Verification"}
+                  {isEmailAuthMode() ? "Email Verification" : email ? "Two-Step Verification" : "Mobile Verification"}
                 </span>
                 <Link
                   href="/#quick-register"
@@ -341,35 +400,62 @@ export default function VerifyPage() {
               {/* Header Title */}
               <div className="mt-2 sm:mt-4 mb-4 sm:mb-5">
                 <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-[var(--foreground)]">
-                  Verify your account
+                  {isEmailAuthMode() ? "Verify your email" : "Verify your account"}
                 </h1>
                 <p className="mt-1 text-xs sm:text-sm text-[var(--muted)] leading-relaxed">
                   {name ? `Welcome ${name}! ` : ""}Please enter the 6-digit verification code sent
-                  to {email ? "your mobile and email address." : `your mobile number (${phone || "mobile"}).`}
+                  to {isEmailAuthMode() ? `your email address (${email || "email"}).` : email ? "your mobile and email address." : `your mobile number (${phone || "mobile"}).`}
                 </p>
               </div>
 
               {/* Status Banner */}
               <div className="mb-5 p-3 sm:p-3.5 rounded-xl border border-[var(--border)] bg-slate-50/70 space-y-2">
-                <div className="flex items-center justify-between text-xs sm:text-sm">
-                  <span className="text-[var(--muted-strong)] font-medium inline-flex items-center gap-1.5">
-                    <IconPhone className="h-3.5 w-3.5 text-[var(--primary)]" />
-                    Mobile:
-                  </span>
-                  <span className="font-semibold text-[var(--foreground)] tracking-wide">
-                    {phone || "+91 98765 43210"}
-                  </span>
-                </div>
-                {email && (
-                  <div className="flex items-center justify-between text-xs sm:text-sm border-t border-[var(--border)]/60 pt-2">
-                    <span className="text-[var(--muted-strong)] font-medium inline-flex items-center gap-1.5">
-                      <IconMail className="h-3.5 w-3.5 text-[var(--primary)]" />
-                      Email:
-                    </span>
-                    <span className="font-semibold text-[var(--foreground)] truncate max-w-[200px] sm:max-w-[280px]">
-                      {email}
-                    </span>
-                  </div>
+                {isEmailAuthMode() ? (
+                  <>
+                    <div className="flex items-center justify-between text-xs sm:text-sm">
+                      <span className="text-[var(--muted-strong)] font-medium inline-flex items-center gap-1.5">
+                        <IconMail className="h-3.5 w-3.5 text-[var(--primary)]" />
+                        Email:
+                      </span>
+                      <span className="font-semibold text-[var(--foreground)] truncate max-w-[200px] sm:max-w-[280px]">
+                        {email || "your email"}
+                      </span>
+                    </div>
+                    {phone && (
+                      <div className="flex items-center justify-between text-xs sm:text-sm border-t border-[var(--border)]/60 pt-2">
+                        <span className="text-[var(--muted-strong)] font-medium inline-flex items-center gap-1.5">
+                          <IconPhone className="h-3.5 w-3.5 text-[var(--primary)]" />
+                          Mobile:
+                        </span>
+                        <span className="font-semibold text-[var(--foreground)] tracking-wide">
+                          {phone}
+                        </span>
+                      </div>
+                    )}
+                  </>
+                ) : (
+                  <>
+                    <div className="flex items-center justify-between text-xs sm:text-sm">
+                      <span className="text-[var(--muted-strong)] font-medium inline-flex items-center gap-1.5">
+                        <IconPhone className="h-3.5 w-3.5 text-[var(--primary)]" />
+                        Mobile:
+                      </span>
+                      <span className="font-semibold text-[var(--foreground)] tracking-wide">
+                        {phone || "+91 98765 43210"}
+                      </span>
+                    </div>
+                    {email && (
+                      <div className="flex items-center justify-between text-xs sm:text-sm border-t border-[var(--border)]/60 pt-2">
+                        <span className="text-[var(--muted-strong)] font-medium inline-flex items-center gap-1.5">
+                          <IconMail className="h-3.5 w-3.5 text-[var(--primary)]" />
+                          Email:
+                        </span>
+                        <span className="font-semibold text-[var(--foreground)] truncate max-w-[200px] sm:max-w-[280px]">
+                          {email}
+                        </span>
+                      </div>
+                    )}
+                  </>
                 )}
               </div>
 
@@ -385,52 +471,13 @@ export default function VerifyPage() {
 
               {/* Verification Form */}
               <form onSubmit={handleVerify} className="space-y-4 sm:space-y-5">
-                {/* 1. Mobile OTP Field */}
-                <div>
-                  <div className="flex items-center justify-between mb-1.5">
-                    <label
-                      htmlFor="phoneOtp"
-                      className="block text-[11px] sm:text-xs font-semibold uppercase tracking-wider text-[var(--muted-strong)]"
-                    >
-                      Mobile Verification Code (SMS)
-                    </label>
-                    <button
-                      type="button"
-                      onClick={handleResendPhoneOtp}
-                      disabled={phoneTimer > 0 || isResendingPhone}
-                      className="text-xs font-medium text-[var(--primary)] hover:underline disabled:opacity-50 disabled:no-underline inline-flex items-center gap-1"
-                    >
-                      {phoneTimer > 0 ? (
-                        <span>Resend in {phoneTimer}s</span>
-                      ) : (
-                        <>
-                          <IconRefresh className="h-3 w-3" />
-                          <span>Resend SMS</span>
-                        </>
-                      )}
-                    </button>
-                  </div>
-                  <div className="my-2">
-                    <ModernOtpInput
-                      value={phoneOtp}
-                      onChange={(val) => {
-                        setPhoneOtp(val);
-                        setErrorMessage(null);
-                      }}
-                      disabled={isLoading}
-                      error={Boolean(errorMessage)}
-                    />
-                  </div>
-                </div>
-
-                {/* 2. Email OTP Field (Rendered if email was provided) */}
-                {email && (
+                {isEmailAuthMode() ? (
                   <div>
                     <div className="flex items-center justify-between mb-1.5">
                       <label
                         className="block text-[11px] sm:text-xs font-semibold uppercase tracking-wider text-[var(--muted-strong)]"
                       >
-                        Email Verification Code
+                        Email Verification Code (OTP)
                       </label>
                       <button
                         type="button"
@@ -443,7 +490,7 @@ export default function VerifyPage() {
                         ) : (
                           <>
                             <IconRefresh className="h-3 w-3" />
-                            <span>Resend Email</span>
+                            <span>Resend Code</span>
                           </>
                         )}
                       </button>
@@ -455,12 +502,92 @@ export default function VerifyPage() {
                           setEmailOtp(val);
                           setErrorMessage(null);
                         }}
-                        autoFocus={false}
+                        autoFocus={true}
                         disabled={isLoading}
                         error={Boolean(errorMessage)}
                       />
                     </div>
                   </div>
+                ) : (
+                  <>
+                    {/* 1. Mobile OTP Field */}
+                    <div>
+                      <div className="flex items-center justify-between mb-1.5">
+                        <label
+                          htmlFor="phoneOtp"
+                          className="block text-[11px] sm:text-xs font-semibold uppercase tracking-wider text-[var(--muted-strong)]"
+                        >
+                          Mobile Verification Code (SMS)
+                        </label>
+                        <button
+                          type="button"
+                          onClick={handleResendPhoneOtp}
+                          disabled={phoneTimer > 0 || isResendingPhone}
+                          className="text-xs font-medium text-[var(--primary)] hover:underline disabled:opacity-50 disabled:no-underline inline-flex items-center gap-1"
+                        >
+                          {phoneTimer > 0 ? (
+                            <span>Resend in {phoneTimer}s</span>
+                          ) : (
+                            <>
+                              <IconRefresh className="h-3 w-3" />
+                              <span>Resend SMS</span>
+                            </>
+                          )}
+                        </button>
+                      </div>
+                      <div className="my-2">
+                        <ModernOtpInput
+                          value={phoneOtp}
+                          onChange={(val) => {
+                            setPhoneOtp(val);
+                            setErrorMessage(null);
+                          }}
+                          disabled={isLoading}
+                          error={Boolean(errorMessage)}
+                        />
+                      </div>
+                    </div>
+
+                    {/* 2. Email OTP Field (Rendered if email was provided) */}
+                    {email && (
+                      <div>
+                        <div className="flex items-center justify-between mb-1.5">
+                          <label
+                            className="block text-[11px] sm:text-xs font-semibold uppercase tracking-wider text-[var(--muted-strong)]"
+                          >
+                            Email Verification Code
+                          </label>
+                          <button
+                            type="button"
+                            onClick={handleResendEmailOtp}
+                            disabled={emailTimer > 0 || isResendingEmail}
+                            className="text-xs font-medium text-[var(--primary)] hover:underline disabled:opacity-50 disabled:no-underline inline-flex items-center gap-1"
+                          >
+                            {emailTimer > 0 ? (
+                              <span>Resend in {emailTimer}s</span>
+                            ) : (
+                              <>
+                                <IconRefresh className="h-3 w-3" />
+                                <span>Resend Email</span>
+                              </>
+                            )}
+                          </button>
+                        </div>
+                        <div className="my-2">
+                          <ModernOtpInput
+                            value={emailOtp}
+                            onChange={(val) => {
+                              setEmailOtp(val);
+                              setErrorMessage(null);
+                            }}
+                            autoFocus={false}
+                            disabled={isLoading}
+                            error={Boolean(errorMessage)}
+                          />
+                        </div>
+                      </div>
+                    )}
+                  </>
                 )}
 
                 {/* Submit Action */}
@@ -469,8 +596,9 @@ export default function VerifyPage() {
                     type="submit"
                     disabled={
                       isLoading ||
-                      phoneOtp.length !== 6 ||
-                      (!!email && emailOtp.length !== 6)
+                      (isEmailAuthMode()
+                        ? emailOtp.length !== 6
+                        : phoneOtp.length !== 6 || (!!email && emailOtp.length !== 6))
                     }
                     className={cn(
                       "group focus-ring inline-flex h-12 sm:h-13 w-full items-center justify-center gap-2",
