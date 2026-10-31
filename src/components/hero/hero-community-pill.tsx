@@ -35,9 +35,14 @@ const COMMUNITIES: CommunityItem[] = [
 export interface HeroCommunityPillProps {
   className?: string;
   onSelectCommunity?: (communityId: string) => void;
+  orientation?: "vertical" | "horizontal";
 }
 
-export function HeroCommunityPill({ className, onSelectCommunity }: HeroCommunityPillProps) {
+export function HeroCommunityPill({
+  className,
+  onSelectCommunity,
+  orientation = "vertical",
+}: HeroCommunityPillProps) {
   const handleClick = (communityId: string) => {
     if (onSelectCommunity) {
       onSelectCommunity(communityId);
@@ -51,7 +56,14 @@ export function HeroCommunityPill({ className, onSelectCommunity }: HeroCommunit
   };
 
   return (
-    <div className={cn("flex flex-col items-end gap-1.5 shrink-0", className)}>
+    <div
+      className={cn(
+        orientation === "horizontal"
+          ? "flex flex-row items-center gap-2 shrink-0"
+          : "flex flex-col items-end gap-1.5 shrink-0",
+        className
+      )}
+    >
       {COMMUNITIES.map((comm, idx) => {
         const IconComponent = comm.icon;
         return (

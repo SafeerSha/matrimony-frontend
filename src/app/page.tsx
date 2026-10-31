@@ -64,7 +64,11 @@ export default function LandingPage() {
         <Logo lightOnMobile={true} blurredBg={true} />
         <div className="flex items-start lg:items-center gap-2 sm:gap-3 shrink-0">
           {/* Communities Pill Cards: Kerala, Telugu, Bharat Matrimony on mobile */}
-          <HeroCommunityPill className="flex lg:hidden" />
+          {/* Mobile View: Vertical pills stacked in top corner */}
+          <HeroCommunityPill orientation="vertical" className="flex lg:hidden" />
+
+          {/* Desktop View (Option B): Horizontal pills in the top navbar next to Contact & Sign in */}
+          <HeroCommunityPill orientation="horizontal" className="hidden lg:flex mr-1 xl:mr-2" />
 
           <a
             href="#contact"
