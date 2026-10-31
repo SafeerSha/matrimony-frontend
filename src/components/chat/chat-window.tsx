@@ -4,7 +4,6 @@ import React, { useState, useRef, useEffect } from 'react';
 import Link from 'next/link';
 import {
   IconArrowLeft,
-  IconPaperclip,
   IconMoodSmile,
   IconSend,
   IconDotsVertical,
@@ -18,8 +17,6 @@ import {
   IconLoader2,
   IconBookmark,
   IconSparkles,
-  IconMicrophone,
-  IconLock,
   IconCalendar,
   IconCoffee,
   IconBriefcase,
@@ -764,20 +761,6 @@ export function ChatWindow({
 
             {/* Floating Island Input Bar */}
             <div className="flex items-end gap-1.5 sm:gap-2 rounded-2xl border border-[#EAD8C7] bg-[#FFF9F6] p-1.5 focus-within:border-[#7A1835] focus-within:bg-white focus-within:ring-2 focus-within:ring-[#7A1835]/15 shadow-2xs transition-all">
-              {/* Attachment Button */}
-              <button
-                type="button"
-                onClick={() =>
-                  toast.info('Attach File', {
-                    description: 'Horoscope, bio-data document, or family photos can be shared.',
-                  })
-                }
-                className="grid h-9 w-9 shrink-0 place-items-center rounded-xl text-[#766B6F] hover:bg-white hover:text-[#211B1E] active:scale-95 transition-all"
-                aria-label="Attach file"
-              >
-                <IconPaperclip className="h-4.5 w-4.5" />
-              </button>
-
               {/* Text Input */}
               <textarea
                 ref={textareaRef}
@@ -788,7 +771,7 @@ export function ChatWindow({
                 onClick={() => onMarkRead?.()}
                 placeholder={`Message ${firstName}...`}
                 rows={1}
-                className="w-full resize-none bg-transparent py-2 px-1 text-xs sm:text-sm text-[#211B1E] placeholder:text-[#766B6F]/70 outline-none max-h-28 scrollbar-none font-sans"
+                className="w-full resize-none bg-transparent py-2 pl-3 sm:pl-3.5 pr-1 text-xs sm:text-sm text-[#211B1E] placeholder:text-[#766B6F]/70 outline-none max-h-28 scrollbar-none font-sans"
               />
 
               {/* Icebreaker Prompts Toggle Button */}
@@ -822,23 +805,6 @@ export function ChatWindow({
                 <IconMoodSmile className="h-4.5 w-4.5" />
               </button>
 
-              {/* Voice Note Button (when input empty) */}
-              {!text.trim() && (
-                <button
-                  type="button"
-                  onClick={() =>
-                    toast.info('Voice Note', {
-                      description: `Tap and hold to record a courteous voice note for ${firstName}.`,
-                    })
-                  }
-                  className="grid h-9 w-9 shrink-0 place-items-center rounded-xl text-[#766B6F] hover:bg-white hover:text-[#7A1835] active:scale-95 transition-all"
-                  aria-label="Record voice note"
-                  title="Send Voice Note"
-                >
-                  <IconMicrophone className="h-4.5 w-4.5" />
-                </button>
-              )}
-
               {/* Send Button */}
               <Button
                 size="sm"
@@ -858,17 +824,6 @@ export function ChatWindow({
                   <IconSend className="h-4 w-4 ml-0.5" />
                 )}
               </Button>
-            </div>
-
-            {/* Encrypted Reassurance Footer */}
-            <div className="mt-2 flex items-center justify-between px-1 text-[10px] text-[#766B6F]">
-              <span className="flex items-center gap-1 font-medium">
-                <IconLock className="h-3 w-3 text-emerald-600" />
-                <span>End-to-end encrypted matrimonial messaging</span>
-              </span>
-              <span className="hidden sm:inline-block text-[10px] font-semibold text-[#7A1835]/80">
-                Press Enter ↵ to send
-              </span>
             </div>
           </div>
         </div>
