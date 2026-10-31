@@ -1,6 +1,7 @@
 'use client';
 
-import { useState, Suspense } from 'react';
+import { useState, useEffect, Suspense } from 'react';
+import { useRouter } from 'next/navigation';
 import {
   IconUsers,
   IconActivity,
@@ -10,22 +11,101 @@ import {
   IconMenu2,
   IconX,
   IconShieldCheck,
+  IconLoader2,
 } from '@tabler/icons-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { PlatformOverview } from '@/components/admin/platform-overview';
 import { UserManagement } from '@/components/admin/user-management';
+import { authService } from '@/services/auth.service';
+import { toast } from '@/lib/toast';
 
 type AdminTab = 'analytics' | 'users' | 'moderation' | 'rm-management';
 
 export default function AdminDashboard() {
+  const router = useRouter();
+  const [isAuthorized, setIsAuthorized] = useState<boolean | null>(null);
   const [tab, setTab] = useState<AdminTab>('analytics');
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    async function verifyAdminAccess() {
+      const token = authService.getAccessToken();
+      if (!token) {
+        if (isMounted) setIsAuthorized(false);
+        toast.dismissAll();
+        toast.flash(
+          'error',
+          'Access Denied',
+          'Please sign in with an administrator account to access the Admin Portal.'
+        );
+        router.replace('/login?next=/admin&error=admin_required');
+        return;
+      }
+
+      try {
+        const user = await authService.getCurrentUser();
+        const role = typeof user?.role === 'string' ? user.role.toUpperCase() : '';
+
+        if (role !== 'ADMIN') {
+          if (isMounted) setIsAuthorized(false);
+          toast.dismissAll();
+          toast.flash(
+            'error',
+            'Access Denied',
+            'You do not have permission to access the Admin Portal. Please sign in with an administrator account.'
+          );
+          router.replace('/login?next=/admin&error=admin_required');
+          return;
+        }
+
+        if (isMounted) {
+          setIsAuthorized(true);
+        }
+      } catch (err: any) {
+        if (isMounted) setIsAuthorized(false);
+        toast.dismissAll();
+        toast.flash(
+          'error',
+          'Access Denied',
+          'You do not have permission to access this resource. Please sign in with an administrator account.'
+        );
+        router.replace('/login?next=/admin&error=admin_required');
+      }
+    }
+
+    verifyAdminAccess();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [router]);
 
   const handleSelectTab = (newTab: AdminTab) => {
     setTab(newTab);
     setMobileMenuOpen(false);
   };
+
+  // If user is not authorized or still verifying, DO NOT show the dashboard screen itself
+  if (isAuthorized !== true) {
+    return (
+      <div className="min-h-screen bg-[#2A0711] flex flex-col items-center justify-center p-6 text-center select-none">
+        <div className="flex flex-col items-center gap-4 max-w-sm">
+          <div className="h-12 w-12 rounded-2xl bg-[#4A1024] border border-[#5E142E] grid place-items-center text-rose-300 shadow-inner">
+            <IconLoader2 className="h-6 w-6 animate-spin" />
+          </div>
+          <div>
+            <h3 className="text-base font-bold text-white tracking-tight">Verifying Admin Authorization</h3>
+            <p className="text-xs text-white/60 mt-1">
+              Checking access permissions for the Admin Portal…
+            </p>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-[var(--background)] flex flex-col lg:flex-row">

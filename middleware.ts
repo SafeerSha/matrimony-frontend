@@ -64,11 +64,17 @@ export default async function middleware(request: NextRequest) {
     const normalizedRole = typeof session.role === "string" ? session.role.toUpperCase() : "";
 
     if (pathname.startsWith("/admin") && normalizedRole !== "ADMIN") {
-      return NextResponse.redirect(new URL("/app", request.url));
+      const login = new URL("/login", request.url);
+      login.searchParams.set("next", pathname);
+      login.searchParams.set("error", "admin_required");
+      return NextResponse.redirect(login);
     }
     
     if (pathname.startsWith("/rm") && normalizedRole !== "RM" && normalizedRole !== "ADMIN") {
-      return NextResponse.redirect(new URL("/app", request.url));
+      const login = new URL("/login", request.url);
+      login.searchParams.set("next", pathname);
+      login.searchParams.set("error", "unauthorized");
+      return NextResponse.redirect(login);
     }
   }
 

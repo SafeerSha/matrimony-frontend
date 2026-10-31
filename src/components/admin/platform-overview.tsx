@@ -89,6 +89,8 @@ export function PlatformOverview() {
           return; // Intentionally aborted by newer request
         }
         console.error('Failed to load analytics overview:', err);
+        const isForbidden = err?.status === 403 || err?.statusCode === 403 || err?.message?.toLowerCase()?.includes('permission');
+        if (isForbidden && typeof window !== 'undefined') { window.location.href = '/login?next=/admin&error=admin_required'; return; }
         setError(err?.message || 'Unable to load analytics metrics. Please retry.');
         setStatusMessage('Error updating analytics data.');
       } finally {
