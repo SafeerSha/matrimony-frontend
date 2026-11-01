@@ -327,11 +327,14 @@ export function ProfileDetail({
   // Gallery Photos (Multi-angle photos with primary first)
   const galleryPhotos = useMemo(() => {
     if (!profile) return [];
-    if (profile.photos && profile.photos.length > 0) {
-      const sorted = [...profile.photos].sort((a: any, b: any) => (b.isPrimary ? 1 : 0) - (a.isPrimary ? 1 : 0));
-      return sorted.map((p: any) => p.url || p).filter(Boolean);
+    const list = profile.photos || (profile as any).user?.photos || [];
+    if (Array.isArray(list) && list.length > 0) {
+      const sorted = [...list].sort((a: any, b: any) => (b.isPrimary ? 1 : 0) - (a.isPrimary ? 1 : 0));
+      const urls = sorted.map((p: any) => (typeof p === 'string' ? p : p.url)).filter(Boolean);
+      if (urls.length > 0) return urls;
     }
-    return profile.image ? [profile.image] : [];
+    const single = profile.image || (profile as any).user?.image || (profile as any).photo;
+    return single ? [single] : [];
   }, [profile]);
 
   // Shortlist handler

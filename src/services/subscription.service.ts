@@ -2,6 +2,8 @@ import { apiFetch } from '@/lib/http/api-client';
 
 export interface SubscriptionPlan {
   id: string;
+  code?: string;
+  dbId?: string;
   name: string;
   badge?: string;
   price: number;
@@ -18,6 +20,7 @@ export interface SubscriptionPlan {
 export interface UserSubscriptionStatus {
   userId: string;
   tier: string;
+  tierName?: string;
   status: 'ACTIVE' | 'EXPIRED' | 'INACTIVE';
   isSubscribed: boolean;
   canChat: boolean;

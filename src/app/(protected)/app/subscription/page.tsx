@@ -24,8 +24,21 @@ import { cn } from '@/lib/cn';
 import { toast } from '@/lib/toast';
 
 export default function SubscriptionPage() {
-  const { isSubscribed, tier, refreshSubscription } = useSubscription();
+  const { isSubscribed, tier, subscription, refreshSubscription } = useSubscription();
   const [plans, setPlans] = useState<SubscriptionPlan[]>([]);
+
+  const currentPlan = plans.find(
+    (p) =>
+      p.id?.toUpperCase() === tier?.toUpperCase() ||
+      p.code?.toUpperCase() === tier?.toUpperCase() ||
+      p.dbId === tier ||
+      p.name?.toLowerCase() === tier?.toLowerCase()
+  );
+
+  const displayTierName =
+    currentPlan?.name ||
+    subscription?.tierName ||
+    (tier && tier !== 'FREE' ? tier : 'Basic Permit');
   const [loadingPlans, setLoadingPlans] = useState<boolean>(true);
   const [fetchError, setFetchError] = useState<string | null>(null);
   const [processing, setProcessing] = useState<string | null>(null);
@@ -122,7 +135,7 @@ export default function SubscriptionPage() {
                 <IconShieldCheck className="h-5 w-5" />
               </span>
               <div>
-                <p className="text-sm font-bold">Active Chat Permit: {tier}</p>
+                <p className="text-sm font-bold">Active Chat Permit: {displayTierName}</p>
                 <p className="text-xs text-emerald-700">
                   Full messaging & match interactions active.
                 </p>
@@ -185,7 +198,11 @@ export default function SubscriptionPage() {
         {!loadingPlans && !fetchError && plans.length > 0 && (
           <div className="w-full max-w-full min-w-0 grid gap-6 md:grid-cols-2 xl:grid-cols-4 max-w-7xl mx-auto">
             {plans.map((plan, index) => {
-              const isCurrent = isSubscribed && tier?.toUpperCase() === plan.id.toUpperCase();
+              const isCurrent =
+                isSubscribed &&
+                (tier?.toUpperCase() === plan.id?.toUpperCase() ||
+                  tier?.toUpperCase() === plan.code?.toUpperCase() ||
+                  tier === plan.dbId);
               const visuals = getPlanVisuals(plan, index);
 
               return (
