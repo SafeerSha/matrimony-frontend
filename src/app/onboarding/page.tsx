@@ -760,7 +760,18 @@ export default function OnboardingPage() {
         return new File([file], fileName, { type: file.type });
       });
 
-      setAlbumPhotos((prev) => [...prev, ...renamed].slice(0, 6));
+      const existingTotal = existingAlbumPhotos.length + albumPhotos.length;
+      const remainingSlots = Math.max(0, 3 - existingTotal);
+      if (remainingSlots <= 0) {
+        toast.warning("Album Limit Reached", "You can upload a maximum of 3 album photos.");
+        if (albumInputRef.current) albumInputRef.current.value = "";
+        return;
+      }
+      const filesToTake = renamed.slice(0, remainingSlots);
+      if (renamed.length > remainingSlots) {
+        toast.info("Limit Applied", `Uploading only ${remainingSlots} photo(s) to stay within the 3-photo album limit.`);
+      }
+      setAlbumPhotos((prev) => [...prev, ...filesToTake].slice(0, Math.max(0, 3 - existingAlbumPhotos.length)));
       setError(null);
       setAlbumValidationError(false);
       if (albumInputRef.current) {
@@ -2409,7 +2420,7 @@ export default function OnboardingPage() {
                     Album Photos
                   </h1>
                   <p className="mt-1.5 text-sm text-[var(--muted)] max-w-md mx-auto">
-                    Upload clear photos to your profile album to activate your profile and start discovering compatible matches.
+                    Upload up to 3 clear photos to your profile album to activate your profile and start discovering compatible matches.
                   </p>
                 </div>
 
@@ -2426,12 +2437,12 @@ export default function OnboardingPage() {
                       <label className="block text-xs font-bold uppercase tracking-wider text-[var(--muted-strong)]">
                         Album Photos <span className="text-rose-500">* (At least 1 required)</span>
                       </label>
-                      {/* <span className="text-xs text-slate-500 font-medium">
-                        {albumPhotos.length} of 6 photos selected
-                      </span> */}
+                      <span className="text-xs text-slate-500 font-medium">
+                        {existingAlbumPhotos.length + albumPhotos.length} of 3 photos uploaded
+                      </span>
                     </div>
 
-                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-3.5">
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3.5">
                       {/* Render existing saved album photos */}
                       {existingAlbumPhotos.map((photo, idx) => (
                         <div
@@ -2507,9 +2518,9 @@ export default function OnboardingPage() {
                         );
                       })}
 
-                      {/* Render empty placeholders up to limit */}
+                      {/* Render empty placeholders up to limit of 3 */}
                       {Array.from({
-                        length: Math.max(1, Math.min(4 - (existingAlbumPhotos.length + albumPhotos.length), 6 - (existingAlbumPhotos.length + albumPhotos.length)))
+                        length: Math.max(0, 3 - (existingAlbumPhotos.length + albumPhotos.length))
                       }).map((_, placeholderIdx) => {
                         const totalCount = existingAlbumPhotos.length + albumPhotos.length;
                         const isFirstEmptyPlaceholder = totalCount === 0 && placeholderIdx === 0;

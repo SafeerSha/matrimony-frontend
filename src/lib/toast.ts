@@ -83,9 +83,11 @@ class ToastManager {
     // DEDUPLICATION: Prevent duplicate toasts with the same title from appearing at the same time
     const now = Date.now();
     const existing = this.toasts.find(
-      (t) => t.title.toLowerCase() === cleanTitle.toLowerCase()
+      (t) =>
+        t.title.toLowerCase() === cleanTitle.toLowerCase() &&
+        (t.description || "").toLowerCase() === (description || "").toLowerCase()
     );
-    if (existing && now - existing.createdAt < 3000) {
+    if (existing && now - existing.createdAt < 1500) {
       // Already showing an identical toast recently
       return existing.id;
     }

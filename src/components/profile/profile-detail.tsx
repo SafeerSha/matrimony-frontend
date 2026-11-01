@@ -79,7 +79,8 @@ export function ProfileDetail({ id }: { id?: string }) {
       openChatPrompt();
       return;
     }
-    router.push(`/app/messages?user=${profile.id}`);
+    const chatTargetId = (profile as any).userId || profile.id;
+    router.push(`/app/messages?user=${chatTargetId}`);
   };
 
   // Show floating dock only once the inline buttons section has scrolled past view
@@ -137,10 +138,18 @@ export function ProfileDetail({ id }: { id?: string }) {
           setIsInterestReceived(Boolean(!isDeclinedStatus && (res.isInterestReceived || res.connectionStatus === 'RECEIVED')));
           setIsShortlisted(Boolean(!isDeclinedStatus && (res.isShortlisted || res.connectionStatus === 'SHORTLISTED')));
 
+          const realUserId = res.userId || res.user?.id || (res as any).user_id || res.id || targetId;
+          const fullName =
+            res.name ||
+            `${res.firstName || res.user?.firstName || ''} ${res.lastName || res.user?.lastName || ''}`.trim() ||
+            'Member';
+
           setProfile({
-            id: res.id || targetId,
-            profileId: res.profileId,
-            name: res.name || `${res.firstName || ''} ${res.lastName || ''}`.trim() || 'Member',
+            id: realUserId,
+            userId: realUserId,
+            profileTableId: res.profileTableId || res.id,
+            profileId: res.profileId || res.user?.profileId,
+            name: fullName,
             age: calculatedAge,
             city: res.city || '',
             state: res.state || '',
@@ -648,7 +657,7 @@ export function ProfileDetail({ id }: { id?: string }) {
                   <div className="flex items-center gap-2.5 sm:gap-3">
                     {/* Chat action is the primary prominent button! */}
                     <Link
-                      href={`/app/messages?user=${profile.id}`}
+                      href={`/app/messages?user=${(profile as any).userId || profile.id}`}
                       onClick={handleChatClick}
                       className="focus-ring flex-1 min-w-0"
                     >
@@ -742,51 +751,50 @@ export function ProfileDetail({ id }: { id?: string }) {
                 <>
                   <div className="flex items-center gap-2.5 sm:gap-3">
                     {/* Send Interest (Burgundy primary) */}
-                    <Button
-                      variant={isInterestSent ? 'blush' : 'primary'}
-                      size="lg"
+                    <button
+                      type="button"
                       disabled={isInterestSent}
                       onClick={handleSendInterest}
-                      className="flex-1 min-w-0 font-bold shadow-md rounded-2xl text-xs sm:text-sm h-12 sm:h-13 active-press px-3 sm:px-6"
-                      leftIcon={
-                        isInterestSent ? (
-                          <IconCheck className="h-4 w-4 shrink-0" />
-                        ) : (
-                          <IconHeart className="h-4 w-4 fill-white shrink-0" />
-                        )
-                      }
+                      className={cn(
+                        'flex-1 min-w-0 font-bold shadow-md rounded-2xl text-xs sm:text-sm h-12 sm:h-13 active:scale-[0.985] px-4 sm:px-6 flex items-center justify-center gap-2 transition-all',
+                        isInterestSent
+                          ? 'bg-gradient-to-r from-[#FDF2F4] to-[#FCE7EB] text-[var(--blush-deep)] border border-[#F7C6CE]'
+                          : 'bg-gradient-to-r from-[#9E1D3B] via-[var(--primary)] to-[var(--primary-deep)] text-white hover:brightness-105'
+                      )}
                     >
+                      {isInterestSent ? (
+                        <IconCheck className="h-4.5 w-4.5 shrink-0" />
+                      ) : (
+                        <IconHeart className="h-4.5 w-4.5 fill-white shrink-0" />
+                      )}
                       <span className="truncate">{isInterestSent ? 'Interest Sent' : 'Send Interest'}</span>
-                    </Button>
+                    </button>
 
                     {/* Favorite Button */}
-                    <Button
-                      variant={isShortlisted ? 'primary' : 'outline'}
-                      size="lg"
+                    <button
+                      type="button"
                       onClick={handleToggleShortlist}
                       aria-label={isShortlisted ? 'Favorited' : 'Favorite'}
                       title={isShortlisted ? 'Favorited' : `Add ${profile.name} to favorites`}
                       className={cn(
-                        'h-12 sm:h-13 w-12 sm:w-auto p-0 sm:px-5 rounded-2xl shrink-0 active-press transition-all font-bold text-sm flex items-center justify-center gap-1.5',
+                        'h-12 sm:h-13 w-12 sm:w-auto p-0 sm:px-5 rounded-2xl shrink-0 active:scale-[0.985] transition-all font-bold text-sm flex items-center justify-center gap-2 border',
                         isShortlisted
                           ? 'bg-[var(--primary)] text-white border-transparent'
-                          : 'border-[var(--border)] text-[var(--foreground)] hover:border-[var(--primary)] hover:text-[var(--primary)]'
+                          : 'border-[var(--border)] text-[var(--foreground)] hover:border-[var(--primary)] hover:text-[var(--primary)] bg-white'
                       )}
-                      leftIcon={
-                        isShortlisted ? (
-                          <IconStarFilled className="h-4.5 w-4.5 text-white shrink-0" />
-                        ) : (
-                          <IconStar className="h-4.5 w-4.5 text-[var(--primary)] shrink-0" />
-                        )
-                      }
                     >
+                      {isShortlisted ? (
+                        <IconStarFilled className="h-5 w-5 text-white shrink-0" />
+                      ) : (
+                        <IconStar className="h-5 w-5 text-[var(--primary)] shrink-0" />
+                      )}
                       <span className="hidden sm:inline">{isShortlisted ? 'Favorited' : 'Favorite'}</span>
-                    </Button>
+                    </button>
                   </div>
 
                   {/* Chat action with Premium link */}
                   <Link
-                    href={`/app/messages?user=${profile.id}`}
+                    href={`/app/messages?user=${(profile as any).userId || profile.id}`}
                     onClick={handleChatClick}
                     className="focus-ring block w-full"
                   >
@@ -1282,96 +1290,86 @@ export function ProfileDetail({ id }: { id?: string }) {
           )}
           aria-label="Profile actions"
         >
-          <div className="w-full max-w-[420px] p-2 rounded-[2.25rem] bg-white/95 backdrop-blur-2xl border border-[var(--champagne-border)]/80 shadow-[0_14px_40px_rgba(26,12,18,0.14)] pointer-events-auto flex items-center gap-2">
+          <div className="w-full max-w-[420px] p-1.5 sm:p-2 rounded-full bg-white/95 backdrop-blur-2xl border border-[var(--champagne-border)] shadow-[0_14px_40px_rgba(26,12,18,0.14)] pointer-events-auto flex items-center gap-2">
             {isMatched ? (
-              <Button
-                variant="primary"
-                size="md"
+              <button
+                type="button"
                 onClick={handleChatClick}
-                className="flex-1 min-w-0 font-bold rounded-2xl text-xs h-11 shadow-sm active-press bg-gradient-to-r from-[var(--primary)] via-[#801835] to-[#5E0E24] text-white px-2.5 sm:px-4"
-                leftIcon={<IconMessageCircle className="h-4 w-4 shrink-0" />}
+                className="flex-1 min-w-0 font-bold rounded-full text-xs sm:text-sm h-11 shadow-sm active:scale-[0.985] bg-gradient-to-r from-[var(--primary)] via-[#801835] to-[#5E0E24] text-white px-4 flex items-center justify-center gap-2 transition-all hover:brightness-105"
               >
+                <IconMessageCircle className="h-4.5 w-4.5 shrink-0" />
                 <span className="truncate">Chat with {profile.name.split(' ')[0]}</span>
-              </Button>
+              </button>
             ) : isInterestReceived ? (
-              <Button
-                variant="primary"
-                size="md"
+              <button
+                type="button"
                 onClick={handleAcceptInterest}
-                className="flex-1 min-w-0 font-bold rounded-2xl text-xs h-11 shadow-sm active-press bg-emerald-600 text-white px-2.5 sm:px-4"
-                leftIcon={<IconCheck className="h-4 w-4 shrink-0" />}
+                className="flex-1 min-w-0 font-bold rounded-full text-xs sm:text-sm h-11 shadow-sm active:scale-[0.985] bg-emerald-600 hover:bg-emerald-700 text-white px-4 flex items-center justify-center gap-2 transition-all"
               >
+                <IconCheck className="h-4.5 w-4.5 stroke-[2.5] shrink-0" />
                 <span className="truncate">Accept Interest</span>
-              </Button>
+              </button>
             ) : isDeclined ? (
-              <Button
-                variant="secondary"
-                size="md"
+              <button
+                type="button"
                 disabled
-                className="w-full font-bold rounded-2xl text-xs h-11 opacity-80 bg-stone-100 text-stone-500 border border-stone-200 cursor-not-allowed select-none shadow-none"
-                leftIcon={<IconBan className="h-4 w-4 text-stone-400 shrink-0" />}
+                className="w-full font-bold rounded-full text-xs h-11 opacity-80 bg-stone-100 text-stone-500 border border-stone-200 cursor-not-allowed select-none shadow-none flex items-center justify-center gap-2"
               >
+                <IconBan className="h-4 w-4 text-stone-400 shrink-0" />
                 <span>Declined</span>
-              </Button>
+              </button>
             ) : (
               <>
                 {isInterestSent ? (
-                  <Button
-                    variant="secondary"
-                    size="md"
+                  <button
+                    type="button"
                     disabled
-                    className="flex-1 min-w-0 font-bold rounded-2xl text-xs h-11 border border-[var(--champagne-border)] bg-white/95 text-[var(--primary)] shadow-2xs select-none cursor-default px-2.5 sm:px-4"
-                    leftIcon={<IconCheck className="h-4 w-4 stroke-[2.5] text-[var(--primary)] shrink-0" />}
+                    className="flex-1 min-w-0 font-bold rounded-full text-xs sm:text-sm h-11 border border-[var(--champagne-border)] bg-white text-[var(--primary)] shadow-2xs select-none cursor-default px-4 flex items-center justify-center gap-2"
                   >
+                    <IconCheck className="h-4.5 w-4.5 stroke-[2.5] text-[var(--primary)] shrink-0" />
                     <span className="truncate">Interest Sent</span>
-                  </Button>
+                  </button>
                 ) : (
-                  <Button
-                    variant="primary"
-                    size="md"
+                  <button
+                    type="button"
                     onClick={handleSendInterest}
-                    className="flex-1 min-w-0 font-bold rounded-2xl text-xs h-11 shadow-[0_4px_14px_rgba(122,24,53,0.3),inset_0_1px_1px_rgba(255,255,255,0.25)] active-press bg-gradient-to-r from-[var(--primary)] via-[#801835] to-[#5E0E24] text-white px-2.5 sm:px-4"
-                    leftIcon={<IconHeart className="h-4 w-4 fill-white shrink-0" />}
+                    className="flex-1 min-w-0 font-bold rounded-full text-xs sm:text-sm h-11 shadow-[0_4px_14px_rgba(122,24,53,0.3),inset_0_1px_1px_rgba(255,255,255,0.25)] active:scale-[0.985] bg-gradient-to-r from-[var(--primary)] via-[#801835] to-[#5E0E24] hover:brightness-105 text-white px-4 flex items-center justify-center gap-2 transition-all"
                   >
+                    <IconHeart className="h-4.5 w-4.5 fill-white shrink-0" />
                     <span className="truncate">Send Interest</span>
-                  </Button>
+                  </button>
                 )}
 
-                {/* Favorite Button */}
-                <Button
-                  variant={isShortlisted ? 'primary' : 'outline'}
-                  size="md"
+                {/* Favorite Button (Clean Centered Circular Button) */}
+                <button
+                  type="button"
                   onClick={handleToggleShortlist}
                   className={cn(
-                    'h-11 w-11 sm:w-auto p-0 sm:px-3.5 rounded-2xl shrink-0 active-press font-bold text-xs flex items-center justify-center gap-1.5 transition-all',
+                    'h-11 w-11 rounded-full shrink-0 active:scale-95 flex items-center justify-center transition-all shadow-2xs border',
                     isShortlisted
-                      ? 'bg-gradient-to-r from-[#D8B28C] via-[#C99757] to-[#9B6C2E] border border-[#EEDCC8] text-white shadow-xs'
-                      : 'bg-white border border-[var(--champagne-border)] text-[var(--muted-strong)] hover:text-[var(--primary)] hover:border-[var(--primary)]'
+                      ? 'bg-gradient-to-r from-[#D8B28C] via-[#C99757] to-[#9B6C2E] border-[#EEDCC8] text-white shadow-xs'
+                      : 'bg-white border-[var(--champagne-border)] text-[var(--primary)] hover:border-[var(--primary)] hover:bg-[#FAF3EC]'
                   )}
                   aria-label={isShortlisted ? 'Favorited' : 'Favorite'}
                   title={isShortlisted ? 'Favorited' : 'Favorite'}
-                  leftIcon={
-                    isShortlisted ? (
-                      <IconStarFilled className="h-4 w-4 text-white shrink-0" />
-                    ) : (
-                      <IconStar className="h-4 w-4 text-[var(--primary)] shrink-0" />
-                    )
-                  }
                 >
-                  <span className="hidden sm:inline">{isShortlisted ? 'Favorited' : 'Favorite'}</span>
-                </Button>
+                  {isShortlisted ? (
+                    <IconStarFilled className="h-5 w-5 text-white shrink-0" />
+                  ) : (
+                    <IconStar className="h-5 w-5 text-[var(--primary)] shrink-0" />
+                  )}
+                </button>
 
-                {/* Chat Action */}
-                <Button
-                  variant="secondary"
-                  size="md"
+                {/* Chat Action (Clean Centered Circular Button) */}
+                <button
+                  type="button"
                   onClick={handleChatClick}
-                  className="h-11 w-11 p-0 rounded-2xl text-xs font-bold border border-[var(--champagne-border)] bg-white text-[var(--primary)] hover:border-[var(--primary)] flex items-center justify-center active-press"
+                  className="h-11 w-11 rounded-full border border-[var(--champagne-border)] bg-white text-[var(--primary)] hover:border-[var(--primary)] hover:bg-[#FAF3EC] shrink-0 flex items-center justify-center active:scale-95 transition-all shadow-2xs"
                   aria-label="Chat"
                   title="Chat"
                 >
-                  <IconMessageCircle className="h-4.5 w-4.5 text-[var(--primary)]" />
-                </Button>
+                  <IconMessageCircle className="h-5 w-5 text-[var(--primary)] shrink-0" />
+                </button>
               </>
             )}
           </div>

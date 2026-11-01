@@ -1,3 +1,14 @@
+function extractErrorMessage(res: any): string {
+  if (!res) return "You can only message profiles you have mutually connected with.";
+  if (typeof res === "string" && res.trim()) return res.trim();
+  if (typeof res?.data === "string" && res.data.trim()) return res.data.trim();
+  if (typeof res?.data?.message === "string" && res.data.message.trim()) return res.data.message.trim();
+  if (typeof res?.message === "string" && res.message.trim()) return res.message.trim();
+  if (typeof res?.error === "string" && res.error.trim()) return res.error.trim();
+  if (typeof res?.data?.error === "string" && res.data.error.trim()) return res.data.error.trim();
+  return "You can only message profiles you have mutually connected with.";
+}
+
 import { io, Socket } from "socket.io-client";
 import { apiFetch } from "@/lib/http/api-client";
 import type { UserProfile } from "./profile.service";
@@ -264,32 +275,68 @@ class ChatService {
     // 1. If socket is connected, emit send_message
     if (this.socket && this.socket.connected) {
       return new Promise<Message>((resolve, reject) => {
-        const timeout = setTimeout(() => {
+        const cleanup = () => {
+          clearTimeout(timeout);
           this.socket?.off("message_sent", onSent);
+          this.socket?.off("error", onError);
+          this.socket?.off("subscription_required", onSubscription);
+        };
+
+        const timeout = setTimeout(() => {
+          cleanup();
           reject(new Error("Timeout sending message via socket"));
-        }, 6000);
+        }, 2500);
 
         const onSent = (res: any) => {
-          clearTimeout(timeout);
+          cleanup();
           const msg = res?.data || res;
           if (msg && (msg.id || msg.content)) {
             resolve(msg);
           }
         };
 
+        const onError = (res: any) => {
+          cleanup();
+          const errorMsg = extractErrorMessage(res);
+          const err: any = new Error(errorMsg);
+          err.isBackendError = true;
+          reject(err);
+        };
+
+        const onSubscription = (res: any) => {
+          cleanup();
+          const errorMsg = extractErrorMessage(res) || "An active Chat Permit is required to send messages.";
+          const err: any = new Error(errorMsg);
+          err.isBackendError = true;
+          reject(err);
+        };
+
         this.socket?.once("message_sent", onSent);
+        this.socket?.once("error", onError);
+        this.socket?.once("subscription_required", onSubscription);
 
         this.socket?.emit("send_message", { receiverId, content }, (res: any) => {
-          clearTimeout(timeout);
-          this.socket?.off("message_sent", onSent);
+          cleanup();
           if (res?.event === "error" || res?.error) {
-            reject(new Error(res?.data || res?.error || "Failed to send message"));
+            const err: any = new Error(extractErrorMessage(res));
+            err.isBackendError = true;
+            reject(err);
+          } else if (res?.event === "subscription_required") {
+            const err: any = new Error(extractErrorMessage(res) || "Subscription required");
+            err.isBackendError = true;
+            reject(err);
           } else {
             resolve(res?.data || res);
           }
         });
-      }).catch(async (socketErr) => {
-        console.warn("[ChatService] WebSocket send failed, checking REST fallback:", socketErr);
+      }).catch(async (socketErr: any) => {
+        // If the backend socket explicitly rejected with a policy/business rule (e.g. CONNECTION_REQUIRED),
+        // rethrow immediately. Do NOT delay or trigger a redundant REST fallback that will fail with the exact same error.
+        if (socketErr?.isBackendError) {
+          throw socketErr;
+        }
+
+        console.warn("[ChatService] WebSocket send failed, checking REST fallback:", socketErr?.message || socketErr);
         return await apiFetch<Message>("/chat/messages", {
           method: "POST",
           body: JSON.stringify({ receiverId, content }),

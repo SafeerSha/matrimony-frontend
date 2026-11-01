@@ -20,6 +20,8 @@ import {
   IconX,
   IconCheck,
   IconSparkles,
+  IconUpload,
+  IconRefresh,
   IconHeart,
   IconUsers,
   IconBriefcase,
@@ -134,69 +136,172 @@ function SafeAlbumPhotoCard({
   isPrimary,
   isSettingThisPrimary,
   isDeletingThis,
+  isReplacingThis,
+  replacingPreviewUrl,
   onSetPrimary,
   onDelete,
+  onReplace,
 }: {
   photo: ProfilePhoto;
   index: number;
   isPrimary: boolean;
   isSettingThisPrimary: boolean;
   isDeletingThis: boolean;
+  isReplacingThis?: boolean;
+  replacingPreviewUrl?: string;
   onSetPrimary: () => void;
   onDelete: () => void;
+  onReplace?: (file: File) => void;
 }) {
   const [error, setError] = useState(false);
+  const replaceInputRef = useRef<HTMLInputElement>(null);
+
+  // Reset error state whenever the photo URL or id changes
+  useEffect(() => {
+    setError(false);
+  }, [photo.url, photo.id]);
+
+  const cleanUrl = (() => {
+    if (!photo.url) return '';
+    if (
+      photo.url.startsWith('http://') ||
+      photo.url.startsWith('https://') ||
+      photo.url.startsWith('data:') ||
+      photo.url.startsWith('blob:')
+    ) {
+      return photo.url;
+    }
+    const rawApi = (process.env.NEXT_PUBLIC_API_URL || '').split('#')[0].trim().replace(/\/api\/v1\/?$/, '');
+    const base = rawApi || (typeof window !== 'undefined' ? window.location.origin : '');
+    return `${base}${photo.url.startsWith('/') ? '' : '/'}${photo.url}`;
+  })();
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file && onReplace) {
+      onReplace(file);
+    }
+    if (replaceInputRef.current) {
+      replaceInputRef.current.value = '';
+    }
+  };
 
   return (
     <div
       className={cn(
-        'relative aspect-[4/5] rounded-2xl overflow-hidden border-2 transition-all group bg-stone-100 shadow-2xs',
+        'relative aspect-[4/5] rounded-2xl overflow-hidden border-2 transition-all group bg-stone-100 shadow-2xs flex flex-col justify-between',
         isPrimary
           ? 'border-amber-400 ring-2 ring-amber-300/60 shadow-md'
           : 'border-[var(--border)] hover:border-[var(--primary)]'
       )}
     >
-      {!error && photo.url ? (
+      <input
+        type="file"
+        accept="image/*"
+        ref={replaceInputRef}
+        className="hidden"
+        onChange={handleFileChange}
+      />
+
+      {!error && cleanUrl ? (
         <img
-          src={photo.url}
+          src={cleanUrl}
           alt={`Gallery Photo ${index + 1}`}
-          className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+          className="absolute inset-0 w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
           onError={() => setError(true)}
         />
       ) : (
-        <div className="w-full h-full flex flex-col items-center justify-center bg-gradient-to-br from-[#FAF3EC] to-[#F5E6D8] p-4 text-center">
+        <div className="absolute inset-0 w-full h-full flex flex-col items-center justify-center bg-gradient-to-br from-[#FAF3EC] to-[#F5E6D8] p-4 text-center z-0">
           <div className="grid h-12 w-12 place-items-center rounded-full bg-white text-[var(--primary)] shadow-sm mb-1.5">
             <IconPhoto className="w-6 h-6 opacity-75" />
           </div>
           <span className="text-[11px] font-bold text-[#5C1027]">Photo {index + 1}</span>
           <span className="text-[10px] text-[var(--muted)]">Preview unavailable</span>
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              setError(false);
+            }}
+            className="text-[10px] font-medium text-[var(--primary)] hover:underline mt-1.5 cursor-pointer"
+          >
+            Retry preview
+          </button>
+        </div>
+      )}
+
+      {/* Loading overlay when replacing */}
+      {isReplacingThis && (
+        <div className="absolute inset-0 bg-black/75 backdrop-blur-xs flex flex-col items-center justify-center z-20 text-white p-4 text-center animate-in fade-in duration-200">
+          <div className="relative mb-2.5">
+            <div className="h-12 w-12 rounded-full border-3 border-white/20 border-t-amber-400 animate-spin flex items-center justify-center">
+              <IconLoader2 className="h-6 w-6 text-amber-400 animate-spin" />
+            </div>
+          </div>
+          <span className="text-xs font-bold text-white tracking-wide">Replacing photo...</span>
+          <div className="w-3/4 bg-white/20 h-1.5 rounded-full mt-3 overflow-hidden">
+            <div className="h-full bg-gradient-to-r from-amber-400 to-amber-500 rounded-full w-full animate-pulse" />
+          </div>
+        </div>
+      )}
+
+      {/* Loading overlay when setting primary */}
+      {isSettingThisPrimary && (
+        <div className="absolute inset-0 bg-black/70 backdrop-blur-xs flex flex-col items-center justify-center z-20 text-white p-4 text-center animate-in fade-in duration-200">
+          <IconLoader2 className="h-8 w-8 text-amber-400 animate-spin mb-2" />
+          <span className="text-xs font-bold text-white">Setting as Primary DP...</span>
+        </div>
+      )}
+
+      {/* Loading overlay when deleting */}
+      {isDeletingThis && (
+        <div className="absolute inset-0 bg-black/70 backdrop-blur-xs flex flex-col items-center justify-center z-20 text-white p-4 text-center animate-in fade-in duration-200">
+          <IconLoader2 className="h-8 w-8 text-rose-400 animate-spin mb-2" />
+          <span className="text-xs font-bold text-white">Deleting photo...</span>
         </div>
       )}
 
       {/* Primary Photo Badge */}
       {isPrimary && (
-        <div className="absolute top-2.5 left-2.5 bg-gradient-to-r from-amber-500 to-amber-600 text-white text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider shadow-md flex items-center gap-1 z-10">
+        <div className="absolute top-2.5 left-2.5 bg-gradient-to-r from-amber-500 to-amber-600 text-white text-[10px] font-bold px-2.5 py-0.5 rounded-full uppercase tracking-wider shadow-md flex items-center gap-1 z-10 pointer-events-none">
           <IconStar className="h-3 w-3 fill-white" />
           Primary DP
         </div>
       )}
 
-      {/* Photo Actions Overlay */}
-      <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/30 to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex flex-col justify-end p-3 gap-2">
+      {/* Action Buttons Toolbar (Single Set at Bottom) */}
+      <div className="relative z-10 mt-auto p-2.5 bg-gradient-to-t from-black/80 via-black/40 to-transparent flex items-center gap-1.5">
+        <Button
+          variant="secondary"
+          size="xs"
+          onClick={() => replaceInputRef.current?.click()}
+          disabled={isReplacingThis || isDeletingThis}
+          className="flex-1 text-[11px] font-bold bg-white/95 hover:bg-white text-[var(--foreground)] border-0 shadow-sm gap-1 h-8 rounded-xl active-press"
+          title="Change this photo"
+        >
+          {isReplacingThis ? (
+            <IconLoader2 className="h-3.5 w-3.5 animate-spin text-[var(--primary)]" />
+          ) : (
+            <IconRefresh className="h-3.5 w-3.5 text-[var(--primary)]" />
+          )}
+          <span>Change</span>
+        </Button>
+
         {!isPrimary && (
           <Button
             variant="secondary"
             size="xs"
             onClick={onSetPrimary}
-            disabled={isSettingThisPrimary}
-            className="w-full text-[11px] font-bold bg-white text-[var(--foreground)] hover:bg-[#FAF3EC] border-0 shadow-sm gap-1"
+            disabled={isSettingThisPrimary || isDeletingThis || isReplacingThis}
+            className="flex-1 text-[11px] font-bold bg-white/95 hover:bg-white text-[var(--foreground)] border-0 shadow-sm gap-1 h-8 rounded-xl active-press"
+            title="Set as main profile photo"
           >
             {isSettingThisPrimary ? (
-              <IconLoader2 className="h-3.5 w-3.5 animate-spin" />
+              <IconLoader2 className="h-3.5 w-3.5 animate-spin text-amber-500" />
             ) : (
               <IconStar className="h-3.5 w-3.5 text-amber-500" />
             )}
-            Set as Primary
+            <span>Make DP</span>
           </Button>
         )}
 
@@ -204,15 +309,15 @@ function SafeAlbumPhotoCard({
           variant="danger"
           size="xs"
           onClick={onDelete}
-          disabled={isDeletingThis}
-          className="w-full text-[11px] font-bold bg-rose-600 hover:bg-rose-700 text-white border-0 shadow-sm gap-1"
+          disabled={isDeletingThis || isReplacingThis}
+          className="h-8 px-2.5 rounded-xl text-[11px] font-bold bg-rose-600 hover:bg-rose-700 text-white border-0 shadow-sm shrink-0 active-press"
+          title="Delete photo"
         >
           {isDeletingThis ? (
             <IconLoader2 className="h-3.5 w-3.5 animate-spin" />
           ) : (
             <IconTrash className="h-3.5 w-3.5" />
           )}
-          Delete Photo
         </Button>
       </div>
     </div>
@@ -226,8 +331,11 @@ export function MyProfile() {
 
   // Photo management state
   const [isUploading, setIsUploading] = useState(false);
+  const [uploadPreviews, setUploadPreviews] = useState<string[]>([]);
   const [isSettingPrimary, setIsSettingPrimary] = useState<string | null>(null);
   const [deletingPhotoId, setDeletingPhotoId] = useState<string | null>(null);
+  const [replacingPhotoId, setReplacingPhotoId] = useState<string | null>(null);
+  const [replacingPreview, setReplacingPreview] = useState<{ id: string; url: string } | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Profile details edit modal state
@@ -380,11 +488,11 @@ export function MyProfile() {
 
     const currentPhotos = profile?.photos || [];
     const currentCount = currentPhotos.length;
-    const remainingSlots = Math.max(0, 5 - currentCount);
+    const remainingSlots = Math.max(0, 3 - currentCount);
 
     if (remainingSlots <= 0) {
       toast.warning('Maximum Limit Reached', {
-        description: 'You can upload a maximum of 5 photos. Please delete a photo to add a new one.',
+        description: 'You can upload a maximum of 3 photos. Please delete a photo to add a new one.',
       });
       if (fileInputRef.current) fileInputRef.current.value = '';
       return;
@@ -394,11 +502,24 @@ export function MyProfile() {
     if (files.length > remainingSlots) {
       filesToUpload = files.slice(0, remainingSlots);
       toast.info('Photo Cap Applied', {
-        description: `Uploading only the first ${remainingSlots} photo(s) to stay within the 5-photo maximum limit.`,
+        description: `Uploading only the first ${remainingSlots} photo(s) to stay within the 3-photo maximum limit.`,
       });
     }
 
+    // Create object URLs for instant local previews
+    const localPreviews = filesToUpload
+      .map((f) => {
+        try {
+          return URL.createObjectURL(f);
+        } catch {
+          return '';
+        }
+      })
+      .filter(Boolean);
+
+    setUploadPreviews(localPreviews);
     setIsUploading(true);
+
     try {
       if (filesToUpload.length > 1) {
         await mediaService.uploadMultiplePhotos(filesToUpload);
@@ -419,6 +540,12 @@ export function MyProfile() {
       });
     } finally {
       setIsUploading(false);
+      setUploadPreviews([]);
+      localPreviews.forEach((u) => {
+        try {
+          URL.revokeObjectURL(u);
+        } catch { }
+      });
       if (fileInputRef.current) fileInputRef.current.value = '';
     }
   };
@@ -438,6 +565,36 @@ export function MyProfile() {
       });
     } finally {
       setIsSettingPrimary(null);
+    }
+  };
+
+  const handleReplacePhoto = async (photoId: string, file: File) => {
+    setReplacingPhotoId(photoId);
+    let previewUrl = '';
+    try {
+      previewUrl = URL.createObjectURL(file);
+      setReplacingPreview({ id: photoId, url: previewUrl });
+    } catch { }
+
+    try {
+      await mediaService.replacePhoto(photoId, file);
+      toast.success('Photo Changed', {
+        description: 'Your photo was replaced successfully.',
+      });
+      await fetchProfile();
+    } catch (err: any) {
+      console.error('Replace failed:', err);
+      toast.error('Change Failed', {
+        description: err?.message || 'Failed to replace photo. Please ensure file is an image under 5MB.',
+      });
+    } finally {
+      setReplacingPhotoId(null);
+      setReplacingPreview(null);
+      if (previewUrl) {
+        try {
+          URL.revokeObjectURL(previewUrl);
+        } catch { }
+      }
     }
   };
 
@@ -560,7 +717,7 @@ export function MyProfile() {
       : 'IC-A00001');
 
   const photosCount = photos.length;
-  const isCapReached = photosCount >= 5;
+  const isCapReached = photosCount >= 3;
 
   const calculateCompleteness = (p: UserProfile, pCount: number) => {
     let score = 0;
@@ -584,7 +741,7 @@ export function MyProfile() {
         <SectionHeader
           eyebrow="My Profile"
           title="Profile Management"
-          // description="Keep your matrimonial profile details, photos, and criteria up to date for verified compatibility matching."
+        // description="Keep your matrimonial profile details, photos, and criteria up to date for verified compatibility matching."
         />
         <div className="flex items-center gap-2.5 self-start sm:self-auto shrink-0">
           <Button
@@ -680,7 +837,7 @@ export function MyProfile() {
                 />
               </div>
               <p className="mt-2 text-[10px] font-semibold text-[var(--muted)]">
-                {photosCount} of 5 photos • {profile.bio ? 'Bio added' : 'Add bio'}
+                {photosCount} of 3 photos • {profile.bio ? 'Bio added' : 'Add bio'}
               </p>
             </div>
           </div>
@@ -695,7 +852,7 @@ export function MyProfile() {
             t === 'about'
               ? 'Bio & Background'
               : t === 'album'
-                ? `Photo Gallery (${photosCount}/5)`
+                ? `Photo Gallery (${photosCount}/3)`
                 : t === 'preferences'
                   ? 'Partner Preferences'
                   : 'Overview';
@@ -886,7 +1043,7 @@ export function MyProfile() {
             <Card className="p-5 rounded-3xl border border-[var(--border)]">
               <div className="flex items-center justify-between mb-3">
                 <h4 className="text-xs font-bold text-[var(--foreground)] uppercase tracking-wider">
-                  Gallery Photos ({photosCount}/5)
+                  Gallery Photos ({photosCount}/3)
                 </h4>
                 <button
                   onClick={() => setTab('album')}
@@ -1078,11 +1235,11 @@ export function MyProfile() {
                       : 'bg-emerald-50 text-emerald-800 border-emerald-200'
                   )}
                 >
-                  {photosCount} / 5 Photos Uploaded
+                  {photosCount} / 3 Photos Uploaded
                 </span>
               </div>
               <p className="mt-1 text-xs sm:text-sm text-[var(--muted)]">
-                Up to 5 photos supported. Set your primary display photo with the star icon. Select
+                Up to 3 photos supported. Set your primary display photo with the star icon. Select
                 multiple photos to upload simultaneously.
               </p>
             </div>
@@ -1102,7 +1259,7 @@ export function MyProfile() {
                   )
                 }
               >
-                {isUploading ? 'Uploading...' : isCapReached ? 'Limit Reached (5/5)' : 'Upload Photos'}
+                {isUploading ? 'Uploading...' : isCapReached ? 'Limit Reached (3/3)' : 'Upload Photos'}
               </Button>
               <input
                 type="file"
@@ -1115,48 +1272,131 @@ export function MyProfile() {
             </div>
           </div>
 
-          {/* 5-Photo Grid */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
+          {/* Active Uploading / Replacing Notification Banner */}
+          {(isUploading || replacingPhotoId) && (
+            <div className="mb-5 rounded-2xl bg-amber-500/10 border border-amber-500/30 p-4 flex items-center justify-between gap-3 text-amber-950 shadow-xs animate-in fade-in slide-in-from-top-2 duration-300">
+              <div className="flex items-center gap-3">
+                <div className="grid h-10 w-10 place-items-center rounded-xl bg-gradient-to-br from-amber-500 to-amber-600 text-white shadow-sm shrink-0">
+                  <IconLoader2 className="h-5 w-5 animate-spin" />
+                </div>
+                <div>
+                  <p className="text-xs font-bold text-amber-950 flex items-center gap-2">
+                    {isUploading ? 'Uploading Photo(s) to Cloud Storage...' : 'Replacing Photo...'}
+                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-800 text-[10px] font-semibold">
+                      Please wait
+                    </span>
+                  </p>
+                  <p className="text-[11px] text-amber-800/80 mt-0.5">
+                    Your image is being compressed to WebP and securely saved to Cloudflare R2.
+                  </p>
+                </div>
+              </div>
+              <div className="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/90 border border-amber-200/80 shadow-2xs text-[11px] font-bold text-amber-700 shrink-0">
+                <span className="relative flex h-2 w-2">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75"></span>
+                  <span className="relative inline-flex rounded-full h-2 w-2 bg-amber-500"></span>
+                </span>
+                Uploading
+              </div>
+            </div>
+          )}
+
+          {/* 3-Photo Grid */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+            {/* Existing Photos */}
             {photos.map((photo, index) => (
               <SafeAlbumPhotoCard
-                key={photo.id || index}
+                key={`${photo.id || index}-${photo.url || ""}`}
                 photo={photo}
                 index={index}
                 isPrimary={photo.isPrimary || index === 0}
                 isSettingThisPrimary={isSettingPrimary === photo.id}
                 isDeletingThis={deletingPhotoId === photo.id}
+                isReplacingThis={replacingPhotoId === photo.id}
+                replacingPreviewUrl={replacingPreview?.id === photo.id ? replacingPreview.url : undefined}
                 onSetPrimary={() => handleSetPrimaryPhoto(photo.id)}
                 onDelete={() => handleDeletePhoto(photo.id)}
+                onReplace={(file) => handleReplacePhoto(photo.id, file)}
               />
             ))}
 
-            {/* Empty Slots Fillers up to 5 */}
-            {Array.from({ length: Math.max(0, 5 - photosCount) }).map((_, i) => (
-              <div
-                key={`empty-slot-${i}`}
-                onClick={() => {
-                  if (!isCapReached && !isUploading) {
-                    fileInputRef.current?.click();
-                  }
-                }}
-                className={cn(
-                  'aspect-[4/5] rounded-2xl border-2 border-dashed flex flex-col items-center justify-center transition-all p-4 text-center select-none',
-                  isCapReached
-                    ? 'border-gray-200 bg-gray-50/50 cursor-not-allowed opacity-60 text-gray-400'
-                    : 'border-[var(--border)] bg-[var(--surface-muted)] hover:bg-[var(--primary-lighter)] hover:border-[var(--primary)] cursor-pointer text-[var(--muted)]'
-                )}
-              >
-                <div className="h-10 w-10 rounded-full bg-white shadow-2xs flex items-center justify-center mb-2">
-                  <IconPhoto className="h-5 w-5 opacity-60 text-[var(--primary)]" />
+            {/* Active Uploading Slot(s) */}
+            {isUploading && (
+              uploadPreviews.length > 0
+                ? uploadPreviews.map((previewUrl, uploadIdx) => (
+                  <div
+                    key={`uploading-preview-${uploadIdx}`}
+                    className="relative aspect-[4/5] rounded-2xl overflow-hidden border-2 border-amber-400 ring-4 ring-amber-300/40 shadow-md bg-stone-900 flex flex-col justify-between animate-pulse"
+                  >
+                    <img
+                      src={previewUrl}
+                      alt="Uploading preview"
+                      className="absolute inset-0 w-full h-full object-cover opacity-40 blur-xs scale-105"
+                    />
+                    <div className="absolute inset-0 bg-black/60 backdrop-blur-xs flex flex-col items-center justify-center p-4 text-center z-10 text-white">
+                      <div className="relative mb-3">
+                        <div className="h-12 w-12 rounded-full border-3 border-white/20 border-t-amber-400 animate-spin flex items-center justify-center">
+                          <IconLoader2 className="h-6 w-6 text-amber-400 animate-spin" />
+                        </div>
+                      </div>
+                      <span className="text-xs font-bold text-white tracking-wide uppercase">
+                        Uploading Photo {photosCount + uploadIdx + 1}
+                      </span>
+                      <div className="w-3/4 bg-white/20 h-1.5 rounded-full mt-3 overflow-hidden">
+                        <div className="h-full bg-gradient-to-r from-amber-400 to-amber-500 rounded-full w-full animate-pulse" />
+                      </div>
+                    </div>
+                  </div>
+                ))
+                : (
+                  <div
+                    key="uploading-fallback"
+                    className="relative aspect-[4/5] rounded-2xl overflow-hidden border-2 border-amber-400 ring-4 ring-amber-300/40 shadow-md bg-stone-900 flex flex-col items-center justify-center p-4 text-center text-white animate-pulse"
+                  >
+                    <div className="relative mb-3">
+                      <div className="h-12 w-12 rounded-full border-3 border-white/20 border-t-amber-400 animate-spin flex items-center justify-center">
+                        <IconLoader2 className="h-6 w-6 text-amber-400 animate-spin" />
+                      </div>
+                    </div>
+                    <span className="text-xs font-bold text-white tracking-wide uppercase">
+                      Uploading Photo {photosCount + 1}
+                    </span>
+                  </div>
+                )
+            )}
+
+            {/* Empty Slots Fillers up to 3 */}
+            {Array.from({
+              length: Math.max(0, 3 - photosCount - (isUploading ? Math.max(1, uploadPreviews.length) : 0)),
+            }).map((_, i) => {
+              const currentOffset = photosCount + (isUploading ? Math.max(1, uploadPreviews.length) : 0) + i + 1;
+              return (
+                <div
+                  key={`empty-slot-${i}`}
+                  onClick={() => {
+                    if (!isCapReached && !isUploading && !replacingPhotoId) {
+                      fileInputRef.current?.click();
+                    }
+                  }}
+                  className={cn(
+                    'aspect-[4/5] rounded-2xl border-2 border-dashed flex flex-col items-center justify-center transition-all p-4 text-center select-none',
+                    isCapReached || isUploading || Boolean(replacingPhotoId)
+                      ? 'border-gray-200 bg-gray-50/50 cursor-not-allowed opacity-60 text-gray-400'
+                      : 'border-[var(--border)] bg-[var(--surface-muted)] hover:bg-[var(--primary-lighter)] hover:border-[var(--primary)] cursor-pointer text-[var(--muted)]'
+                  )}
+                >
+                  <div className="h-10 w-10 rounded-full bg-white shadow-2xs flex items-center justify-center mb-2">
+                    <IconPhoto className="h-5 w-5 opacity-60 text-[var(--primary)]" />
+                  </div>
+                  <span className="text-xs font-bold text-[var(--foreground)]">
+                    Slot {currentOffset} of 3
+                  </span>
+                  <span className="text-[10px] text-[var(--muted)] mt-1">
+                    {isCapReached ? 'Cap reached' : isUploading ? 'Upload in progress' : 'Click to Upload'}
+                  </span>
                 </div>
-                <span className="text-xs font-bold text-[var(--foreground)]">
-                  Slot {photosCount + i + 1} of 5
-                </span>
-                <span className="text-[10px] text-[var(--muted)] mt-1">
-                  {isCapReached ? 'Cap reached' : 'Click to Upload'}
-                </span>
-              </div>
-            ))}
+              );
+            })}
           </div>
 
           {/* Upload Instructions Tip */}

@@ -34,6 +34,17 @@ export const mediaService = {
     });
   },
 
+  /** Replace an existing photo */
+  replacePhoto: (photoId: string, file: File) => {
+    const formData = new FormData();
+    formData.append("photo", file);
+
+    return apiFetch<MediaUploadResponse>(`/media/${photoId}`, {
+      method: "PUT",
+      body: formData,
+    });
+  },
+
   /** Set photo as primary display picture */
   setPrimaryPhoto: async (photoId: string) => {
     try {

@@ -194,6 +194,29 @@ function MessagesContent() {
               const prof = await profileService.getProfile(targetUserId);
               const pUser = (prof as any)?.user;
               const participantId = pUser?.id || prof?.userId || prof?.id || targetUserId;
+
+              // Check if conversation already exists under resolved participantId
+              const existingResolved = list.find(
+                (c) =>
+                  c.participantId === participantId ||
+                  c.id === participantId ||
+                  c.participant?.userId === participantId ||
+                  c.participant?.id === participantId ||
+                  (prof?.profileId && c.participant?.profileId === prof.profileId)
+              );
+
+              if (existingResolved) {
+                setSelected(existingResolved);
+                const isMobile = typeof window !== 'undefined' && window.innerWidth < 768;
+                if (isMobile) {
+                  setMobileView('chat');
+                }
+                if (typeof document !== 'undefined' && document.hasFocus() && document.visibilityState === 'visible') {
+                  markConversationAsRead(participantId);
+                }
+                return;
+              }
+
               const fullName =
                 prof?.name ||
                 `${prof?.firstName || pUser?.firstName || ''} ${prof?.lastName || pUser?.lastName || ''}`.trim() ||
@@ -437,7 +460,11 @@ function MessagesContent() {
         )
       );
 
-      toast.error('Message delivery note', err?.message || 'Could not verify delivery to server.');
+      const errorMsg =
+        err?.message && err.message !== 'Failed to send message' && !err.message.includes('object Object')
+          ? err.message
+          : 'You can only message profiles you have mutually connected with.';
+      toast.error('Message delivery note', errorMsg);
     }
   };
 

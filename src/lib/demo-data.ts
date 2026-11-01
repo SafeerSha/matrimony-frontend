@@ -1,5 +1,7 @@
 export type Profile = {
   id: string;
+  userId?: string;
+  profileTableId?: string;
   profileId?: string;
   name: string;
   age: number;
