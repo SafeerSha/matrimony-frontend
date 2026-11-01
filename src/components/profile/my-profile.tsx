@@ -1541,21 +1541,14 @@ export function MyProfile({ initialPreview = false }: { initialPreview?: boolean
             </div>
 
             <div>
-              <label className="block text-xs font-bold uppercase tracking-wider text-[var(--foreground)] mb-1.5">
-                Annual Income
-              </label>
-              <select
+              <ModernSelect
+                label="Annual Income"
                 value={editDraft.annualIncome}
-                onChange={(e) => setEditDraft({ ...editDraft, annualIncome: e.target.value })}
-                className="w-full rounded-xl border border-[var(--border)] bg-white px-3.5 py-2.5 text-xs text-[var(--foreground)] focus:outline-none focus:ring-2 focus:ring-[var(--primary)]"
-              >
-                <option value="">Select income bracket</option>
-                {INCOME_OPTIONS.map((inc) => (
-                  <option key={inc} value={inc}>
-                    {inc}
-                  </option>
-                ))}
-              </select>
+                options={INCOME_OPTIONS.map((inc) => ({ label: inc, value: inc }))}
+                onChange={(val) => setEditDraft({ ...editDraft, annualIncome: val })}
+                placeholder="Select income bracket"
+                maxHeight="max-h-[220px]"
+              />
             </div>
           </div>
 
@@ -1587,21 +1580,14 @@ export function MyProfile({ initialPreview = false }: { initialPreview?: boolean
             </div>
 
             <div>
-              <label className="block text-xs font-bold uppercase tracking-wider text-[var(--foreground)] mb-1.5">
-                Employment Status
-              </label>
-              <select
+              <ModernSelect
+                label="Employment Status"
                 value={editDraft.employmentStatus}
-                onChange={(e) => setEditDraft({ ...editDraft, employmentStatus: e.target.value })}
-                className="w-full rounded-xl border border-[var(--border)] bg-white px-3.5 py-2.5 text-xs text-[var(--foreground)] focus:outline-none focus:ring-2 focus:ring-[var(--primary)]"
-              >
-                <option value="">Select employment</option>
-                {EMPLOYMENT_STATUS_OPTIONS.map((emp) => (
-                  <option key={emp} value={emp}>
-                    {emp}
-                  </option>
-                ))}
-              </select>
+                options={EMPLOYMENT_STATUS_OPTIONS.map((emp) => ({ label: emp, value: emp }))}
+                onChange={(val) => setEditDraft({ ...editDraft, employmentStatus: val })}
+                placeholder="Select employment"
+                maxHeight="max-h-[220px]"
+              />
             </div>
           </div>
 
@@ -1621,21 +1607,14 @@ export function MyProfile({ initialPreview = false }: { initialPreview?: boolean
             </div>
 
             <div>
-              <label className="block text-xs font-bold uppercase tracking-wider text-[var(--foreground)] mb-1.5">
-                Marital Status
-              </label>
-              <select
+              <ModernSelect
+                label="Marital Status"
                 value={editDraft.maritalStatus}
-                onChange={(e) => setEditDraft({ ...editDraft, maritalStatus: e.target.value })}
-                className="w-full rounded-xl border border-[var(--border)] bg-white px-3.5 py-2.5 text-xs text-[var(--foreground)] focus:outline-none focus:ring-2 focus:ring-[var(--primary)]"
-              >
-                <option value="">Select status</option>
-                {MARITAL_STATUS_OPTIONS.map((st) => (
-                  <option key={st} value={st}>
-                    {st}
-                  </option>
-                ))}
-              </select>
+                options={MARITAL_STATUS_OPTIONS.map((st) => ({ label: st, value: st }))}
+                onChange={(val) => setEditDraft({ ...editDraft, maritalStatus: val })}
+                placeholder="Select status"
+                maxHeight="max-h-[220px]"
+              />
             </div>
 
             <div>
