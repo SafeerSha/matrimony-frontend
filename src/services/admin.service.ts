@@ -1,3 +1,38 @@
+export interface AdminPlanItem {
+  id: string;
+  code: string;
+  name: string;
+  badge?: string | null;
+  price: number;
+  formattedPrice?: string | null;
+  period: string;
+  durationDays: number;
+  description?: string | null;
+  features: string[];
+  contactCredits: number;
+  dailyInterestsLimit: number;
+  popular: boolean;
+  isActive: boolean;
+  displayOrder: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface PlanFormInput {
+  name: string;
+  code?: string;
+  badge?: string;
+  price: number;
+  period: string;
+  durationDays: number;
+  description?: string;
+  features?: string[];
+  contactCredits?: number;
+  dailyInterestsLimit?: number;
+  popular?: boolean;
+  isActive?: boolean;
+  displayOrder?: number;
+}
 import { apiFetch } from "@/lib/http/api-client";
 import type { UserProfile } from "./profile.service";
 import type { AnalyticsOverview, DateRangeInput } from "@/types/analytics";
@@ -84,6 +119,45 @@ export const adminService = {
     return apiFetch(`/admin/photos/${photoId}/verify`, {
       method: "POST",
       body: JSON.stringify({ status }),
+    });
+  },
+
+  // Plan Configuration Management
+  getPlans: () => {
+    return apiFetch<AdminPlanItem[]>('/admin/plans', {
+      method: 'GET',
+    });
+  },
+
+  createPlan: (data: PlanFormInput) => {
+    return apiFetch<AdminPlanItem>('/admin/plans', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  },
+
+  updatePlan: (id: string, data: Partial<PlanFormInput>) => {
+    return apiFetch<AdminPlanItem>(`/admin/plans/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    });
+  },
+
+  togglePlanActive: (id: string) => {
+    return apiFetch<AdminPlanItem>(`/admin/plans/${id}/toggle-active`, {
+      method: 'PATCH',
+    });
+  },
+
+  togglePlanPopular: (id: string) => {
+    return apiFetch<AdminPlanItem>(`/admin/plans/${id}/toggle-popular`, {
+      method: 'PATCH',
+    });
+  },
+
+  deletePlan: (id: string) => {
+    return apiFetch<{ id: string }>(`/admin/plans/${id}`, {
+      method: 'DELETE',
     });
   },
 

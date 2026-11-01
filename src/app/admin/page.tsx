@@ -13,15 +13,17 @@ import {
   IconShieldCheck,
   IconLoader2,
   IconLogout,
+  IconCreditCard,
 } from '@tabler/icons-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { PlatformOverview } from '@/components/admin/platform-overview';
 import { UserManagement } from '@/components/admin/user-management';
+import { PlanManagement } from '@/components/admin/plan-management';
 import { authService } from '@/services/auth.service';
 import { toast } from '@/lib/toast';
 
-type AdminTab = 'analytics' | 'users' | 'moderation' | 'rm-management';
+type AdminTab = 'analytics' | 'users' | 'plans' | 'moderation' | 'rm-management';
 
 export default function AdminDashboard() {
   const router = useRouter();
@@ -184,7 +186,7 @@ export default function AdminDashboard() {
         </div>
 
         {/* Role badge */}
-        <div className="px-5 pt-4 pb-2">
+        {/* <div className="px-5 pt-4 pb-2">
           <div className="flex items-center gap-2 px-3 py-2 rounded-xl bg-[#4A1024] border border-[#5E142E] text-xs text-white">
             <IconShieldCheck className="h-4 w-4 text-emerald-400 shrink-0" />
             <div>
@@ -192,7 +194,7 @@ export default function AdminDashboard() {
               <span className="text-[10px] text-white/60">Full Platform Access</span>
             </div>
           </div>
-        </div>
+        </div> */}
 
         {/* Navigation Links */}
         <nav className="flex-1 p-4 space-y-1.5 overflow-y-auto" aria-label="Admin Navigation">
@@ -216,6 +218,17 @@ export default function AdminDashboard() {
           >
             <IconUsers className="h-4.5 w-4.5 shrink-0" />
             <span>User Management</span>
+          </button>
+
+          <button
+            onClick={() => handleSelectTab('plans')}
+            className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs sm:text-sm font-medium transition-all ${tab === 'plans'
+              ? 'bg-[var(--primary)] text-white shadow-sm font-semibold'
+              : 'hover:bg-[#3A0A18] text-white/80'
+              }`}
+          >
+            <IconCreditCard className="h-4.5 w-4.5 shrink-0" />
+            <span>Plan Configuration</span>
           </button>
 
           {/* <button
@@ -308,6 +321,9 @@ export default function AdminDashboard() {
 
         {/* TAB 2: USER MANAGEMENT */}
         {tab === 'users' && <UserManagement />}
+
+        {/* TAB: PLAN CONFIGURATION */}
+        {tab === 'plans' && <PlanManagement />}
 
         {/* TAB 3: PROFILE MODERATION QUEUE (Labeled Mock Prototype) */}
         {tab === 'moderation' && (
