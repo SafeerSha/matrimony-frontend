@@ -38,6 +38,7 @@ import { SectionHeader } from '@/components/ui/section-header';
 import { cn } from '@/lib/cn';
 import { profileService, mediaService, authService } from '@/services';
 import type { UserProfile, ProfilePhoto } from '@/services/profile.service';
+import { ProfileDetail } from '@/components/profile/profile-detail';
 import { PartnerPreferencesEditor } from '@/components/preferences/partner-preferences-editor';
 import { ModernSelect } from '@/components/ui/modern-select';
 import {
@@ -324,10 +325,40 @@ function SafeAlbumPhotoCard({
   );
 }
 
-export function MyProfile() {
+export function MyProfile({ initialPreview = false }: { initialPreview?: boolean } = {}) {
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [tab, setTab] = useState<'overview' | 'about' | 'preferences' | 'album'>('overview');
+  const [isPreviewOpen, setIsPreviewOpen] = useState(initialPreview);
+
+  const handleOpenPreview = () => {
+    setIsPreviewOpen(true);
+    if (typeof window !== 'undefined') {
+      window.history.pushState({ preview: true }, '', '/app/profile?preview=true');
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  };
+
+  const handleClosePreview = () => {
+    setIsPreviewOpen(false);
+    if (typeof window !== 'undefined') {
+      if (window.location.search.includes('preview=true')) {
+        window.history.pushState(null, '', '/app/profile');
+      }
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  };
+
+  useEffect(() => {
+    const handlePopState = () => {
+      if (typeof window !== 'undefined') {
+        const urlParams = new URLSearchParams(window.location.search);
+        setIsPreviewOpen(urlParams.get('preview') === 'true');
+      }
+    };
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, []);
 
   // Photo management state
   const [isUploading, setIsUploading] = useState(false);
@@ -684,6 +715,23 @@ export function MyProfile() {
     return <PageLoader text="Loading your profile..." />;
   }
 
+  if (isPreviewOpen) {
+    return (
+      <div className="space-y-6">
+        <ProfileDetail
+          id="me"
+          initialProfile={profile}
+          isPreview={true}
+          onClosePreview={handleClosePreview}
+          onEdit={() => {
+            handleClosePreview();
+            setIsEditModalOpen(true);
+          }}
+        />
+      </div>
+    );
+  }
+
   if (!profile) return null;
 
   const displayName = profile.firstName
@@ -758,7 +806,7 @@ export function MyProfile() {
             size="sm"
             leftIcon={<IconEye className="h-4 w-4" />}
             className="rounded-2xl text-xs font-bold shadow-xs active-press h-10 px-4"
-            onClick={() => setTab('overview')}
+            onClick={handleOpenPreview}
           >
             View Profile
           </Button>

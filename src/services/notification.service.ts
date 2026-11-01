@@ -17,6 +17,13 @@ export interface NotificationItem {
   } | null;
 }
 
+export interface NotificationPreferences {
+  notifyInterests: boolean;
+  notifyMessages: boolean;
+  notifyMatches: boolean;
+  notifyMarketing: boolean;
+}
+
 export const notificationService = {
   getNotifications: () => {
     return apiFetch<NotificationItem[]>("/notifications", {
@@ -33,6 +40,19 @@ export const notificationService = {
   markAsRead: (id: string) => {
     return apiFetch<{ success: boolean }>('/notifications/' + id + '/read', {
       method: "PUT",
+    });
+  },
+
+  getPreferences: () => {
+    return apiFetch<NotificationPreferences>("/notifications/preferences", {
+      method: "GET",
+    });
+  },
+
+  updatePreferences: (data: Partial<NotificationPreferences>) => {
+    return apiFetch<NotificationPreferences>("/notifications/preferences", {
+      method: "PUT",
+      body: JSON.stringify(data),
     });
   },
 };

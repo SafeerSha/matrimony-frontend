@@ -44,15 +44,19 @@ import { BlockedUsersModal } from '@/components/settings/blocked-users-modal';
 import { FeatureGate } from '@/components/ui/under-development';
 import { authService, UserDevice } from '@/services/auth.service';
 import { profileService } from '@/services/profile.service';
+import { notificationService } from '@/services/notification.service';
 import { IconMail } from '@tabler/icons-react';
 import { toast } from '@/lib/toast';
 import { cn } from '@/lib/cn';
 
-export type SettingsSection = 'account' | 'profile' | 'privacy' | 'notifications' | 'security';
+export type SettingsSection = 'account' | 'security' | 'privacy' | 'notifications';
 
 function SettingsContent() {
   const searchParams = useSearchParams();
-  const initialTab = (searchParams.get('tab') as SettingsSection) || 'account';
+  const rawTab = searchParams.get('tab') as SettingsSection;
+  const initialTab: SettingsSection = ['account', 'security', 'privacy', 'notifications'].includes(rawTab)
+    ? rawTab
+    : 'account';
 
   const [activeTab, setActiveTab] = useState<SettingsSection>(initialTab);
 
@@ -68,29 +72,62 @@ function SettingsContent() {
   const [accountActionReason, setAccountActionReason] = useState('Taking a temporary break');
   const [accountActionFeedback, setAccountActionFeedback] = useState('');
   const [accountActionLoading, setAccountActionLoading] = useState(false);
+  const [deleteConfirmationInput, setDeleteConfirmationInput] = useState('');
+  const isDeleteConfirmed = deleteConfirmationInput.trim().toLowerCase() === 'delete my account';
 
   const handleAccountActionSubmit = async () => {
+    if (accountActionType === 'delete' && !isDeleteConfirmed) {
+      toast.error('Confirmation Required', {
+        description: 'Please type "delete my account" to confirm deletion.',
+      });
+      return;
+    }
+
     setAccountActionLoading(true);
     try {
       if (accountActionType === 'deactivate') {
         await profileService.deactivateAccount(accountActionReason);
-        toast.info('Account Deactivated', {
+        toast.flash('info', 'Account Deactivated', {
           description: 'Your profile has been paused. Sign in anytime to reactivate.',
         });
       } else {
         await profileService.deleteAccount(accountActionReason, accountActionFeedback);
-        toast.warning('Account Deleted', {
+        toast.flash('warning', 'Account Deleted', {
           description: 'Your profile has been scheduled for deletion.',
         });
       }
       setAccountActionModal(false);
       await authService.logout().catch(() => {});
-      window.location.href = '/login';
+      setTimeout(() => {
+        window.location.href = '/login';
+      }, 300);
     } catch (err: any) {
       const msg = err?.message || 'Could not complete account action.';
       toast.error('Action Failed', { description: msg });
     } finally {
       setAccountActionLoading(false);
+    }
+  };
+
+  const [isReactivating, setIsReactivating] = useState(false);
+  const handleReactivateAccount = async () => {
+    setIsReactivating(true);
+    try {
+      await profileService.reactivateAccount();
+      toast.success('Profile Reactivated', {
+        description: 'Your profile has been unpaused and is now visible in discovery searches.',
+      });
+      setCurrentUser((prev: any) => ({
+        ...prev,
+        status: 'ACTIVE',
+        profile: { ...(prev?.profile || {}), status: 'ACTIVE' },
+      }));
+    } catch (err: any) {
+      toast.error('Reactivation Failed', {
+        description: err?.message || 'Could not reactivate profile. Please try again.',
+      });
+    } finally {
+      setIsReactivating(false);
     }
   };
 
@@ -261,17 +298,66 @@ function SettingsContent() {
   };
 
   // Privacy Toggles
-  const [profileDiscoverable, setProfileDiscoverable] = useState(true);
   const [contactVisibility, setContactVisibility] = useState(true); // only after mutual interest
   const [phonePrivacy, setPhonePrivacy] = useState(true); // hide phone until approved
   const [addressPrivacy, setAddressPrivacy] = useState(true); // show city only
   const [whoCanContact, setWhoCanContact] = useState<'verified' | 'all'>('verified');
 
-  // Notification Toggles
+  // Notification Toggles & Persistence
   const [notifyInterests, setNotifyInterests] = useState(true);
   const [notifyMessages, setNotifyMessages] = useState(true);
   const [notifyMatches, setNotifyMatches] = useState(true);
   const [notifyMarketing, setNotifyMarketing] = useState(false);
+  const [isSavingNotifs, setIsSavingNotifs] = useState(false);
+
+  useEffect(() => {
+    let mounted = true;
+    const fetchPrefs = async () => {
+      try {
+        const prefs = await notificationService.getPreferences();
+        if (mounted && prefs) {
+          setNotifyInterests(prefs.notifyInterests ?? true);
+          setNotifyMessages(prefs.notifyMessages ?? true);
+          setNotifyMatches(prefs.notifyMatches ?? true);
+          setNotifyMarketing(prefs.notifyMarketing ?? false);
+        }
+      } catch (err) {
+        console.warn('Could not load notification preferences:', err);
+      }
+    };
+    fetchPrefs();
+    return () => {
+      mounted = false;
+    };
+  }, []);
+
+  const handleToggleNotification = async (
+    key: 'notifyInterests' | 'notifyMessages' | 'notifyMatches' | 'notifyMarketing',
+    newVal: boolean
+  ) => {
+    if (key === 'notifyInterests') setNotifyInterests(newVal);
+    if (key === 'notifyMessages') setNotifyMessages(newVal);
+    if (key === 'notifyMatches') setNotifyMatches(newVal);
+    if (key === 'notifyMarketing') setNotifyMarketing(newVal);
+
+    setIsSavingNotifs(true);
+    try {
+      await notificationService.updatePreferences({ [key]: newVal });
+      toast.success('Preferences Updated', {
+        description: 'Your notification preference has been saved.',
+      });
+    } catch (err: any) {
+      if (key === 'notifyInterests') setNotifyInterests(!newVal);
+      if (key === 'notifyMessages') setNotifyMessages(!newVal);
+      if (key === 'notifyMatches') setNotifyMatches(!newVal);
+      if (key === 'notifyMarketing') setNotifyMarketing(!newVal);
+      toast.error('Update Failed', {
+        description: err?.message || 'Could not save notification preferences.',
+      });
+    } finally {
+      setIsSavingNotifs(false);
+    }
+  };
 
   // Active Devices State
   const [devices, setDevices] = useState<UserDevice[]>([]);
@@ -358,11 +444,12 @@ function SettingsContent() {
       icon: IconUser,
       desc: 'Email, membership & account status',
     },
+
     {
-      key: 'profile',
-      label: 'Profile Settings',
-      icon: IconEye,
-      desc: 'Visibility & display preferences',
+      key: 'security',
+      label: 'Security',
+      icon: IconLock,
+      desc: 'Password, sessions & trust verification',
     },
     {
       key: 'privacy',
@@ -375,12 +462,6 @@ function SettingsContent() {
       label: 'Notifications',
       icon: IconBell,
       desc: 'Alerts, messages & email digests',
-    },
-    {
-      key: 'security',
-      label: 'Security',
-      icon: IconLock,
-      desc: 'Password, sessions & trust verification',
     },
   ];
 
@@ -583,139 +664,109 @@ function SettingsContent() {
                 </div>
               </Card>
 
-              {/* Danger Zone */}
-              <Card className="w-full max-w-full min-w-0 rounded-3xl border border-red-200 bg-red-50/40 p-4 sm:p-5 shadow-xs">
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                  <div className="flex items-start gap-3.5 min-w-0 flex-1">
-                    <div className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-red-100 text-red-700 mt-0.5 sm:mt-0">
-                      <IconTrash className="h-5 w-5" />
-                    </div>
-                    <div className="min-w-0 flex-1">
-                      <h4 className="text-xs font-bold text-red-900">Deactivate or Delete Account</h4>
-                      <p className="text-[11px] text-red-700 leading-relaxed mt-0.5 max-w-md">
-                        Temporarily hide your profile from all discovery searches or permanently delete
-                        your account and connection history.
-                      </p>
-                    </div>
-                  </div>
-
-                  <Button
-                    variant="danger"
-                    size="sm"
-                    onClick={() => {
-                      if (confirm('Are you sure you want to deactivate your matrimonial account?')) {
-                        toast.warning('Account Deactivated', {
-                          description: 'Your profile has been hidden from recommendations.',
-                        });
-                      }
-                    }}
-                    className="rounded-xl text-xs font-bold shrink-0 self-start sm:self-auto"
-                  >
-                    Deactivate Account
-                  </Button>
-                </div>
-              </Card>
-            </div>
-          )}
-
-          {/* ======================================================== */}
-          {/* 2. PROFILE SETTINGS */}
-          {/* ======================================================== */}
-          {activeTab === 'profile' && (
-            <div className="w-full max-w-full min-w-0 space-y-5 animate-in fade-in duration-200">
-              <Card padding="none" className="w-full max-w-full min-w-0 overflow-hidden">
-                <div className="border-b border-[#E9DDE0] p-4 sm:p-5 bg-[#FFFDFB]">
-                  <h3 className="font-editorial-title text-base font-bold text-[#211B1E]">
-                    Profile Preferences & Visibility
-                  </h3>
-                  <p className="text-xs text-[#766B6F] mt-0.5">
-                    Control how your profile appears to potential matrimonial matches.
-                  </p>
-                </div>
-
-                <div className="divide-y divide-[#E9DDE0]">
-                  {/* Row: Profile Discoverability */}
-                  <div className="p-4 sm:p-5 flex items-center justify-between gap-3 sm:gap-4">
-                    <div className="flex items-center gap-3 sm:gap-3.5 min-w-0 flex-1">
-                      <div className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-[#FAF3EC] text-[#7A1835]">
-                        <IconEye className="h-5 w-5" />
+              {/* Danger Zone / Account Lifecycle */}
+              {currentUser?.status === 'DEACTIVATED' ? (
+                <Card className="w-full max-w-full min-w-0 rounded-3xl border border-amber-300 bg-amber-50/70 p-4 sm:p-5 shadow-xs">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                    <div className="flex items-start gap-3.5 min-w-0 flex-1">
+                      <div className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-amber-100 text-amber-800 mt-0.5 sm:mt-0">
+                        <IconRefresh className="h-5 w-5" />
                       </div>
                       <div className="min-w-0 flex-1">
-                        <h4 className="text-xs font-bold text-[#211B1E]">
-                          Profile Discoverability
-                        </h4>
-                        <p className="text-[11px] text-[#766B6F] mt-0.5">
-                          Allow your profile to appear in daily recommendations and Featured Discover
+                        <h4 className="text-xs font-bold text-amber-950">Profile Currently Paused</h4>
+                        <p className="text-[11px] text-amber-800 leading-relaxed mt-0.5 max-w-md">
+                          Your profile is currently hidden from recommendations and searches. Click Reactivate to resume discovery anytime.
                         </p>
                       </div>
                     </div>
-                    <button
-                      type="button"
-                      onClick={() => setProfileDiscoverable(!profileDiscoverable)}
-                      className={cn(
-                        'h-6 w-11 rounded-full p-0.5 transition-colors shrink-0 ml-2',
-                        profileDiscoverable ? 'bg-[#7A1835]' : 'bg-[#E9DDE0]'
-                      )}
-                    >
-                      <div
-                        className={cn(
-                          'h-5 w-5 rounded-full bg-white transition-transform shadow-xs',
-                          profileDiscoverable ? 'translate-x-5' : 'translate-x-0'
-                        )}
-                      />
-                    </button>
-                  </div>
 
-                  {/* Row: Horoscope Details */}
-                  <div className="p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4">
-                    <div className="flex items-center gap-3.5 min-w-0 flex-1">
-                      <div className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-[#FAF3EC] text-[#7A1835]">
-                        <IconSettings className="h-5 w-5" />
-                      </div>
-                      <div className="min-w-0 flex-1">
-                        <h4 className="text-xs font-bold text-[#211B1E]">
-                          Horoscope / Porutham Visibility
-                        </h4>
-                        <p className="text-[11px] text-[#766B6F] mt-0.5">
-                          Display birth star and astrological chart details to mutual matches
-                        </p>
-                      </div>
-                    </div>
-                    <span className="text-xs font-semibold text-[#7A1835] bg-[#FAF3EC] px-3 py-1 rounded-xl border border-[#EAD8C7] self-start sm:self-auto shrink-0">
-                      Mutual Matches Only
-                    </span>
-                  </div>
-
-                  {/* Row: Edit Bio & Photos */}
-                  <div className="p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4">
-                    <div className="flex items-center gap-3.5 min-w-0 flex-1">
-                      <div className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-[#FAF3EC] text-[#7A1835]">
-                        <IconUser className="h-5 w-5" />
-                      </div>
-                      <div className="min-w-0 flex-1">
-                        <h4 className="text-xs font-bold text-[#211B1E]">
-                          Edit Bio, Lifestyle & Photos
-                        </h4>
-                        <p className="text-[11px] text-[#766B6F] mt-0.5">
-                          Update your photo gallery, education, and family background
-                        </p>
-                      </div>
-                    </div>
-                    <Link href="/app/profile" className="self-start sm:self-auto shrink-0">
+                    <div className="flex flex-wrap sm:flex-nowrap items-center gap-2 shrink-0 self-start sm:self-auto w-full sm:w-auto">
                       <Button
-                        variant="secondary"
+                        variant="primary"
                         size="sm"
-                        className="rounded-xl border-[#E9DDE0] text-xs font-bold gap-1"
+                        disabled={isReactivating}
+                        onClick={handleReactivateAccount}
+                        className="rounded-xl text-xs font-bold bg-[#80132E] text-white hover:bg-[#680F25] flex-1 sm:flex-none shadow-xs"
                       >
-                        <span>Edit Profile</span>
-                        <IconChevronRight className="h-3.5 w-3.5" />
+                        {isReactivating ? (
+                          <span className="flex items-center gap-1.5">
+                            <IconLoader2 className="h-3.5 w-3.5 animate-spin" />
+                            Reactivating…
+                          </span>
+                        ) : (
+                          'Reactivate Profile'
+                        )}
                       </Button>
-                    </Link>
+                      <Button
+                        variant="danger"
+                        size="sm"
+                        onClick={() => {
+                          setAccountActionType('delete');
+                          setAccountActionReason('Found my match on IshtamChat');
+                          setAccountActionFeedback('');
+                          setDeleteConfirmationInput('');
+                          setAccountActionModal(true);
+                        }}
+                        className="rounded-xl text-xs font-bold flex-1 sm:flex-none shadow-xs"
+                      >
+                        Delete Account
+                      </Button>
+                    </div>
                   </div>
-                </div>
-              </Card>
+                </Card>
+              ) : (
+                <Card className="w-full max-w-full min-w-0 rounded-3xl border border-red-200 bg-red-50/40 p-4 sm:p-5 shadow-xs">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                    <div className="flex items-start gap-3.5 min-w-0 flex-1">
+                      <div className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-red-100 text-red-700 mt-0.5 sm:mt-0">
+                        <IconTrash className="h-5 w-5" />
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <h4 className="text-xs font-bold text-red-900">Deactivate or Delete Account</h4>
+                        <p className="text-[11px] text-red-700 leading-relaxed mt-0.5 max-w-md">
+                          Temporarily hide your profile from all discovery searches or permanently delete
+                          your account and connection history.
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="flex flex-wrap sm:flex-nowrap items-center gap-2 shrink-0 self-start sm:self-auto w-full sm:w-auto">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => {
+                          setAccountActionType('deactivate');
+                          setAccountActionReason('Taking a temporary break');
+                          setAccountActionFeedback('');
+                          setDeleteConfirmationInput('');
+                          setAccountActionModal(true);
+                        }}
+                        className="rounded-xl text-xs font-bold border-red-200 bg-white text-red-800 hover:bg-red-100/70 flex-1 sm:flex-none shadow-xs"
+                      >
+                        Deactivate
+                      </Button>
+                      <Button
+                        variant="danger"
+                        size="sm"
+                        onClick={() => {
+                          setAccountActionType('delete');
+                          setAccountActionReason('Found my match on IshtamChat');
+                          setAccountActionFeedback('');
+                          setDeleteConfirmationInput('');
+                          setAccountActionModal(true);
+                        }}
+                        className="rounded-xl text-xs font-bold flex-1 sm:flex-none shadow-xs"
+                      >
+                        Delete Account
+                      </Button>
+                    </div>
+                  </div>
+                </Card>
+              )}
             </div>
           )}
+
+
 
           {/* ======================================================== */}
           {/* 3. PRIVACY SECTION */}
@@ -889,13 +940,21 @@ function SettingsContent() {
           {activeTab === 'notifications' && (
             <div className="w-full max-w-full min-w-0 space-y-5 animate-in fade-in duration-200">
               <Card padding="none" className="w-full max-w-full min-w-0 overflow-hidden">
-                <div className="border-b border-[#E9DDE0] p-4 sm:p-5 bg-[#FFFDFB]">
-                  <h3 className="font-editorial-title text-base font-bold text-[#211B1E]">
-                    Notification Preferences
-                  </h3>
-                  <p className="text-xs text-[#766B6F] mt-0.5">
-                    Choose which notifications you wish to receive across email and in-app alerts.
-                  </p>
+                <div className="border-b border-[#E9DDE0] p-4 sm:p-5 bg-[#FFFDFB] flex items-center justify-between">
+                  <div>
+                    <h3 className="font-editorial-title text-base font-bold text-[#211B1E]">
+                      Notification Preferences
+                    </h3>
+                    <p className="text-xs text-[#766B6F] mt-0.5">
+                      Choose which notifications you wish to receive across email and in-app alerts.
+                    </p>
+                  </div>
+                  {isSavingNotifs && (
+                    <span className="flex items-center gap-1.5 text-xs text-[#7A1835] font-medium bg-[#FAF3EC] px-2.5 py-1 rounded-lg">
+                      <IconLoader2 className="h-3.5 w-3.5 animate-spin" />
+                      Saving…
+                    </span>
+                  )}
                 </div>
 
                 <div className="divide-y divide-[#E9DDE0]">
@@ -914,7 +973,7 @@ function SettingsContent() {
                     </div>
                     <button
                       type="button"
-                      onClick={() => setNotifyInterests(!notifyInterests)}
+                      onClick={() => handleToggleNotification('notifyInterests', !notifyInterests)}
                       className={cn(
                         'h-6 w-11 rounded-full p-0.5 transition-colors shrink-0 ml-2',
                         notifyInterests ? 'bg-[#7A1835]' : 'bg-[#E9DDE0]'
@@ -944,7 +1003,7 @@ function SettingsContent() {
                     </div>
                     <button
                       type="button"
-                      onClick={() => setNotifyMessages(!notifyMessages)}
+                      onClick={() => handleToggleNotification('notifyMessages', !notifyMessages)}
                       className={cn(
                         'h-6 w-11 rounded-full p-0.5 transition-colors shrink-0 ml-2',
                         notifyMessages ? 'bg-[#7A1835]' : 'bg-[#E9DDE0]'
@@ -974,7 +1033,7 @@ function SettingsContent() {
                     </div>
                     <button
                       type="button"
-                      onClick={() => setNotifyMatches(!notifyMatches)}
+                      onClick={() => handleToggleNotification('notifyMatches', !notifyMatches)}
                       className={cn(
                         'h-6 w-11 rounded-full p-0.5 transition-colors shrink-0 ml-2',
                         notifyMatches ? 'bg-[#7A1835]' : 'bg-[#E9DDE0]'
@@ -1004,7 +1063,7 @@ function SettingsContent() {
                     </div>
                     <button
                       type="button"
-                      onClick={() => setNotifyMarketing(!notifyMarketing)}
+                      onClick={() => handleToggleNotification('notifyMarketing', !notifyMarketing)}
                       className={cn(
                         'h-6 w-11 rounded-full p-0.5 transition-colors shrink-0 ml-2',
                         notifyMarketing ? 'bg-[#7A1835]' : 'bg-[#E9DDE0]'
@@ -1029,51 +1088,110 @@ function SettingsContent() {
           {activeTab === 'security' && (
             <div className="w-full max-w-full min-w-0 space-y-5 animate-in fade-in duration-200">
               {/* Account Verification Badges Card */}
-              <Card className="w-full max-w-full min-w-0 rounded-3xl border border-[#E9DDE0] bg-white p-3.5 sm:p-6 shadow-xs space-y-3 sm:space-y-4">
-                <div className="flex items-center justify-between gap-2 pb-2.5 sm:pb-3 border-b border-[#E9DDE0]">
-                  <div className="min-w-0 flex-1">
-                    <h3 className="font-editorial-title text-sm sm:text-base font-bold text-[#211B1E] truncate">
-                      Account Trust & Verification
-                    </h3>
-                    <p className="text-[11px] sm:text-xs text-[#766B6F] mt-0.5 line-clamp-1 sm:line-clamp-none">
-                      Badges earn higher trust and boost response rates from prospective matches.
-                    </p>
-                  </div>
-                  <span className="shrink-0 text-[10px] sm:text-[11px] font-bold text-emerald-700 bg-emerald-50 px-2 sm:px-2.5 py-0.5 sm:py-1 rounded-full border border-emerald-200 flex items-center gap-1">
-                    <IconCircleCheck className="h-3 w-3 sm:h-3.5 sm:w-3.5" /> 100% Verified
-                  </span>
-                </div>
+              {(() => {
+                const isPhoneVerified = Boolean(currentUser?.isPhoneVerified ?? currentUser?.user?.isPhoneVerified);
+                const isEmailVerified = Boolean(currentUser?.isEmailVerified ?? currentUser?.user?.isEmailVerified);
+                const verifiedFactors = (isPhoneVerified ? 1 : 0) + (isEmailVerified ? 1 : 0);
+                const trustPercentage = verifiedFactors === 2 ? 100 : verifiedFactors === 1 ? 50 : 0;
 
-                <div className="grid grid-cols-2 gap-2 sm:gap-3">
-                  <div className="rounded-2xl bg-[#FFF9F6] p-2.5 sm:p-3.5 border border-[#E9DDE0] flex items-center gap-2 sm:gap-3 min-w-0">
-                    <div className="grid h-8 w-8 sm:h-9 sm:w-9 shrink-0 place-items-center rounded-xl bg-emerald-50 text-emerald-600">
-                      <IconPhone className="h-4 w-4 sm:h-5 sm:w-5" />
+                return (
+                  <Card className="w-full max-w-full min-w-0 rounded-3xl border border-[#E9DDE0] bg-white p-3.5 sm:p-6 shadow-xs space-y-3 sm:space-y-4">
+                    <div className="flex items-center justify-between gap-2 pb-2.5 sm:pb-3 border-b border-[#E9DDE0]">
+                      <div className="min-w-0 flex-1">
+                        <h3 className="font-editorial-title text-sm sm:text-base font-bold text-[#211B1E] truncate">
+                          Account Trust & Verification
+                        </h3>
+                        <p className="text-[11px] sm:text-xs text-[#766B6F] mt-0.5 line-clamp-1 sm:line-clamp-none">
+                          Badges earn higher trust and boost response rates from prospective matches.
+                        </p>
+                      </div>
+                      {trustPercentage === 100 ? (
+                        <span className="shrink-0 text-[10px] sm:text-[11px] font-bold text-emerald-700 bg-emerald-50 px-2 sm:px-2.5 py-0.5 sm:py-1 rounded-full border border-emerald-200 flex items-center gap-1">
+                          <IconCircleCheck className="h-3 w-3 sm:h-3.5 sm:w-3.5" /> 100% Verified
+                        </span>
+                      ) : trustPercentage > 0 ? (
+                        <span className="shrink-0 text-[10px] sm:text-[11px] font-bold text-amber-700 bg-amber-50 px-2 sm:px-2.5 py-0.5 sm:py-1 rounded-full border border-amber-200 flex items-center gap-1">
+                          <IconAlertCircle className="h-3 w-3 sm:h-3.5 sm:w-3.5" /> {trustPercentage}% Verified
+                        </span>
+                      ) : (
+                        <span className="shrink-0 text-[10px] sm:text-[11px] font-bold text-slate-600 bg-slate-100 px-2 sm:px-2.5 py-0.5 sm:py-1 rounded-full border border-slate-200 flex items-center gap-1">
+                          <IconAlertCircle className="h-3 w-3 sm:h-3.5 sm:w-3.5" /> Pending Verification
+                        </span>
+                      )}
                     </div>
-                    <div className="min-w-0 flex-1">
-                      <span className="text-[11px] sm:text-xs font-bold text-[#211B1E] block truncate">
-                        Mobile OTP
-                      </span>
-                      <span className="text-[9.5px] sm:text-[10px] text-emerald-700 font-semibold flex items-center gap-1">
-                        <IconCircleCheck className="h-2.5 w-2.5 sm:h-3 sm:w-3 shrink-0" /> Verified
-                      </span>
-                    </div>
-                  </div>
 
-                  <div className="rounded-2xl bg-[#FFF9F6] p-2.5 sm:p-3.5 border border-[#E9DDE0] flex items-center gap-2 sm:gap-3 min-w-0">
-                    <div className="grid h-8 w-8 sm:h-9 sm:w-9 shrink-0 place-items-center rounded-xl bg-emerald-50 text-emerald-600">
-                      <IconShieldCheck className="h-4 w-4 sm:h-5 sm:w-5" />
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-3">
+                      {/* Mobile OTP Pill */}
+                      <div className="rounded-2xl bg-[#FFF9F6] p-2.5 sm:p-3.5 border border-[#E9DDE0] flex items-center gap-2 sm:gap-3 min-w-0">
+                        <div
+                          className={cn(
+                            "grid h-8 w-8 sm:h-9 sm:w-9 shrink-0 place-items-center rounded-xl",
+                            isPhoneVerified ? "bg-emerald-50 text-emerald-600" : "bg-amber-50 text-amber-600"
+                          )}
+                        >
+                          <IconPhone className="h-4 w-4 sm:h-5 sm:w-5" />
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <span className="text-[11px] sm:text-xs font-bold text-[#211B1E] block truncate">
+                            Mobile OTP
+                          </span>
+                          {isPhoneVerified ? (
+                            <span className="text-[9.5px] sm:text-[10px] text-emerald-700 font-semibold flex items-center gap-1">
+                              <IconCircleCheck className="h-2.5 w-2.5 sm:h-3 sm:w-3 shrink-0" /> Verified
+                            </span>
+                          ) : (
+                            <span className="text-[9.5px] sm:text-[10px] text-amber-700 font-semibold flex items-center gap-1">
+                              <IconAlertCircle className="h-2.5 w-2.5 sm:h-3 sm:w-3 shrink-0" /> Pending OTP
+                            </span>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Registered Gmail (Email OTP) Pill */}
+                      <div className="rounded-2xl bg-[#FFF9F6] p-2.5 sm:p-3.5 border border-[#E9DDE0] flex items-center gap-2 sm:gap-3 min-w-0">
+                        <div
+                          className={cn(
+                            "grid h-8 w-8 sm:h-9 sm:w-9 shrink-0 place-items-center rounded-xl",
+                            isEmailVerified ? "bg-emerald-50 text-emerald-600" : "bg-amber-50 text-amber-600"
+                          )}
+                        >
+                          <IconMail className="h-4 w-4 sm:h-5 sm:w-5" />
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <span className="text-[11px] sm:text-xs font-bold text-[#211B1E] block truncate">
+                            Registered Email (Gmail)
+                          </span>
+                          {isEmailVerified ? (
+                            <span className="text-[9.5px] sm:text-[10px] text-emerald-700 font-semibold flex items-center gap-1">
+                              <IconCircleCheck className="h-2.5 w-2.5 sm:h-3 sm:w-3 shrink-0" /> Verified
+                            </span>
+                          ) : (
+                            <span className="text-[9.5px] sm:text-[10px] text-amber-700 font-semibold flex items-center gap-1">
+                              <IconAlertCircle className="h-2.5 w-2.5 sm:h-3 sm:w-3 shrink-0" /> Pending OTP
+                            </span>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Photo Selfie verification pill commented out for now
+                      <div className="rounded-2xl bg-[#FFF9F6] p-2.5 sm:p-3.5 border border-[#E9DDE0] flex items-center gap-2 sm:gap-3 min-w-0">
+                        <div className="grid h-8 w-8 sm:h-9 sm:w-9 shrink-0 place-items-center rounded-xl bg-emerald-50 text-emerald-600">
+                          <IconShieldCheck className="h-4 w-4 sm:h-5 sm:w-5" />
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <span className="text-[11px] sm:text-xs font-bold text-[#211B1E] block truncate">
+                            Photo Selfie
+                          </span>
+                          <span className="text-[9.5px] sm:text-[10px] text-emerald-700 font-semibold flex items-center gap-1">
+                            <IconCircleCheck className="h-2.5 w-2.5 sm:h-3 sm:w-3 shrink-0" /> Verified
+                          </span>
+                        </div>
+                      </div>
+                      */}
                     </div>
-                    <div className="min-w-0 flex-1">
-                      <span className="text-[11px] sm:text-xs font-bold text-[#211B1E] block truncate">
-                        Photo Selfie
-                      </span>
-                      <span className="text-[9.5px] sm:text-[10px] text-emerald-700 font-semibold flex items-center gap-1">
-                        <IconCircleCheck className="h-2.5 w-2.5 sm:h-3 sm:w-3 shrink-0" /> Verified
-                      </span>
-                    </div>
-                  </div>
-                </div>
-              </Card>
+                  </Card>
+                );
+              })()}
 
               {/* Password Management */}
               <Card className="w-full max-w-full min-w-0 rounded-3xl border border-[#E9DDE0] bg-white p-3.5 sm:p-6 shadow-xs">
@@ -1275,7 +1393,12 @@ function SettingsContent() {
       {/* ACCOUNT DEACTIVATE / DELETE LIFECYCLE MODAL */}
       <Modal
         isOpen={accountActionModal}
-        onClose={() => !accountActionLoading && setAccountActionModal(false)}
+        onClose={() => {
+          if (!accountActionLoading) {
+            setAccountActionModal(false);
+            setDeleteConfirmationInput('');
+          }
+        }}
         title={accountActionType === 'deactivate' ? 'Deactivate Your Profile' : 'Delete Your Account'}
         description={
           accountActionType === 'deactivate'
@@ -1292,6 +1415,7 @@ function SettingsContent() {
               onClick={() => {
                 setAccountActionType('deactivate');
                 setAccountActionReason('Taking a temporary break');
+                setDeleteConfirmationInput('');
               }}
               className={`py-2 px-3 text-xs font-bold rounded-xl transition-all ${
                 accountActionType === 'deactivate'
@@ -1306,6 +1430,7 @@ function SettingsContent() {
               onClick={() => {
                 setAccountActionType('delete');
                 setAccountActionReason('Found my match on IshtamChat');
+                setDeleteConfirmationInput('');
               }}
               className={`py-2 px-3 text-xs font-bold rounded-xl transition-all ${
                 accountActionType === 'delete'
@@ -1342,29 +1467,29 @@ function SettingsContent() {
             <label className="block text-xs font-semibold text-slate-700 mb-1.5">
               Reason for {accountActionType === 'deactivate' ? 'deactivating' : 'leaving'}
             </label>
-            <select
+            <ModernSelect
               value={accountActionReason}
-              onChange={(e) => setAccountActionReason(e.target.value)}
-              className="w-full h-10 px-3 text-xs rounded-xl border border-slate-200 bg-white text-slate-800 outline-none focus:border-[#80132E] font-medium"
-            >
-              {accountActionType === 'deactivate' ? (
-                <>
-                  <option value="Taking a temporary break">Taking a temporary break</option>
-                  <option value="Dating someone exclusively">Dating someone exclusively</option>
-                  <option value="Too busy with career/studies">Too busy with career / studies</option>
-                  <option value="Privacy preference">Privacy preference</option>
-                  <option value="Other reason">Other reason</option>
-                </>
-              ) : (
-                <>
-                  <option value="Found my match on IshtamChat">Found my match on IshtamChat! 💍</option>
-                  <option value="Found partner outside platform">Found partner outside platform</option>
-                  <option value="Did not find suitable matches">Did not find suitable matches</option>
-                  <option value="Privacy or safety concerns">Privacy or safety concerns</option>
-                  <option value="Closing matrimonial search">Closing matrimonial search</option>
-                </>
-              )}
-            </select>
+              onChange={(val) => setAccountActionReason(val)}
+              options={
+                accountActionType === 'deactivate'
+                  ? [
+                      { value: 'Taking a temporary break', label: 'Taking a temporary break' },
+                      { value: 'Dating someone exclusively', label: 'Dating someone exclusively' },
+                      { value: 'Too busy with career/studies', label: 'Too busy with career / studies' },
+                      { value: 'Privacy preference', label: 'Privacy preference' },
+                      { value: 'Other reason', label: 'Other reason' },
+                    ]
+                  : [
+                      { value: 'Found my match on IshtamChat', label: 'Found my match on IshtamChat! 💍' },
+                      { value: 'Found partner outside platform', label: 'Found partner outside platform' },
+                      { value: 'Did not find suitable matches', label: 'Did not find suitable matches' },
+                      { value: 'Privacy or safety concerns', label: 'Privacy or safety concerns' },
+                      { value: 'Closing matrimonial search', label: 'Closing matrimonial search' },
+                    ]
+              }
+              size="sm"
+              maxHeight="max-h-60"
+            />
           </div>
 
           {/* Feedback */}
@@ -1382,6 +1507,38 @@ function SettingsContent() {
             />
           </div>
 
+          {/* Text Input Confirmation for Deletion */}
+          {accountActionType === 'delete' && (
+            <div className="space-y-2 rounded-2xl bg-red-50/80 border border-red-200/80 p-3.5">
+              <label className="block text-xs font-semibold text-red-950">
+                To confirm deletion, type{' '}
+                <span className="font-mono font-bold text-red-700 bg-red-100/80 px-1.5 py-0.5 rounded-md select-all">
+                  delete my account
+                </span>{' '}
+                below:
+              </label>
+              <input
+                type="text"
+                value={deleteConfirmationInput}
+                onChange={(e) => setDeleteConfirmationInput(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && isDeleteConfirmed && !accountActionLoading) {
+                    e.preventDefault();
+                    handleAccountActionSubmit();
+                  }
+                }}
+                placeholder="delete my account"
+                autoComplete="off"
+                autoCorrect="off"
+                spellCheck="false"
+                className="w-full h-10 px-3 text-xs rounded-xl border border-red-300 bg-white text-slate-800 placeholder:text-slate-400 outline-none focus:border-red-600 focus:ring-1 focus:ring-red-600 font-medium"
+              />
+              <p className="text-[10.5px] text-red-700 leading-tight">
+                This will permanently delete your account, chats, and uploaded photos after the 30-day grace period.
+              </p>
+            </div>
+          )}
+
           {/* Actions */}
           <div className="flex justify-end gap-2 pt-2 border-t border-slate-100">
             <Button
@@ -1389,7 +1546,10 @@ function SettingsContent() {
               variant="outline"
               size="sm"
               disabled={accountActionLoading}
-              onClick={() => setAccountActionModal(false)}
+              onClick={() => {
+                setAccountActionModal(false);
+                setDeleteConfirmationInput('');
+              }}
             >
               Cancel
             </Button>
@@ -1397,9 +1557,13 @@ function SettingsContent() {
               type="button"
               variant={accountActionType === 'deactivate' ? 'primary' : 'danger'}
               size="sm"
-              disabled={accountActionLoading}
+              disabled={accountActionLoading || (accountActionType === 'delete' && !isDeleteConfirmed)}
               onClick={handleAccountActionSubmit}
-              className={accountActionType === 'deactivate' ? 'bg-[#80132E] text-white hover:bg-[#680F25]' : 'bg-red-600 text-white hover:bg-red-700'}
+              className={
+                accountActionType === 'deactivate'
+                  ? 'bg-[#80132E] text-white hover:bg-[#680F25]'
+                  : 'bg-red-600 text-white hover:bg-red-700 disabled:opacity-40 disabled:cursor-not-allowed'
+              }
             >
               {accountActionLoading ? (
                 <span className="flex items-center gap-1.5">

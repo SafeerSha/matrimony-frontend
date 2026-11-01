@@ -180,7 +180,7 @@ export function PreferenceModalEditor({
     },
     religion_community: {
       title: 'Religion & Community',
-      desc: 'Indicate your community preferences and horoscope matching requirements.',
+      desc: 'Indicate your community preferences and requirements.',
     },
     education_profession: {
       title: 'Education, Career & Income',

@@ -59,6 +59,26 @@ function getCategoryIcon(type: NotificationDisplayItem['type']) {
   }
 }
 
+function formatNotificationTime(createdTime: number): string {
+  const diffMs = Math.max(0, Date.now() - createdTime);
+  const diffMin = Math.floor(diffMs / (1000 * 60));
+  if (diffMin < 1) return 'Just now';
+  if (diffMin < 60) return `${diffMin}m ago`;
+
+  const diffHours = Math.floor(diffMin / 60);
+  if (diffHours < 24) return `${diffHours}h ago`;
+
+  const diffDays = Math.floor(diffHours / 24);
+  if (diffDays === 1) return 'Yesterday';
+  if (diffDays < 14) return `${diffDays}d ago`;
+
+  const diffWeeks = Math.floor(diffDays / 7);
+  if (diffWeeks < 5) return `${diffWeeks}w ago`;
+
+  const d = new Date(createdTime);
+  return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+}
+
 export default function NotificationsPage() {
   const [items, setItems] = useState<NotificationDisplayItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -124,7 +144,7 @@ export default function NotificationsPage() {
               type,
               title,
               text,
-              time: diffHours < 1 ? 'Just now' : `${Math.floor(diffHours)}h ago`,
+              time: formatNotificationTime(createdTime),
               timestamp: createdTime,
               group,
               unread: !n.isRead,

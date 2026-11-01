@@ -35,6 +35,8 @@ import {
   IconClock,
   IconAward,
   IconBan,
+  IconEdit,
+  IconX,
 } from '@tabler/icons-react';
 import { getProfileUniqueId, formatLastActive } from '@/lib/demo-data';
 import { PageLoader } from '@/components/ui/page-loader';
@@ -51,8 +53,91 @@ import { useSubscription } from '@/context/subscription-context';
 import { cn } from '@/lib/cn';
 import type { Profile } from '@/lib/demo-data';
 
-export function ProfileDetail({ id }: { id?: string }) {
-  const [profile, setProfile] = useState<Profile | null>(null);
+export interface ProfileDetailProps {
+  id?: string;
+  initialProfile?: any;
+  isPreview?: boolean;
+  onClosePreview?: () => void;
+  onEdit?: () => void;
+}
+
+function mapApiProfileToDetail(res: any, targetId: string = 'me'): Profile {
+  const calculatedAge =
+    res.age !== undefined && res.age !== null
+      ? res.age
+      : res.dateOfBirth
+        ? Math.floor((new Date().getTime() - new Date(res.dateOfBirth).getTime()) / 31557600000)
+        : 26;
+
+  const primaryImg =
+    res.photos?.find((p: any) => p.isPrimary)?.url ||
+    res.photos?.[0]?.url ||
+    res.avatarUrl ||
+    '';
+
+  const realUserId = res.userId || res.user?.id || (res as any).user_id || res.id || targetId;
+  const fullName =
+    res.name ||
+    `${res.firstName || res.user?.firstName || ''} ${res.lastName || res.user?.lastName || ''}`.trim() ||
+    'Member';
+
+  return {
+    id: realUserId,
+    userId: realUserId,
+    profileTableId: res.profileTableId || res.id,
+    profileId: res.profileId || res.user?.profileId,
+    name: fullName,
+    age: calculatedAge,
+    city: res.city || '',
+    state: res.state || '',
+    motherTongue: res.motherTongue || '',
+    verified: res.isVerified ?? true,
+    profession: res.occupation || res.profession || '',
+    education: res.education || '',
+    employmentStatus: res.employmentStatus || '',
+    annualIncome: res.annualIncome || '',
+    about: res.bio || '',
+    family: res.family || '',
+    fatherName: res.fatherName || '',
+    fatherAlive: res.fatherAlive,
+    motherAlive: res.motherAlive,
+    brothersCount: res.brothersCount ?? 0,
+    brothersMarried: res.brothersMarried ?? 0,
+    sistersCount: res.sistersCount ?? 0,
+    sistersMarried: res.sistersMarried ?? 0,
+    lookingFor: res.lookingFor || '',
+    lifestyle: Array.isArray(res.lifestyle) ? res.lifestyle : [],
+    interests: Array.isArray(res.interests) ? res.interests : [],
+    image: primaryImg,
+    photos: res.photos || [],
+    compatibility: (res as any).compatibility ?? 88,
+    compatibilityHighlights: (res as any).compatibilityHighlights || [],
+    preferences: res.preferences || {},
+    height: res.height ? (String(res.height).includes('cm') ? String(res.height) : `${res.height}cm`) : '',
+    maritalStatus: res.maritalStatus || '',
+    religion: res.religion || '',
+    caste: res.caste || '',
+    gender: res.gender || '',
+    profileFor: res.profileFor || 'Self',
+    nationality: res.nationality || 'Indian',
+    country: res.country || 'India',
+    diet: res.diet || '',
+  };
+}
+
+export function ProfileDetail({
+  id,
+  initialProfile,
+  isPreview = false,
+  onClosePreview,
+  onEdit,
+}: ProfileDetailProps) {
+  const [profile, setProfile] = useState<Profile | null>(() => {
+    if (initialProfile) {
+      return mapApiProfileToDetail(initialProfile, id || 'me');
+    }
+    return null;
+  });
   const [relatedProfiles, setRelatedProfiles] = useState<Profile[]>([]);
   const [activePhotoIdx, setActivePhotoIdx] = useState(0);
   const [brokenPhotos, setBrokenPhotos] = useState<Record<number, boolean>>({});
@@ -61,7 +146,7 @@ export function ProfileDetail({ id }: { id?: string }) {
   const [isMatched, setIsMatched] = useState(false);
   const [isInterestReceived, setIsInterestReceived] = useState(false);
   const [isDeclined, setIsDeclined] = useState(false);
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(!initialProfile);
   const [showFloatingDock, setShowFloatingDock] = useState(false);
   const inlineActionsRef = useRef<HTMLDivElement>(null);
   const { isSubscribed, openChatPrompt } = useSubscription();
@@ -74,6 +159,10 @@ export function ProfileDetail({ id }: { id?: string }) {
 
   const handleChatClick = (e?: React.MouseEvent) => {
     if (e) e.preventDefault();
+    if (isPreview) {
+      toast.info('Preview Mode', 'Matched candidates can click here to start chatting with you.');
+      return;
+    }
     if (!profile) return;
     if (!isSubscribed) {
       openChatPrompt();
@@ -98,7 +187,9 @@ export function ProfileDetail({ id }: { id?: string }) {
 
   // Sync state if id changes
   useEffect(() => {
-    setIsLoading(true);
+    if (!initialProfile) {
+      setIsLoading(true);
+    }
     setActivePhotoIdx(0);
     setBrokenPhotos({});
     setIsInterestSent(false);
@@ -112,19 +203,6 @@ export function ProfileDetail({ id }: { id?: string }) {
       .getProfile(targetId)
       .then((res: any) => {
         if (res) {
-          const calculatedAge =
-            res.age !== undefined && res.age !== null
-              ? res.age
-              : res.dateOfBirth
-                ? Math.floor((new Date().getTime() - new Date(res.dateOfBirth).getTime()) / 31557600000)
-                : 26;
-
-          const primaryImg =
-            res.photos?.find((p: any) => p.isPrimary)?.url ||
-            res.photos?.[0]?.url ||
-            res.avatarUrl ||
-            '';
-
           const isMutual = Boolean(res.isMatched || res.connectionStatus === 'MATCHED');
           const isDeclinedStatus = Boolean(
             res.isDeclined ||
@@ -138,134 +216,131 @@ export function ProfileDetail({ id }: { id?: string }) {
           setIsInterestReceived(Boolean(!isDeclinedStatus && (res.isInterestReceived || res.connectionStatus === 'RECEIVED')));
           setIsShortlisted(Boolean(!isDeclinedStatus && (res.isShortlisted || res.connectionStatus === 'SHORTLISTED')));
 
-          const realUserId = res.userId || res.user?.id || (res as any).user_id || res.id || targetId;
-          const fullName =
-            res.name ||
-            `${res.firstName || res.user?.firstName || ''} ${res.lastName || res.user?.lastName || ''}`.trim() ||
-            'Member';
-
-          setProfile({
-            id: realUserId,
-            userId: realUserId,
-            profileTableId: res.profileTableId || res.id,
-            profileId: res.profileId || res.user?.profileId,
-            name: fullName,
-            age: calculatedAge,
-            city: res.city || '',
-            state: res.state || '',
-            motherTongue: res.motherTongue || '',
-            verified: res.isVerified ?? true,
-            profession: res.occupation || res.profession || '',
-            education: res.education || '',
-            employmentStatus: res.employmentStatus || '',
-            annualIncome: res.annualIncome || '',
-            about: res.bio || '',
-            family: res.family || '',
-            fatherName: res.fatherName || '',
-            fatherAlive: res.fatherAlive,
-            motherAlive: res.motherAlive,
-            brothersCount: res.brothersCount ?? 0,
-            brothersMarried: res.brothersMarried ?? 0,
-            sistersCount: res.sistersCount ?? 0,
-            sistersMarried: res.sistersMarried ?? 0,
-            lookingFor: res.lookingFor || '',
-            lifestyle: Array.isArray(res.lifestyle) ? res.lifestyle : [],
-            interests: Array.isArray(res.interests) ? res.interests : [],
-            image: primaryImg,
-            photos: res.photos || [],
-            compatibility: (res as any).compatibility ?? 88,
-            compatibilityHighlights: (res as any).compatibilityHighlights || [],
-            preferences: res.preferences || {},
-            height: res.height ? (String(res.height).includes('cm') ? String(res.height) : `${res.height}cm`) : '',
-            maritalStatus: res.maritalStatus || '',
-            religion: res.religion || '',
-            caste: res.caste || '',
-            gender: res.gender || '',
-            profileFor: res.profileFor || 'Self',
-            nationality: res.nationality || 'Indian',
-            country: res.country || 'India',
-            diet: res.diet || '',
-          });
-        } else {
+          setProfile(mapApiProfileToDetail(res, targetId));
+        } else if (!initialProfile) {
           setProfile(null);
         }
       })
       .catch((err) => {
         console.error('Error fetching profile:', err);
-        setProfile(null);
+        if (!initialProfile) {
+          setProfile(null);
+        }
       })
       .finally(() => {
         setIsLoading(false);
       });
 
-    // Also cross-verify against mutual matches list
-    matchesService
-      .getConnections('matches')
-      .then((matchesRes: any) => {
-        const matchesList = Array.isArray(matchesRes) ? matchesRes : matchesRes?.data || [];
-        const isMutual = matchesList.some((m: any) => {
-          const partnerId = m.partner?.id || m.receiverId || m.senderId || m.id || m.participantId || m.profile?.userId;
-          const partnerProfId = m.profileId || m.partner?.profileId || m.receiver?.profileId || m.sender?.profileId;
-          return partnerId === targetId || partnerProfId === targetId;
-        });
-        if (isMutual) {
-          setIsMatched(true);
-          setIsInterestSent(true);
-        }
-      })
-      .catch(() => {});
-
-    matchesService
-      .getRecommendations()
-      .then((recs: any) => {
-        const list = Array.isArray(recs) ? recs : recs?.data || [];
-        const mapped: Profile[] = list
-          .filter((u: any) => u.id !== targetId)
-          .map((u: any, idx: number) => {
-            const prof = u.profile || {};
-            const photos = u.photos || prof.photos || [];
-            return {
-              id: u.id || `rec-${idx}`,
-              name: u.name || `${u.firstName || ''} ${u.lastName || ''}`.trim() || 'Member',
-              age: u.dateOfBirth
-                ? Math.floor((new Date().getTime() - new Date(u.dateOfBirth).getTime()) / 31557600000)
-                : prof.age || u.age || 26,
-              city: prof.city || u.city || '',
-              state: prof.state || u.state || '',
-              profession: prof.occupation || prof.profession || u.occupation || u.profession || '',
-              education: prof.education || u.education || '',
-              image: photos?.[0]?.url || u.avatarUrl || prof.image || '',
-              compatibility: u.compatibility ?? prof.compatibility ?? 88,
-              verified: Boolean(u.status === 'ACTIVE' || prof.isVerified || u.isVerified),
-              online: Boolean(u.isOnline),
-              lastActiveAt: u.lastActiveAt || undefined,
-              about: prof.bio || prof.about || u.bio || '',
-              height: prof.height ? `${prof.height}cm` : '',
-              maritalStatus: prof.maritalStatus || u.maritalStatus || '',
-              religion: prof.religion || u.religion || '',
-              motherTongue: prof.motherTongue || u.motherTongue || '',
-              family: '',
-              lifestyle: Array.isArray(prof.lifestyle) ? prof.lifestyle : [],
-              interests: Array.isArray(prof.interests) ? prof.interests : [],
-              lookingFor: prof.lookingFor || '',
-            };
+    if (!isPreview && targetId !== 'me') {
+      // Also cross-verify against mutual matches list
+      matchesService
+        .getConnections('matches')
+        .then((matchesRes: any) => {
+          const matchesList = Array.isArray(matchesRes) ? matchesRes : matchesRes?.data || [];
+          const isMutual = matchesList.some((m: any) => {
+            const partnerId = m.partner?.id || m.receiverId || m.senderId || m.id || m.participantId || m.profile?.userId;
+            const partnerProfId = m.profileId || m.partner?.profileId || m.receiver?.profileId || m.sender?.profileId;
+            return partnerId === targetId || partnerProfId === targetId;
           });
-        setRelatedProfiles(mapped);
-      })
-      .catch(() => setRelatedProfiles([]));
-  }, [id]);
+          if (isMutual) {
+            setIsMatched(true);
+            setIsInterestSent(true);
+          }
+        })
+        .catch(() => {});
 
-  // Gallery Photos (Multi-angle photos from backend with fallback)
+      matchesService
+        .getRecommendations()
+        .then((recs: any) => {
+          const list = Array.isArray(recs) ? recs : recs?.data || [];
+          const mapped: Profile[] = list
+            .filter((u: any) => u.id !== targetId)
+            .map((u: any, idx: number) => {
+              const prof = u.profile || {};
+              const photos = u.photos || prof.photos || [];
+              return {
+                id: u.id || `rec-${idx}`,
+                name: u.name || `${u.firstName || ''} ${u.lastName || ''}`.trim() || 'Member',
+                age: u.dateOfBirth
+                  ? Math.floor((new Date().getTime() - new Date(u.dateOfBirth).getTime()) / 31557600000)
+                  : prof.age || u.age || 26,
+                city: prof.city || u.city || '',
+                state: prof.state || u.state || '',
+                profession: prof.occupation || prof.profession || u.occupation || u.profession || '',
+                education: prof.education || u.education || '',
+                image: photos?.[0]?.url || u.avatarUrl || prof.image || '',
+                compatibility: u.compatibility ?? prof.compatibility ?? 88,
+                verified: Boolean(u.status === 'ACTIVE' || prof.isVerified || u.isVerified),
+                online: Boolean(u.isOnline),
+                lastActiveAt: u.lastActiveAt || undefined,
+                about: prof.bio || prof.about || u.bio || '',
+                height: prof.height ? `${prof.height}cm` : '',
+                maritalStatus: prof.maritalStatus || u.maritalStatus || '',
+                religion: prof.religion || u.religion || '',
+                motherTongue: prof.motherTongue || u.motherTongue || '',
+                family: '',
+                lifestyle: Array.isArray(prof.lifestyle) ? prof.lifestyle : [],
+                interests: Array.isArray(prof.interests) ? prof.interests : [],
+                lookingFor: prof.lookingFor || '',
+              };
+            });
+          setRelatedProfiles(mapped);
+        })
+        .catch(() => setRelatedProfiles([]));
+    }
+  }, [id, initialProfile, isPreview]);
+
+  // Preview highlights computation
+  const previewHighlights = useMemo(() => {
+    if (profile?.compatibilityHighlights && profile.compatibilityHighlights.length > 0) {
+      return profile.compatibilityHighlights;
+    }
+    if (isPreview) {
+      return [
+        {
+          title: 'Verified Member',
+          value: profile?.verified ? '100% Authenticated' : 'Verified Candidate',
+          description: 'Your mobile phone and profile credentials are authenticated for secure matching.',
+        },
+        {
+          title: 'Education & Career',
+          value: profile?.profession || 'Professional',
+          description: `${profile?.education || 'Graduate'} · ${profile?.city || 'Location'} verified.`,
+        },
+        {
+          title: 'Lifestyle Alignment',
+          value: profile?.diet || 'Compatible Lifestyle',
+          description: profile?.lifestyle?.length
+            ? profile.lifestyle.slice(0, 3).join(', ')
+            : 'Lifestyle habits and passions shared with matches.',
+        },
+        {
+          title: 'Matrimonial Criteria',
+          value: 'Partner Preferences',
+          description: profile?.lookingFor || 'Clear expectations defined for matrimonial search.',
+        },
+      ];
+    }
+    return [];
+  }, [profile, isPreview]);
+
+  // Gallery Photos (Multi-angle photos with primary first)
   const galleryPhotos = useMemo(() => {
     if (!profile) return [];
     if (profile.photos && profile.photos.length > 0) {
-      return profile.photos.map((p: any) => p.url).filter(Boolean);
+      const sorted = [...profile.photos].sort((a: any, b: any) => (b.isPrimary ? 1 : 0) - (a.isPrimary ? 1 : 0));
+      return sorted.map((p: any) => p.url || p).filter(Boolean);
     }
     return profile.image ? [profile.image] : [];
   }, [profile]);
 
   // Shortlist handler
   const handleToggleShortlist = async () => {
+    if (isPreview) {
+      setIsShortlisted(!isShortlisted);
+      toast.info('Preview Mode', !isShortlisted ? 'Simulated: Candidates will click this to add you to their favorites.' : 'Simulated: Removed from favorites.');
+      return;
+    }
     if (!profile || isDeclined) return;
     try {
       await matchesService.shortlistProfile(profile.id);
@@ -285,6 +360,11 @@ export function ProfileDetail({ id }: { id?: string }) {
 
   // Interest handler
   const handleSendInterest = async () => {
+    if (isPreview) {
+      setIsInterestSent(!isInterestSent);
+      toast.info('Preview Mode', !isInterestSent ? 'Simulated: Candidates will click this to send you a connection request.' : 'Simulated: Interest reset.');
+      return;
+    }
     if (!profile || isInterestSent || isMatched || isDeclined) return;
     try {
       const res: any = await matchesService.sendInterest(profile.id);
@@ -305,6 +385,10 @@ export function ProfileDetail({ id }: { id?: string }) {
 
   // Accept interest handler
   const handleAcceptInterest = async () => {
+    if (isPreview) {
+      toast.info('Preview Mode', 'This button appears when a candidate expresses interest in your profile.');
+      return;
+    }
     if (!profile) return;
     try {
       await matchesService.acceptInterest(profile.id);
@@ -320,8 +404,11 @@ export function ProfileDetail({ id }: { id?: string }) {
 
   // Share profile
   const handleShare = () => {
-    if (navigator.clipboard) {
-      navigator.clipboard.writeText(window.location.href);
+    if (typeof window !== 'undefined' && navigator.clipboard) {
+      const shareUrl = isPreview
+        ? `${window.location.origin}/app/profile?user=${profile?.id || 'me'}`
+        : window.location.href;
+      navigator.clipboard.writeText(shareUrl);
       toast.info('Link Copied', 'Profile link copied to clipboard.');
     }
   };
@@ -357,27 +444,83 @@ export function ProfileDetail({ id }: { id?: string }) {
 
   return (
     <div className="space-y-6 pb-40 md:pb-12">
+      {/* PREVIEW BANNER (Sticky on Desktop and Mobile) */}
+      {isPreview && (
+        <div className="sticky top-2 sm:top-4 z-30 rounded-2xl sm:rounded-3xl bg-gradient-to-r from-[#5C1027] via-[#7A1835] to-[#8C1D3D] p-3.5 sm:p-4 text-white shadow-xl border border-amber-300/40 backdrop-blur-md flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 animate-in fade-in slide-in-from-top-2 duration-200">
+          <div className="flex items-center gap-3">
+            <div className="grid h-10 w-10 shrink-0 place-items-center rounded-2xl bg-white/15 backdrop-blur-md text-amber-300 border border-white/20 shadow-inner">
+              <IconEye className="h-5 w-5" />
+            </div>
+            <div>
+              <div className="flex items-center gap-2 flex-wrap">
+                <span className="text-xs font-black uppercase tracking-wider text-amber-300">
+                  Profile Preview Mode
+                </span>
+                <span className="rounded-full bg-emerald-500/25 text-emerald-200 border border-emerald-400/30 px-2 py-0.5 text-[10px] font-bold">
+                  How others see you
+                </span>
+              </div>
+            </div>
+          </div>
+          <div className="flex items-center gap-2 self-end sm:self-auto shrink-0">
+            {onEdit && (
+              <Button
+                variant="secondary"
+                size="xs"
+                onClick={onEdit}
+                className="rounded-xl text-xs font-bold bg-white text-[#5C1027] hover:bg-amber-50 h-8 sm:h-9 px-3.5 border-0 shadow-sm"
+                leftIcon={<IconEdit className="h-3.5 w-3.5 text-[#5C1027]" />}
+              >
+                Edit Details
+              </Button>
+            )}
+            <Button
+              variant="secondary"
+              size="xs"
+              onClick={onClosePreview || (() => router.push('/app/profile'))}
+              className="rounded-xl text-xs font-bold bg-white/20 hover:bg-white/30 text-white h-8 sm:h-9 px-3.5 border border-white/30 shadow-none active-press"
+              leftIcon={<IconX className="h-3.5 w-3.5" />}
+            >
+              Exit Preview
+            </Button>
+          </div>
+        </div>
+      )}
+
       {/* ======================================================== */}
       {/* 1. TOP BREADCRUMB & UTILITY BAR                          */}
       {/* ======================================================== */}
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <Link
-          href="/app/discover"
-          className="focus-ring inline-flex items-center gap-2 text-xs sm:text-sm font-bold text-[var(--muted)] hover:text-[var(--primary)] transition-colors active-press"
-        >
-          <IconArrowLeft className="h-4 w-4" />
-          <span>Back to Discover</span>
-        </Link>
-
-        <div className="flex items-center gap-2">
+        {isPreview ? (
           <button
             type="button"
-            onClick={handleShare}
-            aria-label="Share profile"
-            className="focus-ring grid h-8 w-8 place-items-center rounded-full border border-[var(--border)] bg-white text-[var(--muted)] hover:text-[var(--foreground)] hover:border-[var(--primary)] transition"
+            onClick={onClosePreview || (() => router.push('/app/profile'))}
+            className="focus-ring inline-flex items-center gap-2 text-xs sm:text-sm font-bold text-[var(--muted-strong)] hover:text-[var(--primary)] transition-colors active-press cursor-pointer"
           >
-            <IconShare2 className="h-3.5 w-3.5" />
+            <IconArrowLeft className="h-4 w-4 text-[var(--primary)]" />
+            <span>Back to Profile Management</span>
           </button>
+        ) : (
+          <Link
+            href="/app/discover"
+            className="focus-ring inline-flex items-center gap-2 text-xs sm:text-sm font-bold text-[var(--muted)] hover:text-[var(--primary)] transition-colors active-press"
+          >
+            <IconArrowLeft className="h-4 w-4" />
+            <span>Back to Discover</span>
+          </Link>
+        )}
+
+        <div className="flex items-center gap-2">
+          {!isPreview && (
+            <button
+              type="button"
+              onClick={handleShare}
+              aria-label="Share profile"
+              className="focus-ring grid h-8 w-8 place-items-center rounded-full border border-[var(--border)] bg-white text-[var(--muted)] hover:text-[var(--foreground)] hover:border-[var(--primary)] transition"
+            >
+              <IconShare2 className="h-3.5 w-3.5" />
+            </button>
+          )}
         </div>
       </div>
 
@@ -418,14 +561,25 @@ export function ProfileDetail({ id }: { id?: string }) {
 
               {/* Top Badges */}
               <div className="absolute top-4 left-4 flex flex-wrap items-center gap-2 z-10">
-                <Badge
-                  tone="accent"
-                  size="md"
-                  icon={<IconUsers className="h-3 w-3 fill-current" />}
-                  className="backdrop-blur-md shadow-xs text-xs font-bold"
-                >
-                  {profile.compatibility}% Matches
-                </Badge>
+                {isPreview ? (
+                  <Badge
+                    tone="accent"
+                    size="md"
+                    icon={<IconEye className="h-3 w-3" />}
+                    className="backdrop-blur-md shadow-xs text-xs font-bold bg-gradient-to-r from-amber-500 to-amber-600 text-white border-0"
+                  >
+                    Public View
+                  </Badge>
+                ) : (
+                  <Badge
+                    tone="accent"
+                    size="md"
+                    icon={<IconUsers className="h-3 w-3 fill-current" />}
+                    className="backdrop-blur-md shadow-xs text-xs font-bold"
+                  >
+                    {profile.compatibility}% Matches
+                  </Badge>
+                )}
 
                 {profile.online ? (
                   <Badge
@@ -634,9 +788,10 @@ export function ProfileDetail({ id }: { id?: string }) {
               </div>
             </div>
 
-            {/* Primary Matrimonial Actions */}
-            <div ref={inlineActionsRef} className="space-y-3 pt-4 border-t border-[var(--border)]">
-              {isMatched ? (
+            {/* Primary Matrimonial Actions (hidden in preview mode) */}
+            {!isPreview && (
+              <div ref={inlineActionsRef} className="space-y-3 pt-4 border-t border-[var(--border)]">
+                {isMatched ? (
                 <>
                   {/* Mutual Connection Celebratory Banner */}
                   <div className="flex items-center justify-between p-3.5 rounded-2xl bg-gradient-to-r from-emerald-50 to-teal-50/70 border border-emerald-200/80 text-emerald-900 shadow-2xs">
@@ -810,6 +965,7 @@ export function ProfileDetail({ id }: { id?: string }) {
                 </>
               )}
             </div>
+            )}
           </div>
         </div>
       </Card>
@@ -817,7 +973,7 @@ export function ProfileDetail({ id }: { id?: string }) {
       {/* ======================================================== */}
       {/* 3. CONTEXTUAL PROFILE INSIGHTS: "Why You May Connect"     */}
       {/* ======================================================== */}
-      {profile.compatibilityHighlights && profile.compatibilityHighlights.length > 0 && (
+      {previewHighlights && previewHighlights.length > 0 && (
         <Card
           variant="champagne"
           className="rounded-3xl border border-[#EAD8C7] bg-gradient-to-br from-[#FAF3EC] via-[#FFF9F6] to-[#FFF5F7] p-6 sm:p-7 shadow-[var(--elevation-card)]"
@@ -828,7 +984,7 @@ export function ProfileDetail({ id }: { id?: string }) {
             </div>
             <div>
               <h2 className="font-editorial-title text-xl sm:text-2xl font-bold text-[#5C1027]">
-                Why you may connect with {profile.name.split(' ')[0]}
+                {isPreview ? `Why candidates may connect with ${profile.name.split(' ')[0]}` : `Why you may connect with ${profile.name.split(' ')[0]}`}
               </h2>
               <p className="text-xs text-[var(--muted-strong)]">
                 Contextual profile alignment based on your partner preferences and lifestyle criteria.
@@ -837,7 +993,7 @@ export function ProfileDetail({ id }: { id?: string }) {
           </div>
 
           <div className="mt-5 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5">
-            {profile.compatibilityHighlights.map((hl: any, idx: number) => (
+            {previewHighlights.map((hl: any, idx: number) => (
               <div key={idx} className="rounded-2xl bg-white/90 p-4 border border-[#EAD8C7]/70 backdrop-blur-xs flex flex-col justify-between">
                 <div>
                   <p className="text-xs font-bold text-[var(--primary)] flex items-center gap-1.5">
@@ -1247,7 +1403,7 @@ export function ProfileDetail({ id }: { id?: string }) {
       {/* ======================================================== */}
       {/* 5. "YOU MAY ALSO LIKE" RELATED PROFILES RAIL             */}
       {/* ======================================================== */}
-      {relatedProfiles.length > 0 && (
+      {!isPreview && relatedProfiles.length > 0 && (
         <div className="space-y-4 pt-6 border-t border-[var(--border)]">
           <div className="flex items-end justify-between px-1">
             <div>
@@ -1280,7 +1436,7 @@ export function ProfileDetail({ id }: { id?: string }) {
       )}
 
       {/* MOBILE STICKY BOTTOM ACTION DOCK (Portaled to document.body to remain strictly anchored to viewport above MobileNav) */}
-      {isMounted && createPortal(
+      {isMounted && !isPreview && createPortal(
         <div
           className={cn(
             "fixed bottom-[calc(4.875rem+env(safe-area-inset-bottom,0px))] inset-x-0 z-40 flex md:hidden justify-center px-4 pointer-events-none transition-all duration-300 ease-out",

@@ -333,7 +333,7 @@ export function PartnerPreferencesEditor({
             id="religion_community"
             icon={<IconUsers className="h-5 w-5" />}
             title="Religion & Community"
-            subtitle="Faith, community outlook and horoscope compatibility"
+            subtitle="Faith, community outlook"
             onEdit={() => handleEditSection('religion_community')}
             preview={
               <div className="flex flex-wrap items-center gap-2">
