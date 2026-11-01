@@ -85,17 +85,17 @@ function SidebarContent({
       isActive: (path) => path.startsWith("/app/matches"),
     },
     {
-      label: "Favorites",
-      href: "/app/favorites",
-      icon: IconStar,
-      isActive: (path) => path.startsWith("/app/favorites"),
-    },
-    {
       label: "Messages",
       href: "/app/messages",
       icon: IconMessageCircle,
       badge: unreadMessagesCount,
       isActive: (path) => path.startsWith("/app/messages"),
+    },
+    {
+      label: "Favorites",
+      href: "/app/favorites",
+      icon: IconStar,
+      isActive: (path) => path.startsWith("/app/favorites"),
     },
     {
       label: "Notifications",

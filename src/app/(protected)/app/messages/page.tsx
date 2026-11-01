@@ -38,6 +38,114 @@ function MessagesContent() {
   const [mobileView, setMobileView] = useState<'list' | 'chat'>('list');
   const [isMobileProfileOpen, setIsMobileProfileOpen] = useState(false);
 
+  // Synchronize mobile view with browser history so swiping back lands on the chat list instead of exiting
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const isMobile = window.innerWidth < 768;
+    if (!isMobile) return;
+
+    if (targetUserId) {
+      // If directly navigated with a target user on mobile, ensure /app/messages (the list)
+      // is the immediate previous history entry before the active chat view.
+      if (window.history.state?.view !== 'chat') {
+        window.history.replaceState({ view: 'list' }, '', '/app/messages');
+        window.history.pushState(
+          { view: 'chat', user: targetUserId },
+          '',
+          `/app/messages?user=${targetUserId}`
+        );
+      }
+      setMobileView('chat');
+    } else {
+      if (!window.history.state?.view) {
+        window.history.replaceState({ view: 'list' }, '', window.location.href);
+      }
+    }
+  }, [targetUserId]);
+
+  // Handle browser/OS popstate (swipe back gesture, hardware back button, browser back)
+  useEffect(() => {
+    const handlePopState = (e: PopStateEvent) => {
+      if (typeof window === 'undefined') return;
+      const isMobile = window.innerWidth < 768;
+      if (!isMobile) return;
+
+      const params = new URLSearchParams(window.location.search);
+      const hasUser = params.has('user') || params.has('userId');
+
+      if (e.state?.view === 'list' || (!hasUser && e.state?.view !== 'chat')) {
+        setIsMobileProfileOpen(false);
+        setMobileView('list');
+      } else if (e.state?.view === 'chat' || hasUser) {
+        setMobileView('chat');
+      }
+    };
+
+    window.addEventListener('popstate', handlePopState);
+    return () => {
+      window.removeEventListener('popstate', handlePopState);
+    };
+  }, []);
+
+  // Back handler for mobile chat header button and touch gestures
+  const handleBack = () => {
+    if (typeof window !== 'undefined' && window.innerWidth < 768) {
+      if (window.history.state?.view === 'chat') {
+        window.history.back();
+      } else {
+        setMobileView('list');
+        const url = new URL(window.location.href);
+        url.searchParams.delete('user');
+        url.searchParams.delete('userId');
+        window.history.replaceState({ view: 'list' }, '', url.pathname);
+      }
+    } else {
+      setMobileView('list');
+    }
+  };
+
+  // In-app horizontal swipe-back gesture detector for mobile chat view
+  const touchStartRef = useRef<{ x: number; y: number; time: number } | null>(null);
+
+  const handleTouchStart = (e: React.TouchEvent) => {
+    if (mobileView !== 'chat') return;
+    const target = e.target as HTMLElement | null;
+    if (target && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable)) {
+      touchStartRef.current = null;
+      return;
+    }
+    const touch = e.touches[0];
+    touchStartRef.current = {
+      x: touch.clientX,
+      y: touch.clientY,
+      time: Date.now(),
+    };
+  };
+
+  const handleTouchEnd = (e: React.TouchEvent) => {
+    if (mobileView !== 'chat' || !touchStartRef.current) return;
+    const touch = e.changedTouches[0];
+    const deltaX = touch.clientX - touchStartRef.current.x;
+    const deltaY = touch.clientY - touchStartRef.current.y;
+    const deltaTime = Date.now() - touchStartRef.current.time;
+    const startX = touchStartRef.current.x;
+    touchStartRef.current = null;
+
+    // Detect deliberate rightward swipe starting from the left side of the screen:
+    if (
+      startX < window.innerWidth * 0.5 &&
+      deltaX > 65 &&
+      deltaX > Math.abs(deltaY) * 1.5 &&
+      (deltaTime < 600 || deltaX > 110)
+    ) {
+      handleBack();
+    }
+  };
+
+  const handleTouchCancel = () => {
+    touchStartRef.current = null;
+  };
+
   const selectedRef = useRef<Conversation | null>(null);
   selectedRef.current = selected;
 
@@ -406,6 +514,11 @@ function MessagesContent() {
     setMobileView('chat');
     const contactId = conv.participantId || conv.id;
     markConversationAsRead(contactId);
+
+    if (typeof window !== 'undefined' && window.innerWidth < 768) {
+      const chatUrl = `/app/messages?user=${contactId}`;
+      window.history.pushState({ view: 'chat', user: contactId }, '', chatUrl);
+    }
   };
 
   // 3. Send message via ChatService
@@ -551,6 +664,9 @@ function MessagesContent() {
 
         {/* COLUMN 2: CENTER ACTIVE CHAT WINDOW */}
         <main
+          onTouchStart={handleTouchStart}
+          onTouchEnd={handleTouchEnd}
+          onTouchCancel={handleTouchCancel}
           className={cn(
             'flex-1 flex flex-col min-w-0 bg-[#FFFDFB] relative',
             mobileView === 'list' ? 'hidden md:flex' : 'flex'
@@ -564,7 +680,7 @@ function MessagesContent() {
               isLoadingMessages={isLoadingMessages}
               isSubscribed={isSubscribed}
               onSendMessage={handleSendMessage}
-              onBack={() => setMobileView('list')}
+              onBack={handleBack}
               onOpenProfile={() => setIsMobileProfileOpen(true)}
               onMarkRead={() => markConversationAsRead(selected.participantId || selected.id)}
             />
