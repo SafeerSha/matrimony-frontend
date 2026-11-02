@@ -101,7 +101,7 @@ export const notifications: any[] = [];
 export interface RegistrationBadgeInfo {
   label: string;
   icon: string;
-  category: 'Marriage' | 'Friendship' | 'Living Together';
+  category: 'Marriage' | 'Friendship' | 'Live-In' | 'Living Together';
   subType?: string;
   className: string;
 }
@@ -128,11 +128,11 @@ export const getRegistrationBadge = (
     };
   }
 
-  if (rawCat.includes('living')) {
+  if (rawCat.includes('living') || rawCat.includes('live')) {
     return {
-      label: 'Living Together',
+      label: 'Live-In',
       icon: '🏡',
-      category: 'Living Together',
+      category: 'Live-In',
       className: 'border-indigo-200 bg-indigo-50 text-indigo-800',
     };
   }

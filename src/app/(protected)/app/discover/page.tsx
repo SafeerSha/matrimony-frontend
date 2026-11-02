@@ -51,7 +51,7 @@ import { type Profile, formatLastActive, getRegistrationBadge } from '@/lib/demo
 
 export type DiscoveryViewMode = 'swipe' | 'grid';
 export type SortOption = 'recommended' | 'recent' | 'new' | 'nearby';
-export type DiscoveryCategory = 'Marriage' | 'Friendship' | 'Living Together';
+export type DiscoveryCategory = 'Marriage' | 'Friendship' | 'Live-In' | 'Living Together';
 
 export const CATEGORY_OPTIONS: Array<{
   id: DiscoveryCategory;
@@ -61,7 +61,7 @@ export const CATEGORY_OPTIONS: Array<{
 }> = [
     { id: 'Marriage', label: 'Marriage', icon: IconHeartHandshake, tag: '💍' },
     { id: 'Friendship', label: 'Friendship', icon: IconUsers, tag: '👥' },
-    { id: 'Living Together', label: 'Living Together', icon: IconHomeHeart, tag: '🏡' },
+    { id: 'Live-In', label: 'Live-In', icon: IconHomeHeart, tag: '🏡' },
   ];
 
 export const HEIGHT_OPTIONS = [
@@ -147,8 +147,8 @@ export default function DiscoverPage() {
     if (typeof window !== 'undefined') {
       try {
         const cached = localStorage.getItem('ishtam_user_category') || sessionStorage.getItem('ishtam_user_category');
-        if (cached === 'Friendship' || cached === 'Living Together' || cached === 'Marriage') {
-          return cached as DiscoveryCategory;
+        if (cached === 'Friendship' || cached === 'Live-In' || cached === 'Living Together' || cached === 'Marriage') {
+          return (cached === 'Living Together' ? 'Live-In' : cached) as DiscoveryCategory;
         }
       } catch { }
     }
@@ -162,12 +162,12 @@ export default function DiscoverPage() {
         if (urlCat) {
           const lower = urlCat.toLowerCase();
           if (lower.includes('friend')) return 'Friendship';
-          if (lower.includes('living')) return 'Living Together';
+          if (lower.includes('live') || lower.includes('living')) return 'Live-In';
           if (lower.includes('marr') || lower.includes('matrimon')) return 'Marriage';
         }
         const cached = localStorage.getItem('ishtam_user_category') || sessionStorage.getItem('ishtam_user_category');
-        if (cached === 'Friendship' || cached === 'Living Together' || cached === 'Marriage') {
-          return cached as DiscoveryCategory;
+        if (cached === 'Friendship' || cached === 'Live-In' || cached === 'Living Together' || cached === 'Marriage') {
+          return (cached === 'Living Together' ? 'Live-In' : cached) as DiscoveryCategory;
         }
       } catch { }
     }
@@ -249,7 +249,7 @@ export default function DiscoverPage() {
         if (urlCat) {
           const lower = urlCat.toLowerCase();
           if (lower.includes('friend')) activeCat = 'Friendship';
-          else if (lower.includes('living')) activeCat = 'Living Together';
+          else if (lower.includes('living') || lower.includes('live')) activeCat = 'Live-In';
           else if (lower.includes('marr') || lower.includes('matrimon')) activeCat = 'Marriage';
         }
 
@@ -417,9 +417,9 @@ export default function DiscoverPage() {
         const matchesCategory =
           selectedCategory === 'Friendship'
             ? (!pCat || pCat.includes('friend'))
-            : selectedCategory === 'Living Together'
-              ? (!pCat || pCat.includes('living'))
-              : (pCat.includes('marr') || (!pCat.includes('friend') && !pCat.includes('living')));
+            : (selectedCategory === 'Live-In' || selectedCategory === 'Living Together')
+              ? (!pCat || pCat.includes('living') || pCat.includes('live'))
+              : (pCat.includes('marr') || (!pCat.includes('friend') && !pCat.includes('living') && !pCat.includes('live')));
 
         // Foundation Matchmaking Gender match (All genders for friendship by default)
         const pGender = (p.gender || (p as any).sex || '').toLowerCase();
@@ -606,7 +606,7 @@ export default function DiscoverPage() {
     setSelectedCategory(cat);
     if (cat === 'Friendship') {
       setSelectedGender('any');
-    } else if (cat === 'Marriage' || cat === 'Living Together') {
+    } else if (cat === 'Marriage' || cat === 'Live-In' || cat === 'Living Together') {
       if (myGender === 'male' || myGender === 'man') {
         setSelectedGender('women');
       } else if (myGender === 'female' || myGender === 'woman') {
@@ -1060,7 +1060,7 @@ export default function DiscoverPage() {
                           'h-3.5 w-3.5 shrink-0',
                           selectedCategory === 'Friendship'
                             ? 'text-emerald-600'
-                            : selectedCategory === 'Living Together'
+                            : selectedCategory === 'Live-In' || selectedCategory === 'Living Together'
                               ? 'text-indigo-600'
                               : 'text-[#80132E]'
                         )}
@@ -1114,7 +1114,7 @@ export default function DiscoverPage() {
                                   'h-4 w-4 shrink-0',
                                   cat.id === 'Friendship'
                                     ? 'text-emerald-600'
-                                    : cat.id === 'Living Together'
+                                    : cat.id === 'Live-In' || cat.id === 'Living Together'
                                       ? 'text-indigo-600'
                                       : 'text-[#80132E]'
                                 )}
@@ -1126,7 +1126,7 @@ export default function DiscoverPage() {
                                     'text-[9px] sm:text-[10px] font-bold px-1.5 py-0.5 rounded-full border shrink-0 tracking-wide',
                                     cat.id === 'Friendship'
                                       ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
-                                      : cat.id === 'Living Together'
+                                      : cat.id === 'Live-In' || cat.id === 'Living Together'
                                         ? 'bg-indigo-50 text-indigo-700 border-indigo-200'
                                         : 'bg-rose-50 text-[#80132E] border-rose-200'
                                   )}
@@ -1695,8 +1695,8 @@ export default function DiscoverPage() {
               <span className="text-[10px] font-semibold text-[var(--accent)] bg-[var(--accent-light)]/20 px-2 py-0.5 rounded-full">
                 {selectedCategory === 'Friendship'
                   ? 'Friendship Connections'
-                  : selectedCategory === 'Living Together'
-                    ? 'Living Together'
+                  : (selectedCategory === 'Live-In' || selectedCategory === 'Living Together')
+                    ? 'Live-In Relationships'
                     : 'Foundation Matchmaking'}
               </span>
             </div>

@@ -25,10 +25,11 @@ export function RegistrationCategoryBadge({
 }: RegistrationCategoryBadgeProps) {
   const badge: RegistrationBadgeInfo = getRegistrationBadge(profile);
 
+  const isLiveIn = badge.category === 'Live-In' || badge.category === 'Living Together';
   const IconComponent =
     badge.category === 'Friendship'
       ? IconUsers
-      : badge.category === 'Living Together'
+      : isLiveIn
       ? IconHomeHeart
       : IconHeartHandshake;
 
@@ -49,7 +50,7 @@ export function RegistrationCategoryBadge({
           isSmall ? "h-3 w-3" : "h-3.5 w-3.5",
           badge.category === 'Friendship'
             ? "text-emerald-700"
-            : badge.category === 'Living Together'
+            : isLiveIn
             ? "text-indigo-700"
             : "text-[#80132E]"
         )}

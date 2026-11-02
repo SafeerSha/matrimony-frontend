@@ -40,8 +40,8 @@ const HERO_SLIDES = [
   },
   {
     id: "living-together",
-    category: "Living Together",
-    title: "Explore for Living Together",
+    category: "Live-In",
+    title: "Explore for Live-In",
     subtitle: "Modern partners & compatible living",
     src: "/images/hero-living-together.jpg",
     desktopSrc: "/images/hero-living-together.jpg",
@@ -101,7 +101,7 @@ export function HeroSection({ className = "" }: HeroSectionProps) {
     setActiveSlideIndex(slideIdx);
 
     // Dispatch selection to QuickRegisterSection
-    const mappedCategory = option === "Living-together" ? "Living Together" : option;
+    const mappedCategory = option === "Living-together" ? "Live-In" : option;
     window.dispatchEvent(
       new CustomEvent("ishtam:select-category", {
         detail: {
@@ -238,7 +238,7 @@ export function HeroSection({ className = "" }: HeroSectionProps) {
 
               {/* Subtitle */}
               <p className="text-sm sm:text-base text-white/95 leading-relaxed font-normal drop-shadow-[0_1px_6px_rgba(0,0,0,0.85)]">
-                Create your profile and discover meaningful connections <br/> for Friendship, Marriage, and Living Together.
+                Create your profile and discover meaningful connections <br/> for Friendship, Marriage, and Live-In.
               </p>
 
               {/* Action Buttons: Burgundy Register with Sleek Light Loop + Off-White Secondary */}
@@ -299,7 +299,7 @@ export function HeroSection({ className = "" }: HeroSectionProps) {
             </h1>
 
             <p className="mt-5 sm:mt-6 max-w-xl text-base sm:text-lg leading-relaxed text-[var(--muted)] font-normal">
-              Create your profile and discover meaningful connections <br/> for Friendship, Marriage, and Living Together.
+              Create your profile and discover meaningful connections <br/> for Friendship, Marriage, and Live-In.
             </p>
 
             {/* CTAs */}

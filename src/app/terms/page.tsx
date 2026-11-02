@@ -7,7 +7,7 @@ export default function TermsPage() {
     <main className="mx-auto max-w-3xl px-5 py-16">
       <h1 className="text-3xl font-bold text-[var(--foreground)]">Terms & Conditions</h1>
       <p className="mt-4 leading-7 text-[var(--muted)]">
-        Welcome to IshtamChat. By accessing our platform, members agree to authentic representations, respectful interactions, and community safety guidelines across Friendship, Marriage, and Living Together relationships.
+        Welcome to IshtamChat. By accessing our platform, members agree to authentic representations, respectful interactions, and community safety guidelines across Friendship, Marriage, and Live-In relationships.
       </p>
 
       <div className="mt-8 rounded-3xl border border-[var(--border)] bg-[#FFFDFB] p-6 sm:p-8 shadow-xs">

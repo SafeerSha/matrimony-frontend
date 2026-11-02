@@ -354,8 +354,8 @@ export default function OnboardingPage() {
                 ).toLowerCase();
                 const userCat = catStr.includes("friend")
                   ? "Friendship"
-                  : catStr.includes("living")
-                  ? "Living Together"
+                  : (catStr.includes("living") || catStr.includes("live"))
+                  ? "Live-In"
                   : "Marriage";
                 localStorage.setItem("ishtam_user_category", userCat);
               }
@@ -946,8 +946,8 @@ export default function OnboardingPage() {
         ).toLowerCase();
         const userCat = catStr.includes("friend")
           ? "Friendship"
-          : catStr.includes("living")
-          ? "Living Together"
+          : (catStr.includes("living") || catStr.includes("live"))
+          ? "Live-In"
           : "Marriage";
         localStorage.setItem("ishtam_user_category", userCat);
       }
@@ -992,8 +992,8 @@ export default function OnboardingPage() {
         ).toLowerCase();
         const userCat = catStr.includes("friend")
           ? "Friendship"
-          : catStr.includes("living")
-          ? "Living Together"
+          : (catStr.includes("living") || catStr.includes("live"))
+          ? "Live-In"
           : "Marriage";
         localStorage.setItem("ishtam_user_category", userCat);
       }
@@ -1222,10 +1222,10 @@ export default function OnboardingPage() {
       };
     }
 
-    // Living Together
-    if (cat.includes("living")) {
+    // Live-In
+    if (cat.includes("living") || cat.includes("live")) {
       return {
-        label: "Living Together",
+        label: "Live-In",
         colorClass: "bg-[#F0FDF4] border-[#BBF7D0] text-[#15803D]",
         icon: IconHomeHeart,
       };

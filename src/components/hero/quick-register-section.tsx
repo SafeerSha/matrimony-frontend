@@ -27,7 +27,7 @@ import { ScrollReveal } from "@/components/ui/scroll-reveal";
 const profileForOptions = [
   { value: "Marriage", label: "Marriage" },
   { value: "Friendship", label: "Friendship" },
-  { value: "Living Together", label: "Living Together" },
+  { value: "Live-In", label: "Live-In" },
 ];
 
 const lookingInOptions = [
@@ -79,9 +79,9 @@ export function QuickRegisterSection() {
       if (customEvent.detail?.category) {
         const cat = customEvent.detail.category;
         const normalized =
-          cat === "Living-together" || cat === "living_together" ? "Living Together" : cat;
+          cat.includes("living") || cat.includes("live") ? "Live-In" : cat;
         setProfileFor(normalized);
-        if (normalized === "Friendship" || normalized === "Living Together") {
+        if (normalized === "Friendship" || normalized === "Live-In" || normalized === "Living Together") {
           setCreatedBy("Myself");
         }
       }
@@ -96,11 +96,11 @@ export function QuickRegisterSection() {
     };
   }, []);
 
-  const isByLocked = profileFor === "Friendship" || profileFor === "Living Together";
+  const isByLocked = profileFor === "Friendship" || profileFor === "Live-In" || profileFor === "Living Together";
 
   const handleProfileForChange = (value: string) => {
     setProfileFor(value);
-    if (value === "Friendship" || value === "Living Together") {
+    if (value === "Friendship" || value === "Live-In" || value === "Living Together") {
       setCreatedBy("Myself");
     }
   };
@@ -274,14 +274,7 @@ export function QuickRegisterSection() {
                         )}
                       >
                         <IconComp className={cn("h-3.5 w-3.5 sm:h-4 sm:w-4 shrink-0", isSelected ? "text-white" : "text-[#80132E]")} />
-                        {opt.value === "Living Together" ? (
-                          <>
-                            <span className="hidden sm:inline">Living Together</span>
-                            <span className="sm:hidden">Live-in</span>
-                          </>
-                        ) : (
-                          <span>{opt.label}</span>
-                        )}
+                        <span>{opt.label}</span>
                       </button>
                     );
                   })}

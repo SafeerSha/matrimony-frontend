@@ -80,7 +80,7 @@ const LOOKING_FOR_OPTIONS: OptionConfig[] = [
   },
   {
     id: "Living-together",
-    title: "Living-together",
+    title: "Live-In",
     badge: "Modern Living",
     icon: IconHomeHeart,
     iconBgClass: "bg-gradient-to-br from-[#EDFAF3] to-[#DCF5E8] border border-[#BBF7D0] shadow-xs",
@@ -309,7 +309,7 @@ export function LookingForModal({
 
     const chosenCat = selectedCategory ?? "Marriage";
     const normalizedCategory =
-      chosenCat === "Living-together" ? "Living Together" : chosenCat;
+      chosenCat === "Living-together" ? "Live-In" : chosenCat;
 
     const payload: QuickRegisterDto = {
       name: fullName,
@@ -661,7 +661,7 @@ export function LookingForModal({
             {selectedCategory === "Marriage"
               ? `${selectedMatrimony ?? "Kerala"} Matrimony`
               : selectedCategory === "Living-together"
-              ? "Living Together"
+              ? "Live-In"
               : "Friendship"}
           </span>
 
@@ -683,7 +683,7 @@ export function LookingForModal({
             {selectedCategory === "Marriage"
               ? "Register for Marriage"
               : selectedCategory === "Living-together"
-              ? "Register for Living Together"
+              ? "Register for Live-In"
               : "Register for Friendship"}
           </h2>
           <p className="mt-1 text-sm sm:text-base text-[#6E5B63] leading-relaxed font-normal">
