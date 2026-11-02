@@ -150,7 +150,7 @@ export default function DiscoverPage() {
         if (cached === 'Friendship' || cached === 'Living Together' || cached === 'Marriage') {
           return cached as DiscoveryCategory;
         }
-      } catch {}
+      } catch { }
     }
     return 'Marriage';
   });
@@ -169,7 +169,7 @@ export default function DiscoverPage() {
         if (cached === 'Friendship' || cached === 'Living Together' || cached === 'Marriage') {
           return cached as DiscoveryCategory;
         }
-      } catch {}
+      } catch { }
     }
     return 'Marriage';
   });
@@ -236,7 +236,7 @@ export default function DiscoverPage() {
         if (typeof window !== 'undefined') {
           try {
             localStorage.setItem('ishtam_user_category', userCat);
-          } catch {}
+          } catch { }
         }
 
         const isFriends = userCat === 'Friendship';
@@ -279,7 +279,9 @@ export default function DiscoverPage() {
         maxAge,
         religion: selectedReligion === 'Any' ? undefined : selectedReligion,
         maritalStatus: selectedMaritalStatus === 'Any' ? undefined : selectedMaritalStatus,
-        gender: selectedGender !== 'any' ? selectedGender : undefined,
+        gender: selectedCategory === 'Friendship'
+          ? (selectedGender === 'women' || selectedGender === 'men' ? selectedGender : undefined)
+          : (selectedGender !== 'any' ? selectedGender : undefined),
         category: selectedCategory,
       })
       .then((res: any) => {
@@ -348,6 +350,8 @@ export default function DiscoverPage() {
               about: prof.bio || u.bio || '',
               height: prof.height ? `${prof.height}cm` : '',
               gender: prof.gender || u.gender || '',
+              category: prof.category || u.category || '',
+              profileFor: prof.profileFor || u.profileFor || '',
               caste: prof.caste || u.caste || '',
               diet: prof.diet || u.diet || '',
               income: prof.annualIncome || prof.income || u.income || '',
@@ -409,21 +413,21 @@ export default function DiscoverPage() {
         const matchesAge = p.age >= minAge && p.age <= maxAge;
 
         // Cross-Category Match
-        const pCat = ((p as any).category || (p as any).profileFor || (p as any).lookingFor || '').toLowerCase();
+        const pCat = (p.category || (p as any).profileFor || '').toLowerCase();
         const matchesCategory =
           selectedCategory === 'Friendship'
-            ? pCat.includes('friend')
+            ? (!pCat || pCat.includes('friend'))
             : selectedCategory === 'Living Together'
-              ? pCat.includes('living')
+              ? (!pCat || pCat.includes('living'))
               : (pCat.includes('marr') || (!pCat.includes('friend') && !pCat.includes('living')));
 
-        // Foundation Matchmaking Gender match (All genders for friendship)
+        // Foundation Matchmaking Gender match (All genders for friendship by default)
         const pGender = (p.gender || (p as any).sex || '').toLowerCase();
         const effectiveGender =
-          selectedGender !== 'any'
-            ? selectedGender
-            : selectedCategory === 'Friendship'
-              ? 'any'
+          selectedCategory === 'Friendship'
+            ? (selectedGender === 'women' || selectedGender === 'men' ? selectedGender : 'any')
+            : selectedGender !== 'any'
+              ? selectedGender
               : myGender === 'male' || myGender === 'man'
                 ? 'women'
                 : myGender === 'female' || myGender === 'woman'
@@ -1057,8 +1061,8 @@ export default function DiscoverPage() {
                           selectedCategory === 'Friendship'
                             ? 'text-emerald-600'
                             : selectedCategory === 'Living Together'
-                            ? 'text-indigo-600'
-                            : 'text-[#80132E]'
+                              ? 'text-indigo-600'
+                              : 'text-[#80132E]'
                         )}
                       />
                       <span className="truncate max-w-[80px] xs:max-w-[95px] sm:max-w-none">{currentOpt.label}</span>
@@ -1111,8 +1115,8 @@ export default function DiscoverPage() {
                                   cat.id === 'Friendship'
                                     ? 'text-emerald-600'
                                     : cat.id === 'Living Together'
-                                    ? 'text-indigo-600'
-                                    : 'text-[#80132E]'
+                                      ? 'text-indigo-600'
+                                      : 'text-[#80132E]'
                                 )}
                               />
                               <span className="truncate">{cat.label}</span>
@@ -1123,8 +1127,8 @@ export default function DiscoverPage() {
                                     cat.id === 'Friendship'
                                       ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
                                       : cat.id === 'Living Together'
-                                      ? 'bg-indigo-50 text-indigo-700 border-indigo-200'
-                                      : 'bg-rose-50 text-[#80132E] border-rose-200'
+                                        ? 'bg-indigo-50 text-indigo-700 border-indigo-200'
+                                        : 'bg-rose-50 text-[#80132E] border-rose-200'
                                   )}
                                 >
                                   Yours
