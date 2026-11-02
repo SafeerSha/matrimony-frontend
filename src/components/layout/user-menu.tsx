@@ -72,7 +72,7 @@ export function UserMenu({ user, className }: UserMenuProps) {
       : user?.name || "Member";
 
   const userImage = user?.photos?.[0]?.url || user?.image;
-  const rawId = user?.profileId || (user?.id ? String(user.id).replace(/[^a-zA-Z0-9]/g, "").substring(0, 8).toUpperCase() : "LT-A0001");
+  const rawId = user?.profileId?.replace(/^LT-/i, 'IMC-') || (user?.id ? String(user.id).replace(/[^a-zA-Z0-9]/g, "").substring(0, 8).toUpperCase() : "IMC-A00001");
 
   const handleSignOut = async () => {
     setIsOpen(false);

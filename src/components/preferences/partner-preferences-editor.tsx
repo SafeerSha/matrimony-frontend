@@ -152,7 +152,7 @@ export function PartnerPreferencesEditor({
   }
 
   return (
-    <div className="space-y-5 pb-8">
+    <div className="space-y-2 pb-8">
       {/* Top Header */}
       {!isEmbedded && (
         <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
@@ -160,7 +160,7 @@ export function PartnerPreferencesEditor({
             <SectionHeader
               eyebrow="Matchmaking Criteria"
               title="Your Partner Preferences"
-              description="Tell us what matters to you. You can change these preferences anytime to adjust your recommendations."
+              // description="Tell us what matters to you. You can change these preferences anytime to adjust your recommendations."
             />
           </div>
 
@@ -182,7 +182,7 @@ export function PartnerPreferencesEditor({
       {/* Main Grid: Left Editable Sections vs Right Summary Profile */}
       <div className="grid gap-6 lg:grid-cols-[1fr_340px] xl:grid-cols-[1fr_360px]">
         {/* LEFT COLUMN: EDITABLE PREFERENCE SECTIONS */}
-        <div className="space-y-4">
+        <div className="space-y-2">
           {/* Mobile Quick Action Strip (Sticky/Top on 360px-430px screens) */}
           <div className="flex lg:hidden items-center justify-between gap-3 p-3.5 rounded-2xl bg-white border border-[#E9DDE0] shadow-xs">
             <div className="flex items-center gap-2.5">

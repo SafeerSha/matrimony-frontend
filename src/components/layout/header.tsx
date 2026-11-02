@@ -40,17 +40,17 @@ export function Header({
     <header
       className={cn(
         "sticky top-0 z-50 w-full transition-all duration-300 ease-out",
-        isScrolled 
-          ? "bg-transparent backdrop-blur-none border-transparent pointer-events-none pt-2 sm:pt-2.5 pb-1" 
+        isScrolled
+          ? "bg-transparent backdrop-blur-none border-transparent pointer-events-none pt-2 sm:pt-2.5 pb-1 md:bg-white/95 md:backdrop-blur-xl md:border-b md:border-[var(--border)]/80 md:shadow-2xs md:pointer-events-auto md:pt-0 md:pb-0"
           : "border-b border-[var(--border)]/80 bg-white/95 backdrop-blur-xl shadow-2xs pointer-events-auto",
         className
       )}
     >
-      <div 
+      <div
         className={cn(
           "mx-auto flex items-center justify-between transition-all duration-300 ease-out",
-          isScrolled 
-            ? "h-13 sm:h-14 w-[92%] sm:w-[95%] max-w-[840px] rounded-full border border-[var(--border)]/80 bg-white/95 backdrop-blur-2xl shadow-[0_12px_36px_rgba(20,10,15,0.14)] px-4 sm:px-6 pointer-events-auto" 
+          isScrolled
+            ? "h-13 sm:h-14 w-[92%] sm:w-[95%] max-w-[840px] rounded-full border border-[var(--border)]/80 bg-white/95 backdrop-blur-2xl shadow-[0_12px_36px_rgba(20,10,15,0.14)] px-4 sm:px-6 pointer-events-auto md:h-16 md:w-full md:max-w-[1600px] md:rounded-none md:border-transparent md:bg-transparent md:px-4 sm:px-6 lg:px-8 xl:px-10 md:shadow-none"
             : "h-16 w-full max-w-[1600px] rounded-none border-transparent bg-transparent px-4 sm:px-6 lg:px-8 xl:px-10 pointer-events-auto"
         )}
       >

@@ -41,6 +41,7 @@ import type { UserProfile, ProfilePhoto } from '@/services/profile.service';
 import { ProfileDetail } from '@/components/profile/profile-detail';
 import { PartnerPreferencesEditor } from '@/components/preferences/partner-preferences-editor';
 import { ModernSelect } from '@/components/ui/modern-select';
+import { RegistrationCategoryBadge } from '@/components/ui/registration-badge';
 import {
   POPULAR_EDUCATION_OPTIONS,
   POPULAR_CASTES_BY_RELIGION,
@@ -48,6 +49,7 @@ import {
 } from '@/lib/data/education-profession-data';
 import { PageLoader } from '@/components/ui/page-loader';
 import { toast } from '@/lib/toast';
+import { getRegistrationBadge } from '@/lib/demo-data';
 
 const POPULAR_LIFESTYLE_TAGS = [
   'Vegetarian',
@@ -385,6 +387,8 @@ export function MyProfile({ initialPreview = false }: { initialPreview?: boolean
     education: string;
     occupation: string;
     employmentStatus: string;
+    workingPlace: string;
+    workLocation: string;
     maritalStatus: string;
     religion: string;
     caste: string;
@@ -405,6 +409,8 @@ export function MyProfile({ initialPreview = false }: { initialPreview?: boolean
     education: '',
     occupation: '',
     employmentStatus: '',
+    workingPlace: '',
+    workLocation: '',
     maritalStatus: '',
     religion: '',
     caste: '',
@@ -478,6 +484,10 @@ export function MyProfile({ initialPreview = false }: { initialPreview?: boolean
       };
 
       setProfile(combined);
+      try {
+        const badge = getRegistrationBadge(combined);
+        localStorage.setItem('ishtam_user_category', badge.category);
+      } catch {}
 
       // Pre-fill edit draft
       setEditDraft({
@@ -493,6 +503,8 @@ export function MyProfile({ initialPreview = false }: { initialPreview?: boolean
         education: combined.education || '',
         occupation: combined.occupation || combined.profession || '',
         employmentStatus: combined.employmentStatus || '',
+        workingPlace: (combined as any).workingPlace || (combined as any).workLocation || '',
+        workLocation: (combined as any).workingPlace || (combined as any).workLocation || '',
         maritalStatus: combined.maritalStatus || '',
         religion: combined.religion || '',
         caste: combined.caste || '',
@@ -663,6 +675,8 @@ export function MyProfile({ initialPreview = false }: { initialPreview?: boolean
         education: editDraft.education,
         occupation: editDraft.occupation,
         employmentStatus: editDraft.employmentStatus,
+        workingPlace: editDraft.workingPlace,
+        workLocation: editDraft.workingPlace,
         maritalStatus: editDraft.maritalStatus,
         religion: editDraft.religion,
         caste: editDraft.caste,
@@ -757,12 +771,13 @@ export function MyProfile({ initialPreview = false }: { initialPreview?: boolean
     (profile.user as any)?.avatarUrl ||
     '';
 
-  const matrimonyId =
+  const rawProfileId =
     profile.profileId ||
     profile.user?.profileId ||
     (profile.id
-      ? `IC-${String(profile.id).replace(/[^a-zA-Z0-9]/g, '').substring(0, 6).toUpperCase()}`
-      : 'IC-A00001');
+      ? `IMC-${String(profile.id).replace(/[^a-zA-Z0-9]/g, '').substring(0, 6).toUpperCase()}`
+      : 'IMC-A00001');
+  const ishtamChatId = rawProfileId.toUpperCase().replace(/^LT-/i, 'IMC-');
 
   const photosCount = photos.length;
   const isCapReached = photosCount >= 3;
@@ -861,13 +876,19 @@ export function MyProfile({ initialPreview = false }: { initialPreview?: boolean
                 )}
               </p>
 
-              <div className="mt-3.5 inline-flex items-center gap-2 rounded-xl border border-[#EAD8C7] bg-[#FAF3EC] px-3 py-1 shadow-2xs">
-                <span className="text-[10px] font-bold uppercase tracking-wider text-[#8C5D30]">
-                  Matrimony ID
-                </span>
-                <span className="text-xs font-bold tracking-wider text-[#5C1027]">
-                  {matrimonyId}
-                </span>
+              <div className="mt-3.5 flex flex-wrap items-center gap-2">
+                {/* IshtamChat ID Pill */}
+                <div className="inline-flex items-center gap-2 rounded-xl border border-[#EAD8C7] bg-[#FAF3EC] px-3 py-1 shadow-2xs">
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-[#8C5D30]">
+                    IshtamChat ID
+                  </span>
+                  <span className="text-xs font-bold tracking-wider text-[#5C1027]">
+                    {ishtamChatId}
+                  </span>
+                </div>
+
+                {/* Registration Category Pill with quick registration icon */}
+                <RegistrationCategoryBadge profile={profile} />
               </div>
             </div>
 
@@ -1320,35 +1341,6 @@ export function MyProfile({ initialPreview = false }: { initialPreview?: boolean
             </div>
           </div>
 
-          {/* Active Uploading / Replacing Notification Banner */}
-          {(isUploading || replacingPhotoId) && (
-            <div className="mb-5 rounded-2xl bg-amber-500/10 border border-amber-500/30 p-4 flex items-center justify-between gap-3 text-amber-950 shadow-xs animate-in fade-in slide-in-from-top-2 duration-300">
-              <div className="flex items-center gap-3">
-                <div className="grid h-10 w-10 place-items-center rounded-xl bg-gradient-to-br from-amber-500 to-amber-600 text-white shadow-sm shrink-0">
-                  <IconLoader2 className="h-5 w-5 animate-spin" />
-                </div>
-                <div>
-                  <p className="text-xs font-bold text-amber-950 flex items-center gap-2">
-                    {isUploading ? 'Uploading Photo(s) to Cloud Storage...' : 'Replacing Photo...'}
-                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-800 text-[10px] font-semibold">
-                      Please wait
-                    </span>
-                  </p>
-                  <p className="text-[11px] text-amber-800/80 mt-0.5">
-                    Your image is being compressed to WebP and securely saved to Cloudflare R2.
-                  </p>
-                </div>
-              </div>
-              <div className="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/90 border border-amber-200/80 shadow-2xs text-[11px] font-bold text-amber-700 shrink-0">
-                <span className="relative flex h-2 w-2">
-                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75"></span>
-                  <span className="relative inline-flex rounded-full h-2 w-2 bg-amber-500"></span>
-                </span>
-                Uploading
-              </div>
-            </div>
-          )}
-
           {/* 3-Photo Grid */}
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
             {/* Existing Photos */}
@@ -1553,7 +1545,7 @@ export function MyProfile({ initialPreview = false }: { initialPreview?: boolean
           </div>
 
           {/* Education & Career */}
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             <div>
               <ModernSelect
                 label="Highest Education"
@@ -1587,6 +1579,19 @@ export function MyProfile({ initialPreview = false }: { initialPreview?: boolean
                 onChange={(val) => setEditDraft({ ...editDraft, employmentStatus: val })}
                 placeholder="Select employment"
                 maxHeight="max-h-[220px]"
+              />
+            </div>
+
+            <div>
+              <label className="block text-xs font-bold uppercase tracking-wider text-[var(--foreground)] mb-1.5">
+                Working / Business Place
+              </label>
+              <input
+                type="text"
+                value={editDraft.workingPlace}
+                onChange={(e) => setEditDraft({ ...editDraft, workingPlace: e.target.value, workLocation: e.target.value })}
+                placeholder="e.g. Ernakulam / Dubai"
+                className="w-full rounded-xl border border-[var(--border)] bg-white px-3.5 py-2.5 text-xs text-[var(--foreground)] focus:outline-none focus:ring-2 focus:ring-[var(--primary)]"
               />
             </div>
           </div>

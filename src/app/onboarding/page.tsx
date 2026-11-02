@@ -44,6 +44,7 @@ import {
   ProfessionCombobox,
   EmploymentStatusSelector,
   ModernSelect,
+  IntegerInput,
 } from "@/components/ui";
 import {
   CLIENT_EMPLOYMENT_OPTIONS,
@@ -258,6 +259,8 @@ export default function OnboardingPage() {
             employmentStatus: parsed.employmentStatus || prev.employmentStatus || "Govt. Employ",
             income: parsed.income || parsed.annualIncome || prev.income || prev.annualIncome || "5 to 12 lakhs",
             annualIncome: parsed.annualIncome || parsed.income || prev.annualIncome || prev.income || "5 to 12 lakhs",
+            workingPlace: parsed.workingPlace || parsed.workLocation || prev.workingPlace || prev.workLocation || "",
+            workLocation: parsed.workingPlace || parsed.workLocation || prev.workingPlace || prev.workLocation || "",
             fatherAlive: parsed.fatherAlive !== undefined ? parsed.fatherAlive : prev.fatherAlive !== undefined ? prev.fatherAlive : true,
             motherAlive: parsed.motherAlive !== undefined ? parsed.motherAlive : prev.motherAlive !== undefined ? prev.motherAlive : true,
             brothersCount: parsed.brothersCount ?? prev.brothersCount ?? 0,
@@ -341,6 +344,20 @@ export default function OnboardingPage() {
               if (typeof window !== "undefined") {
                 sessionStorage.removeItem("shaadi_onboarding_draft");
                 localStorage.removeItem("shaadi_onboarding_draft");
+                const p = profile as any;
+                const catStr = String(
+                  p.profile?.category ||
+                  p.category ||
+                  p.profile?.profileFor ||
+                  p.profileFor ||
+                  ""
+                ).toLowerCase();
+                const userCat = catStr.includes("friend")
+                  ? "Friendship"
+                  : catStr.includes("living")
+                  ? "Living Together"
+                  : "Marriage";
+                localStorage.setItem("ishtam_user_category", userCat);
               }
               authService.refreshToken().catch(() => {}).finally(() => {
                 window.location.href = "/app/discover";
@@ -503,6 +520,14 @@ export default function OnboardingPage() {
         return;
       }
 
+      const workingPlaceVal = (
+        (formData.get("workingPlace") as string) ||
+        (formData.get("workLocation") as string) ||
+        profileData.workingPlace ||
+        profileData.workLocation ||
+        ""
+      ).trim();
+
       const profVal = (
         (formData.get("profession") as string) ||
         (formData.get("occupation") as string) ||
@@ -542,6 +567,8 @@ export default function OnboardingPage() {
         income: incomeVal,
         annualIncome: incomeVal,
         height: heightVal,
+        workingPlace: workingPlaceVal,
+        workLocation: workingPlaceVal,
         occupation: profVal || employmentStatusVal,
         profession: profVal || employmentStatusVal,
         gender: genderVal,
@@ -868,6 +895,8 @@ export default function OnboardingPage() {
           profilePayload.photoUrl = primaryPhotoUrl;
         }
       }
+      profilePayload.workingPlace = profileData.workingPlace || profileData.workLocation || undefined;
+      profilePayload.workLocation = profileData.workingPlace || profileData.workLocation || undefined;
       await profileService.updateProfile("me", profilePayload).catch(() => {});
 
       // 5. Complete Onboarding on backend:
@@ -890,6 +919,8 @@ export default function OnboardingPage() {
         employmentStatus: profileData.employmentStatus,
         income: profileData.annualIncome || profileData.income,
         annualIncome: profileData.annualIncome || profileData.income,
+        workingPlace: profileData.workingPlace || profileData.workLocation,
+        workLocation: profileData.workingPlace || profileData.workLocation,
         fatherAlive: profileData.fatherAlive !== false,
         motherAlive: profileData.motherAlive !== false,
         brothersCount: profileData.brothersCount || 0,
@@ -906,6 +937,19 @@ export default function OnboardingPage() {
       if (typeof window !== "undefined") {
         sessionStorage.removeItem("shaadi_onboarding_draft");
         localStorage.removeItem("shaadi_onboarding_draft");
+        const catStr = String(
+          draftInfo?.category ||
+          draftInfo?.profileFor ||
+          profileData?.category ||
+          profileData?.profileFor ||
+          ""
+        ).toLowerCase();
+        const userCat = catStr.includes("friend")
+          ? "Friendship"
+          : catStr.includes("living")
+          ? "Living Together"
+          : "Marriage";
+        localStorage.setItem("ishtam_user_category", userCat);
       }
 
       // Refresh auth tokens so the updated ACTIVE status is stored in cookies and session
@@ -939,6 +983,19 @@ export default function OnboardingPage() {
       if (typeof window !== "undefined") {
         sessionStorage.removeItem("shaadi_onboarding_draft");
         localStorage.removeItem("shaadi_onboarding_draft");
+        const catStr = String(
+          draftInfo?.category ||
+          draftInfo?.profileFor ||
+          profileData?.category ||
+          profileData?.profileFor ||
+          ""
+        ).toLowerCase();
+        const userCat = catStr.includes("friend")
+          ? "Friendship"
+          : catStr.includes("living")
+          ? "Living Together"
+          : "Marriage";
+        localStorage.setItem("ishtam_user_category", userCat);
       }
       await authService.refreshToken().catch(() => {});
       toast.flash(
@@ -1878,6 +1935,27 @@ export default function OnboardingPage() {
                             className="h-12 w-full rounded-xl border border-[var(--border)] bg-white px-4 text-sm text-[var(--foreground)] outline-none focus:border-[var(--primary)] focus:ring-4 focus:ring-[var(--primary)]/10 transition"
                           />
                         </div>
+
+                        {/* 10. Working / Business Place */}
+                        <div>
+                          <label className="block text-xs font-semibold uppercase tracking-wider text-[var(--muted-strong)] mb-1.5">
+                            10. Working / Business Place
+                          </label>
+                          <input
+                            name="workingPlace"
+                            type="text"
+                            value={profileData.workingPlace ?? profileData.workLocation ?? ""}
+                            onChange={(e) =>
+                              setProfileData((prev: any) => ({
+                                ...prev,
+                                workingPlace: e.target.value,
+                                workLocation: e.target.value,
+                              }))
+                            }
+                            placeholder="e.g. Ernakulam / Dubai / Bangalore"
+                            className="h-12 w-full rounded-xl border border-[var(--border)] bg-white px-4 text-sm text-[var(--foreground)] outline-none focus:border-[var(--primary)] focus:ring-4 focus:ring-[var(--primary)]/10 transition"
+                          />
+                        </div>
                       </div>
 
                       {/* Card 4: 11. Family Details */}
@@ -1920,74 +1998,76 @@ export default function OnboardingPage() {
 
                         {/* a. Brothers count and married status */}
                         <div className="grid grid-cols-2 gap-3">
-                          <div>
-                            <label className="block text-xs font-semibold uppercase tracking-wider text-[var(--muted-strong)] mb-1">
-                              Brothers Count
-                            </label>
-                            <input
-                              type="number"
-                              min={0}
-                              max={10}
-                              name="brothersCount"
-                              value={profileData.brothersCount ?? 0}
-                              onChange={(e) =>
-                                setProfileData((prev: any) => ({ ...prev, brothersCount: Number(e.target.value) }))
-                              }
-                              className="h-11 w-full rounded-xl border border-[var(--border)] bg-white px-3 text-sm text-[var(--foreground)] outline-none focus:border-[var(--primary)]"
-                            />
-                          </div>
-                          <div>
-                            <label className="block text-xs font-semibold uppercase tracking-wider text-[var(--muted-strong)] mb-1">
-                              Married Brothers
-                            </label>
-                            <input
-                              type="number"
-                              min={0}
-                              max={profileData.brothersCount ?? 10}
-                              name="brothersMarried"
-                              value={profileData.brothersMarried ?? 0}
-                              onChange={(e) =>
-                                setProfileData((prev: any) => ({ ...prev, brothersMarried: Number(e.target.value) }))
-                              }
-                              className="h-11 w-full rounded-xl border border-[var(--border)] bg-white px-3 text-sm text-[var(--foreground)] outline-none focus:border-[var(--primary)]"
-                            />
-                          </div>
+                          <IntegerInput
+                            label="Brothers Count"
+                            name="brothersCount"
+                            value={profileData.brothersCount ?? 0}
+                            min={0}
+                            max={20}
+                            onChange={(val) =>
+                              setProfileData((prev: any) => {
+                                const next = { ...prev, brothersCount: val };
+                                if ((prev.brothersMarried ?? 0) > val) {
+                                  next.brothersMarried = val;
+                                }
+                                return next;
+                              })
+                            }
+                          />
+
+                          <IntegerInput
+                            label="Married Brothers"
+                            name="brothersMarried"
+                            value={profileData.brothersMarried ?? 0}
+                            min={0}
+                            max={20}
+                            onChange={(val) =>
+                              setProfileData((prev: any) => {
+                                const next = { ...prev, brothersMarried: val };
+                                if (val > (prev.brothersCount ?? 0)) {
+                                  next.brothersCount = val;
+                                }
+                                return next;
+                              })
+                            }
+                          />
                         </div>
 
                         {/* b. Sisters count and married status */}
                         <div className="grid grid-cols-2 gap-3">
-                          <div>
-                            <label className="block text-xs font-semibold uppercase tracking-wider text-[var(--muted-strong)] mb-1">
-                              Sisters Count
-                            </label>
-                            <input
-                              type="number"
-                              min={0}
-                              max={10}
-                              name="sistersCount"
-                              value={profileData.sistersCount ?? 0}
-                              onChange={(e) =>
-                                setProfileData((prev: any) => ({ ...prev, sistersCount: Number(e.target.value) }))
-                              }
-                              className="h-11 w-full rounded-xl border border-[var(--border)] bg-white px-3 text-sm text-[var(--foreground)] outline-none focus:border-[var(--primary)]"
-                            />
-                          </div>
-                          <div>
-                            <label className="block text-xs font-semibold uppercase tracking-wider text-[var(--muted-strong)] mb-1">
-                              Married Sisters
-                            </label>
-                            <input
-                              type="number"
-                              min={0}
-                              max={profileData.sistersCount ?? 10}
-                              name="sistersMarried"
-                              value={profileData.sistersMarried ?? 0}
-                              onChange={(e) =>
-                                setProfileData((prev: any) => ({ ...prev, sistersMarried: Number(e.target.value) }))
-                              }
-                              className="h-11 w-full rounded-xl border border-[var(--border)] bg-white px-3 text-sm text-[var(--foreground)] outline-none focus:border-[var(--primary)]"
-                            />
-                          </div>
+                          <IntegerInput
+                            label="Sisters Count"
+                            name="sistersCount"
+                            value={profileData.sistersCount ?? 0}
+                            min={0}
+                            max={20}
+                            onChange={(val) =>
+                              setProfileData((prev: any) => {
+                                const next = { ...prev, sistersCount: val };
+                                if ((prev.sistersMarried ?? 0) > val) {
+                                  next.sistersMarried = val;
+                                }
+                                return next;
+                              })
+                            }
+                          />
+
+                          <IntegerInput
+                            label="Married Sisters"
+                            name="sistersMarried"
+                            value={profileData.sistersMarried ?? 0}
+                            min={0}
+                            max={20}
+                            onChange={(val) =>
+                              setProfileData((prev: any) => {
+                                const next = { ...prev, sistersMarried: val };
+                                if (val > (prev.sistersCount ?? 0)) {
+                                  next.sistersCount = val;
+                                }
+                                return next;
+                              })
+                            }
+                          />
                         </div>
 
                         {/* Family Background Notes */}

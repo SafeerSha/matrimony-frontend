@@ -47,7 +47,7 @@ import { toast } from '@/lib/toast';
 import { useSubscription } from '@/context/subscription-context';
 import { cn } from '@/lib/cn';
 import { SwipeCard } from '@/components/discovery/swipe-card';
-import { type Profile, formatLastActive } from '@/lib/demo-data';
+import { type Profile, formatLastActive, getRegistrationBadge } from '@/lib/demo-data';
 
 export type DiscoveryViewMode = 'swipe' | 'grid';
 export type SortOption = 'recommended' | 'recent' | 'new' | 'nearby';
@@ -59,10 +59,10 @@ export const CATEGORY_OPTIONS: Array<{
   icon: React.ComponentType<{ className?: string }>;
   tag: string;
 }> = [
-  { id: 'Marriage', label: 'Marriage', icon: IconHeartHandshake, tag: '💍' },
-  { id: 'Friendship', label: 'Friendship', icon: IconUsers, tag: '👥' },
-  { id: 'Living Together', label: 'Living Together', icon: IconHomeHeart, tag: '🏡' },
-];
+    { id: 'Marriage', label: 'Marriage', icon: IconHeartHandshake, tag: '💍' },
+    { id: 'Friendship', label: 'Friendship', icon: IconUsers, tag: '👥' },
+    { id: 'Living Together', label: 'Living Together', icon: IconHomeHeart, tag: '🏡' },
+  ];
 
 export const HEIGHT_OPTIONS = [
   "4'10\"", "4'11\"", "5'0\"", "5'1\"", "5'2\"", "5'3\"", "5'4\"", "5'5\"",
@@ -143,7 +143,36 @@ export default function DiscoverPage() {
   const [maxAge, setMaxAge] = useState(35);
   const [minHeight, setMinHeight] = useState<string>("4'10\"");
   const [maxHeight, setMaxHeight] = useState<string>("6'4\"");
-  const [selectedCategory, setSelectedCategory] = useState<DiscoveryCategory>('Marriage');
+  const [registeredCategory, setRegisteredCategory] = useState<DiscoveryCategory>(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        const cached = localStorage.getItem('ishtam_user_category') || sessionStorage.getItem('ishtam_user_category');
+        if (cached === 'Friendship' || cached === 'Living Together' || cached === 'Marriage') {
+          return cached as DiscoveryCategory;
+        }
+      } catch {}
+    }
+    return 'Marriage';
+  });
+  const [selectedCategory, setSelectedCategory] = useState<DiscoveryCategory>(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        const urlParams = new URLSearchParams(window.location.search);
+        const urlCat = urlParams.get('category');
+        if (urlCat) {
+          const lower = urlCat.toLowerCase();
+          if (lower.includes('friend')) return 'Friendship';
+          if (lower.includes('living')) return 'Living Together';
+          if (lower.includes('marr') || lower.includes('matrimon')) return 'Marriage';
+        }
+        const cached = localStorage.getItem('ishtam_user_category') || sessionStorage.getItem('ishtam_user_category');
+        if (cached === 'Friendship' || cached === 'Living Together' || cached === 'Marriage') {
+          return cached as DiscoveryCategory;
+        }
+      } catch {}
+    }
+    return 'Marriage';
+  });
   const [isCategoryMenuOpen, setIsCategoryMenuOpen] = useState<boolean>(false);
   const [selectedGender, setSelectedGender] = useState<'any' | 'women' | 'men'>('any');
   const [myGender, setMyGender] = useState<string>('');
@@ -200,19 +229,33 @@ export default function DiscoverPage() {
           return;
         }
         const g = (profile.profile?.gender || profile.gender || '').toLowerCase().trim();
-        const cat = (
-          profile.profile?.category ||
-          profile.category ||
-          profile.profile?.profileFor ||
-          profile.profileFor ||
-          profile.profile?.lookingFor ||
-          profile.lookingFor ||
-          ''
-        ).toLowerCase().trim();
-        const isFriends = cat.includes('friend');
+        const badge = getRegistrationBadge(profile.profile || profile);
+        const userCat: DiscoveryCategory = badge.category;
+        setRegisteredCategory(userCat);
+
+        if (typeof window !== 'undefined') {
+          try {
+            localStorage.setItem('ishtam_user_category', userCat);
+          } catch {}
+        }
+
+        const isFriends = userCat === 'Friendship';
         setIsFriendshipUser(isFriends);
         setMyGender(g);
-        if (isFriends) {
+
+        // Check if an explicit ?category= parameter is present in URL
+        const urlCat = typeof window !== 'undefined' ? new URLSearchParams(window.location.search).get('category') : null;
+        let activeCat = userCat;
+        if (urlCat) {
+          const lower = urlCat.toLowerCase();
+          if (lower.includes('friend')) activeCat = 'Friendship';
+          else if (lower.includes('living')) activeCat = 'Living Together';
+          else if (lower.includes('marr') || lower.includes('matrimon')) activeCat = 'Marriage';
+        }
+
+        setSelectedCategory(activeCat);
+
+        if (activeCat === 'Friendship') {
           // Friendship users see all genders by default
           setSelectedGender('any');
         } else if (g === 'male' || g === 'man') {
@@ -223,7 +266,7 @@ export default function DiscoverPage() {
           setSelectedGender('any');
         }
       })
-      .catch(() => {});
+      .catch(() => { });
   }, [router]);
 
   // Fetch profiles based on filters
@@ -371,8 +414,8 @@ export default function DiscoverPage() {
           selectedCategory === 'Friendship'
             ? pCat.includes('friend')
             : selectedCategory === 'Living Together'
-            ? pCat.includes('living')
-            : (pCat.includes('marr') || (!pCat.includes('friend') && !pCat.includes('living')));
+              ? pCat.includes('living')
+              : (pCat.includes('marr') || (!pCat.includes('friend') && !pCat.includes('living')));
 
         // Foundation Matchmaking Gender match (All genders for friendship)
         const pGender = (p.gender || (p as any).sex || '').toLowerCase();
@@ -380,12 +423,12 @@ export default function DiscoverPage() {
           selectedGender !== 'any'
             ? selectedGender
             : selectedCategory === 'Friendship'
-            ? 'any'
-            : myGender === 'male' || myGender === 'man'
-            ? 'women'
-            : myGender === 'female' || myGender === 'woman'
-            ? 'men'
-            : 'any';
+              ? 'any'
+              : myGender === 'male' || myGender === 'man'
+                ? 'women'
+                : myGender === 'female' || myGender === 'woman'
+                  ? 'men'
+                  : 'any';
 
         const matchesGender =
           effectiveGender === 'any' ||
@@ -440,7 +483,7 @@ export default function DiscoverPage() {
         const matchesHeight =
           !pHeightInches ||
           ((!minHeightInches || pHeightInches >= minHeightInches) &&
-           (!maxHeightInches || pHeightInches <= maxHeightInches));
+            (!maxHeightInches || pHeightInches <= maxHeightInches));
 
         // Diet match
         const pDiet = ((p as any).diet || (p as any).dietaryHabits || (Array.isArray(p.lifestyle) ? p.lifestyle.join(' ') : '')).toLowerCase();
@@ -520,10 +563,10 @@ export default function DiscoverPage() {
     const defaultOppositeGender = isFriendshipUser
       ? 'any'
       : myGender === 'male' || myGender === 'man'
-      ? 'women'
-      : myGender === 'female' || myGender === 'woman'
-      ? 'men'
-      : 'any';
+        ? 'women'
+        : myGender === 'female' || myGender === 'woman'
+          ? 'men'
+          : 'any';
     if (selectedGender !== defaultOppositeGender && selectedGender !== 'any') count++;
     if (selectedReligion !== 'Any') count++;
     if (selectedCaste !== 'Any') count++;
@@ -580,10 +623,10 @@ export default function DiscoverPage() {
     const defaultOppositeGender = isFriendshipUser
       ? 'any'
       : myGender === 'male' || myGender === 'man'
-      ? 'women'
-      : myGender === 'female' || myGender === 'woman'
-      ? 'men'
-      : 'any';
+        ? 'women'
+        : myGender === 'female' || myGender === 'woman'
+          ? 'men'
+          : 'any';
     setSelectedGender(defaultOppositeGender);
     setSelectedReligion('Any');
     setSelectedCaste('Any');
@@ -594,8 +637,9 @@ export default function DiscoverPage() {
     setSelectedLanguage('Any');
     setSelectedIntent('Any');
     setSelectedDiet("Doesn't Matter");
+    setSelectedCategory(registeredCategory);
     setIsFilterOpen(false);
-    toast.info('Filters Reset', 'Showing all available matrimonial recommendations.');
+    toast.info('Filters Reset', `Showing all available ${registeredCategory.toLowerCase()} recommendations.`);
   };
 
   const handleApplyFilters = async () => {
@@ -678,7 +722,7 @@ export default function DiscoverPage() {
       const next = new Set(prev).add(id);
       try {
         sessionStorage.setItem('matrimony_passed_ids', JSON.stringify(Array.from(next)));
-      } catch {}
+      } catch { }
       return next;
     });
   };
@@ -727,7 +771,7 @@ export default function DiscoverPage() {
     setPassedIds(new Set());
     try {
       sessionStorage.removeItem('matrimony_passed_ids');
-    } catch {}
+    } catch { }
     toast.info('Passes Cleared', 'Previously passed profiles are now back in your discovery feed.');
   };
 
@@ -773,10 +817,10 @@ export default function DiscoverPage() {
       </div>
 
       {/* Identity & Action Overlay on Photo */}
-      <div 
+      <div
         className="absolute inset-x-0 bottom-0 p-3.5 sm:p-5 md:p-8 text-white z-10 space-y-1 sm:space-y-2 pointer-events-auto"
       >
-        <div 
+        <div
           className="group/name flex items-center gap-2 cursor-pointer w-fit active:opacity-80 transition-opacity"
           onClick={(e) => {
             e.stopPropagation();
@@ -807,7 +851,7 @@ export default function DiscoverPage() {
         )}
 
         {/* Matrimonial Discovery Actions: Option 1 Hero Connect Pill + Left Quick-Actions */}
-        <div 
+        <div
           className="w-full pt-2.5 sm:pt-3.5 flex items-center gap-2 sm:gap-2.5 max-w-full"
           data-prevent-swipe="true"
           onClick={(e) => e.stopPropagation()}
@@ -923,7 +967,8 @@ export default function DiscoverPage() {
         : "space-y-2.5 sm:space-y-4 pb-2 sm:pb-8"
     )}>
       {/* Mobile layout spacing & Swipe mode lock */}
-      <style dangerouslySetInnerHTML={{ __html: `
+      <style dangerouslySetInnerHTML={{
+        __html: `
         @media (max-width: 767px) {
           div:has(> #main-content) {
             padding-top: 0.4rem !important;
@@ -951,7 +996,7 @@ export default function DiscoverPage() {
       {/* 1. TOP HEADER & VIEW MODE CONTROLS (Sticky on scroll)    */}
       {/* ======================================================== */}
       <div className="sticky top-16 z-30 py-1.5 sm:py-2.5 bg-transparent pointer-events-none transition-all shrink-0">
-        <div className="flex items-center justify-between sm:justify-end w-full max-w-2xl mx-auto gap-2 shrink-0 pointer-events-auto">
+        <div className="flex items-center justify-between sm:justify-center w-full max-w-2xl mx-auto gap-2 shrink-0 pointer-events-auto">
           {/* View Switcher: Mobile only (hidden on desktop) */}
           <div className="flex sm:hidden items-center h-[36px] bg-white/95 backdrop-blur-xl p-0.5 rounded-2xl border border-[var(--border)]/90 shadow-[0_4px_16px_rgba(20,10,15,0.08)] shrink-0">
             <button
@@ -995,9 +1040,9 @@ export default function DiscoverPage() {
                 aria-haspopup="listbox"
                 aria-expanded={isCategoryMenuOpen}
                 className={cn(
-                  'focus-ring flex items-center gap-1 sm:gap-1.5 h-[36px] sm:h-[38px] px-2.5 sm:px-3.5 rounded-2xl text-[11px] sm:text-xs font-bold transition-all active-press select-none cursor-pointer border shadow-[0_4px_16px_rgba(20,10,15,0.08)] backdrop-blur-xl',
-                  isCategoryMenuOpen || selectedCategory !== 'Marriage'
-                    ? 'bg-gradient-to-r from-[#5B132B] to-[#7B1D3A] text-white border-[#5B132B]/40 shadow-[0_4px_14px_rgba(91,19,43,0.3)]'
+                  'focus-ring flex items-center gap-1.5 sm:gap-2 h-[36px] sm:h-[38px] px-3 sm:px-3.5 rounded-2xl text-[11px] sm:text-xs font-bold transition-all active-press select-none cursor-pointer border shadow-[0_4px_16px_rgba(20,10,15,0.08)] backdrop-blur-xl',
+                  isCategoryMenuOpen
+                    ? 'bg-stone-100 text-stone-900 border-stone-300'
                     : 'bg-white/95 text-stone-800 border-[var(--border)]/90 hover:bg-stone-50'
                 )}
               >
@@ -1006,9 +1051,23 @@ export default function DiscoverPage() {
                   const Icon = currentOpt.icon;
                   return (
                     <>
-                      <Icon className={cn('h-3.5 w-3.5 shrink-0', isCategoryMenuOpen || selectedCategory !== 'Marriage' ? 'text-amber-300' : 'text-[var(--primary)]')} />
-                      <span className="truncate max-w-[70px] xs:max-w-[85px] sm:max-w-none">{currentOpt.label}</span>
-                      <IconChevronDown className={cn('h-3 w-3 sm:h-3.5 sm:w-3.5 shrink-0 transition-transform duration-200', isCategoryMenuOpen && 'rotate-180')} />
+                      <Icon
+                        className={cn(
+                          'h-3.5 w-3.5 shrink-0',
+                          selectedCategory === 'Friendship'
+                            ? 'text-emerald-600'
+                            : selectedCategory === 'Living Together'
+                            ? 'text-indigo-600'
+                            : 'text-[#80132E]'
+                        )}
+                      />
+                      <span className="truncate max-w-[80px] xs:max-w-[95px] sm:max-w-none">{currentOpt.label}</span>
+                      <IconChevronDown
+                        className={cn(
+                          'h-3 w-3 sm:h-3.5 sm:w-3.5 shrink-0 text-stone-400 transition-transform duration-200',
+                          isCategoryMenuOpen && 'rotate-180'
+                        )}
+                      />
                     </>
                   );
                 })()}
@@ -1021,13 +1080,14 @@ export default function DiscoverPage() {
                     className="fixed inset-0 z-40"
                     onClick={() => setIsCategoryMenuOpen(false)}
                   />
-                  <div className="absolute left-1/2 -translate-x-1/2 top-[calc(100%+6px)] z-50 w-52 rounded-2xl bg-white/98 backdrop-blur-2xl border border-[var(--border)] p-1.5 shadow-[0_12px_36px_rgba(20,10,15,0.18)] animate-scale-up">
+                  <div className="absolute left-1/2 -translate-x-1/2 top-[calc(100%+6px)] z-50 w-56 rounded-2xl bg-white/98 backdrop-blur-2xl border border-[var(--border)] p-1.5 shadow-[0_12px_36px_rgba(20,10,15,0.18)] animate-scale-up">
                     <div className="px-2.5 py-1.5 text-[10px] font-bold uppercase tracking-wider text-[var(--muted)]">
-                      Switch Connection Type
+                      SWITCH CONNECTION TYPE
                     </div>
                     <div className="space-y-0.5">
                       {CATEGORY_OPTIONS.map((cat) => {
                         const isSelected = selectedCategory === cat.id;
+                        const isUserPlan = registeredCategory === cat.id;
                         const Icon = cat.icon;
                         return (
                           <button
@@ -1041,12 +1101,35 @@ export default function DiscoverPage() {
                               'w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-semibold transition-colors cursor-pointer select-none',
                               isSelected
                                 ? 'bg-rose-50 text-[var(--primary)] font-bold'
-                                : 'text-stone-700 hover:bg-stone-100/80 hover:text-stone-900'
+                                : 'text-stone-700 hover:bg-stone-50 hover:text-stone-900'
                             )}
                           >
-                            <div className="flex items-center gap-2">
-                              <Icon className={cn('h-4 w-4 shrink-0', isSelected ? 'text-[var(--primary)]' : 'text-stone-500')} />
-                              <span>{cat.label}</span>
+                            <div className="flex items-center gap-2 min-w-0">
+                              <Icon
+                                className={cn(
+                                  'h-4 w-4 shrink-0',
+                                  cat.id === 'Friendship'
+                                    ? 'text-emerald-600'
+                                    : cat.id === 'Living Together'
+                                    ? 'text-indigo-600'
+                                    : 'text-[#80132E]'
+                                )}
+                              />
+                              <span className="truncate">{cat.label}</span>
+                              {isUserPlan && (
+                                <span
+                                  className={cn(
+                                    'text-[9px] sm:text-[10px] font-bold px-1.5 py-0.5 rounded-full border shrink-0 tracking-wide',
+                                    cat.id === 'Friendship'
+                                      ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                                      : cat.id === 'Living Together'
+                                      ? 'bg-indigo-50 text-indigo-700 border-indigo-200'
+                                      : 'bg-rose-50 text-[#80132E] border-rose-200'
+                                  )}
+                                >
+                                  Yours
+                                </span>
+                              )}
                             </div>
                             {isSelected && <IconCheck className="h-3.5 w-3.5 text-[var(--primary)] shrink-0" />}
                           </button>
@@ -1062,15 +1145,10 @@ export default function DiscoverPage() {
             <Button
               variant={activeFiltersCount > 0 || query ? 'primary' : 'secondary'}
               onClick={() => setIsFilterOpen(true)}
-              className="h-[36px] sm:h-[38px] px-2.5 sm:px-4 rounded-2xl text-[11px] sm:text-xs font-bold gap-1 sm:gap-2 active-press shadow-[0_4px_16px_rgba(20,10,15,0.08)] bg-white/95 backdrop-blur-xl border border-[var(--border)]/90 shrink-0"
+              className="h-[36px] sm:h-[38px] px-3 sm:px-4 rounded-2xl text-[11px] sm:text-xs font-bold gap-1 sm:gap-2 active-press shadow-[0_4px_16px_rgba(20,10,15,0.08)] bg-white/95 backdrop-blur-xl border border-[var(--border)]/90 shrink-0"
               leftIcon={<IconAdjustments className="h-3.5 w-3.5" />}
             >
-              <span>Filters</span>
-              {(activeFiltersCount > 0 || query) && (
-                <span className="grid h-3.5 w-3.5 sm:h-4 sm:w-4 place-items-center rounded-full bg-[var(--primary)] text-white text-[8.5px] sm:text-[9px] font-bold">
-                  {activeFiltersCount + (query ? 1 : 0)}
-                </span>
-              )}
+              <span>Search</span>
             </Button>
           </div>
         </div>
@@ -1233,221 +1311,221 @@ export default function DiscoverPage() {
             </div>
           )}
 
-        {/* ======================================================== */}
-        {/* GRID VIEW MODE (Default on desktop, mobile when chosen)   */}
-        {/* ======================================================== */}
-        <div
-          className={cn(
-            'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-3 animate-content-appear stagger-3',
-            viewMode === 'swipe' ? 'hidden md:grid' : 'grid'
-          )}
-        >
-          {filteredProfiles.map((profile) => {
-            const isShortlisted = shortlistedIds.has(profile.id);
-            const isInterestSent = sentInterestIds.has(profile.id);
-            const isInterestReceived = receivedInterestIds.has(profile.id);
+          {/* ======================================================== */}
+          {/* GRID VIEW MODE (Default on desktop, mobile when chosen)   */}
+          {/* ======================================================== */}
+          <div
+            className={cn(
+              'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-3 animate-content-appear stagger-3',
+              viewMode === 'swipe' ? 'hidden md:grid' : 'grid'
+            )}
+          >
+            {filteredProfiles.map((profile) => {
+              const isShortlisted = shortlistedIds.has(profile.id);
+              const isInterestSent = sentInterestIds.has(profile.id);
+              const isInterestReceived = receivedInterestIds.has(profile.id);
 
-            return (
-              <Card
-                key={profile.id}
-                variant="interactive"
-                role="link"
-                tabIndex={0}
-                aria-label={`View ${profile.name}'s profile`}
-                onClick={() => router.push(`/app/profile?user=${profile.id}`)}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter' || e.key === ' ') {
-                    e.preventDefault();
-                    router.push(`/app/profile?user=${profile.id}`);
-                  }
-                }}
-                className="group relative overflow-hidden rounded-[2rem] border border-[var(--border)] bg-white p-0 shadow-[var(--elevation-card)] hover:shadow-[var(--elevation-floating)] transition-all duration-300 cursor-pointer"
-              >
-                {/* 3:4 Portrait Photography with Overlay */}
-                <div className="relative h-[570px] sm:h-[530px] w-full overflow-hidden bg-[var(--surface-muted)]">
-                  <SafeDiscoverImage profile={profile} />
+              return (
+                <Card
+                  key={profile.id}
+                  variant="interactive"
+                  role="link"
+                  tabIndex={0}
+                  aria-label={`View ${profile.name}'s profile`}
+                  onClick={() => router.push(`/app/profile?user=${profile.id}`)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                      e.preventDefault();
+                      router.push(`/app/profile?user=${profile.id}`);
+                    }
+                  }}
+                  className="group relative overflow-hidden rounded-[2rem] border border-[var(--border)] bg-white p-0 shadow-[var(--elevation-card)] hover:shadow-[var(--elevation-floating)] transition-all duration-300 cursor-pointer"
+                >
+                  {/* 3:4 Portrait Photography with Overlay */}
+                  <div className="relative h-[570px] sm:h-[530px] w-full overflow-hidden bg-[var(--surface-muted)]">
+                    <SafeDiscoverImage profile={profile} />
 
-                  {/* Ambient Warm Gradient Overlay */}
-                  {profile.image && <div className="absolute inset-0 photo-overlay-warm" aria-hidden="true" />}
+                    {/* Ambient Warm Gradient Overlay */}
+                    {profile.image && <div className="absolute inset-0 photo-overlay-warm" aria-hidden="true" />}
 
-                  {/* Top Badges */}
-                  <div className="absolute top-3 left-3 right-3 flex items-center justify-between gap-1.5 z-10">
-                    <div className="flex items-center gap-1.5">
-                      {isInterestSent ? (
-                        <Badge
-                          tone="accent"
-                          size="sm"
-                          className="bg-emerald-600/95 text-white font-bold backdrop-blur-md border-emerald-400/50 shadow-xs"
-                        >
-                          ✓ Interest Sent
-                        </Badge>
-                      ) : isInterestReceived ? (
-                        <Badge
-                          tone="accent"
-                          size="sm"
-                          className="bg-gradient-to-r from-rose-600 to-pink-600 text-white font-bold backdrop-blur-md border-rose-400/50 shadow-xs"
-                        >
-                          ♥ Sent You an Interest
-                        </Badge>
-                      ) : profile.online ? (
-                        <Badge
-                          tone="neutral"
-                          size="sm"
-                          dot
-                          dotColor="bg-emerald-500"
-                          className="bg-white/90 backdrop-blur-md text-[var(--foreground)] border-white/80 font-medium"
-                        >
-                          Online now
-                        </Badge>
-                      ) : profile.lastActiveAt ? (
-                        <Badge
-                          tone="neutral"
-                          size="sm"
-                          className="bg-black/50 text-white/95 backdrop-blur-md border-white/20 text-[10px] font-medium"
-                        >
-                          {formatLastActive(profile.lastActiveAt)}
-                        </Badge>
-                      ) : null}
-                    </div>
-
-                    <span className="inline-block rounded-full bg-white/85 backdrop-blur-md text-[var(--primary-deep)] px-2.5 py-0.5 text-[10px] font-semibold border border-white/60 shadow-xs">
-                      ✓ Matches
-                    </span>
-                  </div>
-
-                  {/* Identity & Action Overlay on Photo */}
-                  <div className="absolute inset-x-0 bottom-0 p-4 sm:p-5 text-white z-10 space-y-1.5">
-                    <div className="flex items-center gap-2">
-                      <h3 className="font-editorial-title text-xl font-bold tracking-tight text-white drop-shadow-sm truncate group-hover:text-[var(--accent-light)] transition-colors">
-                        {profile.name}, {profile.age}
-                      </h3>
-                      {profile.verified && <VerificationBadge type="general" showIconOnly size="sm" />}
-                    </div>
-
-                    {(profile.profession || profile.education) && (
-                      <p className="text-xs font-semibold text-white/90 truncate">
-                        {[profile.profession, profile.education].filter(Boolean).join(' · ')}
-                      </p>
-                    )}
-
-                    {(profile.city || profile.state) && (
-                      <p className="flex items-center gap-1 text-xs text-white/85 truncate">
-                        <IconMapPin className="h-3.5 w-3.5 text-[var(--accent)] shrink-0" />
-                        <span>
-                          {[profile.city, profile.state].filter(Boolean).join(', ')}
-                        </span>
-                      </p>
-                    )}
-
-                    {/* Matrimonial Discovery Actions: Option 1 Hero Connect Pill + Left Quick-Actions */}
-                    <div className="w-full pt-2.5 sm:pt-3 flex items-center gap-1.5 sm:gap-2 max-w-full">
-                      {/* Left Quick Actions: Pass, Chat, Star */}
-                      <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
-                        {/* Pass button: Round icon button */}
-                        <Button
-                          variant="secondary"
-                          size="icon"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handlePass(profile.id);
-                          }}
-                          className="rounded-full aspect-square h-10 w-10 sm:h-11 sm:w-11 md:h-11 md:w-11 shrink-0 p-0 flex items-center justify-center bg-white/95 backdrop-blur-md text-rose-600 border border-white/70 hover:bg-white hover:scale-105 active-press shadow-md hover:shadow-lg transition-all"
-                          title="Pass"
-                          aria-label="Pass"
-                        >
-                          <IconX className="h-5 w-5 sm:h-5.5 sm:w-5.5 stroke-[2.3]" />
-                        </Button>
-
-                        {/* Chat button: Round icon button */}
-                        <Button
-                          variant="secondary"
-                          size="icon"
-                          onClick={handleChatClick(profile.id)}
-                          className="rounded-full aspect-square h-9 w-9 sm:h-9.5 sm:w-9.5 md:h-9.5 md:w-9.5 shrink-0 p-0 bg-white/95 backdrop-blur-md text-[var(--foreground)] border border-white/60 shadow-sm hover:bg-white hover:scale-105 active-press flex items-center justify-center transition-all"
-                          title={`Chat with ${profile.name}`}
-                          aria-label="Chat"
-                        >
-                          <IconMessageCircleFilled className="h-4 w-4 sm:h-4.5 sm:w-4.5 text-[var(--primary)] shrink-0" />
-                        </Button>
-
-                        {/* Favorite button: Round icon button */}
-                        <Button
-                          variant={isShortlisted ? 'primary' : 'outline'}
-                          size="icon"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleShortlist(profile.id, profile.name);
-                          }}
-                          className={cn(
-                            'rounded-full aspect-square h-9 w-9 sm:h-9.5 sm:w-9.5 md:h-9.5 md:w-9.5 shrink-0 p-0 border shadow-sm active-press transition-all flex items-center justify-center',
-                            isShortlisted
-                              ? 'bg-gradient-to-tr from-[#D8B28C] via-[#C99757] to-[#9B6C2E] text-white border-[#EEDCC8]/60 hover:brightness-110 hover:scale-105 shadow-amber-950/20'
-                              : 'bg-white/95 backdrop-blur-md text-[var(--foreground)] border border-white/60 hover:bg-white hover:scale-105'
-                          )}
-                          title={isShortlisted ? 'Favorited' : `Add ${profile.name} to favorites`}
-                          aria-label={isShortlisted ? 'Favorited' : 'Favorite'}
-                        >
-                          <IconStarFilled
-                            className={cn(
-                              'h-4 w-4 sm:h-4.5 sm:w-4.5 shrink-0',
-                              isShortlisted ? 'text-white' : 'text-[#C99757]'
-                            )}
-                          />
-                        </Button>
+                    {/* Top Badges */}
+                    <div className="absolute top-3 left-3 right-3 flex items-center justify-between gap-1.5 z-10">
+                      <div className="flex items-center gap-1.5">
+                        {isInterestSent ? (
+                          <Badge
+                            tone="accent"
+                            size="sm"
+                            className="bg-emerald-600/95 text-white font-bold backdrop-blur-md border-emerald-400/50 shadow-xs"
+                          >
+                            ✓ Interest Sent
+                          </Badge>
+                        ) : isInterestReceived ? (
+                          <Badge
+                            tone="accent"
+                            size="sm"
+                            className="bg-gradient-to-r from-rose-600 to-pink-600 text-white font-bold backdrop-blur-md border-rose-400/50 shadow-xs"
+                          >
+                            ♥ Sent You an Interest
+                          </Badge>
+                        ) : profile.online ? (
+                          <Badge
+                            tone="neutral"
+                            size="sm"
+                            dot
+                            dotColor="bg-emerald-500"
+                            className="bg-white/90 backdrop-blur-md text-[var(--foreground)] border-white/80 font-medium"
+                          >
+                            Online now
+                          </Badge>
+                        ) : profile.lastActiveAt ? (
+                          <Badge
+                            tone="neutral"
+                            size="sm"
+                            className="bg-black/50 text-white/95 backdrop-blur-md border-white/20 text-[10px] font-medium"
+                          >
+                            {formatLastActive(profile.lastActiveAt)}
+                          </Badge>
+                        ) : null}
                       </div>
 
-                      {/* Right Hero Action: 3D Expandable "Send Interest" / "Accept" Pill Button in Luxury Burgundy */}
-                      <Button
-                        variant={isInterestSent ? "secondary" : "primary"}
-                        disabled={isInterestSent}
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          if (isInterestSent) return;
-                          handleSendInterest(profile.id, profile.name);
-                        }}
-                        className={cn(
-                          "flex-1 min-w-0 h-10 sm:h-11 md:h-11 rounded-full px-2.5 sm:px-3 font-bold text-xs sm:text-sm flex items-center justify-center gap-1 sm:gap-1.5 transition-all duration-150 select-none truncate",
-                          isInterestSent
-                            ? "bg-white/95 backdrop-blur-md border border-[var(--champagne-border)] text-[var(--primary)] shadow-sm cursor-default"
-                            : isInterestReceived
-                            ? "bg-gradient-to-b from-emerald-500 via-emerald-600 to-teal-700 text-white border-t border-t-white/40 border-x border-x-emerald-600/50 border-b-[3px] border-b-teal-950 shadow-[0_4px_12px_rgba(16,185,129,0.45),inset_0_1.5px_1px_rgba(255,255,255,0.4)] hover:brightness-105 active:scale-100 active:translate-y-[2px] active:border-b-[1px] active:shadow-[0_2px_5px_rgba(16,185,129,0.35)]"
-                            : "bg-gradient-to-b from-[#9E1D3B] via-[#801835] to-[#5E0E24] text-white border-t border-t-white/35 border-x border-x-[#72122B]/60 border-b-[3px] sm:border-b-[3.5px] border-b-[#420816] shadow-[0_4px_12px_rgba(94,14,36,0.5),inset_0_1.5px_1px_rgba(255,255,255,0.35)] hover:brightness-110 hover:-translate-y-0.5 hover:shadow-[0_5px_16px_rgba(94,14,36,0.6),inset_0_1.5px_1px_rgba(255,255,255,0.35)] active:scale-100 active:translate-y-[2px] active:border-b-[1px] active:shadow-[0_2px_5px_rgba(94,14,36,0.3)]"
-                        )}
-                        title={
-                          isInterestSent
-                            ? "Interest already sent"
-                            : isInterestReceived
-                            ? "Accept Interest & Connect"
-                            : "Send Interest"
-                        }
-                        aria-label="Send Interest"
-                      >
-                        {isInterestSent ? (
-                          <>
-                            <IconCheck className="h-3.5 w-3.5 sm:h-4 sm:w-4 shrink-0 stroke-[2.8] text-[var(--primary)]" />
-                            <span className="truncate text-[var(--primary)] font-bold">Sent</span>
-                          </>
-                        ) : isInterestReceived ? (
-                          <>
-                            <IconHeartFilled className="h-3.5 w-3.5 sm:h-4 sm:w-4 shrink-0 text-white drop-shadow-[0_1px_1.5px_rgba(0,0,0,0.35)]" />
-                            <span className="truncate tracking-wide drop-shadow-[0_1px_1.5px_rgba(0,0,0,0.35)]">Accept</span>
-                          </>
-                        ) : (
-                          <>
-                            <IconHeartFilled className="h-3.5 w-3.5 sm:h-4 sm:w-4 shrink-0 text-white drop-shadow-[0_1px_1.5px_rgba(0,0,0,0.35)]" />
-                            <span className="truncate tracking-wide drop-shadow-[0_1px_1.5px_rgba(0,0,0,0.35)]">Connect</span>
-                          </>
-                        )}
-                      </Button>
+                      <span className="inline-block rounded-full bg-white/85 backdrop-blur-md text-[var(--primary-deep)] px-2.5 py-0.5 text-[10px] font-semibold border border-white/60 shadow-xs">
+                        ✓ Matches
+                      </span>
+                    </div>
+
+                    {/* Identity & Action Overlay on Photo */}
+                    <div className="absolute inset-x-0 bottom-0 p-4 sm:p-5 text-white z-10 space-y-1.5">
+                      <div className="flex items-center gap-2">
+                        <h3 className="font-editorial-title text-xl font-bold tracking-tight text-white drop-shadow-sm truncate group-hover:text-[var(--accent-light)] transition-colors">
+                          {profile.name}, {profile.age}
+                        </h3>
+                        {profile.verified && <VerificationBadge type="general" showIconOnly size="sm" />}
+                      </div>
+
+                      {(profile.profession || profile.education) && (
+                        <p className="text-xs font-semibold text-white/90 truncate">
+                          {[profile.profession, profile.education].filter(Boolean).join(' · ')}
+                        </p>
+                      )}
+
+                      {(profile.city || profile.state) && (
+                        <p className="flex items-center gap-1 text-xs text-white/85 truncate">
+                          <IconMapPin className="h-3.5 w-3.5 text-[var(--accent)] shrink-0" />
+                          <span>
+                            {[profile.city, profile.state].filter(Boolean).join(', ')}
+                          </span>
+                        </p>
+                      )}
+
+                      {/* Matrimonial Discovery Actions: Option 1 Hero Connect Pill + Left Quick-Actions */}
+                      <div className="w-full pt-2.5 sm:pt-3 flex items-center gap-1.5 sm:gap-2 max-w-full">
+                        {/* Left Quick Actions: Pass, Chat, Star */}
+                        <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
+                          {/* Pass button: Round icon button */}
+                          <Button
+                            variant="secondary"
+                            size="icon"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handlePass(profile.id);
+                            }}
+                            className="rounded-full aspect-square h-10 w-10 sm:h-11 sm:w-11 md:h-11 md:w-11 shrink-0 p-0 flex items-center justify-center bg-white/95 backdrop-blur-md text-rose-600 border border-white/70 hover:bg-white hover:scale-105 active-press shadow-md hover:shadow-lg transition-all"
+                            title="Pass"
+                            aria-label="Pass"
+                          >
+                            <IconX className="h-5 w-5 sm:h-5.5 sm:w-5.5 stroke-[2.3]" />
+                          </Button>
+
+                          {/* Chat button: Round icon button */}
+                          <Button
+                            variant="secondary"
+                            size="icon"
+                            onClick={handleChatClick(profile.id)}
+                            className="rounded-full aspect-square h-9 w-9 sm:h-9.5 sm:w-9.5 md:h-9.5 md:w-9.5 shrink-0 p-0 bg-white/95 backdrop-blur-md text-[var(--foreground)] border border-white/60 shadow-sm hover:bg-white hover:scale-105 active-press flex items-center justify-center transition-all"
+                            title={`Chat with ${profile.name}`}
+                            aria-label="Chat"
+                          >
+                            <IconMessageCircleFilled className="h-4 w-4 sm:h-4.5 sm:w-4.5 text-[var(--primary)] shrink-0" />
+                          </Button>
+
+                          {/* Favorite button: Round icon button */}
+                          <Button
+                            variant={isShortlisted ? 'primary' : 'outline'}
+                            size="icon"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleShortlist(profile.id, profile.name);
+                            }}
+                            className={cn(
+                              'rounded-full aspect-square h-9 w-9 sm:h-9.5 sm:w-9.5 md:h-9.5 md:w-9.5 shrink-0 p-0 border shadow-sm active-press transition-all flex items-center justify-center',
+                              isShortlisted
+                                ? 'bg-gradient-to-tr from-[#D8B28C] via-[#C99757] to-[#9B6C2E] text-white border-[#EEDCC8]/60 hover:brightness-110 hover:scale-105 shadow-amber-950/20'
+                                : 'bg-white/95 backdrop-blur-md text-[var(--foreground)] border border-white/60 hover:bg-white hover:scale-105'
+                            )}
+                            title={isShortlisted ? 'Favorited' : `Add ${profile.name} to favorites`}
+                            aria-label={isShortlisted ? 'Favorited' : 'Favorite'}
+                          >
+                            <IconStarFilled
+                              className={cn(
+                                'h-4 w-4 sm:h-4.5 sm:w-4.5 shrink-0',
+                                isShortlisted ? 'text-white' : 'text-[#C99757]'
+                              )}
+                            />
+                          </Button>
+                        </div>
+
+                        {/* Right Hero Action: 3D Expandable "Send Interest" / "Accept" Pill Button in Luxury Burgundy */}
+                        <Button
+                          variant={isInterestSent ? "secondary" : "primary"}
+                          disabled={isInterestSent}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            if (isInterestSent) return;
+                            handleSendInterest(profile.id, profile.name);
+                          }}
+                          className={cn(
+                            "flex-1 min-w-0 h-10 sm:h-11 md:h-11 rounded-full px-2.5 sm:px-3 font-bold text-xs sm:text-sm flex items-center justify-center gap-1 sm:gap-1.5 transition-all duration-150 select-none truncate",
+                            isInterestSent
+                              ? "bg-white/95 backdrop-blur-md border border-[var(--champagne-border)] text-[var(--primary)] shadow-sm cursor-default"
+                              : isInterestReceived
+                                ? "bg-gradient-to-b from-emerald-500 via-emerald-600 to-teal-700 text-white border-t border-t-white/40 border-x border-x-emerald-600/50 border-b-[3px] border-b-teal-950 shadow-[0_4px_12px_rgba(16,185,129,0.45),inset_0_1.5px_1px_rgba(255,255,255,0.4)] hover:brightness-105 active:scale-100 active:translate-y-[2px] active:border-b-[1px] active:shadow-[0_2px_5px_rgba(16,185,129,0.35)]"
+                                : "bg-gradient-to-b from-[#9E1D3B] via-[#801835] to-[#5E0E24] text-white border-t border-t-white/35 border-x border-x-[#72122B]/60 border-b-[3px] sm:border-b-[3.5px] border-b-[#420816] shadow-[0_4px_12px_rgba(94,14,36,0.5),inset_0_1.5px_1px_rgba(255,255,255,0.35)] hover:brightness-110 hover:-translate-y-0.5 hover:shadow-[0_5px_16px_rgba(94,14,36,0.6),inset_0_1.5px_1px_rgba(255,255,255,0.35)] active:scale-100 active:translate-y-[2px] active:border-b-[1px] active:shadow-[0_2px_5px_rgba(94,14,36,0.3)]"
+                          )}
+                          title={
+                            isInterestSent
+                              ? "Interest already sent"
+                              : isInterestReceived
+                                ? "Accept Interest & Connect"
+                                : "Send Interest"
+                          }
+                          aria-label="Send Interest"
+                        >
+                          {isInterestSent ? (
+                            <>
+                              <IconCheck className="h-3.5 w-3.5 sm:h-4 sm:w-4 shrink-0 stroke-[2.8] text-[var(--primary)]" />
+                              <span className="truncate text-[var(--primary)] font-bold">Sent</span>
+                            </>
+                          ) : isInterestReceived ? (
+                            <>
+                              <IconHeartFilled className="h-3.5 w-3.5 sm:h-4 sm:w-4 shrink-0 text-white drop-shadow-[0_1px_1.5px_rgba(0,0,0,0.35)]" />
+                              <span className="truncate tracking-wide drop-shadow-[0_1px_1.5px_rgba(0,0,0,0.35)]">Accept</span>
+                            </>
+                          ) : (
+                            <>
+                              <IconHeartFilled className="h-3.5 w-3.5 sm:h-4 sm:w-4 shrink-0 text-white drop-shadow-[0_1px_1.5px_rgba(0,0,0,0.35)]" />
+                              <span className="truncate tracking-wide drop-shadow-[0_1px_1.5px_rgba(0,0,0,0.35)]">Connect</span>
+                            </>
+                          )}
+                        </Button>
+                      </div>
                     </div>
                   </div>
-                </div>
-              </Card>
-            );
-          })}
-        </div>
-      </>
-    )}
+                </Card>
+              );
+            })}
+          </div>
+        </>
+      )}
 
       {/* ======================================================== */}
       {/* 4. COMPACT FILTERS DRAWER / BOTTOM SHEET                 */}
@@ -1614,30 +1692,30 @@ export default function DiscoverPage() {
                 {selectedCategory === 'Friendship'
                   ? 'Friendship Connections'
                   : selectedCategory === 'Living Together'
-                  ? 'Living Together'
-                  : 'Foundation Matchmaking'}
+                    ? 'Living Together'
+                    : 'Foundation Matchmaking'}
               </span>
             </div>
             <div className="flex flex-wrap gap-2">
               {(selectedCategory === 'Friendship'
                 ? [
-                    { value: 'any', label: 'All Genders (Friends)' },
-                    { value: 'women', label: 'Women' },
-                    { value: 'men', label: 'Men' },
-                  ]
+                  { value: 'any', label: 'All Genders (Friends)' },
+                  { value: 'women', label: 'Women' },
+                  { value: 'men', label: 'Men' },
+                ]
                 : myGender === 'male' || myGender === 'man'
-                ? [
+                  ? [
                     { value: 'women', label: 'Seeking Brides (Women)' },
                   ]
-                : myGender === 'female' || myGender === 'woman'
-                ? [
-                    { value: 'men', label: 'Seeking Grooms (Men)' },
-                  ]
-                : [
-                    { value: 'any', label: 'All Genders' },
-                    { value: 'women', label: 'Women' },
-                    { value: 'men', label: 'Men' },
-                  ]
+                  : myGender === 'female' || myGender === 'woman'
+                    ? [
+                      { value: 'men', label: 'Seeking Grooms (Men)' },
+                    ]
+                    : [
+                      { value: 'any', label: 'All Genders' },
+                      { value: 'women', label: 'Women' },
+                      { value: 'men', label: 'Men' },
+                    ]
               ).map((g) => (
                 <Chip
                   key={g.value}

@@ -22,3 +22,5 @@ export * from "./employment-status-selector";
 export * from "./modern-select";
 export * from "./celebration-modal";
 export * from "./modern-otp-input";
+export * from "./integer-input";
+export * from "./registration-badge";

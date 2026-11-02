@@ -11,6 +11,8 @@ export type Profile = {
   education: string;
   employmentStatus?: string;
   annualIncome?: string;
+  workingPlace?: string;
+  workLocation?: string;
   gender?: string;
   category?: string;
   profileFor?: string;
@@ -64,26 +66,30 @@ export function formatLastActive(dateStr?: string): string {
 }
 
 export const getProfileUniqueId = (profile?: { id?: string; profileId?: string } | null): string => {
-  if (!profile) return 'IC-10001';
+  if (!profile) return 'IMC-A00001';
   if (profile.profileId) {
-    return profile.profileId.toUpperCase();
+    return profile.profileId.toUpperCase().replace(/^LT-/i, 'IMC-');
   }
   if (profile.id) {
-    if (profile.id.toUpperCase().startsWith('IC-')) {
-      return profile.id.toUpperCase();
+    const upper = profile.id.toUpperCase();
+    if (upper.startsWith('IMC-')) {
+      return upper;
+    }
+    if (upper.startsWith('LT-') || upper.startsWith('IC-')) {
+      return upper.replace(/^(?:LT|IC)-/i, 'IMC-');
     }
     const clean = profile.id.replace(/[^a-zA-Z0-9]/g, '').toUpperCase();
     if (clean.length >= 6) {
-      return `IC-${clean.substring(0, 6)}`;
+      return `IMC-${clean.substring(0, 6)}`;
     }
     let hash = 0;
     for (let i = 0; i < profile.id.length; i++) {
       hash = (hash << 5) - hash + profile.id.charCodeAt(i);
       hash |= 0;
     }
-    return `IC-${Math.abs(hash % 90000) + 10000}`;
+    return `IMC-${Math.abs(hash % 90000) + 10000}`;
   }
-  return 'IC-10001';
+  return 'IMC-A00001';
 };
 
 export const profiles: Profile[] = [];
@@ -91,3 +97,69 @@ export const receivedInterests: Profile[] = [];
 export const sentInterests: Profile[] = [];
 export const conversations: any[] = [];
 export const notifications: any[] = [];
+
+export interface RegistrationBadgeInfo {
+  label: string;
+  icon: string;
+  category: 'Marriage' | 'Friendship' | 'Living Together';
+  subType?: string;
+  className: string;
+}
+
+export const getRegistrationBadge = (
+  profile?: {
+    category?: string;
+    profileFor?: string;
+    state?: string;
+    city?: string;
+    motherTongue?: string;
+  } | null
+): RegistrationBadgeInfo => {
+  const rawCat = (profile?.category || profile?.profileFor || 'Marriage').toLowerCase().trim();
+  const state = (profile?.state || '').toLowerCase().trim();
+  const language = (profile?.motherTongue || '').toLowerCase().trim();
+
+  if (rawCat.includes('friend')) {
+    return {
+      label: 'Friendship',
+      icon: '🤝',
+      category: 'Friendship',
+      className: 'border-emerald-200 bg-emerald-50 text-emerald-800',
+    };
+  }
+
+  if (rawCat.includes('living')) {
+    return {
+      label: 'Living Together',
+      icon: '🏡',
+      category: 'Living Together',
+      className: 'border-indigo-200 bg-indigo-50 text-indigo-800',
+    };
+  }
+
+  // Marriage category: determine region/sub-domain (e.g. Kerala, Telugu, Bharat)
+  let region = 'Kerala';
+  if (state.includes('kerala') || language.includes('malayalam')) {
+    region = 'Kerala';
+  } else if (state.includes('andhra') || state.includes('telangana') || language.includes('telugu')) {
+    region = 'Telugu';
+  } else if (state.includes('tamil') || language.includes('tamil')) {
+    region = 'Tamil';
+  } else if (state.includes('karnataka') || language.includes('kannada')) {
+    region = 'Kannada';
+  } else if (state.includes('maharashtra') || language.includes('marathi')) {
+    region = 'Marathi';
+  } else if (profile?.state && profile.state.trim().length > 0) {
+    region = profile.state.trim();
+  } else {
+    region = 'Bharat';
+  }
+
+  return {
+    label: `Marriage - ${region} Matrimony`,
+    icon: '💍',
+    category: 'Marriage',
+    subType: `${region} Matrimony`,
+    className: 'border-[#F2D1DA] bg-[#FAF0F3] text-[#80132E]',
+  };
+};

@@ -162,7 +162,7 @@ export default function PublicSupportPage() {
             <p className="font-semibold text-rose-950">To request an expedited account review:</p>
             <ol className="list-decimal list-inside space-y-1 pl-1">
               <li>Send an email to <a href={CONTACT_INFO.emailMailto} className="font-bold underline text-[var(--primary)]">{CONTACT_INFO.email}</a> or message us on WhatsApp.</li>
-              <li>Include your registered email address or mobile number, and your Profile ID (e.g. LT-A00025).</li>
+              <li>Include your registered email address or mobile number, and your Profile ID (e.g. IMC-A00025).</li>
               <li>Our Trust & Safety team will review your account status and respond within 24 business hours.</li>
             </ol>
           </div>

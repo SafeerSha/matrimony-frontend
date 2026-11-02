@@ -1,5 +1,7 @@
 'use client';
 
+import { RegistrationCategoryBadge } from '@/components/ui/registration-badge';
+
 import React, { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
@@ -622,15 +624,18 @@ function SettingsContent() {
                         <IconShieldCheck className="h-5 w-5" />
                       </div>
                       <div className="min-w-0 flex-1">
-                        <h4 className="text-xs font-bold text-[#211B1E]">Matrimony Profile ID</h4>
+                        <h4 className="text-xs font-bold text-[#211B1E]">IshtamChat Profile ID</h4>
                         <p className="text-[11px] text-[#766B6F] mt-0.5">
                           Unique verified identifier for support and relationship managers
                         </p>
                       </div>
                     </div>
-                    <span className="font-bold text-xs tracking-wider text-[#7A1835] bg-[#FAF3EC] border border-[#EAD8C7] px-3 py-1.5 rounded-xl self-start sm:self-auto shrink-0">
-                      {currentUser?.profileId || (currentUser as any)?.user?.profileId || 'ISHTAM-ID'}
-                    </span>
+                    <div className="flex items-center gap-2 self-start sm:self-auto shrink-0 flex-wrap">
+                      <span className="font-bold text-xs tracking-wider text-[#7A1835] bg-[#FAF3EC] border border-[#EAD8C7] px-3 py-1.5 rounded-xl">
+                        {(currentUser?.profileId || (currentUser as any)?.user?.profileId || 'IMC-A00001').replace(/^LT-/i, 'IMC-')}
+                      </span>
+                      <RegistrationCategoryBadge profile={currentUser?.profile || currentUser} />
+                    </div>
                   </div>
 
                   {/* Row: Membership Plan */}

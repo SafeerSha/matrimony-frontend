@@ -41,6 +41,8 @@ export interface UserProfile {
   profession?: string;
   employmentStatus?: string;
   annualIncome?: string;
+  workingPlace?: string;
+  workLocation?: string;
   height?: number;
   avatarUrl?: string;
   photoUrl?: string;
@@ -62,6 +64,9 @@ export interface UserProfile {
   sistersCount?: number;
   sistersMarried?: number;
   familyDetails?: any;
+  category?: string;
+  profileFor?: string;
+  profile?: any;
   lookingFor?: string;
   photos?: ProfilePhoto[];
   preferences?: any;
@@ -144,6 +149,8 @@ export const profileService = {
     employmentStatus?: string;
     annualIncome?: string;
     income?: string;
+    workingPlace?: string;
+    workLocation?: string;
     height?: string | number;
     religion?: string;
     caste?: string;

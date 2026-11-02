@@ -38,7 +38,7 @@ import {
   IconEdit,
   IconX,
 } from '@tabler/icons-react';
-import { getProfileUniqueId, formatLastActive } from '@/lib/demo-data';
+import { getProfileUniqueId, formatLastActive, getRegistrationBadge } from '@/lib/demo-data';
 import { PageLoader } from '@/components/ui/page-loader';
 import { Avatar } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
@@ -47,6 +47,7 @@ import { Card } from '@/components/ui/card';
 import { Chip } from '@/components/ui/chip';
 import { VerificationBadge } from '@/components/ui/verification-badge';
 import { ProfileCard } from '@/components/profile/profile-card';
+import { RegistrationCategoryBadge } from '@/components/ui/registration-badge';
 import { matchesService, profileService } from '@/services';
 import { toast } from '@/lib/toast';
 import { useSubscription } from '@/context/subscription-context';
@@ -709,9 +710,14 @@ export function ProfileDetail({
                       Declined
                     </span>
                   )}
-                  <span className="text-xs font-semibold text-[var(--muted)]">
-                    Profile ID: {getProfileUniqueId(profile)}
-                  </span>
+                  <div className="inline-flex items-center gap-1.5 rounded-xl border border-[#EAD8C7] bg-[#FAF3EC] px-2.5 py-0.5 text-xs font-bold text-[#5C1027] shadow-2xs">
+                    <span className="text-[10px] font-bold uppercase tracking-wider text-[#8C5D30]">
+                      IshtamChat ID:
+                    </span>
+                    <span>{getProfileUniqueId(profile)}</span>
+                  </div>
+
+                  <RegistrationCategoryBadge profile={profile} size="sm" />
                 </div>
 
                 <div className="mt-2.5 flex items-center gap-2.5">
@@ -1136,7 +1142,7 @@ export function ProfileDetail({
                   Working Location
                 </p>
                 <p className="mt-1 text-sm font-bold text-[var(--foreground)]">
-                  {[profile.city, profile.state].filter(Boolean).join(', ') || 'Not specified'}
+                  {profile.workingPlace || (profile as any).workLocation || [profile.city, profile.state].filter(Boolean).join(', ') || 'Not specified'}
                 </p>
               </div>
 

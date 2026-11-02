@@ -32,7 +32,7 @@ import { matchesService, authService, chatService, profileService } from '@/serv
 import { toast } from '@/lib/toast';
 import { useSubscription } from '@/context/subscription-context';
 import { cn } from '@/lib/cn';
-import { type Profile, formatLastActive } from '@/lib/demo-data';
+import { type Profile, formatLastActive, getRegistrationBadge } from '@/lib/demo-data';
 
 function SafeCardImage({ src, alt, name }: { src?: string | null; alt: string; name: string }) {
   const [error, setError] = useState(false);
@@ -123,6 +123,10 @@ export default function DashboardPage() {
         }
         if (profileRes.status === 'fulfilled' && profileRes.value) {
           setUserProfile(profileRes.value);
+          try {
+            const badge = getRegistrationBadge(profileRes.value);
+            localStorage.setItem('ishtam_user_category', badge.category);
+          } catch {}
         }
 
         // 2. Fetch recommendations
