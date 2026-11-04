@@ -346,19 +346,36 @@ export function ProfileDetail({
       return;
     }
     if (!profile || isDeclined) return;
+    const nextState = !isShortlisted;
+    setIsShortlisted(nextState);
+
+    // Sync localStorage cache for favorites
     try {
-      await matchesService.shortlistProfile(profile.id);
-      setIsShortlisted(!isShortlisted);
+      const meRes = await profileService.getProfile('me').catch(() => null);
+      const uid = (meRes as any)?.user?.id || (meRes as any)?.userId || (meRes as any)?.id;
+      const userStorageKey = uid ? `ishtam_shortlisted_${uid}_by_me` : null;
+      if (userStorageKey && typeof window !== 'undefined') {
+        const stored = JSON.parse(localStorage.getItem(userStorageKey) || '[]');
+        const updated = nextState
+          ? Array.from(new Set([...stored, profile.id]))
+          : stored.filter((id: string) => id !== profile.id && id !== profile.profileId);
+        localStorage.setItem(userStorageKey, JSON.stringify(updated));
+      }
+    } catch {}
+
+    try {
+      if (nextState) {
+        await matchesService.shortlistProfile(profile.id);
+      } else {
+        await matchesService.removeShortlist(profile.id);
+      }
       toast.success(
-        isShortlisted ? 'Removed from Favorites' : 'Profile Favorited',
-        `${profile.name} has been ${isShortlisted ? 'removed from' : 'added to'} your shortlisted profiles.`
+        nextState ? 'Profile Favorited' : 'Removed from Favorites',
+        `${profile.name} has been ${nextState ? 'added to' : 'removed from'} your favorites.`
       );
     } catch {
-      setIsShortlisted(!isShortlisted);
-      toast.success(
-        isShortlisted ? 'Removed from Favorites' : 'Profile Favorited',
-        `${profile.name} has been ${isShortlisted ? 'removed from' : 'added to'} your favorites.`
-      );
+      setIsShortlisted(!nextState);
+      toast.error('Action Failed', 'Could not update favorites. Please try again.');
     }
   };
 

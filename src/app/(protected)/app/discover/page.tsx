@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useState, useMemo } from 'react';
+import React, { useEffect, useState, useMemo, useCallback, useRef } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import {
@@ -27,6 +27,8 @@ import {
   IconHeartFilled,
   IconRotateClockwise,
   IconHeartHandshake,
+  IconCrown,
+  IconWorld,
   IconHomeHeart,
   IconSparkles,
 } from '@tabler/icons-react';
@@ -51,6 +53,168 @@ import { type Profile, formatLastActive, getRegistrationBadge } from '@/lib/demo
 
 export type DiscoveryViewMode = 'swipe' | 'grid';
 export type SortOption = 'recommended' | 'recent' | 'new' | 'nearby';
+export function getStoredPreferences() {
+  if (typeof window !== 'undefined') {
+    try {
+      const raw = localStorage.getItem('ishtam_partner_preferences');
+      if (raw) return JSON.parse(raw);
+    } catch { }
+  }
+  return null;
+}
+
+function parsePreferencesToFilters(prefs: any) {
+  if (!prefs || typeof prefs !== 'object') return null;
+
+  const res: Record<string, any> = {};
+
+  const minA = Number(prefs.minAge);
+  if (!isNaN(minA) && minA >= 18) {
+    res.minAge = minA;
+  }
+  const maxA = Number(prefs.maxAge);
+  if (!isNaN(maxA) && maxA >= 18 && maxA >= (res.minAge || 18)) {
+    res.maxAge = maxA;
+  }
+  if (prefs.minHeight && prefs.minHeight !== 'null' && prefs.minHeight !== 'undefined') {
+    res.minHeight = String(prefs.minHeight);
+  }
+  if (prefs.maxHeight && prefs.maxHeight !== 'null' && prefs.maxHeight !== 'undefined') {
+    res.maxHeight = String(prefs.maxHeight);
+  }
+
+  // Locations -> City
+  const locs: string[] = Array.isArray(prefs.locations)
+    ? prefs.locations
+    : prefs.location
+      ? [prefs.location]
+      : [];
+  const validLocs = locs.filter(
+    (l: string) => l && l !== 'Any location' && l !== 'Open to all' && l !== 'All locations'
+  );
+  if (validLocs.length > 0) {
+    const cityOptions = [
+      'Kochi', 'Thrissur', 'Bengaluru', 'Calicut', 'Kottayam', 'Chennai', 'Trivandrum', 'Dubai/UAE',
+    ];
+    const matchedCity = cityOptions.find((c) =>
+      validLocs.some((loc: string) => loc.toLowerCase().includes(c.toLowerCase()) || c.toLowerCase().includes(loc.toLowerCase()))
+    );
+    if (matchedCity) {
+      res.city = matchedCity;
+    }
+  }
+
+  // Religions
+  const rels: string[] = Array.isArray(prefs.religions)
+    ? prefs.religions
+    : prefs.religion
+      ? [prefs.religion]
+      : [];
+  const validRels = rels.filter(
+    (r: string) => r && r !== 'Open to all communities' && r !== 'Any'
+  );
+  if (validRels.length > 0) {
+    const matchedRel = ['Hindu', 'Muslim', 'Christian', 'Inter-faith', 'Jain', 'Sikh'].find(
+      (r) => r.toLowerCase() === validRels[0].toLowerCase()
+    );
+    if (matchedRel) {
+      res.selectedReligion = matchedRel;
+    }
+  }
+
+  // Marital Status
+  const marrList: string[] = Array.isArray(prefs.maritalStatus)
+    ? prefs.maritalStatus
+    : prefs.maritalStatuses
+      ? [prefs.maritalStatuses]
+      : [];
+  const validMarr = marrList.filter((m: string) => m && m !== 'Any');
+  if (validMarr.length > 0) {
+    const marrOptions = ['Never married', 'Divorced', 'Widowed', 'Awaiting divorce'];
+    const matchedMarr = marrOptions.find((m) =>
+      validMarr.some((vm: string) => vm.toLowerCase() === m.toLowerCase())
+    );
+    if (matchedMarr) {
+      res.selectedMaritalStatus = matchedMarr;
+    }
+  }
+
+  // Caste
+  if (prefs.caste && prefs.caste !== 'Open to all' && prefs.caste !== 'Any') {
+    const casteOptions = [
+      'No Caste Bar', 'Nair', 'Ezhava', 'Brahmin', 'Sunni', 'Latin Catholic', 'Syrian Catholic', 'Viswakarma',
+    ];
+    const matchedCaste = casteOptions.find(
+      (c) => c.toLowerCase() === String(prefs.caste).toLowerCase()
+    );
+    res.selectedCaste = matchedCaste || String(prefs.caste);
+  }
+
+  // Diet
+  const dietList: string[] = Array.isArray(prefs.diet)
+    ? prefs.diet
+    : prefs.diet
+      ? [prefs.diet]
+      : [];
+  const validDiet = dietList.filter(
+    (d: string) => d && d !== "Doesn't Matter" && d !== 'Any'
+  );
+  if (validDiet.length > 0 && validDiet.length < 3) {
+    const dietOptions = ['Vegetarian', 'Eggetarian', 'Non-Vegetarian'];
+    const matchedDiet = dietOptions.find((d) =>
+      validDiet.some((vd: string) => vd.toLowerCase() === d.toLowerCase())
+    );
+    if (matchedDiet) {
+      res.selectedDiet = matchedDiet;
+    }
+  }
+
+  // Education
+  const eduList: string[] = Array.isArray(prefs.education)
+    ? prefs.education
+    : prefs.education
+      ? [prefs.education]
+      : [];
+  const validEdu = eduList.filter((e: string) => e && e !== 'Any qualification' && e !== 'Any');
+  if (validEdu.length > 0) {
+    const eduStr = validEdu.join(' ').toLowerCase();
+    if (eduStr.includes('doctorate') || eduStr.includes('phd')) {
+      res.selectedEducation = 'Doctorate';
+    } else if (eduStr.includes('master') || eduStr.includes('postgraduate')) {
+      res.selectedEducation = "Master's Degree";
+    } else if (eduStr.includes('bachelor') || eduStr.includes('graduate')) {
+      res.selectedEducation = "Bachelor's Degree";
+    } else if (eduStr.includes('professional') || eduStr.includes('mbbs') || eduStr.includes('ca')) {
+      res.selectedEducation = 'Professional Degree (MBBS/CA/LLB)';
+    }
+  }
+
+  // Profession
+  const profList: string[] = Array.isArray(prefs.professions)
+    ? prefs.professions
+    : prefs.occupations
+      ? [prefs.occupations]
+      : [];
+  const validProf = profList.filter((p: string) => p && p !== 'Any profession' && p !== 'Any');
+  if (validProf.length > 0) {
+    const profStr = validProf.join(' ').toLowerCase();
+    if (profStr.includes('software') || profStr.includes('it')) {
+      res.selectedProfession = 'Software / IT';
+    } else if (profStr.includes('doctor') || profStr.includes('healthcare') || profStr.includes('medical')) {
+      res.selectedProfession = 'Doctor / Healthcare';
+    } else if (profStr.includes('design') || profStr.includes('creative')) {
+      res.selectedProfession = 'Designer / Creative';
+    } else if (profStr.includes('civil') || profStr.includes('govt') || profStr.includes('government')) {
+      res.selectedProfession = 'Civil Services / Govt';
+    } else if (profStr.includes('finance') || profStr.includes('banking')) {
+      res.selectedProfession = 'Finance & Banking';
+    } else if (profStr.includes('entrepreneur') || profStr.includes('business')) {
+      res.selectedProfession = 'Entrepreneur / Business';
+    }
+  }
+
+  return res;
+}
 export type DiscoveryCategory = 'Marriage' | 'Friendship' | 'Live-In' | 'Living Together';
 
 export const CATEGORY_OPTIONS: Array<{
@@ -63,6 +227,23 @@ export const CATEGORY_OPTIONS: Array<{
     { id: 'Friendship', label: 'Friendship', icon: IconUsers, tag: '👥' },
     { id: 'Live-In', label: 'Live-In', icon: IconHomeHeart, tag: '🏡' },
   ];
+
+export type MarriageSubCategory = 'Kerala' | 'Telugu' | 'Bharat';
+
+export interface MarriageSubCategoryOption {
+  id: MarriageSubCategory;
+  label: string;
+  title: string;
+  badge: string;
+  icon: React.ComponentType<{ className?: string }>;
+  tag: string;
+}
+
+export const MARRIAGE_SUB_OPTIONS: MarriageSubCategoryOption[] = [
+  { id: 'Kerala', label: 'Kerala', title: 'Kerala Matrimony', badge: 'Malayali', icon: IconHeartHandshake, tag: '🌴' },
+  { id: 'Telugu', label: 'Telugu', title: 'Telugu Matrimony', badge: 'Telugu', icon: IconCrown, tag: '👑' },
+  { id: 'Bharat', label: 'Bharat', title: 'Bharat Matrimony', badge: 'Pan-India', icon: IconWorld, tag: '🌐' },
+];
 
 export const HEIGHT_OPTIONS = [
   "4'10\"", "4'11\"", "5'0\"", "5'1\"", "5'2\"", "5'3\"", "5'4\"", "5'5\"",
@@ -138,11 +319,28 @@ export default function DiscoverPage() {
 
   // Filters State
   const [isFilterOpen, setIsFilterOpen] = useState(false);
-  const [city, setCity] = useState('All locations');
-  const [minAge, setMinAge] = useState(21);
-  const [maxAge, setMaxAge] = useState(35);
-  const [minHeight, setMinHeight] = useState<string>("4'10\"");
-  const [maxHeight, setMaxHeight] = useState<string>("6'4\"");
+  const savedPreferencesRef = useRef<any>(null);
+
+  const [city, setCity] = useState(() => {
+    const parsed = parsePreferencesToFilters(getStoredPreferences());
+    return parsed?.city || 'All locations';
+  });
+  const [minAge, setMinAge] = useState(() => {
+    const parsed = parsePreferencesToFilters(getStoredPreferences());
+    return parsed?.minAge || 21;
+  });
+  const [maxAge, setMaxAge] = useState(() => {
+    const parsed = parsePreferencesToFilters(getStoredPreferences());
+    return parsed?.maxAge || 35;
+  });
+  const [minHeight, setMinHeight] = useState<string>(() => {
+    const parsed = parsePreferencesToFilters(getStoredPreferences());
+    return parsed?.minHeight || "4'10\"";
+  });
+  const [maxHeight, setMaxHeight] = useState<string>(() => {
+    const parsed = parsePreferencesToFilters(getStoredPreferences());
+    return parsed?.maxHeight || "6'4\"";
+  });
   const [registeredCategory, setRegisteredCategory] = useState<DiscoveryCategory>(() => {
     if (typeof window !== 'undefined') {
       try {
@@ -173,19 +371,56 @@ export default function DiscoverPage() {
     }
     return 'Marriage';
   });
+  const [selectedMarriageSubCategory, setSelectedMarriageSubCategory] = useState<MarriageSubCategory>(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        const urlParams = new URLSearchParams(window.location.search);
+        const urlSub = urlParams.get('subCategory') || urlParams.get('community');
+        if (urlSub) {
+          const lower = urlSub.toLowerCase();
+          if (lower.includes('telugu')) return 'Telugu';
+          if (lower.includes('bharat') || lower.includes('india')) return 'Bharat';
+          if (lower.includes('kerala')) return 'Kerala';
+        }
+        const cached = localStorage.getItem('ishtam_marriage_sub_category');
+        if (cached === 'Kerala' || cached === 'Telugu' || cached === 'Bharat') {
+          return cached as MarriageSubCategory;
+        }
+      } catch { }
+    }
+    return 'Kerala';
+  });
   const [isCategoryMenuOpen, setIsCategoryMenuOpen] = useState<boolean>(false);
   const [selectedGender, setSelectedGender] = useState<'any' | 'women' | 'men'>('any');
   const [myGender, setMyGender] = useState<string>('');
   const [isFriendshipUser, setIsFriendshipUser] = useState<boolean>(false);
-  const [selectedReligion, setSelectedReligion] = useState<string>('Any');
-  const [selectedCaste, setSelectedCaste] = useState<string>('Any');
-  const [selectedEducation, setSelectedEducation] = useState<string>('Any');
-  const [selectedProfession, setSelectedProfession] = useState<string>('Any');
+  const [selectedReligion, setSelectedReligion] = useState<string>(() => {
+    const parsed = parsePreferencesToFilters(getStoredPreferences());
+    return parsed?.selectedReligion || 'Any';
+  });
+  const [selectedCaste, setSelectedCaste] = useState<string>(() => {
+    const parsed = parsePreferencesToFilters(getStoredPreferences());
+    return parsed?.selectedCaste || 'Any';
+  });
+  const [selectedEducation, setSelectedEducation] = useState<string>(() => {
+    const parsed = parsePreferencesToFilters(getStoredPreferences());
+    return parsed?.selectedEducation || 'Any';
+  });
+  const [selectedProfession, setSelectedProfession] = useState<string>(() => {
+    const parsed = parsePreferencesToFilters(getStoredPreferences());
+    return parsed?.selectedProfession || 'Any';
+  });
   const [selectedIncome, setSelectedIncome] = useState<string>('Any');
-  const [selectedMaritalStatus, setSelectedMaritalStatus] = useState<string>('Any');
+  const [selectedMaritalStatus, setSelectedMaritalStatus] = useState<string>(() => {
+    const parsed = parsePreferencesToFilters(getStoredPreferences());
+    return parsed?.selectedMaritalStatus || 'Any';
+  });
   const [selectedLanguage, setSelectedLanguage] = useState<string>('Any');
   const [selectedIntent, setSelectedIntent] = useState<string>('Any');
-  const [selectedDiet, setSelectedDiet] = useState<string>("Doesn't Matter");
+  const [selectedDiet, setSelectedDiet] = useState<string>(() => {
+    const parsed = parsePreferencesToFilters(getStoredPreferences());
+    return parsed?.selectedDiet || "Doesn't Matter";
+  });
 
   // Shortlist and Interest tracking sets
   const [shortlistedIds, setShortlistedIds] = useState<Set<string>>(new Set());
@@ -198,6 +433,31 @@ export default function DiscoverPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [hasSeenSwipeHint, setHasSeenSwipeHint] = useState(true);
 
+  const applyPreferencesToState = useCallback((prefs: any) => {
+    const parsed = parsePreferencesToFilters(prefs);
+    if (!parsed) return;
+    if (parsed.minAge !== undefined) setMinAge(parsed.minAge);
+    if (parsed.maxAge !== undefined) setMaxAge(parsed.maxAge);
+    if (parsed.minHeight !== undefined) setMinHeight(parsed.minHeight);
+    if (parsed.maxHeight !== undefined) setMaxHeight(parsed.maxHeight);
+    if (parsed.city !== undefined) setCity(parsed.city);
+    if (parsed.selectedReligion !== undefined) setSelectedReligion(parsed.selectedReligion);
+    if (parsed.selectedMaritalStatus !== undefined) setSelectedMaritalStatus(parsed.selectedMaritalStatus);
+    if (parsed.selectedCaste !== undefined) setSelectedCaste(parsed.selectedCaste);
+    if (parsed.selectedDiet !== undefined) setSelectedDiet(parsed.selectedDiet);
+    if (parsed.selectedEducation !== undefined) setSelectedEducation(parsed.selectedEducation);
+    if (parsed.selectedProfession !== undefined) setSelectedProfession(parsed.selectedProfession);
+  }, []);
+
+  const handleApplySavedPreferences = useCallback(() => {
+    const prefs = savedPreferencesRef.current || getStoredPreferences();
+    if (prefs) {
+      applyPreferencesToState(prefs);
+      toast.success('Partner Preferences Applied', 'Your saved partner preferences are now active in Discover.');
+    } else {
+      toast.info('No Saved Preferences', 'Configure your preferences in Partner Preferences settings.');
+    }
+  }, [applyPreferencesToState]);
   useEffect(() => {
     try {
       const seen =
@@ -233,6 +493,26 @@ export default function DiscoverPage() {
         const userCat: DiscoveryCategory = badge.category;
         setRegisteredCategory(userCat);
 
+        // Auto-apply user's saved partner preferences to Discover filters
+        const serverPrefs = profile.preferences || profile.profile?.preferences;
+        if (serverPrefs && typeof serverPrefs === 'object') {
+          savedPreferencesRef.current = serverPrefs;
+          applyPreferencesToState(serverPrefs);
+          try {
+            localStorage.setItem('ishtam_partner_preferences', JSON.stringify(serverPrefs));
+          } catch { }
+        }
+
+        const userCommunity = (profile.profile?.community || profile.community || '').trim();
+        let detectedSub: MarriageSubCategory = 'Kerala';
+        if (userCommunity.toLowerCase().includes('telugu') || badge.subType?.toLowerCase().includes('telugu')) {
+          detectedSub = 'Telugu';
+        } else if (userCommunity.toLowerCase().includes('bharat') || badge.subType?.toLowerCase().includes('bharat')) {
+          detectedSub = 'Bharat';
+        } else if (userCommunity.toLowerCase().includes('kerala') || badge.subType?.toLowerCase().includes('kerala')) {
+          detectedSub = 'Kerala';
+        }
+
         if (typeof window !== 'undefined') {
           try {
             localStorage.setItem('ishtam_user_category', userCat);
@@ -244,7 +524,8 @@ export default function DiscoverPage() {
         setMyGender(g);
 
         // Check if an explicit ?category= parameter is present in URL
-        const urlCat = typeof window !== 'undefined' ? new URLSearchParams(window.location.search).get('category') : null;
+        const urlParams = typeof window !== 'undefined' ? new URLSearchParams(window.location.search) : null;
+        const urlCat = urlParams ? urlParams.get('category') : null;
         let activeCat = userCat;
         if (urlCat) {
           const lower = urlCat.toLowerCase();
@@ -254,6 +535,20 @@ export default function DiscoverPage() {
         }
 
         setSelectedCategory(activeCat);
+
+        const hasUrlSub = Boolean(urlParams?.has('subCategory') || urlParams?.has('community'));
+        if (!hasUrlSub) {
+          try {
+            const cached = localStorage.getItem('ishtam_marriage_sub_category');
+            if (cached === 'Kerala' || cached === 'Telugu' || cached === 'Bharat') {
+              setSelectedMarriageSubCategory(cached as MarriageSubCategory);
+            } else {
+              setSelectedMarriageSubCategory(detectedSub);
+            }
+          } catch {
+            setSelectedMarriageSubCategory(detectedSub);
+          }
+        }
 
         if (activeCat === 'Friendship') {
           // Friendship users see all genders by default
@@ -283,6 +578,7 @@ export default function DiscoverPage() {
           ? (selectedGender === 'women' || selectedGender === 'men' ? selectedGender : undefined)
           : (selectedGender !== 'any' ? selectedGender : undefined),
         category: selectedCategory,
+        community: selectedCategory === 'Marriage' ? selectedMarriageSubCategory : undefined,
       })
       .then((res: any) => {
         const rawList = (Array.isArray(res) ? res : res?.data || []).filter(
@@ -351,6 +647,7 @@ export default function DiscoverPage() {
               height: prof.height ? `${prof.height}cm` : '',
               gender: prof.gender || u.gender || '',
               category: prof.category || u.category || '',
+              community: prof.community || u.community || '',
               profileFor: prof.profileFor || u.profileFor || '',
               caste: prof.caste || u.caste || '',
               diet: prof.diet || u.diet || '',
@@ -397,7 +694,7 @@ export default function DiscoverPage() {
       .finally(() => {
         setIsLoading(false);
       });
-  }, [city, minAge, maxAge, selectedReligion, selectedMaritalStatus, selectedGender, selectedCategory]);
+  }, [city, minAge, maxAge, selectedReligion, selectedMaritalStatus, selectedGender, selectedCategory, selectedMarriageSubCategory]);
 
   // Filter & Sort computation
   const filteredProfiles = useMemo(() => {
@@ -420,6 +717,38 @@ export default function DiscoverPage() {
             : (selectedCategory === 'Live-In' || selectedCategory === 'Living Together')
               ? (!pCat || pCat.includes('living') || pCat.includes('live'))
               : (pCat.includes('marr') || (!pCat.includes('friend') && !pCat.includes('living') && !pCat.includes('live')));
+
+        if (!matchesCategory) return false;
+
+        // Marriage Sub-Category Match (Kerala, Telugu, Bharat)
+        if (selectedCategory === 'Marriage') {
+          const pComm = ((p as any).community || '').toLowerCase();
+          const pState = (p.state || '').toLowerCase();
+          const pTongue = (p.motherTongue || '').toLowerCase();
+          const pCity = (p.city || '').toLowerCase();
+
+          if (selectedMarriageSubCategory === 'Kerala') {
+            const isKerala =
+              pComm.includes('kerala') ||
+              pState.includes('kerala') ||
+              pTongue.includes('malayalam') ||
+              ['kochi', 'thrissur', 'calicut', 'kottayam', 'trivandrum', 'palakkad', 'kozhikode', 'ernakulam', 'kannur', 'alappuzha', 'kollam', 'malappuram', 'kasaragod', 'wayanad', 'pathanamthitta', 'idukki'].some((c) => pCity.includes(c)) ||
+              (!pComm && !pState && !pTongue && !pCity);
+            if (!isKerala) return false;
+          } else if (selectedMarriageSubCategory === 'Telugu') {
+            const isTelugu =
+              pComm.includes('telugu') ||
+              pState.includes('andhra') ||
+              pState.includes('telangana') ||
+              pTongue.includes('telugu') ||
+              ['hyderabad', 'visakhapatnam', 'vizag', 'vijayawada', 'guntur', 'warangal', 'tirupati', 'kurnool', 'nellore', 'rajahmundry'].some((c) => pCity.includes(c));
+            if (!isTelugu) return false;
+          } else if (selectedMarriageSubCategory === 'Bharat') {
+            // Bharat represents Pan-India. Matches all national profiles
+            const isBharat = true;
+            if (!isBharat) return false;
+          }
+        }
 
         // Foundation Matchmaking Gender match (All genders for friendship by default)
         const pGender = (p.gender || (p as any).sex || '').toLowerCase();
@@ -555,6 +884,8 @@ export default function DiscoverPage() {
     minHeight,
     maxHeight,
     selectedDiet,
+    selectedCategory,
+    selectedMarriageSubCategory,
     sortBy,
   ]);
 
@@ -601,9 +932,21 @@ export default function DiscoverPage() {
     selectedDiet,
   ]);
 
-  const handleCategoryChange = (cat: DiscoveryCategory) => {
-    if (cat === selectedCategory) return;
+  const handleMarriageSubCategoryChange = (sub: MarriageSubCategory) => {
+    setSelectedMarriageSubCategory(sub);
+    if (typeof window !== 'undefined') {
+      try {
+        localStorage.setItem('ishtam_marriage_sub_category', sub);
+      } catch { }
+    }
+  };
+
+  const handleCategoryChange = (cat: DiscoveryCategory, sub?: MarriageSubCategory) => {
+    if (cat === selectedCategory && (!sub || sub === selectedMarriageSubCategory)) return;
     setSelectedCategory(cat);
+    if (sub) {
+      handleMarriageSubCategoryChange(sub);
+    }
     if (cat === 'Friendship') {
       setSelectedGender('any');
     } else if (cat === 'Marriage' || cat === 'Live-In' || cat === 'Living Together') {
@@ -642,6 +985,7 @@ export default function DiscoverPage() {
     setSelectedIntent('Any');
     setSelectedDiet("Doesn't Matter");
     setSelectedCategory(registeredCategory);
+    setSelectedMarriageSubCategory('Kerala');
     setIsFilterOpen(false);
     toast.info('Filters Reset', `Showing all available ${registeredCategory.toLowerCase()} recommendations.`);
   };
@@ -670,6 +1014,11 @@ export default function DiscoverPage() {
         language: selectedLanguage !== 'Any' ? selectedLanguage : undefined,
       };
       await profileService.updatePreferences('me', preferencesPayload);
+      if (typeof window !== 'undefined') {
+        try {
+          localStorage.setItem('ishtam_partner_preferences', JSON.stringify(preferencesPayload));
+        } catch { }
+      }
     } catch (err) {
       console.warn('Failed auto-saving preferences in background:', err);
     }
@@ -733,26 +1082,46 @@ export default function DiscoverPage() {
 
   const handleShortlist = async (id: string, name: string) => {
     const isShortlisted = shortlistedIds.has(id);
+    const nextState = !isShortlisted;
+
+    setShortlistedIds((prev) => {
+      const next = new Set(prev);
+      if (nextState) next.add(id);
+      else next.delete(id);
+      return next;
+    });
+
     try {
-      await matchesService.shortlistProfile(id);
-      setShortlistedIds((prev) => {
-        const next = new Set(prev);
-        if (isShortlisted) next.delete(id);
-        else next.add(id);
-        return next;
-      });
+      const meRes = await profileService.getProfile('me').catch(() => null);
+      const uid = (meRes as any)?.user?.id || (meRes as any)?.userId || (meRes as any)?.id;
+      const userStorageKey = uid ? `ishtam_shortlisted_${uid}_by_me` : null;
+      if (userStorageKey && typeof window !== 'undefined') {
+        const stored = JSON.parse(localStorage.getItem(userStorageKey) || '[]');
+        const updated = nextState
+          ? Array.from(new Set([...stored, id]))
+          : stored.filter((item: string) => item !== id);
+        localStorage.setItem(userStorageKey, JSON.stringify(updated));
+      }
+    } catch {}
+
+    try {
+      if (nextState) {
+        await matchesService.shortlistProfile(id);
+      } else {
+        await matchesService.removeShortlist(id);
+      }
       toast.success(
-        isShortlisted ? 'Removed from Favorites' : 'Profile Favorited',
-        `${name} has been ${isShortlisted ? 'removed from' : 'added to'} your favorites.`
+        nextState ? 'Profile Favorited' : 'Removed from Favorites',
+        `${name} has been ${nextState ? 'added to' : 'removed from'} your favorites.`
       );
     } catch {
       setShortlistedIds((prev) => {
         const next = new Set(prev);
-        if (isShortlisted) next.delete(id);
-        else next.add(id);
+        if (isShortlisted) next.add(id);
+        else next.delete(id);
         return next;
       });
-      toast.success('Profile Favorited', `${name} added to your favorites.`);
+      toast.error('Action Failed', 'Could not update favorites. Please try again.');
     }
   };
 
@@ -999,38 +1368,62 @@ export default function DiscoverPage() {
       {/* ======================================================== */}
       {/* 1. TOP HEADER & VIEW MODE CONTROLS (Sticky on scroll)    */}
       {/* ======================================================== */}
-      <div className="sticky top-16 z-30 py-1.5 sm:py-2.5 bg-transparent pointer-events-none transition-all shrink-0">
-        <div className="flex items-center justify-between sm:justify-center w-full max-w-2xl mx-auto gap-2 shrink-0 pointer-events-auto">
+      <div className="sticky top-16 z-30 pt-1.5 pb-0.5 sm:pt-2 sm:pb-1 bg-transparent pointer-events-none transition-all shrink-0 px-2 sm:px-4">
+        <div className="flex items-center justify-between sm:justify-center w-full max-w-2xl mx-auto gap-1.5 shrink-0 pointer-events-auto">
           {/* View Switcher: Mobile only (hidden on desktop) */}
-          <div className="flex sm:hidden items-center h-[36px] bg-white/95 backdrop-blur-xl p-0.5 rounded-2xl border border-[var(--border)]/90 shadow-[0_4px_16px_rgba(20,10,15,0.08)] shrink-0">
+          <div className="flex sm:hidden items-center h-[36px] bg-white/95 backdrop-blur-xl p-0.5 rounded-2xl border border-[var(--border)]/90 shadow-[0_4px_16px_rgba(20,10,15,0.08)] shrink-0 transition-[width,padding] duration-200 ease-out">
             <button
               type="button"
               onClick={() => setViewMode('swipe')}
               aria-pressed={viewMode === 'swipe'}
+              aria-label="Swipe View"
               className={cn(
-                'focus-ring flex items-center gap-1 px-2.5 py-1 h-full rounded-xl text-[11px] font-bold transition-all active-press select-none cursor-pointer',
+                'focus-ring flex items-center justify-center px-2.5 h-full rounded-xl text-[11px] font-bold transition-colors duration-150 active-press select-none cursor-pointer',
                 viewMode === 'swipe'
                   ? 'bg-slate-100 text-[var(--primary)] shadow-xs'
                   : 'text-[var(--muted)] hover:text-[var(--foreground)]'
               )}
             >
-              <IconLayers className="h-3.5 w-3.5" />
-              <span>Swipe</span>
+              <IconLayers className="h-3.5 w-3.5 shrink-0" />
+              <span
+                className={cn(
+                  'grid transition-[grid-template-columns,opacity] duration-200 ease-out',
+                  selectedCategory === 'Marriage'
+                    ? 'grid-cols-[0fr] opacity-0'
+                    : 'grid-cols-[1fr] opacity-100'
+                )}
+              >
+                <span className="overflow-hidden whitespace-nowrap pl-1">
+                  Swipe
+                </span>
+              </span>
             </button>
 
             <button
               type="button"
               onClick={() => setViewMode('grid')}
               aria-pressed={viewMode === 'grid'}
+              aria-label="Grid View"
               className={cn(
-                'focus-ring flex items-center gap-1 px-2.5 py-1 h-full rounded-xl text-[11px] font-bold transition-all active-press select-none cursor-pointer',
+                'focus-ring flex items-center justify-center px-2.5 h-full rounded-xl text-[11px] font-bold transition-colors duration-150 active-press select-none cursor-pointer',
                 viewMode === 'grid'
                   ? 'bg-slate-100 text-[var(--primary)] shadow-xs'
                   : 'text-[var(--muted)] hover:text-[var(--foreground)]'
               )}
             >
-              <IconLayoutGrid className="h-3.5 w-3.5" />
-              <span>Grid</span>
+              <IconLayoutGrid className="h-3.5 w-3.5 shrink-0" />
+              <span
+                className={cn(
+                  'grid transition-[grid-template-columns,opacity] duration-200 ease-out',
+                  selectedCategory === 'Marriage'
+                    ? 'grid-cols-[0fr] opacity-0'
+                    : 'grid-cols-[1fr] opacity-100'
+                )}
+              >
+                <span className="overflow-hidden whitespace-nowrap pl-1">
+                  Grid
+                </span>
+              </span>
             </button>
           </div>
 
@@ -1044,13 +1437,31 @@ export default function DiscoverPage() {
                 aria-haspopup="listbox"
                 aria-expanded={isCategoryMenuOpen}
                 className={cn(
-                  'focus-ring flex items-center gap-1.5 sm:gap-2 h-[36px] sm:h-[38px] px-3 sm:px-3.5 rounded-2xl text-[11px] sm:text-xs font-bold transition-all active-press select-none cursor-pointer border shadow-[0_4px_16px_rgba(20,10,15,0.08)] backdrop-blur-xl',
+                  'focus-ring flex items-center gap-1.5 sm:gap-2 h-[36px] sm:h-[38px] px-2.5 sm:px-3.5 rounded-2xl text-[11px] sm:text-xs font-bold transition-colors duration-150 active-press select-none cursor-pointer border shadow-[0_4px_16px_rgba(20,10,15,0.08)] backdrop-blur-xl',
                   isCategoryMenuOpen
                     ? 'bg-stone-100 text-stone-900 border-stone-300'
                     : 'bg-white/95 text-stone-800 border-[var(--border)]/90 hover:bg-stone-50'
                 )}
               >
                 {(() => {
+                  if (selectedCategory === 'Marriage') {
+                    const currentSub = MARRIAGE_SUB_OPTIONS.find((s) => s.id === selectedMarriageSubCategory) || MARRIAGE_SUB_OPTIONS[0];
+                    const SubIcon = currentSub.icon;
+                    return (
+                      <>
+                        <SubIcon className="h-3.5 w-3.5 shrink-0 text-[#80132E]" />
+                        <span className="truncate max-w-[125px] xs:max-w-[145px] sm:max-w-none">
+                          Marriage - {currentSub.label}
+                        </span>
+                        <IconChevronDown
+                          className={cn(
+                            'h-3 w-3 sm:h-3.5 sm:w-3.5 shrink-0 text-stone-400 transition-transform duration-200',
+                            isCategoryMenuOpen && 'rotate-180'
+                          )}
+                        />
+                      </>
+                    );
+                  }
                   const currentOpt = CATEGORY_OPTIONS.find((c) => c.id === selectedCategory) || CATEGORY_OPTIONS[0];
                   const Icon = currentOpt.icon;
                   return (
@@ -1060,9 +1471,7 @@ export default function DiscoverPage() {
                           'h-3.5 w-3.5 shrink-0',
                           selectedCategory === 'Friendship'
                             ? 'text-emerald-600'
-                            : selectedCategory === 'Live-In' || selectedCategory === 'Living Together'
-                              ? 'text-indigo-600'
-                              : 'text-[#80132E]'
+                            : 'text-indigo-600'
                         )}
                       />
                       <span className="truncate max-w-[80px] xs:max-w-[95px] sm:max-w-none">{currentOpt.label}</span>
@@ -1084,59 +1493,111 @@ export default function DiscoverPage() {
                     className="fixed inset-0 z-40"
                     onClick={() => setIsCategoryMenuOpen(false)}
                   />
-                  <div className="absolute left-1/2 -translate-x-1/2 top-[calc(100%+6px)] z-50 w-56 rounded-2xl bg-white/98 backdrop-blur-2xl border border-[var(--border)] p-1.5 shadow-[0_12px_36px_rgba(20,10,15,0.18)] animate-scale-up">
-                    <div className="px-2.5 py-1.5 text-[10px] font-bold uppercase tracking-wider text-[var(--muted)]">
+                  <div className="absolute left-1/2 -translate-x-1/2 top-[calc(100%+6px)] z-50 w-64 rounded-2xl bg-white/98 backdrop-blur-2xl border border-[var(--border)] p-2 shadow-[0_16px_40px_rgba(20,10,15,0.18)] animate-scale-up">
+                    <div className="px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-[var(--muted)]">
                       SWITCH CONNECTION TYPE
                     </div>
-                    <div className="space-y-0.5">
+                    <div className="space-y-1 mt-1">
                       {CATEGORY_OPTIONS.map((cat) => {
                         const isSelected = selectedCategory === cat.id;
                         const isUserPlan = registeredCategory === cat.id;
                         const Icon = cat.icon;
+                        const isMarriage = cat.id === 'Marriage';
+
                         return (
-                          <button
-                            key={cat.id}
-                            type="button"
-                            onClick={() => {
-                              handleCategoryChange(cat.id);
-                              setIsCategoryMenuOpen(false);
-                            }}
-                            className={cn(
-                              'w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-semibold transition-colors cursor-pointer select-none',
-                              isSelected
-                                ? 'bg-rose-50 text-[var(--primary)] font-bold'
-                                : 'text-stone-700 hover:bg-stone-50 hover:text-stone-900'
-                            )}
-                          >
-                            <div className="flex items-center gap-2 min-w-0">
-                              <Icon
-                                className={cn(
-                                  'h-4 w-4 shrink-0',
-                                  cat.id === 'Friendship'
-                                    ? 'text-emerald-600'
-                                    : cat.id === 'Live-In' || cat.id === 'Living Together'
-                                      ? 'text-indigo-600'
-                                      : 'text-[#80132E]'
-                                )}
-                              />
-                              <span className="truncate">{cat.label}</span>
-                              {isUserPlan && (
-                                <span
-                                  className={cn(
-                                    'text-[9px] sm:text-[10px] font-bold px-1.5 py-0.5 rounded-full border shrink-0 tracking-wide',
-                                    cat.id === 'Friendship'
-                                      ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
-                                      : cat.id === 'Live-In' || cat.id === 'Living Together'
-                                        ? 'bg-indigo-50 text-indigo-700 border-indigo-200'
-                                        : 'bg-rose-50 text-[#80132E] border-rose-200'
-                                  )}
-                                >
-                                  Yours
-                                </span>
+                          <div key={cat.id} className="space-y-1">
+                            <button
+                              type="button"
+                              onClick={() => {
+                                handleCategoryChange(cat.id);
+                                if (!isMarriage) {
+                                  setIsCategoryMenuOpen(false);
+                                }
+                              }}
+                              className={cn(
+                                'w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-semibold transition-colors cursor-pointer select-none',
+                                isSelected
+                                  ? isMarriage
+                                    ? 'bg-rose-50 text-[var(--primary)] font-bold'
+                                    : cat.id === 'Friendship'
+                                      ? 'bg-emerald-50 text-emerald-800 font-bold'
+                                      : 'bg-indigo-50 text-indigo-800 font-bold'
+                                  : 'text-stone-700 hover:bg-stone-50 hover:text-stone-900'
                               )}
-                            </div>
-                            {isSelected && <IconCheck className="h-3.5 w-3.5 text-[var(--primary)] shrink-0" />}
-                          </button>
+                            >
+                              <div className="flex items-center gap-2 min-w-0">
+                                <Icon
+                                  className={cn(
+                                    'h-4 w-4 shrink-0',
+                                    cat.id === 'Friendship'
+                                      ? 'text-emerald-600'
+                                      : cat.id === 'Live-In' || cat.id === 'Living Together'
+                                        ? 'text-indigo-600'
+                                        : 'text-[#80132E]'
+                                  )}
+                                />
+                                <span className="truncate">{cat.label}</span>
+                                {isUserPlan && (
+                                  <span
+                                    className={cn(
+                                      'text-[9px] sm:text-[10px] font-bold px-1.5 py-0.5 rounded-full border shrink-0 tracking-wide',
+                                      cat.id === 'Friendship'
+                                        ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                                        : cat.id === 'Live-In' || cat.id === 'Living Together'
+                                          ? 'bg-indigo-50 text-indigo-700 border-indigo-200'
+                                          : 'bg-rose-50 text-[#80132E] border-rose-200'
+                                    )}
+                                  >
+                                    Yours
+                                  </span>
+                                )}
+                              </div>
+                              {isSelected && <IconCheck className="h-3.5 w-3.5 text-[var(--primary)] shrink-0" />}
+                            </button>
+
+                            {/* When Marriage is selected, show Kerala, Telugu, Bharat sub-categories */}
+                            {isMarriage && isSelected && (
+                              <div className="ml-3 pl-2.5 border-l-2 border-rose-200/80 space-y-1 py-1 animate-content-appear">
+                                <div className="px-1 text-[9px] font-bold uppercase tracking-wider text-stone-600">
+                                  Marriage Sub-Category
+                                </div>
+                                <div className="space-y-0.5">
+                                  {MARRIAGE_SUB_OPTIONS.map((sub) => {
+                                    const isSubSelected = selectedMarriageSubCategory === sub.id;
+                                    const SubIcon = sub.icon;
+                                    return (
+                                      <button
+                                        key={sub.id}
+                                        type="button"
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          handleCategoryChange('Marriage', sub.id);
+                                          setIsCategoryMenuOpen(false);
+                                        }}
+                                        className={cn(
+                                          'w-full flex items-center justify-between px-2.5 py-1.5 rounded-lg text-[11px] font-medium transition-colors cursor-pointer select-none',
+                                          isSubSelected
+                                            ? 'bg-rose-100/90 text-[#80132E] font-bold shadow-xs'
+                                            : 'text-stone-600 hover:bg-stone-100/80 hover:text-stone-900'
+                                        )}
+                                      >
+                                        <div className="flex items-center gap-1.5 min-w-0">
+                                          <SubIcon className="h-3 w-3 shrink-0 text-[#80132E]" />
+                                          <span className="truncate">{sub.title}</span>
+                                          <span className="text-[9px] px-1.5 py-0.2 rounded bg-white/70 border border-stone-200/60 text-stone-600 font-semibold shrink-0">
+                                            {sub.badge}
+                                          </span>
+                                        </div>
+                                        {isSubSelected && (
+                                          <IconCheck className="h-3 w-3 text-[#80132E] shrink-0" />
+                                        )}
+                                      </button>
+                                    );
+                                  })}
+                                </div>
+                              </div>
+                            )}
+                          </div>
                         );
                       })}
                     </div>
@@ -1149,13 +1610,51 @@ export default function DiscoverPage() {
             <Button
               variant={activeFiltersCount > 0 || query ? 'primary' : 'secondary'}
               onClick={() => setIsFilterOpen(true)}
-              className="h-[36px] sm:h-[38px] px-3 sm:px-4 rounded-2xl text-[11px] sm:text-xs font-bold gap-1 sm:gap-2 active-press shadow-[0_4px_16px_rgba(20,10,15,0.08)] bg-white/95 backdrop-blur-xl border border-[var(--border)]/90 shrink-0"
+              className="h-[36px] sm:h-[38px] px-3 sm:px-4 rounded-2xl text-[11px] sm:text-xs font-bold gap-1.5 sm:gap-2 active-press shadow-[0_4px_16px_rgba(20,10,15,0.08)] bg-white/95 backdrop-blur-xl border border-[var(--border)]/90 shrink-0"
               leftIcon={<IconAdjustments className="h-3.5 w-3.5" />}
+              aria-label="Search and filter profiles"
             >
               <span>Search</span>
             </Button>
           </div>
         </div>
+
+        {/* Marriage Subcategory Quick Pills (Visible in desktop view when Marriage is selected; hidden on mobile) */}
+        {selectedCategory === 'Marriage' && (
+          <div className="hidden sm:flex w-full max-w-2xl mx-auto items-center justify-center gap-1.5 px-2 pt-1.5 animate-content-appear pointer-events-auto">
+            <span className="text-[10px] sm:text-[11px] font-bold uppercase tracking-wider text-stone-500 mr-1 hidden xs:inline-block">
+              Sub-Category:
+            </span>
+            {MARRIAGE_SUB_OPTIONS.map((sub) => {
+              const isSubSelected = selectedMarriageSubCategory === sub.id;
+              const SubIcon = sub.icon;
+              return (
+                <button
+                  key={sub.id}
+                  type="button"
+                  onClick={() => handleMarriageSubCategoryChange(sub.id)}
+                  className={cn(
+                    'focus-ring flex items-center gap-1 px-2.5 sm:px-3 py-1 rounded-full text-[11px] sm:text-xs font-bold transition-all active-press select-none cursor-pointer border shadow-2xs',
+                    isSubSelected
+                      ? 'bg-[#80132E] text-white border-[#80132E] shadow-sm'
+                      : 'bg-white/95 text-stone-700 border-[var(--border)] hover:bg-stone-50 hover:text-stone-900'
+                  )}
+                >
+                  <SubIcon className={cn('h-3.5 w-3.5 shrink-0', isSubSelected ? 'text-rose-200' : 'text-[#80132E]')} />
+                  <span>{sub.title}</span>
+                  <span
+                    className={cn(
+                      'text-[9px] px-1.5 py-0.2 rounded-full font-semibold',
+                      isSubSelected ? 'bg-white/20 text-white' : 'bg-stone-100 text-stone-500'
+                    )}
+                  >
+                    {sub.badge}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+        )}
       </div>
 
       {/* Profile Counts Status */}
@@ -1541,15 +2040,26 @@ export default function DiscoverPage() {
         // description="Filter verified matrimonial profiles based on your values and criteria."
         footer={
           <div className="flex items-center justify-between gap-3 w-full">
-            <Button
-              variant="outline"
-              size="md"
-              onClick={handleResetFilters}
-              className="text-xs font-bold"
-              leftIcon={<IconRefresh className="h-3.5 w-3.5" />}
-            >
-              Reset
-            </Button>
+            <div className="flex items-center gap-2">
+              <Button
+                variant="outline"
+                size="md"
+                onClick={handleResetFilters}
+                className="text-xs font-bold"
+                leftIcon={<IconRefresh className="h-3.5 w-3.5" />}
+              >
+                Reset
+              </Button>
+              <Button
+                variant="outline"
+                size="md"
+                onClick={handleApplySavedPreferences}
+                className="text-xs font-bold text-[#7A1835] border-[#EAD8C7] hover:bg-[#FAF3EC]"
+                leftIcon={<IconAdjustments className="h-3.5 w-3.5 text-[#7A1835]" />}
+              >
+                Saved Prefs
+              </Button>
+            </div>
 
             <Button
               variant="primary"
@@ -1685,6 +2195,41 @@ export default function DiscoverPage() {
               </div>
             </div>
           </div>
+
+          {/* 1.6 Marriage Sub-Category (Kerala, Telugu, Bharat) */}
+          {selectedCategory === 'Marriage' && (
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <label className="text-xs font-bold uppercase tracking-wider text-[var(--foreground)]">
+                  Matrimony Community
+                </label>
+                <span className="text-[10px] font-semibold text-[#80132E] bg-rose-50 border border-rose-200/60 px-2 py-0.5 rounded-full">
+                  {selectedMarriageSubCategory} Matrimony
+                </span>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                {MARRIAGE_SUB_OPTIONS.map((sub) => {
+                  const isSubSelected = selectedMarriageSubCategory === sub.id;
+                  const SubIcon = sub.icon;
+                  return (
+                    <Chip
+                      key={sub.id}
+                      size="sm"
+                      selected={isSubSelected}
+                      onClick={() => handleMarriageSubCategoryChange(sub.id)}
+                      interactive
+                    >
+                      <span className="flex items-center gap-1.5">
+                        <SubIcon className="h-3.5 w-3.5" />
+                        <span>{sub.title}</span>
+                        <span className="text-[10px] opacity-75">({sub.badge})</span>
+                      </span>
+                    </Chip>
+                  );
+                })}
+              </div>
+            </div>
+          )}
 
           {/* 2. Gender Preference */}
           <div className="space-y-2">

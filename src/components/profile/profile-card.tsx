@@ -10,7 +10,7 @@ import { cn } from '@/lib/cn';
 import { type Profile, formatLastActive } from '@/lib/demo-data';
 
 export function ProfileCard({ profile, compact = false }: { profile: Profile; compact?: boolean }) {
-  const [isShortlisted, setIsShortlisted] = useState(false);
+  const [isShortlisted, setIsShortlisted] = useState(Boolean(profile.isShortlisted || (profile as any).connectionStatus === 'SHORTLISTED'));
   const [isHovered, setIsHovered] = useState(false);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
 

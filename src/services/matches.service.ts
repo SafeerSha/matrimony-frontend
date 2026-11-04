@@ -23,6 +23,8 @@ export interface SearchFilters {
   occupation?: string;
   income?: string;
   category?: string;
+  community?: string;
+  subCategory?: string;
   
   page?: number;
   limit?: number;
@@ -84,7 +86,11 @@ export function mapConnectionToProfile(u: any, idx = 0): Profile {
     family: profile?.family || partner.family || "Respectable, close-knit family.",
     lifestyle: profile?.lifestyle || partner.lifestyle || ["Non-smoker", "Vegetarian"],
     interests: profile?.interests || partner.interests || ["Travel", "Music", "Reading"],
+    community: profile?.community || partner.community || undefined,
     lookingFor: profile?.lookingFor || partner.lookingFor || "A kind, emotionally mature partner.",
+    isShortlisted: Boolean(partner.isShortlisted || u.isShortlisted || u.status === 'SHORTLISTED'),
+    isInterestSent: Boolean(partner.isInterestSent || u.isInterestSent || u.status === 'PENDING' || u.status === 'ACCEPTED'),
+    connectionStatus: partner.connectionStatus || u.connectionStatus || u.status,
   };
 }
 

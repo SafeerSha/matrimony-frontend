@@ -2,7 +2,15 @@
 
 import React, { useState, useRef, useEffect } from "react";
 import Link from "next/link";
-import { IconBell, IconCheck, IconHeart, IconMessageCircle, IconShieldCheck, IconArrowRight, IconUsers } from '@tabler/icons-react';
+import {
+  IconBell,
+  IconCheck,
+  IconHeart,
+  IconMessageCircle,
+  IconShieldCheck,
+  IconArrowRight,
+  IconUsers,
+} from "@tabler/icons-react";
 import { Avatar } from "@/components/ui/avatar";
 import { cn } from "@/lib/cn";
 import { notificationService, NotificationItem } from "@/services";
@@ -10,6 +18,55 @@ import { toast } from "@/lib/toast";
 
 export interface NotificationsPopoverProps {
   className?: string;
+}
+
+export function getNotificationLink(n: {
+  type?: string;
+  content?: string;
+  referenceId?: string | null;
+  sender?: { id?: string } | null;
+}): string {
+  const t = (n.type || "").toUpperCase();
+  const c = (n.content || "").toLowerCase();
+
+  // 1. Mutual Matches & Match confirmations -> Matches tab
+  if (
+    t.includes("MATCH") ||
+    t.includes("ACCEPTED") ||
+    c.includes("mutual match") ||
+    c.includes("interest was accepted")
+  ) {
+    return "/app/matches";
+  }
+
+  // 2. Direct Messages -> Chat with the sender/reference user
+  if (t.includes("MESSAGE") || c.includes("message")) {
+    const targetUserId = n.referenceId || n.sender?.id;
+    return targetUserId ? `/app/messages?user=${targetUserId}` : "/app/messages";
+  }
+
+  // 3. New Interests Received -> Interests tab
+  if (t.includes("INTEREST") || c.includes("interest")) {
+    return "/app/interests?tab=received";
+  }
+
+  // 4. Favorites / Shortlists
+  if (t.includes("FAVORITE") || t.includes("SHORTLIST") || c.includes("shortlist")) {
+    return "/app/favorites";
+  }
+
+  // 5. System, Profile Active & Welcome notifications -> Discover profiles
+  if (
+    c.includes("active") ||
+    c.includes("live") ||
+    c.includes("welcome") ||
+    c.includes("start connecting")
+  ) {
+    return "/app/discover";
+  }
+
+  // Fallback to full notifications center
+  return "/app/notifications";
 }
 
 export function NotificationsPopover({ className }: NotificationsPopoverProps) {
@@ -24,20 +81,33 @@ export function NotificationsPopover({ className }: NotificationsPopoverProps) {
       .then((data) => {
         if (data && data.length > 0) {
           setItems(
-            data.slice(0, 4).map((n) => ({
-              id: n.id,
-              type: n.type,
-              title:
-                n.type === "NEW_INTEREST"
-                  ? "New interest received"
-                  : n.type === "MATCH_ACCEPTED"
-                  ? "Match accepted!"
-                  : n.type === "NEW_MESSAGE"
-                  ? "New message"
-                  : "Notification",
-              text: n.content,
-              unread: !n.isRead,
-            }))
+            data.slice(0, 6).map((n) => {
+              const link = getNotificationLink(n);
+              const sender = n.sender;
+              let title = "Notification";
+              if (n.type === "NEW_INTEREST") {
+                title = sender?.name ? `${sender.name} sent you an interest` : "New interest received";
+              } else if (n.type === "MATCH_ACCEPTED") {
+                title = sender?.name ? `Match accepted with ${sender.name}!` : "Match accepted!";
+              } else if (n.type === "NEW_MESSAGE") {
+                title = sender?.name ? `Message from ${sender.name}` : "New message";
+              }
+
+              return {
+                id: n.id,
+                type: n.type,
+                title,
+                text: n.content,
+                unread: !n.isRead,
+                link,
+                profile: sender
+                  ? {
+                      name: sender.name,
+                      image: sender.avatarUrl || "",
+                    }
+                  : undefined,
+              };
+            })
           );
         } else {
           setItems([]);
@@ -73,9 +143,20 @@ export function NotificationsPopover({ className }: NotificationsPopoverProps) {
     toast.success("All read", "Notifications marked as read.");
   };
 
+  const handleItemClick = (item: any) => {
+    if (item.unread) {
+      notificationService.markAsRead(item.id).catch(() => {});
+      setItems((prev) =>
+        prev.map((i) => (i.id === item.id ? { ...i, unread: false } : i))
+      );
+    }
+    setIsOpen(false);
+  };
+
   const getIcon = (type: string) => {
     const t = (type || "").toLowerCase();
-    if (t.includes("interest")) return <IconHeart className="h-3 w-3 text-[var(--primary)] fill-[var(--primary)]" />;
+    if (t.includes("interest"))
+      return <IconHeart className="h-3 w-3 text-[var(--primary)] fill-[var(--primary)]" />;
     if (t.includes("match")) return <IconUsers className="h-3 w-3 text-[var(--accent)]" />;
     if (t.includes("message")) return <IconMessageCircle className="h-3 w-3 text-emerald-600" />;
     return <IconShieldCheck className="h-3 w-3 text-[var(--muted)]" />;
@@ -145,11 +226,15 @@ export function NotificationsPopover({ className }: NotificationsPopoverProps) {
               </div>
             ) : (
               items.map((item) => (
-                <div
+                <Link
                   key={item.id}
+                  href={item.link}
+                  onClick={() => handleItemClick(item)}
                   className={cn(
-                    "flex items-start gap-3 p-2.5 rounded-xl transition-colors hover:bg-[var(--surface-muted)]",
-                    item.unread && "bg-[var(--primary)]/[0.03]"
+                    "flex items-start gap-3 p-2.5 rounded-2xl transition-all duration-150 group cursor-pointer select-none",
+                    item.unread
+                      ? "bg-rose-50/50 hover:bg-rose-50/90"
+                      : "hover:bg-[var(--surface-muted)]"
                   )}
                 >
                   <div className="relative mt-0.5 shrink-0">
@@ -164,18 +249,19 @@ export function NotificationsPopover({ className }: NotificationsPopoverProps) {
                   </div>
 
                   <div className="min-w-0 flex-1">
-                    <p className="text-xs font-bold text-[var(--foreground)] leading-tight truncate">
-                      {item.title}
-                    </p>
+                    <div className="flex items-center justify-between gap-1">
+                      <p className="text-xs font-bold text-[var(--foreground)] group-hover:text-[var(--primary)] transition-colors leading-tight truncate">
+                        {item.title}
+                      </p>
+                      {item.unread && (
+                        <span className="h-2 w-2 rounded-full bg-[var(--primary)] shrink-0" />
+                      )}
+                    </div>
                     <p className="mt-0.5 line-clamp-2 text-[11px] text-[var(--muted)] leading-snug">
                       {item.text}
                     </p>
                   </div>
-
-                  {item.unread && (
-                    <span className="h-2 w-2 rounded-full bg-[var(--primary)] shrink-0 mt-1" />
-                  )}
-                </div>
+                </Link>
               ))
             )}
           </div>

@@ -16,6 +16,7 @@ export type Profile = {
   gender?: string;
   category?: string;
   profileFor?: string;
+  community?: string;
   
   nationality?: string;
   country?: string;
@@ -25,6 +26,9 @@ export type Profile = {
   diet?: string;
   image: string;
   compatibility: number;
+  isShortlisted?: boolean;
+  isInterestSent?: boolean;
+  connectionStatus?: string;
   verified?: boolean;
   online?: boolean;
   status?: string;

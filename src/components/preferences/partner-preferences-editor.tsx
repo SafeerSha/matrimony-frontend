@@ -65,16 +65,29 @@ export function PartnerPreferencesEditor({
         .then((res: any) => {
           if (res && res.preferences) {
             const p = res.preferences;
-            setPreferences((prev) => ({
-              ...prev,
-              ...p,
-              religions: Array.isArray(p.religions) ? p.religions : p.religions ? [p.religions] : prev.religions,
-              locations: Array.isArray(p.locations) ? p.locations : p.locations ? [p.locations] : prev.locations,
-              diet: Array.isArray(p.diet) ? p.diet : p.diet ? [p.diet] : prev.diet,
-              maritalStatus: Array.isArray(p.maritalStatus) ? p.maritalStatus : p.maritalStatus ? [p.maritalStatus] : prev.maritalStatus,
-              education: Array.isArray(p.education) ? p.education : p.education ? [p.education] : prev.education,
-              professions: Array.isArray(p.professions) ? p.professions : p.professions ? [p.professions] : prev.professions,
-            }));
+            setPreferences((prev) => {
+              const parsedMin = Number(p.minAge);
+              const parsedMax = Number(p.maxAge);
+              const safeMinAge = !isNaN(parsedMin) && parsedMin >= 18 ? parsedMin : (prev.minAge || 24);
+              const safeMaxAge = !isNaN(parsedMax) && parsedMax >= safeMinAge ? parsedMax : (prev.maxAge || 30);
+              const safeMinHeight = p.minHeight && p.minHeight !== 'null' && p.minHeight !== 'undefined' ? p.minHeight : (prev.minHeight || "5'2\"");
+              const safeMaxHeight = p.maxHeight && p.maxHeight !== 'null' && p.maxHeight !== 'undefined' ? p.maxHeight : (prev.maxHeight || "5'11\"");
+
+              return {
+                ...prev,
+                ...p,
+                minAge: safeMinAge,
+                maxAge: safeMaxAge,
+                minHeight: safeMinHeight,
+                maxHeight: safeMaxHeight,
+                religions: Array.isArray(p.religions) && p.religions.length > 0 ? p.religions : (p.religions ? [p.religions] : prev.religions),
+                locations: Array.isArray(p.locations) && p.locations.length > 0 ? p.locations : (p.locations ? [p.locations] : prev.locations),
+                diet: Array.isArray(p.diet) && p.diet.length > 0 ? p.diet : (p.diet ? [p.diet] : prev.diet),
+                maritalStatus: Array.isArray(p.maritalStatus) && p.maritalStatus.length > 0 ? p.maritalStatus : (p.maritalStatus ? [p.maritalStatus] : prev.maritalStatus),
+                education: Array.isArray(p.education) && p.education.length > 0 ? p.education : (p.education ? [p.education] : prev.education),
+                professions: Array.isArray(p.professions) && p.professions.length > 0 ? p.professions : (p.professions ? [p.professions] : prev.professions),
+              };
+            });
           }
         })
         .catch((err) => {
@@ -102,11 +115,18 @@ export function PartnerPreferencesEditor({
   const handleSave = async () => {
     setIsSaving(true);
     try {
+      const parsedMin = Number(preferences.minAge);
+      const safeMinAge = !isNaN(parsedMin) && parsedMin >= 18 ? parsedMin : 24;
+      const parsedMax = Number(preferences.maxAge);
+      const safeMaxAge = !isNaN(parsedMax) && parsedMax >= safeMinAge ? parsedMax : 30;
+      const safeMinHeight = preferences.minHeight && preferences.minHeight !== 'null' && preferences.minHeight !== 'undefined' ? preferences.minHeight : "5'2\"";
+      const safeMaxHeight = preferences.maxHeight && preferences.maxHeight !== 'null' && preferences.maxHeight !== 'undefined' ? preferences.maxHeight : "5'11\"";
+
       const payload = {
-        minAge: Number(preferences.minAge) || 24,
-        maxAge: Number(preferences.maxAge) || 30,
-        minHeight: preferences.minHeight,
-        maxHeight: preferences.maxHeight,
+        minAge: safeMinAge,
+        maxAge: safeMaxAge,
+        minHeight: safeMinHeight,
+        maxHeight: safeMaxHeight,
         religions: Array.isArray(preferences.religions) ? preferences.religions : [preferences.religions].filter(Boolean),
         locations: Array.isArray(preferences.locations) ? preferences.locations : [preferences.locations].filter(Boolean),
         diet: Array.isArray(preferences.diet) ? preferences.diet : [preferences.diet].filter(Boolean),
@@ -122,12 +142,25 @@ export function PartnerPreferencesEditor({
       };
 
       await profileService.updatePreferences('me', payload);
+
+      if (typeof window !== 'undefined') {
+        try {
+          localStorage.setItem('ishtam_partner_preferences', JSON.stringify(payload));
+          localStorage.setItem('ishtam_partner_preferences_updated_at', String(Date.now()));
+        } catch { }
+      }
+
       toast.success('Preferences Saved', {
         description: 'Your matchmaking filters and discoverability reach have been updated.',
       });
       setHasChanges(false);
     } catch (err: any) {
       console.warn('API save error (proceeding with optimistic local save):', err);
+      if (typeof window !== 'undefined') {
+        try {
+          localStorage.setItem('ishtam_partner_preferences', JSON.stringify(preferences));
+        } catch { }
+      }
       toast.success('Preferences Saved Locally', {
         description: 'Your partner preferences have been updated for this session.',
       });
