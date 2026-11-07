@@ -37,7 +37,7 @@ export default function LoginPage() {
   const [isRegisterModalOpen, setIsRegisterModalOpen] = useState(false);
   const [isSupportModalOpen, setIsSupportModalOpen] = useState(false);
   const [authMethod, setAuthMethod] = useState<"otp" | "password">(
-    isEmailAuthMode() ? "password" : "otp"
+    "otp"
   );
   const [otpStep, setOtpStep] = useState<"phone" | "code">("phone");
   const [phone, setPhone] = useState("");
@@ -673,27 +673,6 @@ export default function LoginPage() {
                     <button
                       type="button"
                       onClick={() => {
-                        setAuthMethod("password");
-                        setErrorMessage(null);
-                        setNotRegisteredAccount(null);
-                      }}
-                      className={cn(
-                        "flex items-center justify-center gap-1.5 py-2 px-3 text-xs sm:text-sm font-semibold rounded-lg transition-all cursor-pointer",
-                        authMethod === "password"
-                          ? "bg-white text-[var(--foreground)] shadow-sm"
-                          : "text-[var(--muted)] hover:text-[var(--foreground)]"
-                      )}
-                    >
-                      <IconKey className="h-4 w-4 text-[var(--primary)]" />
-                      <span>Password</span>
-                      <span className="hidden sm:inline-block ml-1 text-[10px] bg-emerald-100 text-emerald-800 px-1.5 py-0.5 rounded font-medium">
-                        Standard
-                      </span>
-                    </button>
-
-                    <button
-                      type="button"
-                      onClick={() => {
                         setAuthMethod("otp");
                         setErrorMessage(null);
                         setNotRegisteredAccount(null);
@@ -710,6 +689,27 @@ export default function LoginPage() {
                     >
                       <IconMail className="h-4 w-4 text-[var(--primary)]" />
                       <span>Email OTP</span>
+                      <span className="hidden sm:inline-block ml-1 text-[10px] bg-emerald-100 text-emerald-800 px-1.5 py-0.5 rounded font-medium">
+                        Fast
+                      </span>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setAuthMethod("password");
+                        setErrorMessage(null);
+                        setNotRegisteredAccount(null);
+                      }}
+                      className={cn(
+                        "flex items-center justify-center gap-1.5 py-2 px-3 text-xs sm:text-sm font-semibold rounded-lg transition-all cursor-pointer",
+                        authMethod === "password"
+                          ? "bg-white text-[var(--foreground)] shadow-sm"
+                          : "text-[var(--muted)] hover:text-[var(--foreground)]"
+                      )}
+                    >
+                      <IconKey className="h-4 w-4 text-[var(--primary)]" />
+                      <span>Password</span>
                     </button>
                   </>
                 ) : (

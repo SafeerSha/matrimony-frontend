@@ -120,8 +120,8 @@ export function isFreeTrialMode(): boolean {
  */
 export const AUTH_FLAGS = {
   PRIMARY_AUTH_METHOD:
-    (typeof process !== 'undefined' && (process.env.NEXT_PUBLIC_AUTH_METHOD as 'EMAIL' | 'PHONE')) ||
-    'PHONE',
+    (process.env.NEXT_PUBLIC_AUTH_METHOD as 'EMAIL' | 'PHONE') ||
+    'EMAIL',
 };
 
 export function isEmailAuthMode(): boolean {
