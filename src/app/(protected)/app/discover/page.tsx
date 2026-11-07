@@ -1102,7 +1102,7 @@ export default function DiscoverPage() {
           : stored.filter((item: string) => item !== id);
         localStorage.setItem(userStorageKey, JSON.stringify(updated));
       }
-    } catch {}
+    } catch { }
 
     try {
       if (nextState) {
@@ -1693,7 +1693,7 @@ export default function DiscoverPage() {
           description="We couldn't find anyone matching your exact combination of filters. Try widening your age range or clearing location filters to discover more people."
           actionText="Reset Filters"
           onAction={handleResetFilters}
-          tip="Expanding your age preference by 2 years can reveal up to 40% more compatible matches."
+        // tip="Expanding your age preference by 2 years can reveal up to 40% more compatible matches."
         />
       ) : (
         <>
