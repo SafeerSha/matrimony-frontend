@@ -9,3 +9,5 @@ out/
 .DS_Store
 coverage/
 .vercel/
+# TypeScript build cache
+*.tsbuildinfo
