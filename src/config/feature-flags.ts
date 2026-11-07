@@ -118,12 +118,12 @@ export function isFreeTrialMode(): boolean {
  * Set NEXT_PUBLIC_AUTH_METHOD=PHONE in your .env file,
  * OR toggle PRIMARY_AUTH_METHOD: 'PHONE' below.
  */
+const rawAuthMethod = (typeof process !== 'undefined' && process.env.NEXT_PUBLIC_AUTH_METHOD ? String(process.env.NEXT_PUBLIC_AUTH_METHOD).trim().toUpperCase() : '');
+
 export const AUTH_FLAGS = {
-  PRIMARY_AUTH_METHOD:
-    (process.env.NEXT_PUBLIC_AUTH_METHOD as 'EMAIL' | 'PHONE') ||
-    'EMAIL',
+  PRIMARY_AUTH_METHOD: (rawAuthMethod === 'PHONE' ? 'PHONE' : 'EMAIL') as 'EMAIL' | 'PHONE',
 };
 
 export function isEmailAuthMode(): boolean {
-  return AUTH_FLAGS.PRIMARY_AUTH_METHOD === 'EMAIL';
+  return AUTH_FLAGS.PRIMARY_AUTH_METHOD !== 'PHONE';
 }
