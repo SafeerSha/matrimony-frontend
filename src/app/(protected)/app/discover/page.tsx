@@ -31,6 +31,9 @@ import {
   IconWorld,
   IconHomeHeart,
   IconSparkles,
+  IconId,
+  IconLoader2,
+  IconUserX,
 } from '@tabler/icons-react';
 import { Avatar } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
@@ -319,7 +322,66 @@ export default function DiscoverPage() {
 
   // Filters State
   const [isFilterOpen, setIsFilterOpen] = useState(false);
+  const [filterModalTab, setFilterModalTab] = useState<'preferences' | 'id_search'>('preferences');
+  const [idSearchInput, setIdSearchInput] = useState('');
+  const [isIdSearching, setIsIdSearching] = useState(false);
+  const [idSearchResult, setIdSearchResult] = useState<any | null>(null);
+  const [idSearchError, setIdSearchError] = useState<string | null>(null);
+  const [hasSearchedId, setHasSearchedId] = useState(false);
   const savedPreferencesRef = useRef<any>(null);
+
+  const executeIdSearch = useCallback(async (code: string) => {
+    const raw = code.trim().toUpperCase();
+    if (!raw) return;
+    const cleanSuffix = raw.replace(/^IMC-?/i, '');
+    const fullId = `IMC-${cleanSuffix}`;
+
+    setIsIdSearching(true);
+    setIdSearchError(null);
+    setHasSearchedId(true);
+
+    try {
+      const res = await profileService.getProfile(fullId);
+      if (res && (res.id || res.userId || (res as any).user?.id)) {
+        setIdSearchResult(res);
+        setIdSearchError(null);
+      } else {
+        setIdSearchResult(null);
+        setIdSearchError(`No member found with ID ${fullId}`);
+      }
+    } catch {
+      setIdSearchResult(null);
+      setIdSearchError(`No member found with ID ${fullId}. Please verify the ID and try again.`);
+    } finally {
+      setIsIdSearching(false);
+    }
+  }, []);
+
+  const handleIdInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    let val = e.target.value.toUpperCase();
+    if (val.startsWith('IMC-')) {
+      val = val.slice(4);
+    } else if (val.startsWith('IMC')) {
+      val = val.slice(3);
+    }
+    val = val.replace(/[^A-Z0-9]/g, '').slice(0, 6);
+    setIdSearchInput(val);
+    setIdSearchError(null);
+
+    if (val.length === 6) {
+      executeIdSearch(val);
+    } else {
+      setIdSearchResult(null);
+      setHasSearchedId(false);
+    }
+  };
+
+  const handleViewIdProfile = (prof: any) => {
+    if (!prof) return;
+    setIsFilterOpen(false);
+    const targetId = prof.userId || prof.id || (prof as any).user?.id || (idSearchInput.startsWith('IMC-') ? idSearchInput : `IMC-${idSearchInput}`);
+    router.push(`/app/profile?user=${targetId}`);
+  };
 
   const [city, setCity] = useState(() => {
     const parsed = parsePreferencesToFilters(getStoredPreferences());
@@ -2036,43 +2098,115 @@ export default function DiscoverPage() {
       <BottomSheet
         isOpen={isFilterOpen}
         onClose={() => setIsFilterOpen(false)}
-        title="Refine Partner Preferences"
-        // description="Filter verified matrimonial profiles based on your values and criteria."
+        title={filterModalTab === 'preferences' ? "Refine Partner Preferences" : "Search by Member ID"}
         footer={
-          <div className="flex items-center justify-between gap-3 w-full">
-            <div className="flex items-center gap-2">
+          filterModalTab === 'preferences' ? (
+            <div className="flex items-center justify-between gap-3 w-full">
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="outline"
+                  size="md"
+                  onClick={handleResetFilters}
+                  className="text-xs font-bold"
+                  leftIcon={<IconRefresh className="h-3.5 w-3.5" />}
+                >
+                  Reset
+                </Button>
+                <Button
+                  variant="outline"
+                  size="md"
+                  onClick={handleApplySavedPreferences}
+                  className="text-xs font-bold text-[#7A1835] border-[#EAD8C7] hover:bg-[#FAF3EC]"
+                  leftIcon={<IconAdjustments className="h-3.5 w-3.5 text-[#7A1835]" />}
+                >
+                  Saved Prefs
+                </Button>
+              </div>
+
               <Button
-                variant="outline"
+                variant="primary"
                 size="md"
-                onClick={handleResetFilters}
-                className="text-xs font-bold"
-                leftIcon={<IconRefresh className="h-3.5 w-3.5" />}
+                onClick={handleApplyFilters}
+                className="text-xs font-bold flex-1 max-w-xs shadow-md"
               >
-                Reset
-              </Button>
-              <Button
-                variant="outline"
-                size="md"
-                onClick={handleApplySavedPreferences}
-                className="text-xs font-bold text-[#7A1835] border-[#EAD8C7] hover:bg-[#FAF3EC]"
-                leftIcon={<IconAdjustments className="h-3.5 w-3.5 text-[#7A1835]" />}
-              >
-                Saved Prefs
+                Apply Filters
               </Button>
             </div>
+          ) : (
+            <div className="flex items-center justify-between gap-3 w-full">
+              <Button
+                variant="outline"
+                size="md"
+                onClick={() => {
+                  setIdSearchInput('');
+                  setIdSearchResult(null);
+                  setIdSearchError(null);
+                  setHasSearchedId(false);
+                }}
+                className="text-xs font-bold"
+              >
+                Clear
+              </Button>
 
-            <Button
-              variant="primary"
-              size="md"
-              onClick={handleApplyFilters}
-              className="text-xs font-bold flex-1 max-w-xs shadow-md"
-            >
-              Apply Filters
-            </Button>
-          </div>
+              {idSearchResult ? (
+                <Button
+                  variant="primary"
+                  size="md"
+                  onClick={() => handleViewIdProfile(idSearchResult)}
+                  className="text-xs font-bold flex-1 max-w-xs shadow-md"
+                  rightIcon={<IconArrowRight className="h-3.5 w-3.5" />}
+                >
+                  View Profile
+                </Button>
+              ) : (
+                <Button
+                  variant="primary"
+                  size="md"
+                  disabled={idSearchInput.length < 6 || isIdSearching}
+                  onClick={() => executeIdSearch(idSearchInput)}
+                  className="text-xs font-bold flex-1 max-w-xs shadow-md"
+                  leftIcon={isIdSearching ? <IconLoader2 className="h-3.5 w-3.5 animate-spin" /> : <IconSearch className="h-3.5 w-3.5" />}
+                >
+                  {isIdSearching ? 'Searching...' : 'Search ID'}
+                </Button>
+              )}
+            </div>
+          )
         }
       >
         <div className="space-y-6 pb-4">
+          {/* Segmented Tab Bar: Preferences vs ID Search */}
+          <div className="flex rounded-2xl bg-[#F6EFEB] p-1 border border-[#EAD8C7]">
+            <button
+              type="button"
+              onClick={() => setFilterModalTab('preferences')}
+              className={cn(
+                "flex-1 flex items-center justify-center gap-2 py-2.5 px-3 rounded-xl text-xs font-bold transition-all duration-200",
+                filterModalTab === 'preferences'
+                  ? "bg-white text-[#7A1835] shadow-sm font-extrabold"
+                  : "text-[#766B6F] hover:text-[#2D1B22]"
+              )}
+            >
+              <IconAdjustments className="h-4 w-4" />
+              <span>Preferences</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setFilterModalTab('id_search')}
+              className={cn(
+                "flex-1 flex items-center justify-center gap-2 py-2.5 px-3 rounded-xl text-xs font-bold transition-all duration-200",
+                filterModalTab === 'id_search'
+                  ? "bg-white text-[#7A1835] shadow-sm font-extrabold"
+                  : "text-[#766B6F] hover:text-[#2D1B22]"
+              )}
+            >
+              <IconId className="h-4 w-4" />
+              <span>ID Search</span>
+            </button>
+          </div>
+
+          {filterModalTab === 'preferences' ? (
+            <>
           {/* Match counter banner inside drawer */}
           <div className="rounded-2xl bg-gradient-to-br from-[#FAF3EC] to-[#FFF9F6] p-4 border border-[#EAD8C7] flex items-center justify-between">
             <div className="flex items-center gap-2.5">
@@ -2091,18 +2225,6 @@ export default function DiscoverPage() {
 
           {/* 0. Search & Sort */}
           <div className="space-y-4 pb-5 mb-5 border-b border-[var(--border)]">
-            <div className="space-y-2">
-              <label className="text-[11px] font-bold uppercase tracking-wider text-[var(--muted-strong)]">
-                Search Profiles
-              </label>
-              <SearchInput
-                value={query}
-                onChange={(e) => setQuery(e.target.value)}
-                onClear={() => setQuery('')}
-                placeholder="Search by ID, name, or profession..."
-              />
-            </div>
-
             <div>
               <ModernSelect
                 label="Sort By"
@@ -2513,6 +2635,200 @@ export default function DiscoverPage() {
               ))}
             </div>
           </div>
+          </>
+          ) : (
+            <div className="space-y-2 py-1">
+              {/* Search Input with fixed IMC- prefix badge */}
+              <div className="space-y-2">
+                <label className="text-[11px] font-bold uppercase tracking-wider text-[var(--muted-strong)]">
+                  Enter Matrimony ID
+                </label>
+                <div className="relative flex items-center rounded-2xl border-2 border-[#EAD8C7] focus-within:border-[#7A1835] bg-white shadow-sm overflow-hidden transition-all duration-200">
+                  <div className="bg-[#FAF3EC] border-r border-[#EAD8C7] px-3.5 py-3 text-xs font-extrabold tracking-wider text-[#7A1835] select-none flex items-center gap-1.5 shrink-0">
+                    <IconId className="h-4 w-4 text-[#7A1835]" />
+                    <span>IMC-</span>
+                  </div>
+                  <input
+                    type="text"
+                    value={idSearchInput}
+                    onChange={handleIdInputChange}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        e.preventDefault();
+                        executeIdSearch(idSearchInput);
+                      }
+                    }}
+                    placeholder="A00002"
+                    maxLength={6}
+                    className="w-full bg-transparent px-3.5 py-3 text-sm font-bold tracking-wider uppercase text-[var(--foreground)] placeholder:text-[var(--muted)]/50 outline-none"
+                  />
+                  {idSearchInput && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setIdSearchInput('');
+                        setIdSearchResult(null);
+                        setIdSearchError(null);
+                        setHasSearchedId(false);
+                      }}
+                      className="p-2 mr-1 text-[var(--muted)] hover:text-[var(--foreground)] transition-colors"
+                      title="Clear ID"
+                    >
+                      <IconX className="h-4 w-4" />
+                    </button>
+                  )}
+                  <button
+                    type="button"
+                    onClick={() => executeIdSearch(idSearchInput)}
+                    disabled={!idSearchInput.trim() || isIdSearching}
+                    className="mr-2 px-4 py-2 rounded-xl bg-[#7A1835] text-white text-xs font-bold hover:bg-[#5C1027] disabled:opacity-40 transition-colors shrink-0 flex items-center gap-1.5"
+                  >
+                    {isIdSearching ? (
+                      <>
+                        <IconLoader2 className="h-3.5 w-3.5 animate-spin" />
+                        <span>Searching...</span>
+                      </>
+                    ) : (
+                      <>
+                        <IconSearch className="h-3.5 w-3.5" />
+                        <span>Search</span>
+                      </>
+                    )}
+                  </button>
+                </div>
+                <div className="flex items-center justify-between text-[11px] text-[#766B6F] px-1">
+                  <span>
+                    Format: <span className="font-bold text-[#2D1B22]">IMC-</span> followed by 6 alphanumeric characters (e.g. <span className="font-bold text-[#7A1835]">A00002</span>)
+                  </span>
+                  <span>{idSearchInput.length}/6</span>
+                </div>
+              </div>
+
+              {/* Loading State */}
+              {isIdSearching && (
+                <div className="rounded-2xl border border-[#EAD8C7] bg-[#FAF3EC]/40 p-8 flex flex-col items-center justify-center text-center space-y-3 animate-pulse">
+                  <div className="h-10 w-10 rounded-full bg-white border border-[#EAD8C7] flex items-center justify-center text-[#7A1835]">
+                    <IconLoader2 className="h-5 w-5 animate-spin" />
+                  </div>
+                  <div>
+                    <p className="text-sm font-bold text-[#2D1B22]">Searching for IMC-{idSearchInput}...</p>
+                    <p className="text-xs text-[#766B6F]">Retrieving member profile details</p>
+                  </div>
+                </div>
+              )}
+
+              {/* Result State: Found Profile */}
+              {!isIdSearching && idSearchResult && (
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between px-1">
+                    <span className="text-[11px] font-bold uppercase tracking-wider text-[var(--muted-strong)]">
+                      Search Result
+                    </span>
+                    <span className="text-xs font-bold text-emerald-700 bg-emerald-50 px-2.5 py-0.5 rounded-full border border-emerald-200">
+                      Match Found
+                    </span>
+                  </div>
+
+                  <div
+                    onClick={() => handleViewIdProfile(idSearchResult)}
+                    className="group relative cursor-pointer overflow-hidden rounded-2xl border-2 border-[#EAD8C7] bg-white p-4 shadow-sm hover:shadow-md hover:border-[#7A1835] transition-all duration-200"
+                  >
+                    <div className="flex items-start gap-3.5">
+                      <Avatar
+                        src={
+                          idSearchResult.photos?.find((p: any) => p.isPrimary)?.url ||
+                          idSearchResult.avatarUrl ||
+                          idSearchResult.photoUrl ||
+                          idSearchResult.photos?.[0]?.url ||
+                          ''
+                        }
+                        name={
+                          idSearchResult.firstName
+                            ? `${idSearchResult.firstName} ${idSearchResult.lastName || ''}`.trim()
+                            : idSearchResult.name || 'Member'
+                        }
+                        size="xl"
+                        className="ring-2 ring-[#FAF3EC] shrink-0"
+                      />
+
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <h4 className="text-base font-bold text-[#2D1B22] truncate group-hover:text-[#7A1835] transition-colors">
+                            {idSearchResult.firstName
+                              ? `${idSearchResult.firstName} ${idSearchResult.lastName || ''}`.trim()
+                              : idSearchResult.name || 'Member'}
+                            {idSearchResult.age ? `, ${idSearchResult.age}` : ''}
+                          </h4>
+                          <VerificationBadge size="sm" />
+                        </div>
+
+                        {/* Profile ID Badge */}
+                        <div className="mt-1.5 inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-[#FAF3EC] border border-[#EAD8C7] text-[11px] font-bold text-[#7A1835]">
+                          <IconId className="h-3 w-3" />
+                          <span>
+                            {idSearchResult.profileId ||
+                              (idSearchInput.toUpperCase().startsWith('IMC-')
+                                ? idSearchInput.toUpperCase()
+                                : `IMC-${idSearchInput.toUpperCase()}`)}
+                          </span>
+                        </div>
+
+                        {/* Profession & Location */}
+                        <p className="mt-2 text-xs font-medium text-[#766B6F] truncate">
+                          {[idSearchResult.profession || idSearchResult.occupation, idSearchResult.city || idSearchResult.state]
+                            .filter(Boolean)
+                            .join(' • ') || 'Verified Member'}
+                        </p>
+
+                        {/* Religion & Caste */}
+                        {(idSearchResult.religion || idSearchResult.caste) && (
+                          <p className="mt-0.5 text-xs text-[#9E9095] truncate">
+                            {[idSearchResult.religion, idSearchResult.caste].filter(Boolean).join(', ')}
+                          </p>
+                        )}
+                      </div>
+
+                      <div className="self-center p-2 rounded-full bg-[#FAF3EC] text-[#7A1835] group-hover:bg-[#7A1835] group-hover:text-white transition-all shrink-0">
+                        <IconArrowRight className="h-4 w-4" />
+                      </div>
+                    </div>
+
+                    <div className="mt-3.5 pt-3 border-t border-[#F2E8DF] flex items-center justify-between text-xs font-bold text-[#7A1835]">
+                      <span>Click card to view complete profile</span>
+                      <span className="text-[11px] font-extrabold underline flex items-center gap-1">
+                        <span>Open Profile</span>
+                        <IconArrowRight className="h-3 w-3" />
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Error / Not Found State */}
+              {!isIdSearching && idSearchError && (
+                <div className="rounded-2xl border border-rose-200 bg-rose-50/60 p-6 flex flex-col items-center justify-center text-center space-y-2">
+                  <div className="h-10 w-10 rounded-full bg-rose-100 flex items-center justify-center text-rose-600">
+                    <IconUserX className="h-5 w-5" />
+                  </div>
+                  <p className="text-sm font-bold text-rose-900">Member Not Found</p>
+                  <p className="text-xs text-rose-700 max-w-xs">{idSearchError}</p>
+                </div>
+              )}
+
+              {/* Initial Prompt State */}
+              {!isIdSearching && !idSearchResult && !idSearchError && !hasSearchedId && (
+                <div className="rounded-2xl border border-dashed border-[#EAD8C7] bg-[#FFFBF8] p-6 text-center space-y-2">
+                  <div className="mx-auto h-9 w-9 rounded-full bg-[#FAF3EC] flex items-center justify-center text-[#7A1835]">
+                    <IconSearch className="h-4 w-4" />
+                  </div>
+                  <p className="text-xs font-bold text-[#2D1B22]">Instant ID Lookup</p>
+                  <p className="text-[11px] text-[#766B6F] max-w-xs mx-auto">
+                    Type the 6-character identifier (e.g. A00001, A00002). The search will run automatically as soon as all 6 characters are entered.
+                  </p>
+                </div>
+              )}
+            </div>
+          )}
         </div>
       </BottomSheet>
     </div>
