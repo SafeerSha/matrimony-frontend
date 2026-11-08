@@ -13,7 +13,7 @@ import {
 } from "@tabler/icons-react";
 import { Avatar } from "@/components/ui/avatar";
 import { cn } from "@/lib/cn";
-import { notificationService, NotificationItem } from "@/services";
+import { notificationService, parseNotificationText, NotificationItem } from "@/services";
 import { toast } from "@/lib/toast";
 
 export interface NotificationsPopoverProps {
@@ -97,7 +97,14 @@ export function NotificationsPopover({ className }: NotificationsPopoverProps) {
                 id: n.id,
                 type: n.type,
                 title,
-                text: n.content,
+                text: (() => {
+                  let text = n.content;
+                  const colonIdx = text.indexOf(': ');
+                  if (colonIdx > -1 && colonIdx < 35) {
+                    text = text.slice(colonIdx + 2).trim();
+                  }
+                  return parseNotificationText(text);
+                })(),
                 unread: !n.isRead,
                 link,
                 profile: sender

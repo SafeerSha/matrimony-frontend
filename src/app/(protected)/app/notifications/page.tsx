@@ -23,7 +23,7 @@ import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { SectionHeader } from '@/components/ui/section-header';
-import { notificationService, NotificationItem } from '@/services';
+import { notificationService, parseNotificationText, NotificationItem } from '@/services';
 import { toast } from '@/lib/toast';
 import { cn } from '@/lib/cn';
 import { FeatureGate } from '@/components/ui/under-development';
@@ -134,6 +134,7 @@ export default function NotificationsPage() {
                 if (!senderName) senderName = n.content.slice(0, colonIdx).trim();
                 text = n.content.slice(colonIdx + 2).trim();
               }
+              text = parseNotificationText(text);
               title = senderName ? `${senderName}` : 'New Message';
               link = n.referenceId ? `/app/messages?user=${n.referenceId}` : '/app/messages';
               actionLabel = 'Open Chat';
