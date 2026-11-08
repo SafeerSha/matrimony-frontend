@@ -53,7 +53,7 @@ import { type Profile, formatLastActive, getRegistrationBadge } from '@/lib/demo
 
 export type DiscoveryViewMode = 'swipe' | 'grid';
 export type SortOption = 'recommended' | 'recent' | 'new' | 'nearby';
-export function getStoredPreferences() {
+function getStoredPreferences() {
   if (typeof window !== 'undefined') {
     try {
       const raw = localStorage.getItem('ishtam_partner_preferences');
