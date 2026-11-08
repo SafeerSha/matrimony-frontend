@@ -58,7 +58,10 @@ export function AppShell({ children }: AppShellProps) {
       .getCurrentUser()
       .then((user: any) => {
         if (!user) return;
-        setCurrentUser(user);
+        setCurrentUser((prev: any) => ({
+          ...user,
+          ...prev,
+        }));
 
         if (isDraftUser({ user })) {
           window.location.href = "/onboarding";
@@ -73,9 +76,30 @@ export function AppShell({ children }: AppShellProps) {
         if (!profile) return;
         if (isDraftUser(profile)) {
           window.location.href = "/onboarding";
+          return;
         }
+        setCurrentUser((prev: any) => ({
+          ...prev,
+          ...profile,
+          photos: profile.photos || prev?.photos,
+          avatarUrl: profile.avatarUrl || prev?.avatarUrl,
+        }));
       })
       .catch(() => {});
+
+    // Listen to profile updates (e.g. photo uploaded or primary changed)
+    const handleProfileUpdated = (e: any) => {
+      const updated = e?.detail;
+      if (updated) {
+        setCurrentUser((prev: any) => ({
+          ...prev,
+          ...updated,
+          photos: updated.photos || prev?.photos,
+          avatarUrl: updated.avatarUrl || prev?.avatarUrl,
+        }));
+      }
+    };
+    window.addEventListener("profile:updated", handleProfileUpdated);
 
     // 2. Notifications count
     notificationService
@@ -171,6 +195,7 @@ export function AppShell({ children }: AppShellProps) {
 
     return () => {
       window.removeEventListener("chat:unread-changed", handleUnreadChanged);
+      window.removeEventListener("profile:updated", handleProfileUpdated);
       unsubMessage();
       clearInterval(heartbeatInterval);
       document.removeEventListener("visibilitychange", handleVisibilityChange);

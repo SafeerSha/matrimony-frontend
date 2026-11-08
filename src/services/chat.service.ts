@@ -25,6 +25,45 @@ export interface Message {
   isRead: boolean;
 }
 
+export interface MessageReplyMetadata {
+  id?: string;
+  name: string;
+  text: string;
+}
+
+export interface ParsedMessageContent {
+  replyTo?: MessageReplyMetadata;
+  text: string;
+}
+
+export function parseMessageContent(raw: string): ParsedMessageContent {
+  if (typeof raw !== 'string') return { text: '' };
+  const trimmed = raw.trim();
+  if (trimmed.startsWith('{"replyTo":') || trimmed.startsWith('{"text":')) {
+    try {
+      const parsed = JSON.parse(trimmed);
+      if (parsed && typeof parsed.text === 'string') {
+        return {
+          replyTo: parsed.replyTo,
+          text: parsed.text,
+        };
+      }
+    } catch {}
+  }
+  return { text: raw };
+}
+
+export function formatReplyContent(replyTo: MessageReplyMetadata, text: string): string {
+  return JSON.stringify({
+    replyTo: {
+      id: replyTo.id,
+      name: replyTo.name,
+      text: replyTo.text.length > 120 ? `${replyTo.text.substring(0, 120)}...` : replyTo.text,
+    },
+    text: text.trim(),
+  });
+}
+
 export interface Conversation {
   id: string;
   participantId: string;
@@ -39,6 +78,7 @@ class ChatService {
   private socket: Socket | null = null;
   private messageHandlers: Set<(msg: Message) => void> = new Set();
   private readReceiptHandlers: Set<(data: { readerId: string; contactId: string }) => void> = new Set();
+  private typingHandlers: Set<(data: { senderId: string; isTyping: boolean }) => void> = new Set();
 
   /**
    * Connect to backend WebSocket gateway
@@ -89,6 +129,11 @@ class ChatService {
       this.readReceiptHandlers.forEach((handler) => handler(data));
     });
 
+    // Backend ChatGateway emits 'user_typing' when opposite user types
+    this.socket.on("user_typing", (data: { senderId: string; isTyping: boolean }) => {
+      this.typingHandlers.forEach((handler) => handler(data));
+    });
+
     this.socket.on("disconnect", (reason) => {
       console.log("[ChatService] Disconnected from chat server:", reason);
     });
@@ -126,6 +171,22 @@ class ChatService {
     this.messageHandlers.add(handler);
     return () => {
       this.messageHandlers.delete(handler);
+    };
+  }
+
+    sendTyping(receiverId: string, isTyping: boolean) {
+    if (this.socket && this.socket.connected) {
+      this.socket.emit("typing", { receiverId, isTyping });
+    }
+  }
+
+  onTyping(handler: (data: { senderId: string; isTyping: boolean }) => void) {
+    if (!this.socket) {
+      this.connect();
+    }
+    this.typingHandlers.add(handler);
+    return () => {
+      this.typingHandlers.delete(handler);
     };
   }
 

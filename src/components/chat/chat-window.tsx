@@ -22,13 +22,14 @@ import {
   IconBriefcase,
   IconHome,
   IconX,
+  IconArrowBackUp,
 } from '@tabler/icons-react';
 import { Button } from '@/components/ui/button';
 import { Avatar } from '@/components/ui/avatar';
 import { VerificationBadge } from '@/components/ui/verification-badge';
 import { toast } from '@/lib/toast';
 import { cn } from '@/lib/cn';
-import { chatService, type Conversation, type Message } from '@/services/chat.service';
+import { chatService, parseMessageContent, formatReplyContent, type Conversation, type Message, type MessageReplyMetadata } from '@/services/chat.service';
 import { matchesService } from '@/services/matches.service';
 import { formatLastActive } from '@/lib/demo-data';
 import { isFreeTrialMode } from '@/config/feature-flags';
@@ -84,6 +85,27 @@ export function ChatWindow({
   const [messageReactions, setMessageReactions] = useState<Record<string, string>>({});
   const [hoveredMessageId, setHoveredMessageId] = useState<string | null>(null);
 
+  // Real-time typing states
+  const [isPartnerTyping, setIsPartnerTyping] = useState(false);
+  const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const stopTypingTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const isTypingActiveRef = useRef(false);
+
+  // Reply / Tagging states
+  interface ReplyingToState {
+    id: string;
+    senderName: string;
+    text: string;
+    isOurs: boolean;
+  }
+  const [replyingTo, setReplyingTo] = useState<ReplyingToState | null>(null);
+  const [highlightedMessageId, setHighlightedMessageId] = useState<string | null>(null);
+
+  // Mobile Swipe-to-Reply touch tracking
+  const [swipedMessageId, setSwipedMessageId] = useState<string | null>(null);
+  const [swipeOffset, setSwipeOffset] = useState<number>(0);
+  const touchStartRef = useRef<{ x: number; y: number; id: string } | null>(null);
+
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -126,6 +148,36 @@ export function ChatWindow({
 
     return cleanup;
   }, [conversation.participantId, conversation.id, (conversation as any).online, (conversation as any).lastActiveAt]);
+
+  // Real-time typing listener for opposite user
+  useEffect(() => {
+    setIsPartnerTyping(false);
+    const targetId = conversation.participantId || conversation.id;
+
+    const cleanup = chatService.onTyping((data) => {
+      if (data.senderId === targetId) {
+        setIsPartnerTyping(Boolean(data.isTyping));
+
+        if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
+        if (data.isTyping) {
+          typingTimeoutRef.current = setTimeout(() => {
+            setIsPartnerTyping(false);
+          }, 4500);
+        }
+      }
+    });
+
+    return () => {
+      cleanup();
+      if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
+      if (stopTypingTimerRef.current) clearTimeout(stopTypingTimerRef.current);
+      const contactId = conversation.participantId || conversation.id;
+      if (isTypingActiveRef.current && contactId) {
+        chatService.sendTyping(contactId, false);
+        isTypingActiveRef.current = false;
+      }
+    };
+  }, [conversation.participantId, conversation.id]);
 
   // Categorized Kerala matrimonial initiator hook sentences
   const categorizedHooks = [
@@ -258,17 +310,111 @@ export function ChatWindow({
     return () => ro.disconnect();
   }, []);
 
+  // Reply Handlers
+  const handleStartReply = (m: Message, isOurs: boolean) => {
+    const authorName = isOurs ? 'You' : firstName;
+    const parsed = parseMessageContent(m.content);
+    setReplyingTo({
+      id: m.id,
+      senderName: authorName,
+      text: parsed.text,
+      isOurs,
+    });
+    setTimeout(() => {
+      textareaRef.current?.focus();
+    }, 60);
+  };
+
+  const handleCancelReply = () => {
+    setReplyingTo(null);
+  };
+
+  const handleScrollToMessage = (targetId?: string) => {
+    if (!targetId) return;
+    const el = document.getElementById(`chat-msg-${targetId}`);
+    if (el) {
+      el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      setHighlightedMessageId(targetId);
+      setTimeout(() => {
+        setHighlightedMessageId(null);
+      }, 1800);
+    }
+  };
+
+  // Mobile Swipe-to-Reply Handlers
+  const handleTouchStart = (e: React.TouchEvent, msgKey: string) => {
+    if (e.touches.length === 1) {
+      touchStartRef.current = {
+        x: e.touches[0].clientX,
+        y: e.touches[0].clientY,
+        id: msgKey,
+      };
+    }
+  };
+
+  const handleTouchMove = (e: React.TouchEvent, msgKey: string) => {
+    if (!touchStartRef.current || touchStartRef.current.id !== msgKey) return;
+    const deltaX = e.touches[0].clientX - touchStartRef.current.x;
+    const deltaY = e.touches[0].clientY - touchStartRef.current.y;
+
+    // Ignore if vertical scrolling
+    if (Math.abs(deltaY) > Math.abs(deltaX)) return;
+
+    if (deltaX > 4) {
+      setSwipedMessageId(msgKey);
+      const clamped = Math.min(55, deltaX * 0.55);
+      setSwipeOffset(clamped);
+    } else {
+      setSwipeOffset(0);
+    }
+  };
+
+  const handleTouchEnd = (m: Message, isOurs: boolean) => {
+    if (swipeOffset >= 30) {
+      handleStartReply(m, isOurs);
+      if (typeof window !== 'undefined' && 'vibrate' in navigator) {
+        try { navigator.vibrate(25); } catch {}
+      }
+    }
+    touchStartRef.current = null;
+    setSwipedMessageId(null);
+    setSwipeOffset(0);
+  };
+
   const handleSend = async () => {
     if (!text.trim() || isSending) return;
-    const current = text.trim();
+    const contactId = conversation.participantId || conversation.id;
+
+    // Immediately stop typing indicator on send
+    if (isTypingActiveRef.current && contactId) {
+      isTypingActiveRef.current = false;
+      chatService.sendTyping(contactId, false);
+    }
+    if (stopTypingTimerRef.current) clearTimeout(stopTypingTimerRef.current);
+
+    const rawText = text.trim();
+    const finalContent = replyingTo
+      ? formatReplyContent(
+          {
+            id: replyingTo.id,
+            name: replyingTo.senderName,
+            text: replyingTo.text,
+          },
+          rawText
+        )
+      : rawText;
+
+    const previousReplying = replyingTo;
+    setReplyingTo(null);
     setText('');
     setIsSending(true);
     scrollToBottom('smooth');
     try {
-      await onSendMessage(current);
+      await onSendMessage(finalContent);
       setTimeout(() => scrollToBottom('smooth'), 60);
     } catch {
-      setText(current);
+      setText(rawText);
+      setReplyingTo(previousReplying);
     } finally {
       setIsSending(false);
       if (textareaRef.current) {
@@ -285,9 +431,33 @@ export function ChatWindow({
   };
 
   const handleTextareaChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-    setText(e.target.value);
+    const val = e.target.value;
+    setText(val);
     e.target.style.height = 'auto';
     e.target.style.height = `${Math.min(e.target.scrollHeight, 120)}px`;
+
+    // Manage typing indicators
+    const contactId = conversation.participantId || conversation.id;
+    if (!contactId) return;
+
+    if (val.trim().length > 0) {
+      if (!isTypingActiveRef.current) {
+        isTypingActiveRef.current = true;
+        chatService.sendTyping(contactId, true);
+      }
+
+      if (stopTypingTimerRef.current) clearTimeout(stopTypingTimerRef.current);
+      stopTypingTimerRef.current = setTimeout(() => {
+        isTypingActiveRef.current = false;
+        chatService.sendTyping(contactId, false);
+      }, 2500);
+    } else {
+      if (isTypingActiveRef.current) {
+        isTypingActiveRef.current = false;
+        chatService.sendTyping(contactId, false);
+      }
+      if (stopTypingTimerRef.current) clearTimeout(stopTypingTimerRef.current);
+    }
   };
 
   const insertEmoji = (emoji: string) => {
@@ -357,7 +527,16 @@ export function ChatWindow({
               )}
             </div>
             <div className="flex items-center gap-1.5 sm:gap-2 text-[11px] sm:text-xs text-[#766B6F] font-medium truncate mt-0.5">
-              {isOnline ? (
+              {isPartnerTyping ? (
+                <span className="inline-flex items-center gap-1.5 text-[#7A1835] font-bold shrink-0">
+                  <span className="flex gap-0.5 items-center">
+                    <span className="h-1.5 w-1.5 rounded-full bg-[#7A1835] animate-bounce" style={{ animationDelay: '0ms' }} />
+                    <span className="h-1.5 w-1.5 rounded-full bg-[#7A1835] animate-bounce" style={{ animationDelay: '150ms' }} />
+                    <span className="h-1.5 w-1.5 rounded-full bg-[#7A1835] animate-bounce" style={{ animationDelay: '300ms' }} />
+                  </span>
+                  <span>typing...</span>
+                </span>
+              ) : isOnline ? (
                 <span className="inline-flex items-center gap-1 text-emerald-700 font-semibold shrink-0">
                   <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
                   Active now
@@ -624,21 +803,45 @@ export function ChatWindow({
                 const msgKey = m.id || `msg-${idx}`;
                 const isHovered = hoveredMessageId === msgKey;
 
+                const parsed = parseMessageContent(m.content);
+                const isSwiped = swipedMessageId === msgKey;
+                const isHighlighted = highlightedMessageId === m.id;
+
                 return (
                   <div
                     key={msgKey}
+                    id={`chat-msg-${m.id}`}
                     onMouseEnter={() => setHoveredMessageId(msgKey)}
                     onMouseLeave={() => setHoveredMessageId(null)}
+                    onTouchStart={(e) => handleTouchStart(e, msgKey)}
+                    onTouchMove={(e) => handleTouchMove(e, msgKey)}
+                    onTouchEnd={() => handleTouchEnd(m, isOurs)}
                     className={cn(
-                      'flex flex-col group relative animate-chat-message',
-                      isOurs ? 'items-end' : 'items-start'
+                      'flex flex-col group relative animate-chat-message transition-all duration-300',
+                      isOurs ? 'items-end' : 'items-start',
+                      isHighlighted && 'ring-2 ring-[#7A1835] ring-offset-2 rounded-2xl bg-[#7A1835]/5 p-1'
                     )}
                   >
-                    {/* Hover Reaction Toolbar */}
+                    {/* Mobile Swipe-to-Reply Floating Indicator */}
+                    {isSwiped && (
+                      <div
+                        className="absolute left-1 top-1/2 -translate-y-1/2 flex items-center justify-center pointer-events-none z-10 transition-transform"
+                        style={{
+                          opacity: Math.min(1, swipeOffset / 20),
+                          transform: `translateY(-50%) scale(${Math.min(1.15, 0.6 + swipeOffset / 50)})`,
+                        }}
+                      >
+                        <div className="h-7 w-7 rounded-full bg-[#FAF3EC] border border-[#EAD8C7] flex items-center justify-center text-[#7A1835] shadow-xs">
+                          <IconArrowBackUp className="h-4 w-4 stroke-[2.4]" />
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Hover Reaction & Desktop Reply Toolbar */}
                     <div
                       className={cn(
                         'absolute -top-7 z-20 flex items-center gap-1 rounded-full border border-[#EAD8C7] bg-white/95 backdrop-blur-md px-2 py-0.5 shadow-md transition-all duration-200',
-                        isHovered ? 'opacity-100 scale-100' : 'opacity-0 scale-90 pointer-events-none',
+                        isHovered ? 'opacity-100 scale-100 pointer-events-auto' : 'opacity-0 scale-90 pointer-events-none',
                         isOurs ? 'right-2' : 'left-9'
                       )}
                     >
@@ -653,9 +856,24 @@ export function ChatWindow({
                           {emoji}
                         </button>
                       ))}
+                      <div className="h-3.5 w-[1px] bg-[#EAD8C7] mx-0.5" />
+                      <button
+                        type="button"
+                        onClick={() => handleStartReply(m, isOurs)}
+                        className="h-6 w-6 rounded-full hover:bg-[#FAF3EC] text-[#766B6F] hover:text-[#7A1835] hover:scale-115 transition-transform flex items-center justify-center active:scale-95"
+                        title="Reply to message"
+                        aria-label="Reply to message"
+                      >
+                        <IconArrowBackUp className="h-3.5 w-3.5 stroke-[2.2]" />
+                      </button>
                     </div>
 
-                    <div className="flex items-end gap-2 max-w-[85%] sm:max-w-[72%]">
+                    <div
+                      className="flex items-end gap-2 max-w-[85%] sm:max-w-[72%] transition-transform duration-100 ease-out"
+                      style={{
+                        transform: isSwiped ? `translateX(${swipeOffset}px)` : 'none',
+                      }}
+                    >
                       {/* Received message avatar */}
                       {!isOurs && (
                         <div className="shrink-0 mb-1">
@@ -677,7 +895,31 @@ export function ChatWindow({
                               : 'rounded-2xl rounded-bl-xs bg-white/95 border border-[#EAD8C7]/90 text-[#211B1E] shadow-[0_4px_16px_rgba(40,10,20,0.04)] backdrop-blur-sm'
                           )}
                         >
-                          <p className="whitespace-pre-wrap break-words">{m.content}</p>
+                          {/* Tagged / Quoted message preview if message is a reply */}
+                          {parsed.replyTo && (
+                            <div
+                              onClick={() => handleScrollToMessage(parsed.replyTo?.id)}
+                              className={cn(
+                                'mb-2 flex flex-col rounded-xl px-2.5 py-1.5 text-xs cursor-pointer transition-all border-l-3',
+                                isOurs
+                                  ? 'bg-black/20 border-l-white/90 hover:bg-black/30 text-white/95'
+                                  : 'bg-[#FAF3EC] border-l-[#7A1835] hover:bg-[#F5ECE3] text-[#211B1E]'
+                              )}
+                              title="Click to view quoted message"
+                            >
+                              <div className="flex items-center gap-1 font-bold text-[10px] uppercase tracking-wider mb-0.5">
+                                <IconArrowBackUp className="h-2.5 w-2.5" />
+                                <span>{parsed.replyTo.name}</span>
+                              </div>
+                              <p className={cn(
+                                'truncate text-[11px] leading-tight',
+                                isOurs ? 'text-white/80' : 'text-[#766B6F]'
+                              )}>
+                                {parsed.replyTo.text}
+                              </p>
+                            </div>
+                          )}
+                          <p className="whitespace-pre-wrap break-words">{parsed.text}</p>
                         </div>
 
                         {/* Floating Reaction Badge */}
@@ -720,6 +962,24 @@ export function ChatWindow({
                   </div>
                 );
               })
+            )}
+
+            {/* Real-time Partner Typing Indicator Bubble */}
+            {isPartnerTyping && (
+              <div className="flex items-end gap-2 animate-in fade-in slide-in-from-bottom-2 duration-200 mb-2">
+                <div className="shrink-0 mb-1">
+                  <Avatar
+                    src={participantPhoto}
+                    name={participantName}
+                    size="xs"
+                  />
+                </div>
+                <div className="rounded-2xl rounded-bl-xs bg-white/95 border border-[#EAD8C7]/90 px-3.5 py-2.5 shadow-[0_4px_16px_rgba(40,10,20,0.04)] backdrop-blur-sm flex items-center gap-1.5">
+                  <span className="h-1.5 w-1.5 rounded-full bg-[#7A1835] animate-bounce" style={{ animationDelay: '0ms' }} />
+                  <span className="h-1.5 w-1.5 rounded-full bg-[#7A1835] animate-bounce" style={{ animationDelay: '150ms' }} />
+                  <span className="h-1.5 w-1.5 rounded-full bg-[#7A1835] animate-bounce" style={{ animationDelay: '300ms' }} />
+                </div>
+              </div>
             )}
 
             <div ref={messagesEndRef} />
@@ -805,6 +1065,33 @@ export function ChatWindow({
                     {em}
                   </button>
                 ))}
+              </div>
+            )}
+
+            {/* Active Reply / Tagged Message Banner */}
+            {replyingTo && (
+              <div className="mb-2 flex items-center justify-between gap-3 rounded-2xl bg-[#FFF9F6] border border-[#EAD8C7] p-2 px-3 shadow-2xs animate-in fade-in slide-in-from-bottom-2 duration-150">
+                <div className="flex items-center gap-2.5 min-w-0 flex-1">
+                  <div className="h-8 w-1 rounded-full bg-[#7A1835] shrink-0" />
+                  <div className="min-w-0 flex-1">
+                    <p className="text-[11px] font-bold text-[#7A1835] flex items-center gap-1 leading-tight">
+                      <IconArrowBackUp className="h-3 w-3 stroke-[2.2]" />
+                      <span>Replying to {replyingTo.senderName}</span>
+                    </p>
+                    <p className="text-xs text-[#211B1E] truncate font-medium mt-0.5">
+                      {replyingTo.text}
+                    </p>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={handleCancelReply}
+                  className="h-6 w-6 rounded-full hover:bg-[#FAF3EC] text-[#766B6F] hover:text-[#7A1835] flex items-center justify-center shrink-0 transition-colors"
+                  title="Cancel reply"
+                  aria-label="Cancel reply"
+                >
+                  <IconX className="h-3.5 w-3.5" />
+                </button>
               </div>
             )}
 

@@ -484,6 +484,7 @@ export function MyProfile({ initialPreview = false }: { initialPreview?: boolean
       };
 
       setProfile(combined);
+      if (typeof window !== 'undefined') { window.dispatchEvent(new CustomEvent('profile:updated', { detail: combined })); }
       try {
         const badge = getRegistrationBadge(combined);
         localStorage.setItem('ishtam_user_category', badge.category);
@@ -1797,3 +1798,4 @@ export function MyProfile({ initialPreview = false }: { initialPreview?: boolean
     </div>
   );
 }
+

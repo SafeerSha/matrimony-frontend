@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { IconSearch, IconLoader2, IconCheck } from '@tabler/icons-react';
 import { Avatar } from '@/components/ui/avatar';
 import { cn } from '@/lib/cn';
-import { chatService, type Conversation } from '@/services/chat.service';
+import { chatService, parseMessageContent, type Conversation } from '@/services/chat.service';
 
 interface ChatConversationListProps {
   conversations: Conversation[];
@@ -215,7 +215,7 @@ export function ChatConversationList({
                           : 'font-normal text-[#766B6F]'
                       )}
                     >
-                      {c.lastMessage?.content || 'Started a matrimonial match conversation'}
+                      {parseMessageContent(c.lastMessage?.content || '').text || 'Started a matrimonial match conversation'}
                     </p>
 
                     {unread > 0 && (
