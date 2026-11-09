@@ -24,6 +24,8 @@ import { CONTACT_INFO } from '@/config/contact';
 import { isFreeTrialMode } from '@/config/feature-flags';
 import { useSubscription } from '@/context/subscription-context';
 import { subscriptionService, type SubscriptionPlan } from '@/services/subscription.service';
+import { paymentService } from '@/services/payment.service';
+import { triggerCashfreeCheckout } from '@/lib/cashfree';
 import { cn } from '@/lib/cn';
 import { toast } from '@/lib/toast';
 
@@ -66,19 +68,111 @@ export default function SubscriptionPage() {
     loadPlans();
   }, []);
 
+  // Listen for return redirect URL with ?order_id=... from Cashfree
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const urlParams = new URLSearchParams(window.location.search);
+    const returnOrderId = urlParams.get('order_id');
+
+    if (returnOrderId) {
+      window.history.replaceState({}, '', window.location.pathname);
+
+      (async () => {
+        try {
+          toast.info('Verifying Payment', {
+            description: 'Checking order status with payment gateway...',
+          });
+          const verification = await paymentService.verifyOrder(returnOrderId);
+          if (verification.paymentStatus === 'SUCCESS') {
+            await refreshSubscription();
+            toast.success('🎉 Payment Successful!', {
+              description: 'Your chat permit and contact credits are now fully active.',
+            });
+          } else {
+            toast.info('Payment Status', {
+              description:
+                verification.message ||
+                'Your transaction is being confirmed by your bank. It will reflect on your account shortly.',
+            });
+          }
+        } catch (e: any) {
+          console.error('Failed to verify return order:', e);
+        }
+      })();
+    }
+  }, [refreshSubscription]);
+
   const handleUpgrade = async (tierId: string, planName: string) => {
     setProcessing(tierId);
     try {
-      await subscriptionService.activatePermit(tierId);
-      await refreshSubscription();
-      toast.success(`Subscription Activated`, {
-        description: `You are now subscribed to the ${planName}.`,
+      if (isFreeTrial) {
+        // 1-Click Free Trial Mode
+        await subscriptionService.activatePermit(tierId);
+        await refreshSubscription();
+        toast.success(`Subscription Activated`, {
+          description: `You are now subscribed to the ${planName}.`,
+        });
+        setTimeout(() => {
+          window.location.href = '/app';
+        }, 900);
+        return;
+      }
+
+      // Live / Sandbox Cashfree Checkout Flow
+      toast.info('Preparing Checkout', {
+        description: `Initializing secure Cashfree order for ${planName}...`,
       });
-      setTimeout(() => {
-        window.location.href = '/app';
-      }, 900);
+
+      const order = await paymentService.createOrder(tierId);
+
+      // In local development simulation if credentials are not yet configured on server
+      if (order.paymentSessionId.startsWith('session_simulated_')) {
+        await subscriptionService.activatePermit(tierId, order.orderId);
+        await refreshSubscription();
+        toast.success('🎉 Test Order Activated', {
+          description: `Simulated development order ${order.orderId} processed for ${planName}.`,
+        });
+        setTimeout(() => {
+          window.location.href = '/app';
+        }, 900);
+        return;
+      }
+
+      // Open Cashfree Drop-in Checkout Modal
+      const result = await triggerCashfreeCheckout(order.paymentSessionId, {
+        redirectTarget: '_modal',
+      });
+
+      if (result?.error) {
+        toast.error('Payment Incomplete', {
+          description: result.error.message || 'Payment was cancelled or could not be completed.',
+        });
+        return;
+      }
+
+      // Reconcile and confirm payment with backend
+      toast.info('Verifying Payment', {
+        description: 'Confirming transaction...',
+      });
+      const verification = await paymentService.verifyOrder(order.orderId);
+
+      if (verification.paymentStatus === 'SUCCESS') {
+        await refreshSubscription();
+        toast.success('🎉 Payment Successful!', {
+          description: `You are now subscribed to the ${planName}. Enjoy connecting!`,
+        });
+        setTimeout(() => {
+          window.location.href = '/app';
+        }, 900);
+      } else {
+        toast.info('Payment In Progress', {
+          description:
+            verification.message ||
+            'Your payment is being processed. Your permit will activate shortly once confirmed by your bank.',
+        });
+      }
     } catch (err: any) {
-      toast.error('Activation Failed', {
+      toast.error('Payment Failed', {
         description: err?.message || 'Could not process subscription. Please try again.',
       });
     } finally {
