@@ -468,11 +468,53 @@ export function SecureImageViewer({
       )}
 
       {/* ======================================================== */}
-      {/* IMAGE CONTAINER WITH "ishtamchat" WATERMARK & ZOOM/PAN    */}
+      {/* STATIC "ishtamchat" OVERLAY WATERMARK (STATIONARY ON ZOOM) */}
       {/* ======================================================== */}
       <div
         className={cn(
-          'relative z-30 inline-flex items-center justify-center overflow-hidden rounded-xl shadow-2xl max-h-[94vh] max-w-[95vw] select-none',
+          'fixed inset-0 pointer-events-none z-30 transition-opacity duration-300 overflow-hidden select-none',
+          isShielded && 'opacity-0'
+        )}
+        aria-hidden="true"
+      >
+        {/* Tiled diagonal watermark SVG */}
+        <svg
+          className="w-full h-full opacity-45 select-none"
+          xmlns="http://www.w3.org/2000/svg"
+        >
+          <defs>
+            <pattern
+              id="ishtamchat-static-watermark"
+              width="220"
+              height="110"
+              patternUnits="userSpaceOnUse"
+              patternTransform="rotate(-25)"
+            >
+              <text
+                x="20"
+                y="45"
+                fill="rgba(255, 255, 255, 0.75)"
+                stroke="rgba(0, 0, 0, 0.85)"
+                strokeWidth="0.8"
+                fontSize="20"
+                fontFamily="system-ui, -apple-system, sans-serif"
+                fontWeight="900"
+                letterSpacing="2.5"
+              >
+                ishtamchat
+              </text>
+            </pattern>
+          </defs>
+          <rect width="100%" height="100%" fill="url(#ishtamchat-static-watermark)" />
+        </svg>
+      </div>
+
+      {/* ======================================================== */}
+      {/* IMAGE CONTAINER WITH ZOOM / PAN                          */}
+      {/* ======================================================== */}
+      <div
+        className={cn(
+          'relative z-20 inline-flex items-center justify-center overflow-hidden rounded-xl shadow-2xl max-h-[94vh] max-w-[95vw] select-none',
           scale > 1 ? (isPanning ? 'cursor-grabbing' : 'cursor-grab') : 'cursor-zoom-in'
         )}
         style={{
@@ -517,75 +559,33 @@ export function SecureImageViewer({
           }}
         />
 
-        {/* ======================================================== */}
-        {/* REPEATING "ishtamchat" OVERLAY WATERMARK                  */}
-        {/* ======================================================== */}
-        <div
-          className={cn(
-            'absolute inset-0 pointer-events-none z-10 transition-opacity duration-300 overflow-hidden select-none',
-            isShielded && 'opacity-0'
-          )}
-          aria-hidden="true"
-        >
-          {/* Tiled diagonal watermark SVG */}
-          <svg
-            className="w-full h-full opacity-50 select-none"
-            xmlns="http://www.w3.org/2000/svg"
-          >
-            <defs>
-              <pattern
-                id="ishtamchat-tiled-watermark"
-                width="220"
-                height="110"
-                patternUnits="userSpaceOnUse"
-                patternTransform="rotate(-25)"
-              >
-                <text
-                  x="20"
-                  y="45"
-                  fill="rgba(255, 255, 255, 0.75)"
-                  stroke="rgba(0, 0, 0, 0.85)"
-                  strokeWidth="0.8"
-                  fontSize="20"
-                  fontFamily="system-ui, -apple-system, sans-serif"
-                  fontWeight="900"
-                  letterSpacing="2.5"
-                >
-                  ishtamchat
-                </text>
-              </pattern>
-            </defs>
-            <rect width="100%" height="100%" fill="url(#ishtamchat-tiled-watermark)" />
-          </svg>
-        </div>
-
         {/* Transparent Shield Layer: Prevents right-click target extraction */}
         <div
-          className="absolute inset-0 z-20 pointer-events-auto cursor-inherit"
+          className="absolute inset-0 z-10 pointer-events-auto cursor-inherit"
           onContextMenu={preventSecurityAction}
           onDragStart={preventSecurityAction}
         />
-
-        {/* ======================================================== */}
-        {/* ANTI-RECORDING / ANTI-SNIPPING PRIVACY SHIELD            */}
-        {/* ======================================================== */}
-        {isShielded && (
-          <div className="absolute inset-0 z-30 flex flex-col items-center justify-center bg-black/98 p-6 text-center animate-content-appear">
-            <div className="grid h-16 w-16 place-items-center rounded-2xl bg-white/10 text-rose-400 border border-white/15 shadow-xl mb-4">
-              <IconShieldLock className="h-9 w-9 stroke-[1.8]" />
-            </div>
-            <h3 className="text-base font-bold text-white tracking-tight">
-              Capture Protection Active
-            </h3>
-            <p className="mt-1 text-xs text-stone-300 max-w-xs">
-              Screen recording and screen capture tools are restricted to safeguard member privacy on IshtamChat.
-            </p>
-            <p className="mt-3 text-[11px] text-stone-400 font-medium">
-              Click or refocus the window to resume viewing.
-            </p>
-          </div>
-        )}
       </div>
+
+      {/* ======================================================== */}
+      {/* ANTI-RECORDING / ANTI-SNIPPING PRIVACY SHIELD            */}
+      {/* ======================================================== */}
+      {isShielded && (
+        <div className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-black/98 p-6 text-center animate-content-appear">
+          <div className="grid h-16 w-16 place-items-center rounded-2xl bg-white/10 text-rose-400 border border-white/15 shadow-xl mb-4">
+            <IconShieldLock className="h-9 w-9 stroke-[1.8]" />
+          </div>
+          <h3 className="text-base font-bold text-white tracking-tight">
+            Capture Protection Active
+          </h3>
+          <p className="mt-1 text-xs text-stone-300 max-w-xs">
+            Screen recording and screen capture tools are restricted to safeguard member privacy on IshtamChat.
+          </p>
+          <p className="mt-3 text-[11px] text-stone-400 font-medium">
+            Click or refocus the window to resume viewing.
+          </p>
+        </div>
+      )}
     </div>,
     document.body
   );
