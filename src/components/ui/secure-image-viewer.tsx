@@ -7,6 +7,9 @@ import {
   IconChevronLeft,
   IconChevronRight,
   IconShieldLock,
+  IconZoomIn,
+  IconZoomOut,
+  IconZoomReset,
 } from '@tabler/icons-react';
 import { cn } from '@/lib/cn';
 
@@ -25,39 +28,71 @@ export function SecureImageViewer({
   images = [],
   initialIndex = 0,
   profileName,
-  profileId,
 }: SecureImageViewerProps) {
   const [currentIndex, setCurrentIndex] = useState<number>(initialIndex);
   const [mounted, setMounted] = useState<boolean>(false);
   const [isWindowBlurred, setIsWindowBlurred] = useState<boolean>(false);
   const [captureBlocked, setCaptureBlocked] = useState<boolean>(false);
 
-  // Touch swipe handling
+  // Zoom & Pan State for Mobile & Desktop Gestures
+  const [scale, setScale] = useState<number>(1);
+  const [position, setPosition] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
+  const [isPanning, setIsPanning] = useState<boolean>(false);
+
+  // Touch gesture tracking references
+  const initialDistanceRef = useRef<number | null>(null);
+  const initialScaleRef = useRef<number>(1);
+  const dragStartRef = useRef<{ x: number; y: number }>({ x: 0, y: 0 });
+  const startPosRef = useRef<{ x: number; y: number }>({ x: 0, y: 0 });
+  const lastTapRef = useRef<number>(0);
   const touchStartXRef = useRef<number | null>(null);
+
+  // Reset zoom helper
+  const resetZoom = useCallback(() => {
+    setScale(1);
+    setPosition({ x: 0, y: 0 });
+  }, []);
 
   // Mount on client
   useEffect(() => {
     setMounted(true);
   }, []);
 
-  // Sync index when initialIndex changes or modal opens
+  // Sync index and reset zoom when initialIndex changes or modal opens
   useEffect(() => {
     if (isOpen) {
       setCurrentIndex(Math.max(0, Math.min(initialIndex, Math.max(0, images.length - 1))));
       setIsWindowBlurred(false);
       setCaptureBlocked(false);
+      resetZoom();
     }
-  }, [isOpen, initialIndex, images.length]);
+  }, [isOpen, initialIndex, images.length, resetZoom]);
 
   const handlePrev = useCallback(() => {
     if (images.length <= 1) return;
+    resetZoom();
     setCurrentIndex((prev) => (prev > 0 ? prev - 1 : images.length - 1));
-  }, [images.length]);
+  }, [images.length, resetZoom]);
 
   const handleNext = useCallback(() => {
     if (images.length <= 1) return;
+    resetZoom();
     setCurrentIndex((prev) => (prev < images.length - 1 ? prev + 1 : 0));
-  }, [images.length]);
+  }, [images.length, resetZoom]);
+
+  const handleZoomIn = useCallback(() => {
+    setScale((prev) => Math.min(4, Number((prev + 0.5).toFixed(1))));
+  }, []);
+
+  const handleZoomOut = useCallback(() => {
+    setScale((prev) => {
+      const next = Math.max(1, Number((prev - 0.5).toFixed(1)));
+      if (next <= 1) {
+        setPosition({ x: 0, y: 0 });
+      }
+      return next;
+    });
+  }, []);
 
   // Prevent default utility for mouse/touch security events
   const preventSecurityAction = useCallback((e: React.SyntheticEvent) => {
@@ -79,7 +114,6 @@ export function SecureImageViewer({
     document.documentElement.style.overflow = 'hidden';
 
     // 2. Window Blur & Document Visibility Change Detection
-    // When external screen recording or Snipping Tool is activated, window loses focus
     const onWindowBlur = () => {
       setIsWindowBlurred(true);
     };
@@ -105,16 +139,18 @@ export function SecureImageViewer({
         return;
       }
 
-      // Navigate with Left / Right arrows
-      if (e.key === 'ArrowLeft') {
-        e.preventDefault();
-        handlePrev();
-        return;
-      }
-      if (e.key === 'ArrowRight') {
-        e.preventDefault();
-        handleNext();
-        return;
+      // Navigate with Left / Right arrows if not zoomed in
+      if (scale <= 1) {
+        if (e.key === 'ArrowLeft') {
+          e.preventDefault();
+          handlePrev();
+          return;
+        }
+        if (e.key === 'ArrowRight') {
+          e.preventDefault();
+          handleNext();
+          return;
+        }
       }
 
       // Intercept PrintScreen
@@ -167,23 +203,133 @@ export function SecureImageViewer({
       window.removeEventListener('keydown', onKeyDown, { capture: true });
       window.removeEventListener('contextmenu', onContextMenuWindow, { capture: true });
     };
-  }, [isOpen, onClose, handleNext, handlePrev]);
+  }, [isOpen, onClose, handleNext, handlePrev, scale]);
 
-  // Touch handlers for mobile swipe
+  // ========================================================
+  // MOBILE GESTURES: PINCH-ZOOM, DRAG/PAN, DOUBLE-TAP & SWIPE
+  // ========================================================
   const handleTouchStart = (e: React.TouchEvent) => {
-    touchStartXRef.current = e.touches[0].clientX;
+    if (e.touches.length === 2) {
+      // 2 fingers: pinch-to-zoom
+      const dist = Math.hypot(
+        e.touches[0].clientX - e.touches[1].clientX,
+        e.touches[0].clientY - e.touches[1].clientY
+      );
+      initialDistanceRef.current = dist;
+      initialScaleRef.current = scale;
+    } else if (e.touches.length === 1) {
+      // 1 finger: detect double-tap or drag
+      const now = Date.now();
+      const DOUBLE_TAP_DELAY = 300;
+
+      if (now - lastTapRef.current < DOUBLE_TAP_DELAY) {
+        // Double-tap detected: toggle zoom between 1x and 2.5x
+        if (scale > 1) {
+          resetZoom();
+        } else {
+          setScale(2.5);
+          setPosition({ x: 0, y: 0 });
+        }
+        lastTapRef.current = 0;
+        return;
+      }
+      lastTapRef.current = now;
+
+      if (scale > 1) {
+        // Drag/pan when zoomed
+        setIsPanning(true);
+        dragStartRef.current = { x: e.touches[0].clientX, y: e.touches[0].clientY };
+        startPosRef.current = { ...position };
+      } else {
+        // Track swipe for photo navigation
+        touchStartXRef.current = e.touches[0].clientX;
+      }
+    }
+  };
+
+  const handleTouchMove = (e: React.TouchEvent) => {
+    if (e.touches.length === 2 && initialDistanceRef.current) {
+      // Pinch zooming
+      const currentDist = Math.hypot(
+        e.touches[0].clientX - e.touches[1].clientX,
+        e.touches[0].clientY - e.touches[1].clientY
+      );
+      const ratio = currentDist / initialDistanceRef.current;
+      const targetScale = Math.min(4, Math.max(1, Number((initialScaleRef.current * ratio).toFixed(2))));
+      setScale(targetScale);
+      if (targetScale <= 1) {
+        setPosition({ x: 0, y: 0 });
+      }
+    } else if (e.touches.length === 1 && scale > 1 && isPanning) {
+      // Dragging / panning zoomed image
+      const deltaX = e.touches[0].clientX - dragStartRef.current.x;
+      const deltaY = e.touches[0].clientY - dragStartRef.current.y;
+
+      const maxPanX = (scale - 1) * 220;
+      const maxPanY = (scale - 1) * 300;
+
+      const newX = Math.max(-maxPanX, Math.min(maxPanX, startPosRef.current.x + deltaX));
+      const newY = Math.max(-maxPanY, Math.min(maxPanY, startPosRef.current.y + deltaY));
+      setPosition({ x: newX, y: newY });
+    }
   };
 
   const handleTouchEnd = (e: React.TouchEvent) => {
-    if (touchStartXRef.current === null) return;
-    const diff = touchStartXRef.current - e.changedTouches[0].clientX;
-    const SWIPE_THRESHOLD = 50;
-    if (diff > SWIPE_THRESHOLD) {
-      handleNext();
-    } else if (diff < -SWIPE_THRESHOLD) {
-      handlePrev();
+    if (e.touches.length === 0) {
+      setIsPanning(false);
+      initialDistanceRef.current = null;
+
+      // When at 1x, process horizontal swipe navigation
+      if (scale === 1 && touchStartXRef.current !== null && e.changedTouches.length > 0) {
+        const diff = touchStartXRef.current - e.changedTouches[0].clientX;
+        const SWIPE_THRESHOLD = 50;
+        if (diff > SWIPE_THRESHOLD) {
+          handleNext();
+        } else if (diff < -SWIPE_THRESHOLD) {
+          handlePrev();
+        }
+        touchStartXRef.current = null;
+      }
     }
-    touchStartXRef.current = null;
+  };
+
+  // Mouse drag & scroll wheel support for desktop
+  const handleWheel = (e: React.WheelEvent) => {
+    e.preventDefault();
+    const zoomFactor = e.deltaY < 0 ? 1.2 : 0.8;
+    setScale((prev) => {
+      const next = Math.min(4, Math.max(1, Number((prev * zoomFactor).toFixed(2))));
+      if (next <= 1) {
+        setPosition({ x: 0, y: 0 });
+      }
+      return next;
+    });
+  };
+
+  const handleMouseDown = (e: React.MouseEvent) => {
+    if (scale > 1) {
+      setIsPanning(true);
+      dragStartRef.current = { x: e.clientX, y: e.clientY };
+      startPosRef.current = { ...position };
+    }
+  };
+
+  const handleMouseMove = (e: React.MouseEvent) => {
+    if (isPanning && scale > 1) {
+      e.preventDefault();
+      const deltaX = e.clientX - dragStartRef.current.x;
+      const deltaY = e.clientY - dragStartRef.current.y;
+      const maxPanX = (scale - 1) * 220;
+      const maxPanY = (scale - 1) * 300;
+      setPosition({
+        x: Math.max(-maxPanX, Math.min(maxPanX, startPosRef.current.x + deltaX)),
+        y: Math.max(-maxPanY, Math.min(maxPanY, startPosRef.current.y + deltaY)),
+      });
+    }
+  };
+
+  const handleMouseUp = () => {
+    setIsPanning(false);
   };
 
   if (!mounted || !isOpen || images.length === 0) return null;
@@ -196,14 +342,13 @@ export function SecureImageViewer({
       role="dialog"
       aria-modal="true"
       aria-label="Secure Full-Screen Image Viewer"
-      className="fixed inset-0 z-[999999] select-none bg-black flex items-center justify-center overflow-hidden touch-none"
+      className="fixed inset-0 z-[999999] select-none bg-black flex items-center justify-center overflow-hidden"
       onContextMenu={preventSecurityAction}
       onDragStart={preventSecurityAction}
-      onTouchStart={handleTouchStart}
-      onTouchEnd={handleTouchEnd}
       style={{
         WebkitUserSelect: 'none',
         userSelect: 'none',
+        touchAction: 'none',
       }}
     >
       {/* Print protection style: hides viewer on print/PDF export */}
@@ -216,29 +361,73 @@ export function SecureImageViewer({
       {/* Backdrop: Clicking backdrop outside image closes the viewer */}
       <div
         className="absolute inset-0 bg-black/95 transition-opacity"
-        onClick={onClose}
+        onClick={() => {
+          if (scale > 1) {
+            resetZoom();
+          } else {
+            onClose();
+          }
+        }}
         aria-hidden="true"
       />
 
-      {/* Minimal Top Close Trigger */}
-      <button
-        type="button"
-        onClick={onClose}
-        aria-label="Close full-screen image viewer"
-        className="absolute top-5 right-5 z-40 grid h-11 w-11 place-items-center rounded-full bg-white/10 text-white/80 hover:bg-white/20 hover:text-white backdrop-blur-md transition-all active:scale-95 focus:outline-hidden"
-      >
-        <IconX className="h-6 w-6 stroke-[2.2]" />
-      </button>
+      {/* Top Floating Controls: Counter, Zoom In/Out & Close */}
+      <div className="absolute top-5 inset-x-5 z-40 flex items-center justify-between pointer-events-none">
+        {/* Photo Counter Pill (subtle) */}
+        {images.length > 1 ? (
+          <div className="px-3.5 py-1.5 rounded-full bg-black/50 backdrop-blur-md text-white/85 text-xs font-semibold tracking-wide border border-white/15 pointer-events-auto">
+            {currentIndex + 1} / {images.length}
+          </div>
+        ) : (
+          <div />
+        )}
 
-      {/* Photo Counter Pill (subtle) */}
-      {images.length > 1 && (
-        <div className="absolute top-5 left-5 z-40 px-3.5 py-1.5 rounded-full bg-white/10 backdrop-blur-md text-white/85 text-xs font-semibold tracking-wide border border-white/15">
-          {currentIndex + 1} / {images.length}
+        {/* Action Controls */}
+        <div className="flex items-center gap-2 pointer-events-auto">
+          {/* Zoom Out Button */}
+          <button
+            type="button"
+            onClick={handleZoomOut}
+            disabled={scale <= 1}
+            aria-label="Zoom out"
+            title="Zoom out"
+            className={cn(
+              'grid h-10 w-10 place-items-center rounded-full bg-black/50 backdrop-blur-md border border-white/15 text-white/80 transition-all active:scale-95 focus:outline-hidden',
+              scale <= 1 ? 'opacity-40 cursor-not-allowed' : 'hover:bg-black/75 hover:text-white'
+            )}
+          >
+            <IconZoomOut className="h-5 w-5" />
+          </button>
+
+          {/* Zoom In Button */}
+          <button
+            type="button"
+            onClick={handleZoomIn}
+            disabled={scale >= 4}
+            aria-label="Zoom in"
+            title="Zoom in"
+            className={cn(
+              'grid h-10 w-10 place-items-center rounded-full bg-black/50 backdrop-blur-md border border-white/15 text-white/80 transition-all active:scale-95 focus:outline-hidden',
+              scale >= 4 ? 'opacity-40 cursor-not-allowed' : 'hover:bg-black/75 hover:text-white'
+            )}
+          >
+            <IconZoomIn className="h-5 w-5" />
+          </button>
+
+          {/* Close Trigger */}
+          <button
+            type="button"
+            onClick={onClose}
+            aria-label="Close full-screen image viewer"
+            className="grid h-10 w-10 place-items-center rounded-full bg-white/15 text-white/90 hover:bg-white/25 hover:text-white backdrop-blur-md transition-all active:scale-95 focus:outline-hidden ml-1"
+          >
+            <IconX className="h-5 w-5 stroke-[2.2]" />
+          </button>
         </div>
-      )}
+      </div>
 
-      {/* Navigation Arrows for Multiple Photos */}
-      {images.length > 1 && (
+      {/* Navigation Arrows for Multiple Photos (only when not zoomed in) */}
+      {images.length > 1 && scale <= 1 && (
         <>
           <button
             type="button"
@@ -247,7 +436,7 @@ export function SecureImageViewer({
               handlePrev();
             }}
             aria-label="Previous photo"
-            className="absolute left-4 top-1/2 -translate-y-1/2 z-40 grid h-12 w-12 place-items-center rounded-full bg-black/40 text-white/85 hover:bg-black/75 hover:text-white backdrop-blur-md border border-white/15 transition-all active:scale-95 focus:outline-hidden"
+            className="absolute left-4 top-1/2 -translate-y-1/2 z-40 grid h-12 w-12 place-items-center rounded-full bg-black/45 text-white/85 hover:bg-black/75 hover:text-white backdrop-blur-md border border-white/15 transition-all active:scale-95 focus:outline-hidden"
           >
             <IconChevronLeft className="h-7 w-7" />
           </button>
@@ -259,19 +448,55 @@ export function SecureImageViewer({
               handleNext();
             }}
             aria-label="Next photo"
-            className="absolute right-4 top-1/2 -translate-y-1/2 z-40 grid h-12 w-12 place-items-center rounded-full bg-black/40 text-white/85 hover:bg-black/75 hover:text-white backdrop-blur-md border border-white/15 transition-all active:scale-95 focus:outline-hidden"
+            className="absolute right-4 top-1/2 -translate-y-1/2 z-40 grid h-12 w-12 place-items-center rounded-full bg-black/45 text-white/85 hover:bg-black/75 hover:text-white backdrop-blur-md border border-white/15 transition-all active:scale-95 focus:outline-hidden"
           >
             <IconChevronRight className="h-7 w-7" />
           </button>
         </>
       )}
 
+      {/* Reset Zoom Pill at bottom when zoomed in */}
+      {scale > 1 && (
+        <button
+          type="button"
+          onClick={resetZoom}
+          className="absolute bottom-6 z-40 flex items-center gap-1.5 px-4 py-2 rounded-full bg-black/70 backdrop-blur-md border border-white/25 text-white/95 text-xs font-semibold shadow-2xl transition-all active:scale-95 hover:bg-black/85"
+        >
+          <IconZoomReset className="h-4 w-4" />
+          <span>{Math.round(scale * 100)}% · Tap to reset</span>
+        </button>
+      )}
+
       {/* ======================================================== */}
-      {/* IMAGE CONTAINER WITH "ishtamchat" WATERMARK & SHIELD      */}
+      {/* IMAGE CONTAINER WITH "ishtamchat" WATERMARK & ZOOM/PAN    */}
       {/* ======================================================== */}
       <div
-        className="relative z-30 inline-flex items-center justify-center overflow-hidden rounded-xl shadow-2xl max-h-[94vh] max-w-[95vw]"
+        className={cn(
+          'relative z-30 inline-flex items-center justify-center overflow-hidden rounded-xl shadow-2xl max-h-[94vh] max-w-[95vw] select-none',
+          scale > 1 ? (isPanning ? 'cursor-grabbing' : 'cursor-grab') : 'cursor-zoom-in'
+        )}
+        style={{
+          transform: `translate3d(${position.x}px, ${position.y}px, 0px) scale(${scale})`,
+          transition: isPanning ? 'none' : 'transform 200ms ease-out',
+          touchAction: 'none',
+        }}
         onClick={(e) => e.stopPropagation()}
+        onDoubleClick={() => {
+          if (scale > 1) {
+            resetZoom();
+          } else {
+            setScale(2.5);
+            setPosition({ x: 0, y: 0 });
+          }
+        }}
+        onWheel={handleWheel}
+        onMouseDown={handleMouseDown}
+        onMouseMove={handleMouseMove}
+        onMouseUp={handleMouseUp}
+        onMouseLeave={handleMouseUp}
+        onTouchStart={handleTouchStart}
+        onTouchMove={handleTouchMove}
+        onTouchEnd={handleTouchEnd}
         onContextMenu={preventSecurityAction}
         onDragStart={preventSecurityAction}
       >
@@ -334,9 +559,9 @@ export function SecureImageViewer({
           </svg>
         </div>
 
-        {/* Transparent Shield Layer: Sits directly over the image to block right-clicks, element inspections, and dragging */}
+        {/* Transparent Shield Layer: Prevents right-click target extraction */}
         <div
-          className="absolute inset-0 z-20 pointer-events-auto cursor-default"
+          className="absolute inset-0 z-20 pointer-events-auto cursor-inherit"
           onContextMenu={preventSecurityAction}
           onDragStart={preventSecurityAction}
         />
