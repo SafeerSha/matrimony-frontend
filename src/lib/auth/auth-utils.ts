@@ -103,6 +103,37 @@ export function resolvePostAuthRoute(
   authRes?: UserStatusCheckInput | null,
   fallbackTarget = "/app/discover"
 ): { url: string; isDraft: boolean } {
+  const role = String(
+    authRes?.user?.role ||
+    authRes?.role ||
+    ""
+  ).toUpperCase().trim();
+
+  // 1. Role-based prioritized portal routing
+  if (role === "ADMIN") {
+    let adminTarget = "/admin";
+    if (typeof window !== "undefined") {
+      const searchParams = new URLSearchParams(window.location.search);
+      const next = searchParams.get("next");
+      if (next && next.startsWith("/admin") && !next.includes("/admin/login")) {
+        adminTarget = next;
+      }
+    }
+    return { url: adminTarget, isDraft: false };
+  }
+
+  if (role === "RM") {
+    let rmTarget = "/rm";
+    if (typeof window !== "undefined") {
+      const searchParams = new URLSearchParams(window.location.search);
+      const next = searchParams.get("next");
+      if (next && next.startsWith("/rm")) {
+        rmTarget = next;
+      }
+    }
+    return { url: rmTarget, isDraft: false };
+  }
+
   const isDraft = isDraftUser(authRes);
 
   if (isDraft) {

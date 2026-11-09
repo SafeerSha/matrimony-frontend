@@ -19,7 +19,8 @@ import { toast } from '@/lib/toast';
 function AdminLoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const nextUrl = searchParams.get('next') || '/admin';
+  const rawNext = searchParams.get('next');
+  const nextUrl = rawNext && !rawNext.includes('/admin/login') ? rawNext : '/admin';
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -37,7 +38,7 @@ function AdminLoginForm() {
       try {
         const user = await authService.getCurrentUser();
         if (isMounted && user?.role?.toUpperCase() === 'ADMIN') {
-          window.location.href = nextUrl || '/admin';
+          window.location.href = nextUrl;
         }
       } catch {
         // Not authenticated or expired session; remain on login form
@@ -68,6 +69,9 @@ function AdminLoginForm() {
     setErrorMessage(null);
 
     try {
+      // Clear any prior non-admin or stale session to avoid credential bleed
+      authService.clearAccessToken();
+
       const res = await authService.login({
         email: cleanEmail,
         password,
@@ -85,18 +89,23 @@ function AdminLoginForm() {
         return;
       }
 
+      if (res?.accessToken) {
+        authService.setAccessToken(res.accessToken, res.refreshToken);
+      }
+
       toast.success('Admin Authenticated', {
         description: 'Welcome to the Admin Portal.',
       });
 
       // Perform a full top-level navigation so all fresh cookies are dispatched
       setTimeout(() => {
-        window.location.href = nextUrl || '/admin';
-      }, 150);
+        window.location.href = nextUrl;
+      }, 250);
     } catch (err: any) {
-      const msg =
-        err?.message ||
-        'Authentication failed. Please verify your credentials and try again.';
+      const isAuthError = err?.status === 401 || err?.statusCode === 401;
+      const msg = isAuthError
+        ? 'Invalid email or password. Please verify your credentials and try again.'
+        : err?.message || 'Authentication failed. Please verify your credentials and try again.';
       setErrorMessage(msg);
       toast.error('Sign In Failed', { description: msg });
     } finally {

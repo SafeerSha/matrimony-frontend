@@ -237,6 +237,18 @@ export default function LoginPage() {
         return;
       }
 
+      // Proactive detection for administrator accounts
+      if (cleanEmail === "admin@ishtamchat.com" || cleanEmail.startsWith("admin@")) {
+        setIsLoading(false);
+        setAuthMethod("password");
+        setIdentifier(cleanEmail);
+        toast.info(
+          "Administrator Account",
+          "Administrator accounts authenticate using password. Please enter your administrator password."
+        );
+        return;
+      }
+
       try {
         await authService.sendOtp({ email: cleanEmail, purpose: "login" } as any);
         setOtpStep("code");
@@ -1231,15 +1243,26 @@ export default function LoginPage() {
             </div>
 
             {/* Bottom Create Account Switcher */}
-            <div className="mt-5 sm:mt-8 pt-3.5 sm:pt-5 border-t border-[var(--border)] text-center text-xs sm:text-sm text-[var(--muted)]">
-              <span>New to IshtamChat? </span>
-              <button
-                type="button"
-                onClick={() => setIsRegisterModalOpen(true)}
-                className="font-semibold text-[var(--primary)] hover:text-[var(--primary-deep)] hover:underline focus-ring rounded cursor-pointer"
-              >
-                Create a profile
-              </button>
+            <div className="mt-5 sm:mt-8 pt-3.5 sm:pt-5 border-t border-[var(--border)] text-center text-xs sm:text-sm text-[var(--muted)] space-y-2">
+              <div>
+                <span>New to IshtamChat? </span>
+                <button
+                  type="button"
+                  onClick={() => setIsRegisterModalOpen(true)}
+                  className="font-semibold text-[var(--primary)] hover:text-[var(--primary-deep)] hover:underline focus-ring rounded cursor-pointer"
+                >
+                  Create a profile
+                </button>
+              </div>
+              <div className="text-[11px] text-[var(--muted)]">
+                <span>Looking for the Administrative Console? </span>
+                <Link
+                  href="/admin/login"
+                  className="font-semibold text-[var(--primary)] hover:underline"
+                >
+                  Sign in to Admin Portal
+                </Link>
+              </div>
             </div>
           </div>
         </div>

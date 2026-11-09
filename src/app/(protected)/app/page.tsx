@@ -136,7 +136,7 @@ export default function DashboardPage() {
           try {
             const badge = getRegistrationBadge(prof);
             localStorage.setItem('ishtam_user_category', badge.category);
-          } catch {}
+          } catch { }
         }
 
         // 2. Fetch recommendations, received interests, matches, and shortcuts in parallel
@@ -630,7 +630,7 @@ export default function DashboardPage() {
       {/* ======================================================== */}
       <section className="space-y-2">
         <SectionHeader
-          eyebrow="Curated For You"
+          // eyebrow="Curated For You"
           title="Today’s Top Recommendations"
           description="High-compatibility profiles closely aligned with your partner preferences."
           action={
@@ -846,7 +846,7 @@ export default function DashboardPage() {
       <section className="space-y-2">
         <div className="flex items-center justify-between">
           <SectionHeader
-            eyebrow="Recently Joined"
+            // eyebrow="Recently Joined"
             title="New member profiles"
             description="Freshly registered members seeking genuine matrimonial connections."
           />
@@ -930,24 +930,24 @@ export default function DashboardPage() {
       {/* ======================================================== */}
       <section className="space-y-2">
         <SectionHeader
-          eyebrow="Near You"
+          // eyebrow="Near You"
           title={
             nearYouType === 'exact'
               ? `Members in ${formatCityName(userCity)}`
               : nearYouType === 'cluster'
-              ? `Members near ${formatCityName(userCity)}`
-              : userCity
-              ? `Members across ${userState}`
-              : 'Members in your region'
+                ? `Members near ${formatCityName(userCity)}`
+                : userCity
+                  ? `Members across ${userState}`
+                  : 'Members in your region'
           }
           description={
             nearYouType === 'exact'
               ? `Explore matches living in ${formatCityName(userCity)} for convenient family meetings.`
               : nearYouType === 'cluster'
-              ? `Matches from neighboring districts around ${formatCityName(userCity)}.`
-              : userCity
-              ? `No members registered in ${formatCityName(userCity)} yet — showing verified members across ${userState}.`
-              : 'Explore matches close to your hometown for seamless family connections.'
+                ? `Matches from neighboring districts around ${formatCityName(userCity)}.`
+                : userCity
+                  ? `No members registered in ${formatCityName(userCity)} yet — showing verified members across ${userState}.`
+                  : 'Explore matches close to your hometown for seamless family connections.'
           }
           action={
             <Link
