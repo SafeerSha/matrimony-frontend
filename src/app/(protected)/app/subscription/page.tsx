@@ -49,7 +49,43 @@ export default function SubscriptionPage() {
   const [loadingPlans, setLoadingPlans] = useState<boolean>(true);
   const [fetchError, setFetchError] = useState<string | null>(null);
   const [processing, setProcessing] = useState<string | null>(null);
+  const [pendingPayment, setPendingPayment] = useState<{ orderId: string } | null>(null);
+  const [isCheckingPending, setIsCheckingPending] = useState(false);
   const isFreeTrial = isFreeTrialMode();
+
+  const checkPendingStatus = async (orderId: string) => {
+    setIsCheckingPending(true);
+    try {
+      const verification = await paymentService.verifyOrder(orderId);
+      if (verification.paymentStatus === 'SUCCESS') {
+        await refreshSubscription();
+        setPendingPayment(null);
+        toast.success('🎉 Payment Confirmed!', {
+          description: 'Your subscription permit and contact credits are now fully active.',
+        });
+      } else if (verification.paymentStatus === 'USER_DROPPED') {
+        setPendingPayment(null);
+        toast.info('Payment Cancelled', {
+          description: 'The transaction was cancelled. No amount was debited.',
+        });
+      } else if (verification.paymentStatus === 'FAILED') {
+        setPendingPayment(null);
+        toast.error('Payment Failed', {
+          description: verification.message || 'The payment failed or was declined by your bank.',
+        });
+      } else {
+        toast.info('Still Processing', {
+          description: 'Your bank has not completed processing yet. Please check back in a couple of minutes.',
+        });
+      }
+    } catch (err: any) {
+      toast.error('Check Status Failed', {
+        description: err?.message || 'Could not verify status with payment gateway.',
+      });
+    } finally {
+      setIsCheckingPending(false);
+    }
+  };
 
   const loadPlans = async () => {
     try {
@@ -86,14 +122,28 @@ export default function SubscriptionPage() {
           const verification = await paymentService.verifyOrder(returnOrderId);
           if (verification.paymentStatus === 'SUCCESS') {
             await refreshSubscription();
+            setPendingPayment(null);
             toast.success('🎉 Payment Successful!', {
               description: 'Your chat permit and contact credits are now fully active.',
             });
-          } else {
-            toast.info('Payment Status', {
+          } else if (verification.paymentStatus === 'USER_DROPPED') {
+            setPendingPayment(null);
+            toast.info('Payment Cancelled', {
+              description: 'You cancelled the checkout session. No amount was debited.',
+            });
+          } else if (verification.paymentStatus === 'PENDING') {
+            setPendingPayment({ orderId: returnOrderId });
+            toast.warning('Payment Pending Confirmation', {
               description:
                 verification.message ||
-                'Your transaction is being confirmed by your bank. It will reflect on your account shortly.',
+                'Your payment is being confirmed by your bank. If the amount was debited, your permit will activate automatically.',
+            });
+          } else {
+            setPendingPayment(null);
+            toast.error('Payment Incomplete', {
+              description:
+                verification.message ||
+                'Payment could not be completed. Please try again.',
             });
           }
         } catch (e: any) {
@@ -121,7 +171,7 @@ export default function SubscriptionPage() {
 
       // Live / Sandbox Cashfree Checkout Flow
       toast.info('Preparing Checkout', {
-        description: `Initializing secure Cashfree order for ${planName}...`,
+        description: `Initializing secure order for ${planName}...`,
       });
 
       const order = await paymentService.createOrder(tierId);
@@ -143,9 +193,23 @@ export default function SubscriptionPage() {
       const result = await triggerCashfreeCheckout(order.paymentSessionId);
 
       if (result?.error) {
-        toast.error('Payment Incomplete', {
-          description: result.error.message || 'Payment was cancelled or could not be completed.',
-        });
+        const errorMsg = (result.error.message || '').toLowerCase();
+        const errorCode = (result.error.code || '').toUpperCase();
+        const isUserDrop =
+          errorCode === 'USER_DROPPED' ||
+          errorMsg.includes('drop') ||
+          errorMsg.includes('closed') ||
+          errorMsg.includes('cancel');
+
+        if (isUserDrop) {
+          toast.info('Payment Cancelled', {
+            description: 'You cancelled the checkout session. No amount was debited.',
+          });
+        } else {
+          toast.error('Payment Incomplete', {
+            description: result.error.message || 'Payment was cancelled or could not be completed.',
+          });
+        }
         return;
       }
 
@@ -164,17 +228,31 @@ export default function SubscriptionPage() {
 
       if (verification.paymentStatus === 'SUCCESS') {
         await refreshSubscription();
+        setPendingPayment(null);
         toast.success('🎉 Payment Successful!', {
           description: `You are now subscribed to the ${planName}. Enjoy connecting!`,
         });
         setTimeout(() => {
           window.location.href = '/app';
         }, 900);
-      } else {
-        toast.info('Payment In Progress', {
+      } else if (verification.paymentStatus === 'USER_DROPPED') {
+        setPendingPayment(null);
+        toast.info('Payment Cancelled', {
+          description: 'You cancelled the payment. No amount was debited.',
+        });
+      } else if (verification.paymentStatus === 'PENDING') {
+        setPendingPayment({ orderId: order.orderId });
+        toast.warning('Payment Pending Confirmation', {
           description:
             verification.message ||
-            'Your payment is being processed. Your permit will activate shortly once confirmed by your bank.',
+            'Your payment is being confirmed by your bank. If the amount was debited, your permit will activate automatically once confirmed.',
+        });
+      } else {
+        setPendingPayment(null);
+        toast.error('Payment Incomplete', {
+          description:
+            verification.message ||
+            'Your payment could not be processed. Please try again or choose another payment method.',
         });
       }
     } catch (err: any) {
@@ -234,6 +312,52 @@ export default function SubscriptionPage() {
               : 'An active Premium is required to send chat requests and converse with other members.'
           }
         />
+
+        {/* Pending Payment Alert Banner */}
+        {pendingPayment && (
+          <div className="rounded-2xl border border-amber-300 bg-amber-50/90 dark:bg-amber-950/40 p-4 sm:p-5 text-amber-900 dark:text-amber-200 shadow-sm max-w-7xl mx-auto flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div className="flex items-start sm:items-center gap-3">
+              <span className="grid h-10 w-10 place-items-center rounded-xl bg-amber-200 dark:bg-amber-900/60 text-amber-800 dark:text-amber-300 shrink-0">
+                <IconClock className="h-5 w-5 animate-pulse" />
+              </span>
+              <div>
+                <h3 className="text-sm font-bold text-amber-950 dark:text-amber-100">
+                  Payment Confirmation In Progress
+                </h3>
+                <p className="text-xs text-amber-800 dark:text-amber-300 mt-0.5">
+                  Order <span className="font-mono font-semibold">{pendingPayment.orderId}</span> is awaiting confirmation from your bank. If amount was debited, your permit will activate automatically.
+                </p>
+              </div>
+            </div>
+            <div className="flex items-center gap-2 self-end sm:self-auto shrink-0">
+              <Button
+                size="sm"
+                variant="outline"
+                className="border-amber-300 bg-white text-amber-900 hover:bg-amber-100"
+                disabled={isCheckingPending}
+                onClick={() => checkPendingStatus(pendingPayment.orderId)}
+              >
+                {isCheckingPending ? (
+                  <>
+                    <IconLoader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" /> Checking...
+                  </>
+                ) : (
+                  <>
+                    <IconRefresh className="mr-1.5 h-3.5 w-3.5" /> Check Status
+                  </>
+                )}
+              </Button>
+              <Button
+                size="sm"
+                variant="ghost"
+                className="text-amber-800 hover:bg-amber-200/50"
+                onClick={() => setPendingPayment(null)}
+              >
+                Dismiss
+              </Button>
+            </div>
+          </div>
+        )}
 
         {/* Current Active Plan Status & Usage Dashboard */}
         {isSubscribed ? (
