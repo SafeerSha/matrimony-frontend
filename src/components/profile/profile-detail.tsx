@@ -30,6 +30,7 @@ import {
   IconFlag,
   IconCoffee,
   IconCheck,
+  IconPhone,
   IconMoodSmile as IconSmile,
   IconShield,
   IconClock,
@@ -49,6 +50,7 @@ import { VerificationBadge } from '@/components/ui/verification-badge';
 import { ProfileCard } from '@/components/profile/profile-card';
 import { RegistrationCategoryBadge } from '@/components/ui/registration-badge';
 import { matchesService, profileService } from '@/services';
+import { subscriptionService } from '@/services/subscription.service';
 import { toast } from '@/lib/toast';
 import { useSubscription } from '@/context/subscription-context';
 import { cn } from '@/lib/cn';
@@ -123,6 +125,8 @@ function mapApiProfileToDetail(res: any, targetId: string = 'me'): Profile {
     nationality: res.nationality || 'Indian',
     country: res.country || 'India',
     diet: res.diet || '',
+    phone: res.phone || res.user?.phone,
+    isContactUnlocked: Boolean(res.isContactUnlocked),
   };
 }
 
@@ -150,7 +154,69 @@ export function ProfileDetail({
   const [isLoading, setIsLoading] = useState(!initialProfile);
   const [showFloatingDock, setShowFloatingDock] = useState(false);
   const inlineActionsRef = useRef<HTMLDivElement>(null);
-  const { isSubscribed, openChatPrompt } = useSubscription();
+  const {
+    subscription,
+    isSubscribed,
+    openChatPrompt,
+    openUpgradeModal,
+    refreshSubscription,
+  } = useSubscription();
+  const [unlockedPhone, setUnlockedPhone] = useState<string | null>(null);
+  const [isContactUnlocked, setIsContactUnlocked] = useState<boolean>(false);
+  const [isUnlockingContact, setIsUnlockingContact] = useState<boolean>(false);
+  const [showUnlockModal, setShowUnlockModal] = useState<boolean>(false);
+
+  useEffect(() => {
+    if (profile?.phone) {
+      setUnlockedPhone(profile.phone);
+      setIsContactUnlocked(true);
+    } else if (profile?.isContactUnlocked) {
+      setIsContactUnlocked(true);
+    }
+  }, [profile]);
+
+  const handleUnlockClick = () => {
+    if (unlockedPhone || isContactUnlocked) return;
+    if (!isSubscribed) {
+      openUpgradeModal();
+      return;
+    }
+    const remaining = subscription?.contactCredits ?? 0;
+    const isUnlimited = remaining >= 9000;
+    if (!isUnlimited && remaining <= 0) {
+      toast.error(
+        'Credits Exhausted',
+        'You have used all available contact credits. Upgrade your permit to unlock more contacts.'
+      );
+      openUpgradeModal();
+      return;
+    }
+    setShowUnlockModal(true);
+  };
+
+  const handleConfirmUnlock = async () => {
+    if (!profile) return;
+    const targetUserId = (profile as any).userId || profile.id;
+    setIsUnlockingContact(true);
+    try {
+      const res = await subscriptionService.unlockContact(targetUserId);
+      if (res.phone) {
+        setUnlockedPhone(res.phone);
+        setIsContactUnlocked(true);
+        setShowUnlockModal(false);
+        toast.success('Contact Unlocked', `Verified phone: ${res.phone}`);
+        refreshSubscription();
+      }
+    } catch (err: any) {
+      const msg = err?.message || 'Failed to unlock contact number';
+      toast.error('Unlock Failed', msg);
+      if (err?.code === 'PERMIT_REQUIRED' || err?.code === 'CONTACT_CREDITS_EXHAUSTED') {
+        openUpgradeModal();
+      }
+    } finally {
+      setIsUnlockingContact(false);
+    }
+  };
   const [isMounted, setIsMounted] = useState(false);
   const router = useRouter();
 
@@ -1414,16 +1480,42 @@ export function ProfileDetail({
             </div>
 
             <div className="space-y-2.5 pt-2">
-              <div className="rounded-xl bg-[var(--surface-muted)] p-3 border border-[var(--border)] flex items-center justify-between">
-                <div>
-                  <p className="text-[11px] font-semibold text-[var(--muted)]">Verified Contact & Phone</p>
-                  <p className="text-xs font-semibold text-[var(--foreground)]">
-                    Protected by Matrimonial Privacy
+              <div className="rounded-xl bg-[var(--surface-muted)] p-3 border border-[var(--border)] flex items-center justify-between gap-3">
+                <div className="min-w-0">
+                  <div className="flex items-center gap-1.5 text-[11px] font-semibold text-[var(--muted)]">
+                    <IconPhone className="h-3.5 w-3.5 text-[var(--primary)]" />
+                    <span>Verified Contact & Phone</span>
+                  </div>
+                  <p className="text-xs sm:text-sm font-bold text-[var(--foreground)] mt-0.5 truncate tracking-wide">
+                    {unlockedPhone || (isContactUnlocked && profile.phone) ? (
+                      <a href={`tel:${unlockedPhone || profile.phone}`} className="hover:underline text-[var(--primary)] font-mono">
+                        {unlockedPhone || profile.phone}
+                      </a>
+                    ) : (
+                      <span className="font-mono text-[var(--muted-strong)]">+91 ••••• •••••</span>
+                    )}
                   </p>
                 </div>
-                <span className="inline-flex items-center gap-1 rounded-full bg-stone-200/60 px-2 py-0.5 text-[10px] font-bold text-stone-600">
-                  <IconLock className="h-3 w-3" /> Private
-                </span>
+                {unlockedPhone || isContactUnlocked ? (
+                  <span className="inline-flex items-center gap-1 rounded-full bg-emerald-100 text-emerald-800 px-2.5 py-1 text-[11px] font-bold border border-emerald-200 shrink-0">
+                    <IconCheck className="h-3 w-3" /> Unlocked
+                  </span>
+                ) : (
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={handleUnlockClick}
+                    disabled={isUnlockingContact}
+                    className="h-8 text-xs font-bold text-[var(--primary)] border-[var(--primary)]/30 hover:bg-[var(--primary)]/10 shrink-0"
+                  >
+                    {isUnlockingContact ? (
+                      <span className="h-3.5 w-3.5 border border-current border-t-transparent rounded-full animate-spin" />
+                    ) : (
+                      <IconPhone className="h-3.5 w-3.5" />
+                    )}
+                    <span>View Number</span>
+                  </Button>
+                )}
               </div>
 
               <div className="rounded-xl bg-[var(--surface-muted)] p-3 border border-[var(--border)] flex items-center justify-between">
@@ -1442,12 +1534,61 @@ export function ProfileDetail({
             </div>
 
             <p className="text-[11px] leading-relaxed text-[var(--muted)] italic pt-1">
-              Contact numbers and complete family addresses are revealed exclusively when both
-              members accept a mutual matrimonial connection.
+              Active members can view verified phone numbers using their plan contact credits. Family addresses are protected under matrimonial privacy standards.
             </p>
           </Card>
         </div>
       </div>
+
+      {/* Contact Unlock Confirmation Dialog */}
+      {showUnlockModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in">
+          <div className="w-full max-w-sm rounded-2xl bg-[var(--surface)] p-5 border border-[var(--border)] shadow-xl space-y-4">
+            <div className="flex items-center gap-3">
+              <div className="h-10 w-10 rounded-xl bg-amber-100 text-amber-800 flex items-center justify-center shrink-0">
+                <IconPhone className="h-5 w-5" />
+              </div>
+              <div>
+                <h3 className="text-base font-bold text-[var(--foreground)]">Unlock Verified Contact</h3>
+                <p className="text-xs text-[var(--muted)]">View direct phone number for {profile.name}</p>
+              </div>
+            </div>
+
+            <div className="p-3 rounded-xl bg-[var(--surface-muted)] border border-[var(--border)] text-xs text-[var(--muted-strong)] space-y-1">
+              <p>
+                This action consumes <strong>1 contact credit</strong> from your subscription permit.
+              </p>
+              <p className="text-[var(--primary)] font-semibold">
+                Credits Remaining: {subscription?.contactCredits ?? 0}
+              </p>
+            </div>
+
+            <div className="flex items-center justify-end gap-2.5 pt-2">
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => setShowUnlockModal(false)}
+                disabled={isUnlockingContact}
+              >
+                Cancel
+              </Button>
+              <Button
+                size="sm"
+                onClick={handleConfirmUnlock}
+                disabled={isUnlockingContact}
+                className="bg-gradient-to-r from-[#80132E] to-[#A22749] text-white font-bold"
+              >
+                {isUnlockingContact ? (
+                  <span className="h-3.5 w-3.5 border border-current border-t-transparent rounded-full animate-spin mr-1.5" />
+                ) : (
+                  <IconCheck className="h-3.5 w-3.5 mr-1.5" />
+                )}
+                Confirm & View
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* ======================================================== */}
       {/* 5. "YOU MAY ALSO LIKE" RELATED PROFILES RAIL             */}

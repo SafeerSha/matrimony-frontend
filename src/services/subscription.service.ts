@@ -27,9 +27,31 @@ export interface UserSubscriptionStatus {
   expiresAt: string | null;
   daysRemaining: number;
   contactCredits: number;
+  unlockedContactsCount?: number;
   dailyInterestsLimit: number;
   dailyInterestsSentToday: number;
   dailyInterestsRemaining: number;
+  usage?: {
+    messaging: {
+      allowed: boolean;
+      unlimited: boolean;
+    };
+    interests: {
+      dailyLimit: number;
+      sentToday: number;
+      remainingToday: number;
+      isUnlimited: boolean;
+    };
+    contacts: {
+      creditsRemaining: number;
+      unlockedCount: number;
+      isUnlimited: boolean;
+    };
+    visibility: {
+      level: string;
+      boost: number;
+    };
+  };
 }
 
 export const subscriptionService = {
@@ -41,6 +63,44 @@ export const subscriptionService = {
 
   getStatus: () => {
     return apiFetch<UserSubscriptionStatus>('/subscription/status', {
+      method: 'GET',
+    });
+  },
+
+  getUsage: () => {
+    return apiFetch<UserSubscriptionStatus>('/subscription/usage', {
+      method: 'GET',
+    });
+  },
+
+  getContactStatus: (targetUserId: string) => {
+    return apiFetch<{
+      isUnlocked: boolean;
+      phone: string | null;
+      isSelf: boolean;
+      canUnlock: boolean;
+      creditsRemaining: number;
+      isUnlimited: boolean;
+      isSubscribed: boolean;
+    }>(`/subscription/contacts/status/${targetUserId}`, {
+      method: 'GET',
+    });
+  },
+
+  unlockContact: (targetUserId: string) => {
+    return apiFetch<{
+      success: boolean;
+      phone: string | null;
+      alreadyUnlocked: boolean;
+      creditsRemaining: number;
+      isUnlimited: boolean;
+    }>(`/subscription/contacts/unlock/${targetUserId}`, {
+      method: 'POST',
+    });
+  },
+
+  getMyUnlockedContacts: () => {
+    return apiFetch<any[]>('/subscription/contacts/my-unlocked', {
       method: 'GET',
     });
   },

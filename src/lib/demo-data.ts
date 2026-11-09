@@ -28,6 +28,8 @@ export type Profile = {
   compatibility: number;
   isShortlisted?: boolean;
   isInterestSent?: boolean;
+  phone?: string;
+  isContactUnlocked?: boolean;
   connectionStatus?: string;
   verified?: boolean;
   online?: boolean;

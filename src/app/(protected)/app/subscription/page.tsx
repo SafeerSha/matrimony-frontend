@@ -11,6 +11,10 @@ import {
   IconHeart,
   IconAlertCircle,
   IconRefresh,
+  IconMessageCircle,
+  IconSparkles,
+  IconLock,
+  IconClock,
 } from '@tabler/icons-react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -127,23 +131,221 @@ export default function SubscriptionPage() {
           }
         />
 
-        {/* Current Active Plan Status Banner */}
-        {isSubscribed && (
-          <div className="p-4 rounded-2xl bg-gradient-to-r from-emerald-50 via-teal-50 to-white border border-emerald-200/80 text-emerald-950 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 shadow-2xs max-w-7xl mx-auto">
-            <div className="flex items-center gap-3">
-              <span className="grid h-10 w-10 place-items-center rounded-xl bg-emerald-600 text-white shadow-xs shrink-0">
-                <IconShieldCheck className="h-5 w-5" />
+        {/* Current Active Plan Status & Usage Dashboard */}
+        {isSubscribed ? (
+          <div className="rounded-3xl border border-emerald-200/80 bg-gradient-to-b from-emerald-50/50 via-white to-white p-6 shadow-sm max-w-7xl mx-auto space-y-6">
+            {/* Header: Plan & Expiry */}
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 pb-5 border-b border-emerald-100">
+              <div className="flex items-center gap-3.5">
+                <span className="grid h-12 w-12 place-items-center rounded-2xl bg-gradient-to-br from-emerald-500 to-teal-600 text-white shadow-sm shrink-0">
+                  <IconShieldCheck className="h-6 w-6" />
+                </span>
+                <div>
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <h2 className="text-lg font-bold text-stone-900">{displayTierName}</h2>
+                    <span className="text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-200">
+                      Active Chat Permit
+                    </span>
+                  </div>
+                  <p className="text-xs text-stone-500 mt-0.5 flex items-center gap-1.5">
+                    <IconClock className="h-3.5 w-3.5 text-emerald-600" />
+                    <span>
+                      {subscription?.daysRemaining !== undefined && subscription.daysRemaining > 0
+                        ? `${subscription.daysRemaining} days remaining`
+                        : 'Permit active'}
+                      {subscription?.expiresAt &&
+                        ` · Valid until ${new Date(subscription.expiresAt).toLocaleDateString('en-IN', {
+                          day: 'numeric',
+                          month: 'short',
+                          year: 'numeric',
+                        })}`}
+                    </span>
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => refreshSubscription()}
+                  className="border-emerald-200 text-emerald-800 hover:bg-emerald-50 text-xs h-9 rounded-xl"
+                >
+                  <IconRefresh className="mr-1.5 h-3.5 w-3.5" /> Refresh Quotas
+                </Button>
+              </div>
+            </div>
+
+            {/* Quota & Feature Utilization Grid */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+              {/* Feature 1: Messaging */}
+              <div className="p-4 rounded-2xl bg-white border border-stone-200/80 shadow-2xs flex flex-col justify-between">
+                <div className="flex items-center justify-between mb-2">
+                  <div className="flex items-center gap-2">
+                    <div className="h-8 w-8 rounded-lg bg-emerald-50 text-emerald-600 grid place-items-center">
+                      <IconMessageCircle className="h-4 w-4" />
+                    </div>
+                    <span className="text-xs font-semibold text-stone-600">Messaging</span>
+                  </div>
+                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200">
+                    Unlimited
+                  </span>
+                </div>
+                <div className="mt-2">
+                  <p className="text-sm font-bold text-stone-900">Active Chat Access</p>
+                  <p className="text-[11px] text-stone-500 mt-0.5">
+                    Unlimited direct messaging with all your accepted matches
+                  </p>
+                </div>
+              </div>
+
+              {/* Feature 2: Daily Interests */}
+              {(() => {
+                const limit = subscription?.dailyInterestsLimit ?? 20;
+                const sent = subscription?.dailyInterestsSentToday ?? 0;
+                const isUnlimited = limit >= 9000;
+                const remaining = subscription?.dailyInterestsRemaining ?? Math.max(0, limit - sent);
+                const percent = isUnlimited ? 100 : Math.min(100, Math.round((sent / limit) * 100));
+
+                return (
+                  <div className="p-4 rounded-2xl bg-white border border-stone-200/80 shadow-2xs flex flex-col justify-between">
+                    <div className="flex items-center justify-between mb-2">
+                      <div className="flex items-center gap-2">
+                        <div className="h-8 w-8 rounded-lg bg-rose-50 text-rose-600 grid place-items-center">
+                          <IconHeart className="h-4 w-4 fill-rose-500" />
+                        </div>
+                        <span className="text-xs font-semibold text-stone-600">Daily Interests</span>
+                      </div>
+                      <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-rose-50 text-rose-700 border border-rose-200">
+                        {isUnlimited ? 'Unlimited' : `${remaining} left`}
+                      </span>
+                    </div>
+                    <div className="mt-2">
+                      <div className="flex items-baseline justify-between">
+                        <p className="text-sm font-bold text-stone-900">
+                          {isUnlimited ? 'Unlimited / day' : `${sent} / ${limit} sent`}
+                        </p>
+                        {!isUnlimited && (
+                          <span className="text-[10px] text-stone-400 font-medium">{percent}%</span>
+                        )}
+                      </div>
+                      {!isUnlimited && (
+                        <div className="w-full bg-stone-100 rounded-full h-1.5 mt-1.5 overflow-hidden">
+                          <div
+                            className={cn(
+                              'h-full rounded-full transition-all duration-300',
+                              percent >= 90 ? 'bg-rose-500' : 'bg-emerald-500'
+                            )}
+                            style={{ width: `${percent}%` }}
+                          />
+                        </div>
+                      )}
+                      <p className="text-[11px] text-stone-500 mt-1">
+                        {isUnlimited
+                          ? 'Send unlimited interest requests daily'
+                          : 'Daily quota resets every night at 12:00 AM IST'}
+                      </p>
+                    </div>
+                  </div>
+                );
+              })()}
+
+              {/* Feature 3: Verified Contacts */}
+              {(() => {
+                const credits = subscription?.contactCredits ?? 0;
+                const unlocked = subscription?.unlockedContactsCount ?? 0;
+                const isUnlimited = credits >= 9000;
+
+                return (
+                  <div className="p-4 rounded-2xl bg-white border border-stone-200/80 shadow-2xs flex flex-col justify-between">
+                    <div className="flex items-center justify-between mb-2">
+                      <div className="flex items-center gap-2">
+                        <div className="h-8 w-8 rounded-lg bg-blue-50 text-blue-600 grid place-items-center">
+                          <IconPhone className="h-4 w-4" />
+                        </div>
+                        <span className="text-xs font-semibold text-stone-600">Verified Contacts</span>
+                      </div>
+                      <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-blue-50 text-blue-700 border border-blue-200">
+                        {isUnlimited ? 'Unlimited' : `${credits} available`}
+                      </span>
+                    </div>
+                    <div className="mt-2">
+                      <p className="text-sm font-bold text-stone-900">
+                        {isUnlimited ? 'Unlimited Numbers' : `${credits} Contact Credits`}
+                      </p>
+                      <p className="text-[11px] text-stone-500 mt-0.5">
+                        {unlocked > 0
+                          ? `${unlocked} verified profile contact${unlocked > 1 ? 's' : ''} unlocked`
+                          : 'Unlock phone numbers on member profiles'}
+                      </p>
+                    </div>
+                  </div>
+                );
+              })()}
+
+              {/* Feature 4: Search & Discovery Boost */}
+              {(() => {
+                const tierCode = tier?.toUpperCase() || '';
+                const isElite = tierCode === 'ELITE' || tierCode.includes('YEAR');
+                const isPlus = tierCode === 'PLUS' || tierCode.includes('6');
+                const isStandard = tierCode === 'STANDARD' || tierCode.includes('3');
+
+                const levelText = isElite
+                  ? 'VIP High Visibility'
+                  : isPlus
+                    ? 'High Visibility'
+                    : isStandard
+                      ? 'Priority Visibility'
+                      : 'Standard Visibility';
+
+                const boostBadge = isElite
+                  ? '+30 Ranking Boost'
+                  : isPlus
+                    ? '+20 Ranking Boost'
+                    : isStandard
+                      ? '+10 Ranking Boost'
+                      : 'Standard';
+
+                return (
+                  <div className="p-4 rounded-2xl bg-white border border-stone-200/80 shadow-2xs flex flex-col justify-between">
+                    <div className="flex items-center justify-between mb-2">
+                      <div className="flex items-center gap-2">
+                        <div className="h-8 w-8 rounded-lg bg-amber-50 text-amber-600 grid place-items-center">
+                          <IconSparkles className="h-4 w-4" />
+                        </div>
+                        <span className="text-xs font-semibold text-stone-600">Profile Visibility</span>
+                      </div>
+                      <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-50 text-amber-700 border border-amber-200">
+                        {boostBadge}
+                      </span>
+                    </div>
+                    <div className="mt-2">
+                      <p className="text-sm font-bold text-stone-900">{levelText}</p>
+                      <p className="text-[11px] text-stone-500 mt-0.5">
+                        Higher placement in search results and daily recommendations
+                      </p>
+                    </div>
+                  </div>
+                );
+              })()}
+            </div>
+          </div>
+        ) : (
+          <div className="p-5 rounded-2xl bg-gradient-to-r from-stone-50 via-white to-stone-50 border border-stone-200 text-stone-800 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 shadow-2xs max-w-7xl mx-auto">
+            <div className="flex items-start sm:items-center gap-3.5">
+              <span className="grid h-11 w-11 place-items-center rounded-xl bg-stone-200 text-stone-700 shrink-0">
+                <IconLock className="h-5 w-5" />
               </span>
               <div>
-                <p className="text-sm font-bold">Active Chat Permit: {displayTierName}</p>
-                <p className="text-xs text-emerald-700">
-                  Full messaging & match interactions active.
+                <p className="text-sm font-bold">Current Membership: Free Member</p>
+                <p className="text-xs text-stone-500">
+                  Chat messaging and verified contact numbers are locked. Select a Chat Permit plan below to unlock all member features.
                 </p>
               </div>
             </div>
-            <span className="text-xs font-bold px-3 py-1 rounded-full bg-white text-emerald-700 border border-emerald-200 shadow-2xs">
-              Active Member
-            </span>
+            <div className="text-xs font-semibold text-stone-600 shrink-0 bg-stone-100 px-3 py-1.5 rounded-xl border border-stone-200">
+              Free Tier: 10 interests/day · 0 Contacts
+            </div>
           </div>
         )}
 
