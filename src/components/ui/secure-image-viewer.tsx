@@ -468,60 +468,13 @@ export function SecureImageViewer({
       )}
 
       {/* ======================================================== */}
-      {/* STATIC "ishtamchat" OVERLAY WATERMARK (STATIONARY ON ZOOM) */}
+      {/* IMAGE CONTAINER WITH ZOOM / PAN & STANDARD WATERMARKS    */}
       {/* ======================================================== */}
       <div
         className={cn(
-          'fixed inset-0 pointer-events-none z-30 transition-opacity duration-300 overflow-hidden select-none',
-          isShielded && 'opacity-0'
-        )}
-        aria-hidden="true"
-      >
-        {/* Tiled diagonal watermark SVG */}
-        <svg
-          className="w-full h-full opacity-45 select-none"
-          xmlns="http://www.w3.org/2000/svg"
-        >
-          <defs>
-            <pattern
-              id="ishtamchat-static-watermark"
-              width="220"
-              height="110"
-              patternUnits="userSpaceOnUse"
-              patternTransform="rotate(-25)"
-            >
-              <text
-                x="20"
-                y="45"
-                fill="rgba(255, 255, 255, 0.75)"
-                stroke="rgba(0, 0, 0, 0.85)"
-                strokeWidth="0.8"
-                fontSize="20"
-                fontFamily="system-ui, -apple-system, sans-serif"
-                fontWeight="900"
-                letterSpacing="2.5"
-              >
-                ishtamchat
-              </text>
-            </pattern>
-          </defs>
-          <rect width="100%" height="100%" fill="url(#ishtamchat-static-watermark)" />
-        </svg>
-      </div>
-
-      {/* ======================================================== */}
-      {/* IMAGE CONTAINER WITH ZOOM / PAN                          */}
-      {/* ======================================================== */}
-      <div
-        className={cn(
-          'relative z-20 inline-flex items-center justify-center overflow-hidden rounded-xl shadow-2xl max-h-[94vh] max-w-[95vw] select-none',
+          'relative z-20 inline-flex items-center justify-center rounded-xl select-none',
           scale > 1 ? (isPanning ? 'cursor-grabbing' : 'cursor-grab') : 'cursor-zoom-in'
         )}
-        style={{
-          transform: `translate3d(${position.x}px, ${position.y}px, 0px) scale(${scale})`,
-          transition: isPanning ? 'none' : 'transform 200ms ease-out',
-          touchAction: 'none',
-        }}
         onClick={(e) => e.stopPropagation()}
         onDoubleClick={() => {
           if (scale > 1) {
@@ -542,29 +495,90 @@ export function SecureImageViewer({
         onContextMenu={preventSecurityAction}
         onDragStart={preventSecurityAction}
       >
-        {/* The Fullscreen Image */}
-        <img
-          src={currentImage}
-          alt={profileName ? `${profileName} - Full-screen photo` : 'Member photo'}
-          draggable={false}
-          onContextMenu={preventSecurityAction}
-          onDragStart={preventSecurityAction}
-          className={cn(
-            'max-h-[94vh] max-w-[95vw] w-auto h-auto object-contain select-none pointer-events-none transition-all duration-300 ease-out',
-            isShielded && 'filter blur-3xl opacity-0 scale-95'
-          )}
-          style={{
-            WebkitTouchCallout: 'none',
-            userSelect: 'none',
-          }}
-        />
-
-        {/* Transparent Shield Layer: Prevents right-click target extraction */}
+        {/* Transforming Photo Wrapper (zooms and pans freely) */}
         <div
-          className="absolute inset-0 z-10 pointer-events-auto cursor-inherit"
-          onContextMenu={preventSecurityAction}
-          onDragStart={preventSecurityAction}
-        />
+          className="relative inline-flex items-center justify-center select-none"
+          style={{
+            transform: `translate3d(${position.x}px, ${position.y}px, 0px) scale(${scale})`,
+            transition: isPanning ? 'none' : 'transform 200ms ease-out',
+            touchAction: 'none',
+          }}
+        >
+          {/* The Fullscreen Image */}
+          <img
+            src={currentImage}
+            alt={profileName ? `${profileName} - Full-screen photo` : 'Member photo'}
+            draggable={false}
+            onContextMenu={preventSecurityAction}
+            onDragStart={preventSecurityAction}
+            className={cn(
+              'max-h-[94vh] max-w-[95vw] w-auto h-auto object-contain rounded-xl select-none pointer-events-none transition-all duration-300 ease-out shadow-2xl',
+              isShielded && 'filter blur-3xl opacity-0 scale-95'
+            )}
+            style={{
+              WebkitTouchCallout: 'none',
+              userSelect: 'none',
+            }}
+          />
+
+          {/* Transparent Shield Layer: Prevents right-click target extraction */}
+          <div
+            className="absolute inset-0 z-10 pointer-events-auto cursor-inherit"
+            onContextMenu={preventSecurityAction}
+            onDragStart={preventSecurityAction}
+          />
+        </div>
+
+        {/* ======================================================== */}
+        {/* STATIC "ishtamchat" OVERLAY (STANDARD 3-POINT COUNT)     */}
+        {/* Stays in stationary 1x position strictly over photo area */}
+        {/* ======================================================== */}
+        <div
+          className={cn(
+            'absolute inset-0 pointer-events-none z-30 transition-opacity duration-300 overflow-hidden select-none rounded-xl',
+            isShielded && 'opacity-0'
+          )}
+          aria-hidden="true"
+        >
+          {/* 1. Upper-Left Diagonal Watermark */}
+          <div className="absolute top-[22%] left-[26%] -translate-x-1/2 -translate-y-1/2 -rotate-[26deg] select-none pointer-events-none">
+            <span
+              className="text-sm sm:text-base font-black tracking-widest text-white/65 select-none uppercase drop-shadow-[0_1px_2px_rgba(0,0,0,0.85)]"
+              style={{
+                WebkitTextStroke: '0.6px rgba(0, 0, 0, 0.85)',
+                fontFamily: 'system-ui, -apple-system, sans-serif',
+              }}
+            >
+              ishtamchat
+            </span>
+          </div>
+
+          {/* 2. Center Primary Diagonal Watermark */}
+          <div className="absolute top-[50%] left-[50%] -translate-x-1/2 -translate-y-1/2 -rotate-[26deg] select-none pointer-events-none">
+            <span
+              className="text-base sm:text-xl font-black tracking-widest text-white/75 select-none uppercase drop-shadow-[0_2px_3px_rgba(0,0,0,0.9)]"
+              style={{
+                WebkitTextStroke: '0.75px rgba(0, 0, 0, 0.9)',
+                fontFamily: 'system-ui, -apple-system, sans-serif',
+              }}
+            >
+              ishtamchat
+            </span>
+          </div>
+
+          {/* 3. Lower-Right Diagonal Watermark */}
+          <div className="absolute top-[78%] left-[74%] -translate-x-1/2 -translate-y-1/2 -rotate-[26deg] select-none pointer-events-none">
+            <span
+              className="text-sm sm:text-base font-black tracking-widest text-white/65 select-none uppercase drop-shadow-[0_1px_2px_rgba(0,0,0,0.85)]"
+              style={{
+                WebkitTextStroke: '0.6px rgba(0, 0, 0, 0.85)',
+                fontFamily: 'system-ui, -apple-system, sans-serif',
+              }}
+            >
+              ishtamchat
+            </span>
+          </div>
+        </div>
       </div>
 
       {/* ======================================================== */}
