@@ -36,6 +36,16 @@ export interface AdminUserListItem {
     isPrimary: boolean;
     isVerified: boolean;
   }[];
+  subscription?: {
+    id: string;
+    tier: string;
+    status: string;
+    startDate: string;
+    expiresAt: string | null;
+    canChat: boolean;
+    contactCredits: number;
+    dailyInterestsLimit: number;
+  } | null;
 }
 
 export interface AdminUserQueryFilters {

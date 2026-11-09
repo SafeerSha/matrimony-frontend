@@ -16,15 +16,422 @@ import {
   IconId,
   IconAlertTriangle,
   IconX,
+  IconSparkles,
+  IconCalendar,
+  IconCheck,
+  IconLoader2,
+  IconSettings,
 } from '@tabler/icons-react';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Avatar } from '@/components/ui/avatar';
-import { adminService } from '@/services/admin.service';
+import { Modal } from '@/components/ui/modal';
+import { cn } from '@/lib/cn';
+import { adminService, type AdminPlanItem } from '@/services/admin.service';
 import type { AdminUserListItem, AdminUserQueryFilters } from '@/types/admin-user';
 import { toast } from '@/lib/toast';
 import { ModernSelect, type ModernSelectOption } from '@/components/ui/modern-select';
+
+// ─── Default Plans Fallback ───────────────────────────────────────────────────
+
+const DEFAULT_PLANS: AdminPlanItem[] = [
+  {
+    id: 'BASIC',
+    code: 'BASIC',
+    name: '1 Month Permit',
+    badge: 'Basic',
+    price: 500,
+    formattedPrice: '₹500',
+    period: 'per month',
+    durationDays: 30,
+    description: 'Full chat messaging and verified contact access.',
+    features: ['Active Premium for 30 days', 'Send & accept unlimited interests', 'Access to verified contacts'],
+    contactCredits: 10,
+    dailyInterestsLimit: 25,
+    popular: false,
+    isActive: true,
+    displayOrder: 1,
+    createdAt: '',
+    updatedAt: '',
+  },
+  {
+    id: 'STANDARD',
+    code: 'STANDARD',
+    name: '3 Months Gold',
+    badge: 'Most Popular',
+    price: 1200,
+    formattedPrice: '₹1,200',
+    period: '3 months',
+    durationDays: 90,
+    description: 'Quarterly access with higher contact limits.',
+    features: ['Active Premium for 90 days', 'Priority customer assistance', '35 verified profile contacts'],
+    contactCredits: 35,
+    dailyInterestsLimit: 50,
+    popular: true,
+    isActive: true,
+    displayOrder: 2,
+    createdAt: '',
+    updatedAt: '',
+  },
+  {
+    id: 'PLUS',
+    code: 'PLUS',
+    name: '6 Months Diamond',
+    badge: 'Best Value',
+    price: 2000,
+    formattedPrice: '₹2,000',
+    period: '6 months',
+    durationDays: 180,
+    description: 'Extended matchmaking permit with maximum priority.',
+    features: ['Active Premium for 180 days', 'Maximum matchmaking visibility', '80 verified profile contacts'],
+    contactCredits: 80,
+    dailyInterestsLimit: 100,
+    popular: false,
+    isActive: true,
+    displayOrder: 3,
+    createdAt: '',
+    updatedAt: '',
+  },
+];
+
+// ─── Assign Plan Modal ────────────────────────────────────────────────────────
+
+interface AssignPlanModalProps {
+  user: AdminUserListItem | null;
+  isOpen: boolean;
+  plans: AdminPlanItem[];
+  onClose: () => void;
+  onPlanAssigned: (updatedUser: AdminUserListItem) => void;
+}
+
+function AssignPlanModal({
+  user,
+  isOpen,
+  plans,
+  onClose,
+  onPlanAssigned,
+}: AssignPlanModalProps) {
+  const activePlans = useMemo(() => {
+    const list = plans.length > 0 ? plans.filter((p) => p.isActive) : DEFAULT_PLANS;
+    return list.length > 0 ? list : DEFAULT_PLANS;
+  }, [plans]);
+
+  const [selectedOption, setSelectedOption] = useState<string>('');
+  const [customDays, setCustomDays] = useState<number>(30);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  useEffect(() => {
+    if (!user || !isOpen) return;
+
+    const currentTier = user.subscription?.tier || user.subscriptionTier;
+
+    const matched = activePlans.find(
+      (p) => p.code?.toUpperCase() === currentTier?.toUpperCase() || p.id === currentTier,
+    );
+
+    if (matched) {
+      setSelectedOption(matched.id);
+      setCustomDays(matched.durationDays);
+    } else {
+      const popularOrFirst = activePlans.find((p) => p.popular) || activePlans[0];
+      setSelectedOption(popularOrFirst?.id || 'BASIC');
+      setCustomDays(popularOrFirst?.durationDays || 30);
+    }
+  }, [user, isOpen, activePlans]);
+
+  if (!isOpen || !user) return null;
+
+  const displayName =
+    user.firstName ??
+    user.profile?.firstName ??
+    user.email?.split('@')[0] ??
+    user.phone ??
+    'Unnamed User';
+
+  const isCurrentPaid = user.subscriptionTier === 'PAID' || (user.subscription?.canChat ?? false);
+  const currentExpiry = user.subscription?.expiresAt ? new Date(user.subscription.expiresAt) : null;
+  const isExpired = currentExpiry ? currentExpiry < new Date() : false;
+
+  const handleApply = async () => {
+    setIsSubmitting(true);
+    try {
+      if (selectedOption === 'REVOKE') {
+        const res = await adminService.assignUserPlan(user.id, { action: 'revoke' });
+        toast.success(
+          'Plan Revoked',
+          `${displayName}'s subscription has been reset to Basic / Free.`
+        );
+        onPlanAssigned(res.user);
+        onClose();
+      } else {
+        const plan = activePlans.find((p) => p.id === selectedOption || p.code === selectedOption);
+        const res = await adminService.assignUserPlan(user.id, {
+          planId: plan?.id,
+          planCode: plan?.code,
+          customDurationDays: customDays,
+          action: 'apply',
+        });
+        toast.success(
+          'Plan Activated',
+          `${plan?.name || 'Subscription'} applied to ${displayName} (${customDays} days valid).`
+        );
+        onPlanAssigned(res.user);
+        onClose();
+      }
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'Failed to apply subscription plan';
+      toast.error('Assignment Failed', msg);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  return (
+    <Modal
+      isOpen={isOpen}
+      onClose={() => {
+        if (!isSubmitting) onClose();
+      }}
+      size="lg"
+      title={
+        <div className="flex items-center gap-2.5 text-[var(--foreground)] font-bold text-base sm:text-lg">
+          <div className="h-8 w-8 rounded-lg bg-amber-100 text-amber-700 flex items-center justify-center shrink-0">
+            <IconCrown className="h-4.5 w-4.5" />
+          </div>
+          <span>Assign Subscription Plan</span>
+        </div>
+      }
+      description={
+        <span>
+          Manually activate or adjust the chat permit and subscription package for{' '}
+          <strong className="text-[var(--foreground)]">{displayName}</strong>.
+        </span>
+      }
+    >
+      <div className="space-y-4 pt-2">
+        {/* User Current Status Summary Card */}
+        <div className="flex items-center gap-3.5 p-3.5 rounded-xl bg-[var(--surface-muted)] border border-[var(--border)]">
+          <Avatar
+            src={user.photos?.[0]?.url ?? ''}
+            name={displayName}
+            size="md"
+            className="border border-[var(--border)] shrink-0"
+          />
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-2 flex-wrap">
+              <span className="font-bold text-sm text-[var(--foreground)] truncate">{displayName}</span>
+              <span className="font-mono text-xs text-[var(--muted)]">({user.profileId ?? user.id.slice(0, 8)})</span>
+            </div>
+            <div className="flex items-center gap-2 mt-1 text-xs flex-wrap">
+              <span className="text-[var(--muted)]">Current Status:</span>
+              <Badge tone={isCurrentPaid && !isExpired ? 'accent' : 'default'} size="sm" className="font-semibold">
+                {isCurrentPaid && !isExpired ? (
+                  <>
+                    <IconCrown className="h-3 w-3 inline text-amber-600 mr-1" />
+                    {user.subscription?.tier || 'Paid Tier'}
+                  </>
+                ) : (
+                  'Basic / Free'
+                )}
+              </Badge>
+              {currentExpiry && (
+                <span className={`text-[11px] font-medium ${isExpired ? 'text-rose-600' : 'text-amber-800'}`}>
+                  • {isExpired ? 'Expired' : 'Active until'} {currentExpiry.toLocaleDateString()}
+                </span>
+              )}
+              {user.subscription?.contactCredits !== undefined && user.subscription.contactCredits > 0 && (
+                <span className="text-[11px] text-[var(--muted)]">
+                  • {user.subscription.contactCredits} credits left
+                </span>
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* Plan Cards Grid */}
+        <div className="space-y-2">
+          <label className="block text-xs font-bold uppercase tracking-wider text-[var(--muted-strong)]">
+            Select Plan to Apply
+          </label>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 max-h-[290px] overflow-y-auto pr-1">
+            {activePlans.map((p) => {
+              const isSelected = selectedOption === p.id;
+              return (
+                <div
+                  key={p.id}
+                  onClick={() => {
+                    setSelectedOption(p.id);
+                    setCustomDays(p.durationDays);
+                  }}
+                  className={cn(
+                    'relative rounded-xl border p-3.5 cursor-pointer transition-all flex flex-col justify-between text-left select-none',
+                    isSelected
+                      ? 'border-[var(--primary)] bg-[var(--primary)]/5 ring-2 ring-[var(--primary)]/20 shadow-xs'
+                      : 'border-[var(--border)] bg-[var(--surface)] hover:border-[var(--border-strong)] hover:bg-[var(--surface-muted)]/50',
+                  )}
+                >
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="flex items-center gap-2 min-w-0">
+                      <div
+                        className={cn(
+                          'h-4 w-4 rounded-full border flex items-center justify-center shrink-0 transition-colors',
+                          isSelected
+                            ? 'border-[var(--primary)] bg-[var(--primary)] text-white'
+                            : 'border-slate-300 bg-white',
+                        )}
+                      >
+                        {isSelected && <div className="h-1.5 w-1.5 rounded-full bg-white" />}
+                      </div>
+                      <span className="font-bold text-xs text-[var(--foreground)] truncate">{p.name}</span>
+                    </div>
+                    {p.badge && (
+                      <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-md bg-amber-100 text-amber-900 border border-amber-200 shrink-0">
+                        {p.badge}
+                      </span>
+                    )}
+                  </div>
+
+                  <div className="mt-2.5 flex items-baseline justify-between text-xs">
+                    <span className="font-extrabold text-[var(--foreground)] text-sm">
+                      {p.formattedPrice || `₹${p.price}`}
+                    </span>
+                    <span className="text-[11px] text-[var(--muted)] font-medium">{p.durationDays} Days</span>
+                  </div>
+
+                  <div className="mt-2 pt-2 border-t border-[var(--border)]/70 text-[11px] text-[var(--muted)] flex items-center justify-between">
+                    <span>{p.contactCredits} Contacts</span>
+                    <span>{p.dailyInterestsLimit}/day limit</span>
+                  </div>
+                </div>
+              );
+            })}
+
+            {/* Downgrade to Basic Option */}
+            <div
+              onClick={() => {
+                setSelectedOption('REVOKE');
+                setCustomDays(0);
+              }}
+              className={cn(
+                'relative rounded-xl border p-3.5 cursor-pointer transition-all flex flex-col justify-between text-left select-none sm:col-span-2',
+                selectedOption === 'REVOKE'
+                  ? 'border-rose-400 bg-rose-50/50 ring-2 ring-rose-400/20 shadow-xs'
+                  : 'border-[var(--border)] bg-[var(--surface)] hover:border-[var(--border-strong)] hover:bg-[var(--surface-muted)]/50',
+              )}
+            >
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <div
+                    className={cn(
+                      'h-4 w-4 rounded-full border flex items-center justify-center shrink-0 transition-colors',
+                      selectedOption === 'REVOKE'
+                        ? 'border-rose-600 bg-rose-600 text-white'
+                        : 'border-slate-300 bg-white',
+                    )}
+                  >
+                    {selectedOption === 'REVOKE' && <div className="h-1.5 w-1.5 rounded-full bg-white" />}
+                  </div>
+                  <span className="font-bold text-xs text-rose-700">Downgrade / Reset to Basic (Free)</span>
+                </div>
+                <span className="text-[10px] font-semibold text-rose-700 bg-rose-100 px-2 py-0.5 rounded border border-rose-200">
+                  Revoke Permit
+                </span>
+              </div>
+              <p className="mt-1.5 text-[11px] text-[var(--muted)] pl-6 leading-relaxed">
+                Cancels active chat permit and contact quotas, returning the member to the standard free tier.
+              </p>
+            </div>
+          </div>
+        </div>
+
+        {/* Custom Duration Selector */}
+        {selectedOption !== 'REVOKE' && (
+          <div className="space-y-2 pt-2 border-t border-[var(--border)]">
+            <div className="flex items-center justify-between">
+              <label className="text-xs font-bold uppercase tracking-wider text-[var(--muted-strong)] flex items-center gap-1.5">
+                <IconCalendar className="h-3.5 w-3.5 text-[var(--primary)]" />
+                Permit Duration
+              </label>
+              <span className="text-xs font-bold text-[var(--primary)]">
+                {customDays} Days validity
+              </span>
+            </div>
+            <div className="flex items-center gap-2 flex-wrap">
+              {[15, 30, 60, 90, 180, 365].map((d) => (
+                <button
+                  key={d}
+                  type="button"
+                  onClick={() => setCustomDays(d)}
+                  className={cn(
+                    'text-xs px-2.5 py-1 rounded-lg border font-semibold transition-all cursor-pointer',
+                    customDays === d
+                      ? 'bg-[var(--primary)] text-white border-[var(--primary)] shadow-xs'
+                      : 'bg-[var(--surface)] text-[var(--foreground)] border-[var(--border)] hover:bg-[var(--surface-muted)]',
+                  )}
+                >
+                  {d} Days
+                </button>
+              ))}
+              <div className="flex items-center gap-1.5 ml-auto">
+                <span className="text-[11px] text-[var(--muted)]">Custom:</span>
+                <input
+                  type="number"
+                  min={1}
+                  max={3650}
+                  value={customDays}
+                  onChange={(e) => setCustomDays(Math.max(1, parseInt(e.target.value) || 1))}
+                  className="w-16 text-xs px-2 py-1 rounded-lg border border-[var(--border)] bg-[var(--surface)] text-[var(--foreground)] font-bold text-center focus:outline-none focus:ring-1 focus:ring-[var(--primary)]"
+                />
+                <span className="text-[11px] text-[var(--muted)]">days</span>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Modal Action Buttons */}
+        <div className="flex items-center justify-end gap-2.5 pt-3 border-t border-[var(--border)]">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={onClose}
+            disabled={isSubmitting}
+          >
+            Cancel
+          </Button>
+          <Button
+            size="sm"
+            onClick={handleApply}
+            disabled={isSubmitting}
+            className={cn(
+              'font-bold px-4 flex items-center gap-1.5',
+              selectedOption === 'REVOKE'
+                ? 'bg-rose-600 hover:bg-rose-700 text-white'
+                : 'bg-gradient-to-r from-[#80132E] to-[#A22749] text-white',
+            )}
+          >
+            {isSubmitting ? (
+              <>
+                <IconLoader2 className="h-4 w-4 animate-spin" />
+                <span>Applying…</span>
+              </>
+            ) : selectedOption === 'REVOKE' ? (
+              <>
+                <IconBan className="h-4 w-4" />
+                <span>Revoke Subscription</span>
+              </>
+            ) : (
+              <>
+                <IconCheck className="h-4 w-4" />
+                <span>Apply Plan</span>
+              </>
+            )}
+          </Button>
+        </div>
+      </div>
+    </Modal>
+  );
+}
 
 // ─── Confirmation Dialog ───────────────────────────────────────────────────────
 
@@ -234,6 +641,39 @@ export function UserManagement() {
   const [actionLoadingId, setActionLoadingId] = useState<string | null>(null);
   const [pendingConfirm, setPendingConfirm] = useState<PendingConfirm | null>(null);
 
+  // Manual Subscription Plan Assignment state
+  const [availablePlans, setAvailablePlans] = useState<AdminPlanItem[]>([]);
+  const [selectedUserForPlan, setSelectedUserForPlan] = useState<AdminUserListItem | null>(null);
+
+  // Load plans on mount so modal is instant
+  useEffect(() => {
+    let isMounted = true;
+    async function loadPlans() {
+      try {
+        const data = await adminService.getPlans();
+        if (isMounted && Array.isArray(data) && data.length > 0) {
+          setAvailablePlans(data);
+        }
+      } catch {
+        // Fallback to DEFAULT_PLANS
+      }
+    }
+    loadPlans();
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  const openAssignPlanModal = (user: AdminUserListItem) => {
+    setSelectedUserForPlan(user);
+  };
+
+  const handlePlanAssigned = (updatedUser: AdminUserListItem) => {
+    setUsers((prev) =>
+      prev.map((u) => (u.id === updatedUser.id ? { ...u, ...updatedUser } : u)),
+    );
+  };
+
   // Debounce refs for text inputs (avoid fetching on every keystroke)
   const searchRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const locationRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -370,6 +810,15 @@ export function UserManagement() {
         variant={pendingConfirm?.action === 'block' ? 'danger' : 'warning'}
         onConfirm={handleConfirmAction}
         onCancel={() => setPendingConfirm(null)}
+      />
+
+      {/* Manual Subscription Plan Assignment Modal */}
+      <AssignPlanModal
+        user={selectedUserForPlan}
+        isOpen={Boolean(selectedUserForPlan)}
+        plans={availablePlans}
+        onClose={() => setSelectedUserForPlan(null)}
+        onPlanAssigned={handlePlanAssigned}
       />
 
       <div className="space-y-6 animate-in fade-in slide-in-from-bottom-3 duration-300">
@@ -611,25 +1060,44 @@ export function UserManagement() {
                             <IconCrown className="h-3.5 w-3.5 text-amber-600 shrink-0" />
                             Plan Status:
                           </span>
-                          <button
-                            type="button"
-                            onClick={() => handleToggleTier(u)}
-                            disabled={isActing}
-                            className="group inline-flex items-center gap-1 focus:outline-none"
-                            title="Click to toggle between Basic and Paid"
-                          >
-                            <Badge
-                              tone={isPaid ? 'accent' : 'default'}
-                              className={`cursor-pointer transition-all group-hover:scale-105 ${isPaid
-                                  ? 'bg-amber-100 text-amber-900 border-amber-300 font-bold'
-                                  : 'bg-slate-100 text-slate-700 font-medium'
-                                }`}
+                          <div className="flex items-center gap-1.5">
+                            <button
+                              type="button"
+                              onClick={() => openAssignPlanModal(u)}
+                              disabled={isActing}
+                              className="group inline-flex items-center gap-1 focus:outline-none"
+                              title="Click to manage subscription plan"
                             >
-                              {isPaid && <IconCrown className="h-3 w-3 text-amber-600 inline mr-1" />}
-                              {isPaid ? 'Paid Tier' : 'Basic Tier'}
-                            </Badge>
-                          </button>
+                              <Badge
+                                tone={isPaid ? 'accent' : 'default'}
+                                className={`cursor-pointer transition-all hover:scale-105 ${isPaid
+                                    ? 'bg-amber-100 text-amber-900 border-amber-300 font-bold'
+                                    : 'bg-slate-100 text-slate-700 font-medium'
+                                  }`}
+                              >
+                                {isPaid && <IconCrown className="h-3 w-3 text-amber-600 inline mr-1" />}
+                                {u.subscription?.tier ? `${u.subscription.tier} Plan` : isPaid ? 'Paid Tier' : 'Basic Tier'}
+                              </Badge>
+                            </button>
+                            <Button
+                              size="xs"
+                              variant="ghost"
+                              onClick={() => openAssignPlanModal(u)}
+                              disabled={isActing}
+                              className="h-6 px-1.5 text-[11px] font-semibold text-[var(--primary)] hover:bg-[var(--primary)]/10"
+                            >
+                              Change
+                            </Button>
+                          </div>
                         </div>
+
+                        {/* Active Expiry details */}
+                        {u.subscription?.expiresAt && (
+                          <div className="text-[11px] text-amber-900/90 font-medium flex items-center justify-between pt-0.5">
+                            <span>Active permit:</span>
+                            <span>Expires {new Date(u.subscription.expiresAt).toLocaleDateString()}</span>
+                          </div>
+                        )}
 
                         {/* Reason / Notes if Deactivated or Deleted */}
                         {u.deletionReason && (
@@ -639,14 +1107,24 @@ export function UserManagement() {
                         )}
                       </div>
 
-                      {/* Mobile Actions: Only Block / Unblock */}
-                      <div className="pt-1">
+                      {/* Mobile Actions: Assign Plan & Block / Unblock */}
+                      <div className="grid grid-cols-2 gap-2 pt-1">
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          disabled={isActing}
+                          onClick={() => openAssignPlanModal(u)}
+                          className="w-full text-xs h-8 px-2.5 flex items-center justify-center gap-1.5 font-semibold text-amber-800 border-amber-300 hover:bg-amber-50"
+                        >
+                          <IconCrown className="h-3.5 w-3.5 text-amber-600 shrink-0" />
+                          <span>Assign Plan</span>
+                        </Button>
                         <Button
                           size="sm"
                           variant="outline"
                           disabled={isActing}
                           onClick={() => confirmBlock(u)}
-                          className={`w-full text-xs h-8 px-3 flex items-center justify-center gap-1.5 font-semibold transition-colors ${isBlocked
+                          className={`w-full text-xs h-8 px-2.5 flex items-center justify-center gap-1.5 font-semibold transition-colors ${isBlocked
                               ? 'text-emerald-700 border-emerald-300 hover:bg-emerald-50'
                               : 'text-red-600 border-red-200 hover:bg-red-50'
                             }`}
@@ -658,7 +1136,7 @@ export function UserManagement() {
                           ) : (
                             <IconBan className="h-3.5 w-3.5" />
                           )}
-                          {isBlocked ? 'Unblock User' : 'Block User'}
+                          <span>{isBlocked ? 'Unblock' : 'Block User'}</span>
                         </Button>
                       </div>
                     </div>
@@ -763,27 +1241,34 @@ export function UserManagement() {
                             </div>
                           </td>
 
-                          {/* Plan toggle */}
+                          {/* Plan management */}
                           <td className="p-3.5 sm:p-4">
-                            <button
-                              type="button"
-                              onClick={() => handleToggleTier(u)}
-                              disabled={isActing}
-                              aria-label={`Toggle plan for ${displayName} — currently ${isPaid ? 'Paid' : 'Basic'}`}
-                              title="Click to toggle between Paid and Basic"
-                              className="group inline-flex items-center gap-1.5 focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)] rounded"
-                            >
-                              <Badge
-                                tone={isPaid ? 'accent' : 'default'}
-                                className={`cursor-pointer transition-all group-hover:scale-105 ${isPaid
-                                    ? 'bg-amber-100 text-amber-900 border-amber-300 font-semibold'
-                                    : 'bg-slate-100 text-slate-700 font-medium'
-                                  }`}
+                            <div className="flex flex-col gap-0.5">
+                              <button
+                                type="button"
+                                onClick={() => openAssignPlanModal(u)}
+                                disabled={isActing}
+                                aria-label={`Manage plan for ${displayName} — currently ${isPaid ? (u.subscription?.tier || 'Paid') : 'Basic'}`}
+                                title="Click to manage subscription plan"
+                                className="group inline-flex items-center gap-1.5 focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)] rounded self-start"
                               >
-                                {isPaid && <IconCrown className="h-3 w-3 text-amber-600 inline mr-1" aria-hidden="true" />}
-                                {isPaid ? 'Paid' : 'Basic'}
-                              </Badge>
-                            </button>
+                                <Badge
+                                  tone={isPaid ? 'accent' : 'default'}
+                                  className={`cursor-pointer transition-all group-hover:scale-105 ${isPaid
+                                      ? 'bg-amber-100 text-amber-900 border-amber-300 font-semibold'
+                                      : 'bg-slate-100 text-slate-700 font-medium'
+                                    }`}
+                                >
+                                  {isPaid && <IconCrown className="h-3 w-3 text-amber-600 inline mr-1" aria-hidden="true" />}
+                                  {isPaid ? (u.subscription?.tier || 'Paid Tier') : 'Basic'}
+                                </Badge>
+                              </button>
+                              {isPaid && u.subscription?.expiresAt && (
+                                <span className="text-[10px] text-[var(--muted-strong)]">
+                                  Exp: {new Date(u.subscription.expiresAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}
+                                </span>
+                              )}
+                            </div>
                           </td>
 
                           {/* Status (Read-Only) */}
@@ -798,9 +1283,20 @@ export function UserManagement() {
                             </div>
                           </td>
 
-                          {/* Actions: Only Block / Unblock */}
+                          {/* Actions: Plan & Block / Unblock */}
                           <td className="p-3.5 sm:p-4 text-right">
-                            <div className="flex items-center justify-end">
+                            <div className="flex items-center justify-end gap-2">
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                disabled={isActing}
+                                onClick={() => openAssignPlanModal(u)}
+                                aria-label={`Assign plan for ${displayName}`}
+                                className="text-xs h-8 px-2.5 flex items-center gap-1 font-medium border-amber-200 text-amber-800 hover:bg-amber-50"
+                              >
+                                <IconCrown className="h-3.5 w-3.5 text-amber-600" aria-hidden="true" />
+                                Plan
+                              </Button>
                               <Button
                                 size="sm"
                                 variant="outline"

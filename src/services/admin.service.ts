@@ -36,7 +36,7 @@ export interface PlanFormInput {
 import { apiFetch } from "@/lib/http/api-client";
 import type { UserProfile } from "./profile.service";
 import type { AnalyticsOverview, DateRangeInput } from "@/types/analytics";
-import type { AdminUserListResponse, AdminUserQueryFilters } from "@/types/admin-user";
+import type { AdminUserListItem, AdminUserListResponse, AdminUserQueryFilters } from "@/types/admin-user";
 import { analyticsOverviewSchema, analyticsTimeSeriesResponseSchema } from "@/lib/validation/analytics";
 
 export const adminService = {
@@ -108,10 +108,30 @@ export const adminService = {
     );
   },
 
-  updateSubscriptionTier: (userId: string, tier: "BASIC" | "PAID") => {
+  updateSubscriptionTier: (userId: string, tier: string) => {
     return apiFetch<{ id: string; email: string; subscriptionTier: string }>(`/admin/users/${userId}/tier`, {
       method: "PATCH",
       body: JSON.stringify({ tier }),
+    });
+  },
+
+  assignUserPlan: (
+    userId: string,
+    data: {
+      planId?: string;
+      planCode?: string;
+      customDurationDays?: number;
+      action?: 'apply' | 'revoke';
+    }
+  ) => {
+    return apiFetch<{
+      success: boolean;
+      message: string;
+      user: AdminUserListItem;
+      subscription?: any;
+    }>(`/admin/users/${userId}/assign-plan`, {
+      method: 'POST',
+      body: JSON.stringify(data),
     });
   },
 
