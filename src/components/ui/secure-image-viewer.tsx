@@ -304,14 +304,14 @@ export function SecureImageViewer({
         >
           {/* Tiled diagonal watermark SVG */}
           <svg
-            className="w-full h-full opacity-55 select-none"
+            className="w-full h-full opacity-50 select-none"
             xmlns="http://www.w3.org/2000/svg"
           >
             <defs>
               <pattern
                 id="ishtamchat-tiled-watermark"
-                width="240"
-                height="140"
+                width="220"
+                height="110"
                 patternUnits="userSpaceOnUse"
                 patternTransform="rotate(-25)"
               >
@@ -328,38 +328,10 @@ export function SecureImageViewer({
                 >
                   ishtamchat
                 </text>
-                {profileId && (
-                  <text
-                    x="25"
-                    y="72"
-                    fill="rgba(255, 255, 255, 0.65)"
-                    stroke="rgba(0, 0, 0, 0.8)"
-                    strokeWidth="0.6"
-                    fontSize="12"
-                    fontFamily="system-ui, -apple-system, sans-serif"
-                    fontWeight="700"
-                    letterSpacing="1.5"
-                  >
-                    {profileId}
-                  </text>
-                )}
               </pattern>
             </defs>
             <rect width="100%" height="100%" fill="url(#ishtamchat-tiled-watermark)" />
           </svg>
-
-          {/* Prominent Branded Watermark Badge (Center-Bottom) */}
-          <div className="absolute bottom-6 left-1/2 -translate-x-1/2 flex items-center gap-2 px-4 py-1.5 rounded-full bg-black/65 backdrop-blur-md border border-white/25 text-white shadow-2xl select-none">
-            <span className="h-2 w-2 rounded-full bg-[var(--primary)] shrink-0 animate-pulse" />
-            <span className="font-editorial-title font-bold text-sm tracking-wider text-white drop-shadow-md">
-              ishtamchat
-            </span>
-            {profileId && (
-              <span className="text-[11px] font-bold text-white/85 border-l border-white/20 pl-2">
-                {profileId}
-              </span>
-            )}
-          </div>
         </div>
 
         {/* Transparent Shield Layer: Sits directly over the image to block right-clicks, element inspections, and dragging */}
