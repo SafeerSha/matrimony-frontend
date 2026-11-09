@@ -123,6 +123,24 @@ export const matchesService = {
     );
   },
 
+  cancelInterest: async (userId: string) => {
+    try {
+      return await apiFetch<{ success: boolean; message: string; targetId?: string }>(
+        `/connections/interest/${userId}`,
+        {
+          method: "DELETE",
+        }
+      );
+    } catch {
+      return await apiFetch<{ success: boolean; message: string; targetId?: string }>(
+        `/connections/cancel/${userId}`,
+        {
+          method: "POST",
+        }
+      );
+    }
+  },
+
   acceptInterest: (userId: string) => {
     return apiFetch<{ id: string; status: string; isMutualMatch?: boolean; partner?: any }>(
       `/connections/accept/${userId}`,

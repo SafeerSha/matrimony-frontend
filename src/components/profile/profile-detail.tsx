@@ -423,6 +423,24 @@ export function ProfileDetail({
     }
   };
 
+  // Cancel interest handler
+  const handleCancelInterest = async () => {
+    if (isPreview) {
+      setIsInterestSent(false);
+      toast.info('Preview Mode', 'Simulated: Interest withdrawn.');
+      return;
+    }
+    if (!profile || !isInterestSent || isMatched) return;
+    try {
+      await matchesService.cancelInterest(profile.id);
+      setIsInterestSent(false);
+      toast.success('Interest Withdrawn', `Your connection request to ${profile.name} was cancelled.`);
+    } catch {
+      setIsInterestSent(false);
+      toast.info('Interest Withdrawn', `Connection request to ${profile.name} cancelled.`);
+    }
+  };
+
   // Share profile
   const handleShare = () => {
     if (typeof window !== 'undefined' && navigator.clipboard) {
@@ -924,25 +942,39 @@ export function ProfileDetail({
               ) : (
                 <>
                   <div className="flex items-center gap-2.5 sm:gap-3">
-                    {/* Send Interest (Burgundy primary) */}
-                    <button
-                      type="button"
-                      disabled={isInterestSent}
-                      onClick={handleSendInterest}
-                      className={cn(
-                        'flex-1 min-w-0 font-bold shadow-md rounded-2xl text-xs sm:text-sm h-12 sm:h-13 active:scale-[0.985] px-4 sm:px-6 flex items-center justify-center gap-2 transition-all',
-                        isInterestSent
-                          ? 'bg-gradient-to-r from-[#FDF2F4] to-[#FCE7EB] text-[var(--blush-deep)] border border-[#F7C6CE]'
-                          : 'bg-gradient-to-r from-[#9E1D3B] via-[var(--primary)] to-[var(--primary-deep)] text-white hover:brightness-105'
+                    {/* Send / Cancel Interest Button */}
+                    <div className="flex-1 flex items-center gap-2 min-w-0">
+                      <button
+                        type="button"
+                        disabled={isInterestSent}
+                        onClick={handleSendInterest}
+                        className={cn(
+                          'flex-1 min-w-0 font-bold shadow-md rounded-2xl text-xs sm:text-sm h-12 sm:h-13 active:scale-[0.985] px-4 sm:px-6 flex items-center justify-center gap-2 transition-all',
+                          isInterestSent
+                            ? 'bg-gradient-to-r from-[#FDF2F4] to-[#FCE7EB] text-[var(--blush-deep)] border border-[#F7C6CE]'
+                            : 'bg-gradient-to-r from-[#9E1D3B] via-[var(--primary)] to-[var(--primary-deep)] text-white hover:brightness-105'
+                        )}
+                      >
+                        {isInterestSent ? (
+                          <IconCheck className="h-4.5 w-4.5 shrink-0" />
+                        ) : (
+                          <IconHeart className="h-4.5 w-4.5 fill-white shrink-0" />
+                        )}
+                        <span className="truncate">{isInterestSent ? 'Interest Sent' : 'Send Interest'}</span>
+                      </button>
+
+                      {isInterestSent && (
+                        <button
+                          type="button"
+                          onClick={handleCancelInterest}
+                          title="Withdraw sent interest"
+                          className="h-12 sm:h-13 px-3.5 rounded-2xl font-bold text-xs border border-rose-200 bg-rose-50 text-rose-700 hover:bg-rose-100 transition active:scale-[0.985] flex items-center gap-1.5 shrink-0 shadow-2xs"
+                        >
+                          <IconX className="h-4 w-4" />
+                          <span>Cancel</span>
+                        </button>
                       )}
-                    >
-                      {isInterestSent ? (
-                        <IconCheck className="h-4.5 w-4.5 shrink-0" />
-                      ) : (
-                        <IconHeart className="h-4.5 w-4.5 fill-white shrink-0" />
-                      )}
-                      <span className="truncate">{isInterestSent ? 'Interest Sent' : 'Send Interest'}</span>
-                    </button>
+                    </div>
 
                     {/* Favorite Button */}
                     <button

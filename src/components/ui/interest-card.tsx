@@ -50,6 +50,7 @@ export interface InterestCardProps {
   onShortlist?: (id: string) => void;
   isShortlisted?: boolean;
   onSendInterest?: (id: string) => void;
+  onCancelInterest?: (id: string) => void;
   isInterestSent?: boolean;
   isRemoving?: boolean;
   className?: string;
@@ -65,6 +66,7 @@ export function InterestCard({
   onShortlist,
   isShortlisted,
   onSendInterest,
+  onCancelInterest,
   isInterestSent,
   isRemoving,
   className,
@@ -287,20 +289,37 @@ export function InterestCard({
                 <span>Waiting for response</span>
               </div>
 
-              <Link
-                href={`/app/profile?user=${profile.id}`}
-                className="focus-ring ml-auto"
-                onClick={(e) => e.stopPropagation()}
-              >
-                <Button
-                  variant="secondary"
-                  size="sm"
-                  className="rounded-full px-4 text-xs font-bold bg-white/95 text-[var(--foreground)] hover:bg-white active-press border border-white/60 shadow-sm"
-                  rightIcon={<IconArrowRight className="h-3.5 w-3.5" />}
+              <div className="flex items-center gap-1.5 ml-auto">
+                {onCancelInterest && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onCancelInterest(profile.id);
+                    }}
+                    className="rounded-full px-3 text-xs font-semibold bg-black/40 text-stone-300 hover:text-rose-300 hover:bg-black/60 border border-white/15 active-press shadow-2xs"
+                    leftIcon={<IconX className="h-3.5 w-3.5 text-rose-400" />}
+                  >
+                    Cancel
+                  </Button>
+                )}
+
+                <Link
+                  href={`/app/profile?user=${profile.id}`}
+                  className="focus-ring"
+                  onClick={(e) => e.stopPropagation()}
                 >
-                  View Profile
-                </Button>
-              </Link>
+                  <Button
+                    variant="secondary"
+                    size="sm"
+                    className="rounded-full px-3.5 text-xs font-bold bg-white/95 text-[var(--foreground)] hover:bg-white active-press border border-white/60 shadow-sm"
+                    rightIcon={<IconArrowRight className="h-3.5 w-3.5" />}
+                  >
+                    View
+                  </Button>
+                </Link>
+              </div>
             </div>
           )}
 

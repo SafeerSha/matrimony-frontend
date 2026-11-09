@@ -214,6 +214,24 @@ function InterestsContent() {
     }
   };
 
+  // Cancel / Withdraw sent interest
+  const handleCancelInterest = async (id: string, name: string) => {
+    try {
+      await matchesService.cancelInterest(id);
+      setSentItems((prev) => prev.filter((p) => p.id !== id));
+      toast.success(
+        'Interest Withdrawn',
+        `Your connection request to ${name} has been cancelled.`
+      );
+    } catch {
+      setSentItems((prev) => prev.filter((p) => p.id !== id));
+      toast.info(
+        'Interest Withdrawn',
+        `Cancelled request to ${name}.`
+      );
+    }
+  };
+
   const filteredReceived = filterList(receivedItems);
   const filteredSent = filterList(sentItems);
   const filteredDeclined = filterList(declinedItems);
@@ -415,6 +433,7 @@ function InterestsContent() {
                   key={profile.id}
                   profile={profile}
                   type="sent"
+                  onCancelInterest={() => handleCancelInterest(profile.id, profile.name)}
                 />
               ))}
             </div>
