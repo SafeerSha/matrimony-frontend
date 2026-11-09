@@ -32,10 +32,24 @@ export default function PrivacyPage() {
         <p className="mt-4 text-xs text-[var(--muted)]">Customer Care Hours: {CONTACT_INFO.hours}</p>
       </div>
 
-      <div className="mt-10 border-t border-[var(--border)] pt-6 text-sm text-[var(--muted)]">
-        <Link href="/" className="text-[var(--primary)] hover:underline font-semibold">
+      <div className="mt-10 border-t border-[var(--border)] pt-6 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-[var(--muted)]">
+        <Link href="/" className="text-[var(--primary)] hover:underline font-semibold text-sm">
           ← Back to IshtamChat
         </Link>
+        <div className="flex flex-wrap items-center gap-4">
+          <Link href="/terms" className="hover:underline">
+            Terms & Conditions
+          </Link>
+          <Link href="/refund-policy" className="hover:underline">
+            Refunds & Cancellations
+          </Link>
+          <Link href="/contact" className="hover:underline">
+            Contact Us
+          </Link>
+          <Link href="/pricing" className="hover:underline">
+            Pricing (INR)
+          </Link>
+        </div>
       </div>
     </main>
   );

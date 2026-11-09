@@ -661,6 +661,40 @@ export default function SubscriptionPage() {
           </div>
         )}
 
+        {/* Payment Terms & Conditions Notice */}
+        <div className="rounded-2xl border border-stone-200 bg-[#FFFDFB] p-5 sm:p-6 shadow-2xs max-w-4xl mx-auto space-y-3">
+          <div className="flex items-center justify-between flex-wrap gap-2">
+            <h4 className="text-sm font-bold text-stone-900 flex items-center gap-2">
+              <IconShieldCheck className="h-4 w-4 text-[var(--primary)]" /> Payment Terms & Conditions
+            </h4>
+            <a
+              href="/terms"
+              target="_blank"
+              rel="noreferrer"
+              className="text-xs font-semibold text-[var(--primary)] hover:underline"
+            >
+              View Full Terms →
+            </a>
+          </div>
+          <ol className="list-decimal list-inside text-xs text-stone-600 space-y-1.5 leading-relaxed">
+            <li>Chat Permit is valid for the selected subscription period from activation.</li>
+            <li>Premium features, interest limits, and contact access depend on the selected plan.</li>
+            <li>Unlimited messaging is available only with mutual matches.</li>
+            <li>All Chat Permits are non-transferable and non-refundable after activation, except as required by law.</li>
+            <li>
+              By proceeding with payment, you agree to our{' '}
+              <a href="/terms" target="_blank" rel="noreferrer" className="underline font-medium text-stone-800">
+                Terms & Conditions
+              </a>{' '}
+              and{' '}
+              <a href="/privacy" target="_blank" rel="noreferrer" className="underline font-medium text-stone-800">
+                Privacy Policy
+              </a>
+              .
+            </li>
+          </ol>
+        </div>
+
         <div className="text-center mt-12 max-w-md mx-auto space-y-2">
           <p className="text-xs text-[var(--muted)]">
             Secure 256-bit SSL encrypted checkout. Membership plans activate immediately upon confirmation.
