@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import Script from 'next/script';
 import {
   IconCheck,
   IconCrown,
@@ -221,6 +222,10 @@ export default function SubscriptionPage() {
 
   return (
     <FeatureGate page="subscription" title="Membership & Subscription">
+      <Script
+        src="https://sdk.cashfree.com/js/v3/cashfree.js"
+        strategy="afterInteractive"
+      />
       <div className="w-full max-w-full min-w-0 space-y-8 pb-10">
         <SectionHeader
           eyebrow={isFreeTrial ? 'Launch Celebration' : 'Chat Permits'}
