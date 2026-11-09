@@ -1199,6 +1199,36 @@ export default function DiscoverPage() {
     }
   };
 
+  const [cancellingInterestId, setCancellingInterestId] = useState<string | null>(null);
+
+  const handleCancelInterest = async (id: string, name: string) => {
+    setCancellingInterestId(id);
+    try {
+      await matchesService.cancelInterest(id);
+      setSentInterestIds((prev) => {
+        const next = new Set(prev);
+        next.delete(id);
+        return next;
+      });
+      setProfiles((prev) =>
+        prev.map((p) =>
+          p.id === id ? { ...p, isInterestSent: false, connectionStatus: undefined } : p
+        )
+      );
+      toast.success(
+        'Interest Cancelled',
+        `Your connection request to ${name} has been cancelled.`
+      );
+    } catch (err: any) {
+      toast.error(
+        'Failed to Cancel',
+        err?.message || `Could not cancel request to ${name}.`
+      );
+    } finally {
+      setCancellingInterestId(null);
+    }
+  };
+
   const handlePass = (id: string) => {
     setPassedIds((prev) => {
       const next = new Set(prev).add(id);
@@ -1422,40 +1452,50 @@ export default function DiscoverPage() {
             </Button>
           </div>
 
-          {/* Right Hero Action: 3D Expandable "Send Interest" Pill Button in Luxury Burgundy */}
-          <Button
-            variant={sentInterestIds.has(profile.id) ? "secondary" : "primary"}
-            disabled={sentInterestIds.has(profile.id)}
-            onClick={(e) => {
-              e.stopPropagation();
-              if (sentInterestIds.has(profile.id)) return;
-              if (triggerSwipe) {
-                triggerSwipe('right');
-              } else {
-                handleSendInterest(profile.id, profile.name, { silentToast: true });
-              }
-            }}
-            className={cn(
-              "flex-1 min-w-0 h-11 sm:h-12 rounded-full px-3 sm:px-4 font-bold text-xs sm:text-sm flex items-center justify-center gap-1.5 sm:gap-2 transition-all duration-150 select-none truncate",
-              sentInterestIds.has(profile.id)
-                ? "bg-white/95 backdrop-blur-md border border-[var(--champagne-border)] text-[var(--primary)] shadow-sm cursor-default"
-                : "bg-gradient-to-b from-[#9E1D3B] via-[#801835] to-[#5E0E24] text-white border-t border-t-white/35 border-x border-x-[#72122B]/60 border-b-[3.5px] sm:border-b-[4px] border-b-[#420816] shadow-[0_4px_14px_rgba(94,14,36,0.5),inset_0_1.5px_1px_rgba(255,255,255,0.35)] hover:brightness-110 hover:-translate-y-0.5 hover:shadow-[0_6px_20px_rgba(94,14,36,0.6),inset_0_1.5px_1px_rgba(255,255,255,0.35)] active:scale-100 active:translate-y-[2px] active:border-b-[1px] active:shadow-[0_2px_6px_rgba(94,14,36,0.35)]"
-            )}
-            title={sentInterestIds.has(profile.id) ? "Interest already sent" : "Send Interest"}
-            aria-label="Send Interest"
-          >
-            {sentInterestIds.has(profile.id) ? (
-              <>
-                <IconCheck className="h-4 w-4 sm:h-4.5 sm:w-4.5 shrink-0 stroke-[2.8] text-[var(--primary)]" />
-                <span className="truncate text-[var(--primary)] font-bold">Interest Sent</span>
-              </>
-            ) : (
-              <>
-                <IconHeartFilled className="h-4 w-4 sm:h-4.5 sm:w-4.5 shrink-0 text-white drop-shadow-[0_1px_1.5px_rgba(0,0,0,0.35)]" />
-                <span className="truncate tracking-wide drop-shadow-[0_1px_1.5px_rgba(0,0,0,0.35)]">Send Interest</span>
-              </>
-            )}
-          </Button>
+          {/* Right Hero Action: "Cancel Interest" if sent, or 3D "Send Interest" in Luxury Burgundy */}
+          {sentInterestIds.has(profile.id) ? (
+            <Button
+              variant="secondary"
+              disabled={cancellingInterestId === profile.id}
+              onClick={(e) => {
+                e.stopPropagation();
+                handleCancelInterest(profile.id, profile.name);
+              }}
+              className="flex-1 min-w-0 h-11 sm:h-12 rounded-full px-3 sm:px-4 font-bold text-xs sm:text-sm flex items-center justify-center gap-1.5 sm:gap-2 transition-all duration-150 select-none truncate bg-white/95 hover:bg-rose-50/90 backdrop-blur-md border border-rose-200/90 hover:border-rose-300 text-rose-700 hover:text-rose-800 shadow-sm active:scale-95 cursor-pointer"
+              title={`Cancel interest sent to ${profile.name}`}
+              aria-label="Cancel Interest"
+            >
+              {cancellingInterestId === profile.id ? (
+                <>
+                  <IconLoader2 className="h-4 w-4 sm:h-4.5 sm:w-4.5 animate-spin text-rose-600 shrink-0" />
+                  <span className="truncate text-rose-700 font-bold">Cancelling...</span>
+                </>
+              ) : (
+                <>
+                  <IconX className="h-4 w-4 sm:h-4.5 sm:w-4.5 shrink-0 stroke-[2.4] text-rose-600" />
+                  <span className="truncate text-rose-700 font-bold">Cancel Interest</span>
+                </>
+              )}
+            </Button>
+          ) : (
+            <Button
+              variant="primary"
+              onClick={(e) => {
+                e.stopPropagation();
+                if (triggerSwipe) {
+                  triggerSwipe('right');
+                } else {
+                  handleSendInterest(profile.id, profile.name, { silentToast: true });
+                }
+              }}
+              className="flex-1 min-w-0 h-11 sm:h-12 rounded-full px-3 sm:px-4 font-bold text-xs sm:text-sm flex items-center justify-center gap-1.5 sm:gap-2 transition-all duration-150 select-none truncate bg-gradient-to-b from-[#9E1D3B] via-[#801835] to-[#5E0E24] text-white border-t border-t-white/35 border-x border-x-[#72122B]/60 border-b-[3.5px] sm:border-b-[4px] border-b-[#420816] shadow-[0_4px_14px_rgba(94,14,36,0.5),inset_0_1.5px_1px_rgba(255,255,255,0.35)] hover:brightness-110 hover:-translate-y-0.5 hover:shadow-[0_6px_20px_rgba(94,14,36,0.6),inset_0_1.5px_1px_rgba(255,255,255,0.35)] active:scale-100 active:translate-y-[2px] active:border-b-[1px] active:shadow-[0_2px_6px_rgba(94,14,36,0.35)]"
+              title="Send Interest"
+              aria-label="Send Interest"
+            >
+              <IconHeartFilled className="h-4 w-4 sm:h-4.5 sm:w-4.5 shrink-0 text-white drop-shadow-[0_1px_1.5px_rgba(0,0,0,0.35)]" />
+              <span className="truncate tracking-wide drop-shadow-[0_1px_1.5px_rgba(0,0,0,0.35)]">Send Interest</span>
+            </Button>
+          )}
         </div>
       </div>
     </>
@@ -2109,49 +2149,60 @@ export default function DiscoverPage() {
                           </Button>
                         </div>
 
-                        {/* Right Hero Action: 3D Expandable "Send Interest" / "Accept" Pill Button in Luxury Burgundy */}
-                        <Button
-                          variant={isInterestSent ? "secondary" : "primary"}
-                          disabled={isInterestSent}
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            if (isInterestSent) return;
-                            handleSendInterest(profile.id, profile.name);
-                          }}
-                          className={cn(
-                            "flex-1 min-w-0 h-10 sm:h-11 md:h-11 rounded-full px-2.5 sm:px-3 font-bold text-xs sm:text-sm flex items-center justify-center gap-1 sm:gap-1.5 transition-all duration-150 select-none truncate",
-                            isInterestSent
-                              ? "bg-white/95 backdrop-blur-md border border-[var(--champagne-border)] text-[var(--primary)] shadow-sm cursor-default"
-                              : isInterestReceived
+                        {/* Right Hero Action: "Cancel Interest" if sent, or 3D "Send Interest" / "Accept" in Luxury Burgundy */}
+                        {isInterestSent ? (
+                          <Button
+                            variant="secondary"
+                            disabled={cancellingInterestId === profile.id}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleCancelInterest(profile.id, profile.name);
+                            }}
+                            className="flex-1 min-w-0 h-10 sm:h-11 md:h-11 rounded-full px-2.5 sm:px-3 font-bold text-xs sm:text-sm flex items-center justify-center gap-1 sm:gap-1.5 transition-all duration-150 select-none truncate bg-white/95 hover:bg-rose-50/90 backdrop-blur-md border border-rose-200/90 hover:border-rose-300 text-rose-700 hover:text-rose-800 shadow-sm active:scale-95 cursor-pointer"
+                            title={`Cancel interest sent to ${profile.name}`}
+                            aria-label="Cancel Interest"
+                          >
+                            {cancellingInterestId === profile.id ? (
+                              <>
+                                <IconLoader2 className="h-3.5 w-3.5 sm:h-4 sm:w-4 animate-spin text-rose-600 shrink-0" />
+                                <span className="truncate text-rose-700 font-bold">Cancelling...</span>
+                              </>
+                            ) : (
+                              <>
+                                <IconX className="h-3.5 w-3.5 sm:h-4 sm:w-4 shrink-0 stroke-[2.4] text-rose-600" />
+                                <span className="truncate text-rose-700 font-bold">Cancel Interest</span>
+                              </>
+                            )}
+                          </Button>
+                        ) : (
+                          <Button
+                            variant={isInterestReceived ? "secondary" : "primary"}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleSendInterest(profile.id, profile.name);
+                            }}
+                            className={cn(
+                              "flex-1 min-w-0 h-10 sm:h-11 md:h-11 rounded-full px-2.5 sm:px-3 font-bold text-xs sm:text-sm flex items-center justify-center gap-1 sm:gap-1.5 transition-all duration-150 select-none truncate",
+                              isInterestReceived
                                 ? "bg-gradient-to-b from-emerald-500 via-emerald-600 to-teal-700 text-white border-t border-t-white/40 border-x border-x-emerald-600/50 border-b-[3px] border-b-teal-950 shadow-[0_4px_12px_rgba(16,185,129,0.45),inset_0_1.5px_1px_rgba(255,255,255,0.4)] hover:brightness-105 active:scale-100 active:translate-y-[2px] active:border-b-[1px] active:shadow-[0_2px_5px_rgba(16,185,129,0.35)]"
                                 : "bg-gradient-to-b from-[#9E1D3B] via-[#801835] to-[#5E0E24] text-white border-t border-t-white/35 border-x border-x-[#72122B]/60 border-b-[3px] sm:border-b-[3.5px] border-b-[#420816] shadow-[0_4px_12px_rgba(94,14,36,0.5),inset_0_1.5px_1px_rgba(255,255,255,0.35)] hover:brightness-110 hover:-translate-y-0.5 hover:shadow-[0_5px_16px_rgba(94,14,36,0.6),inset_0_1.5px_1px_rgba(255,255,255,0.35)] active:scale-100 active:translate-y-[2px] active:border-b-[1px] active:shadow-[0_2px_5px_rgba(94,14,36,0.3)]"
-                          )}
-                          title={
-                            isInterestSent
-                              ? "Interest already sent"
-                              : isInterestReceived
-                                ? "Accept Interest & Connect"
-                                : "Send Interest"
-                          }
-                          aria-label="Send Interest"
-                        >
-                          {isInterestSent ? (
-                            <>
-                              <IconCheck className="h-3.5 w-3.5 sm:h-4 sm:w-4 shrink-0 stroke-[2.8] text-[var(--primary)]" />
-                              <span className="truncate text-[var(--primary)] font-bold">Sent</span>
-                            </>
-                          ) : isInterestReceived ? (
-                            <>
-                              <IconHeartFilled className="h-3.5 w-3.5 sm:h-4 sm:w-4 shrink-0 text-white drop-shadow-[0_1px_1.5px_rgba(0,0,0,0.35)]" />
-                              <span className="truncate tracking-wide drop-shadow-[0_1px_1.5px_rgba(0,0,0,0.35)]">Accept</span>
-                            </>
-                          ) : (
-                            <>
-                              <IconHeartFilled className="h-3.5 w-3.5 sm:h-4 sm:w-4 shrink-0 text-white drop-shadow-[0_1px_1.5px_rgba(0,0,0,0.35)]" />
-                              <span className="truncate tracking-wide drop-shadow-[0_1px_1.5px_rgba(0,0,0,0.35)]">Connect</span>
-                            </>
-                          )}
-                        </Button>
+                            )}
+                            title={isInterestReceived ? "Accept Interest & Connect" : "Send Interest"}
+                            aria-label="Send Interest"
+                          >
+                            {isInterestReceived ? (
+                              <>
+                                <IconHeartFilled className="h-3.5 w-3.5 sm:h-4 sm:w-4 shrink-0 text-white drop-shadow-[0_1px_1.5px_rgba(0,0,0,0.35)]" />
+                                <span className="truncate tracking-wide drop-shadow-[0_1px_1.5px_rgba(0,0,0,0.35)]">Accept</span>
+                              </>
+                            ) : (
+                              <>
+                                <IconHeartFilled className="h-3.5 w-3.5 sm:h-4 sm:w-4 shrink-0 text-white drop-shadow-[0_1px_1.5px_rgba(0,0,0,0.35)]" />
+                                <span className="truncate tracking-wide drop-shadow-[0_1px_1.5px_rgba(0,0,0,0.35)]">Connect</span>
+                              </>
+                            )}
+                          </Button>
+                        )}
                       </div>
                     </div>
                   </div>
