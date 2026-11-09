@@ -280,46 +280,36 @@ export function InterestCard({
 
           {/* SENT TAB ACTIONS */}
           {type === 'sent' && (
-            <div className="flex items-center justify-between gap-2 w-full">
-              <div className="flex items-center gap-1.5 text-xs font-semibold text-amber-300 bg-black/40 backdrop-blur-md px-3 py-1.5 rounded-full border border-amber-300/20">
-                <span className="relative flex h-2 w-2">
-                  <span className="absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75"></span>
-                  <span className="relative inline-flex rounded-full h-2 w-2 bg-amber-500"></span>
-                </span>
-                <span>Waiting for response</span>
-              </div>
-
-              <div className="flex items-center gap-1.5 ml-auto">
-                {onCancelInterest && (
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      onCancelInterest(profile.id);
-                    }}
-                    className="rounded-full px-3 text-xs font-semibold bg-black/40 text-stone-300 hover:text-rose-300 hover:bg-black/60 border border-white/15 active-press shadow-2xs"
-                    leftIcon={<IconX className="h-3.5 w-3.5 text-rose-400" />}
-                  >
-                    Cancel
-                  </Button>
-                )}
-
-                <Link
-                  href={`/app/profile?user=${profile.id}`}
-                  className="focus-ring"
-                  onClick={(e) => e.stopPropagation()}
+            <div className="flex items-center gap-2 w-full">
+              {onCancelInterest && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onCancelInterest(profile.id);
+                  }}
+                  className="flex-1 min-w-0 h-10 rounded-full px-3 text-xs font-semibold bg-black/40 text-stone-200 hover:text-rose-300 hover:bg-black/60 border border-white/15 active-press shadow-2xs flex items-center justify-center gap-1.5"
+                  leftIcon={<IconX className="h-3.5 w-3.5 text-rose-400 shrink-0" />}
                 >
-                  <Button
-                    variant="secondary"
-                    size="sm"
-                    className="rounded-full px-3.5 text-xs font-bold bg-white/95 text-[var(--foreground)] hover:bg-white active-press border border-white/60 shadow-sm"
-                    rightIcon={<IconArrowRight className="h-3.5 w-3.5" />}
-                  >
-                    View
-                  </Button>
-                </Link>
-              </div>
+                  Cancel Interest
+                </Button>
+              )}
+
+              <Link
+                href={`/app/profile?user=${profile.id}`}
+                className={cn('focus-ring', onCancelInterest ? 'flex-1 min-w-0' : 'w-full')}
+                onClick={(e) => e.stopPropagation()}
+              >
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  className="w-full h-10 rounded-full px-3.5 text-xs font-bold bg-white/95 text-[var(--foreground)] hover:bg-white active-press border border-white/60 shadow-sm flex items-center justify-center gap-1"
+                  rightIcon={<IconArrowRight className="h-3.5 w-3.5 shrink-0" />}
+                >
+                  View
+                </Button>
+              </Link>
             </div>
           )}
 
