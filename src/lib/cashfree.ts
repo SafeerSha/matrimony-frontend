@@ -84,3 +84,4 @@ export const triggerCashfreeCheckout = async (
     redirectTarget: options?.redirectTarget || '_modal',
   });
 };
+
