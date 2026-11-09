@@ -33,10 +33,27 @@ export const loadCashfree = (): Promise<any> => {
   }
 
   cashfreeSdkPromise = new Promise((resolve, reject) => {
+    // 10-second timeout guard to prevent UI hanging if CDN or network is blocked
+    const timeoutId = setTimeout(() => {
+      cashfreeSdkPromise = null;
+      reject(new Error('Cashfree checkout script timed out. Please check your connection or ad blocker.'));
+    }, 10000);
+
     const existingScript = document.querySelector('script[src*="cashfree.js"]');
     if (existingScript) {
-      existingScript.addEventListener('load', () => resolve(window.Cashfree));
-      existingScript.addEventListener('error', (err) => reject(err));
+      if (window.Cashfree) {
+        clearTimeout(timeoutId);
+        return resolve(window.Cashfree);
+      }
+      existingScript.addEventListener('load', () => {
+        clearTimeout(timeoutId);
+        resolve(window.Cashfree);
+      });
+      existingScript.addEventListener('error', (err) => {
+        clearTimeout(timeoutId);
+        cashfreeSdkPromise = null;
+        reject(err);
+      });
       return;
     }
 
@@ -44,13 +61,16 @@ export const loadCashfree = (): Promise<any> => {
     script.src = 'https://sdk.cashfree.com/js/v3/cashfree.js';
     script.async = true;
     script.onload = () => {
+      clearTimeout(timeoutId);
       if (window.Cashfree) {
         resolve(window.Cashfree);
       } else {
+        cashfreeSdkPromise = null;
         reject(new Error('Cashfree SDK loaded but Cashfree constructor is not available on window.'));
       }
     };
     script.onerror = () => {
+      clearTimeout(timeoutId);
       cashfreeSdkPromise = null;
       reject(new Error('Failed to load Cashfree checkout script from sdk.cashfree.com. Please check your connection.'));
     };
@@ -79,9 +99,22 @@ export const triggerCashfreeCheckout = async (
   const mode = getCashfreeMode();
   const cashfree = CashfreeConstructor({ mode });
 
-  return cashfree.checkout({
-    paymentSessionId,
-    redirectTarget: options?.redirectTarget || '_modal',
-  });
-};
+  const target = options?.redirectTarget || '_modal';
 
+  try {
+    return await cashfree.checkout({
+      paymentSessionId,
+      redirectTarget: target,
+    });
+  } catch (err: any) {
+    // If modal checkout is blocked by browser/mobile device, fallback to full page redirect
+    if (target === '_modal') {
+      console.warn('Cashfree modal checkout issue, attempting _self redirect fallback:', err);
+      return await cashfree.checkout({
+        paymentSessionId,
+        redirectTarget: '_self',
+      });
+    }
+    throw err;
+  }
+};
