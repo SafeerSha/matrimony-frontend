@@ -55,8 +55,10 @@ export default function SubscriptionPage() {
 
   const checkPendingStatus = async (orderId: string) => {
     setIsCheckingPending(true);
+    console.log('[SubscriptionPage] Checking pending status for order:', orderId);
     try {
       const verification = await paymentService.verifyOrder(orderId);
+      console.log('[SubscriptionPage] Pending status check result:', verification);
       if (verification.paymentStatus === 'SUCCESS') {
         await refreshSubscription();
         setPendingPayment(null);
@@ -79,6 +81,7 @@ export default function SubscriptionPage() {
         });
       }
     } catch (err: any) {
+      console.error('[SubscriptionPage] Error during pending status check:', err);
       toast.error('Check Status Failed', {
         description: err?.message || 'Could not verify status with payment gateway.',
       });
@@ -112,6 +115,7 @@ export default function SubscriptionPage() {
     const returnOrderId = urlParams.get('order_id');
 
     if (returnOrderId) {
+      console.log('[SubscriptionPage] Return redirect detected from Cashfree for order:', returnOrderId);
       window.history.replaceState({}, '', window.location.pathname);
 
       (async () => {
@@ -120,6 +124,7 @@ export default function SubscriptionPage() {
             description: 'Checking order status with payment gateway...',
           });
           const verification = await paymentService.verifyOrder(returnOrderId);
+          console.log('[SubscriptionPage] Return order verification outcome:', verification);
           if (verification.paymentStatus === 'SUCCESS') {
             await refreshSubscription();
             setPendingPayment(null);
@@ -147,7 +152,7 @@ export default function SubscriptionPage() {
             });
           }
         } catch (e: any) {
-          console.error('Failed to verify return order:', e);
+          console.error('[SubscriptionPage] Failed to verify return order:', e);
         }
       })();
     }
@@ -155,6 +160,7 @@ export default function SubscriptionPage() {
 
   const handleUpgrade = async (tierId: string, planName: string) => {
     setProcessing(tierId);
+    console.log('[SubscriptionPage] Initiating upgrade for tier:', tierId, planName);
     try {
       if (isFreeTrial) {
         // 1-Click Free Trial Mode
@@ -175,6 +181,7 @@ export default function SubscriptionPage() {
       });
 
       const order = await paymentService.createOrder(tierId);
+      console.log('[SubscriptionPage] Cashfree order created:', { orderId: order.orderId, amount: order.amount, planCode: order.planCode });
 
       // In local development simulation if credentials are not yet configured on server
       if (order.paymentSessionId.startsWith('session_simulated_')) {
@@ -191,6 +198,7 @@ export default function SubscriptionPage() {
 
       // Open Cashfree Checkout (auto-selects _self on mobile for native UPI, _modal on desktop)
       const result = await triggerCashfreeCheckout(order.paymentSessionId);
+      console.log('[SubscriptionPage] Cashfree checkout SDK result:', result);
 
       if (result?.error) {
         const errorMsg = (result.error.message || '').toLowerCase();
@@ -225,6 +233,7 @@ export default function SubscriptionPage() {
         description: 'Confirming transaction...',
       });
       const verification = await paymentService.verifyOrder(order.orderId);
+      console.log('[SubscriptionPage] Modal checkout verification outcome:', verification);
 
       if (verification.paymentStatus === 'SUCCESS') {
         await refreshSubscription();
