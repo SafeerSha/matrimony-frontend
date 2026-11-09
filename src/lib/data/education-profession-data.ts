@@ -547,6 +547,50 @@ export const POPULAR_INDIAN_STATES = [
   "Outside India (NRI)",
 ];
 
+export const KERALA_DISTRICTS = [
+  "Alappuzha",
+  "Ernakulam",
+  "Idukki",
+  "Kannur",
+  "Kasaragod",
+  "Kollam",
+  "Kottayam",
+  "Kozhikode",
+  "Malappuram",
+  "Palakkad",
+  "Pathanamthitta",
+  "Thiruvananthapuram",
+  "Thrissur",
+  "Wayanad",
+];
+
+export const MOTHER_TONGUE_OPTIONS = [
+  "Malayalam",
+  "Tamil",
+  "Kannada",
+  "Telugu",
+  "Hindi",
+  "English",
+  "Marathi",
+  "Gujarati",
+  "Bengali",
+  "Punjabi",
+  "Urdu",
+  "Odia",
+  "Other",
+];
+
+export const NATIONALITY_OPTIONS = [
+  "Indian",
+  "NRI - UAE / GCC",
+  "NRI - USA",
+  "NRI - UK / Europe",
+  "NRI - Canada",
+  "NRI - Australia / NZ",
+  "NRI - Singapore / Malaysia",
+  "Other",
+];
+
 export const HEIGHT_OPTIONS_CM = Array.from({ length: 71 }, (_, i) => {
   const cm = 140 + i; // 140 cm to 210 cm
   const totalInches = cm / 2.54;

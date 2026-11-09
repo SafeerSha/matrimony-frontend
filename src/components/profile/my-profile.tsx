@@ -46,6 +46,11 @@ import {
   POPULAR_EDUCATION_OPTIONS,
   POPULAR_CASTES_BY_RELIGION,
   RELIGION_OPTIONS,
+  HEIGHT_OPTIONS_CM,
+  POPULAR_INDIAN_STATES,
+  KERALA_DISTRICTS,
+  MOTHER_TONGUE_OPTIONS,
+  PROFESSION_OPTIONS,
 } from '@/lib/data/education-profession-data';
 import { PageLoader } from '@/components/ui/page-loader';
 import { toast } from '@/lib/toast';
@@ -1495,41 +1500,71 @@ export function MyProfile({ initialPreview = false }: { initialPreview?: boolean
           {/* Location & Mother Tongue */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
-              <label className="block text-xs font-bold uppercase tracking-wider text-[var(--foreground)] mb-1.5">
-                City / Town
-              </label>
-              <input
-                type="text"
-                value={editDraft.city}
-                onChange={(e) => setEditDraft({ ...editDraft, city: e.target.value })}
-                placeholder="e.g. Kochi, Bengaluru"
-                className="w-full rounded-xl border border-[var(--border)] bg-white px-3.5 py-2.5 text-xs text-[var(--foreground)] focus:outline-none focus:ring-2 focus:ring-[var(--primary)]"
-              />
-            </div>
-
-            <div>
-              <label className="block text-xs font-bold uppercase tracking-wider text-[var(--foreground)] mb-1.5">
-                State / Province
-              </label>
-              <input
-                type="text"
+              <ModernSelect
+                label="State / Province"
                 value={editDraft.state}
-                onChange={(e) => setEditDraft({ ...editDraft, state: e.target.value })}
-                placeholder="e.g. Kerala, Karnataka, Maharashtra"
-                className="w-full rounded-xl border border-[var(--border)] bg-white px-3.5 py-2.5 text-xs text-[var(--foreground)] focus:outline-none focus:ring-2 focus:ring-[var(--primary)]"
+                options={(() => {
+                  const opts = POPULAR_INDIAN_STATES.map((st) => ({ value: st, label: st }));
+                  if (editDraft.state && !opts.some((o) => o.value.toLowerCase() === editDraft.state.toLowerCase())) {
+                    opts.unshift({ value: editDraft.state, label: editDraft.state });
+                  }
+                  return opts;
+                })()}
+                onChange={(val) => setEditDraft({ ...editDraft, state: val })}
+                placeholder="Select State"
+                searchable
+                maxHeight="max-h-[220px]"
               />
             </div>
 
             <div>
-              <label className="block text-xs font-bold uppercase tracking-wider text-[var(--foreground)] mb-1.5">
-                Mother Tongue
-              </label>
-              <input
-                type="text"
+              {(editDraft.state || '').toLowerCase().includes('kerala') ? (
+                <ModernSelect
+                  label="City / District"
+                  value={editDraft.city}
+                  options={(() => {
+                    const opts = KERALA_DISTRICTS.map((d) => ({ value: d, label: d }));
+                    if (editDraft.city && !opts.some((o) => o.value.toLowerCase() === editDraft.city.toLowerCase())) {
+                      opts.unshift({ value: editDraft.city, label: editDraft.city });
+                    }
+                    return opts;
+                  })()}
+                  onChange={(val) => setEditDraft({ ...editDraft, city: val })}
+                  placeholder="Select District"
+                  searchable
+                  maxHeight="max-h-[220px]"
+                />
+              ) : (
+                <div>
+                  <label className="block text-xs font-bold uppercase tracking-wider text-[var(--foreground)] mb-1.5">
+                    City / Town
+                  </label>
+                  <input
+                    type="text"
+                    value={editDraft.city}
+                    onChange={(e) => setEditDraft({ ...editDraft, city: e.target.value })}
+                    placeholder="e.g. Kochi, Bengaluru"
+                    className="w-full rounded-xl border border-[var(--border)] bg-white px-3.5 py-2.5 text-xs text-[var(--foreground)] focus:outline-none focus:ring-2 focus:ring-[var(--primary)]"
+                  />
+                </div>
+              )}
+            </div>
+
+            <div>
+              <ModernSelect
+                label="Mother Tongue"
                 value={editDraft.motherTongue}
-                onChange={(e) => setEditDraft({ ...editDraft, motherTongue: e.target.value })}
-                placeholder="e.g. Malayalam, Tamil, Hindi"
-                className="w-full rounded-xl border border-[var(--border)] bg-white px-3.5 py-2.5 text-xs text-[var(--foreground)] focus:outline-none focus:ring-2 focus:ring-[var(--primary)]"
+                options={(() => {
+                  const opts = MOTHER_TONGUE_OPTIONS.map((lang) => ({ value: lang, label: lang }));
+                  if (editDraft.motherTongue && !opts.some((o) => o.value.toLowerCase() === editDraft.motherTongue.toLowerCase())) {
+                    opts.unshift({ value: editDraft.motherTongue, label: editDraft.motherTongue });
+                  }
+                  return opts;
+                })()}
+                onChange={(val) => setEditDraft({ ...editDraft, motherTongue: val })}
+                placeholder="Select Mother Tongue"
+                searchable
+                maxHeight="max-h-[220px]"
               />
             </div>
 
@@ -1560,15 +1595,20 @@ export function MyProfile({ initialPreview = false }: { initialPreview?: boolean
             </div>
 
             <div>
-              <label className="block text-xs font-bold uppercase tracking-wider text-[var(--foreground)] mb-1.5">
-                Profession / Occupation
-              </label>
-              <input
-                type="text"
+              <ModernSelect
+                label="Profession / Occupation"
                 value={editDraft.occupation}
-                onChange={(e) => setEditDraft({ ...editDraft, occupation: e.target.value })}
-                placeholder="e.g. Software Engineer, Doctor"
-                className="w-full rounded-xl border border-[var(--border)] bg-white px-3.5 py-2.5 text-xs text-[var(--foreground)] focus:outline-none focus:ring-2 focus:ring-[var(--primary)]"
+                options={(() => {
+                  const opts = PROFESSION_OPTIONS.map((prof) => ({ value: prof, label: prof }));
+                  if (editDraft.occupation && !opts.some((o) => o.value.toLowerCase() === editDraft.occupation.toLowerCase())) {
+                    opts.unshift({ value: editDraft.occupation, label: editDraft.occupation });
+                  }
+                  return opts;
+                })()}
+                onChange={(val) => setEditDraft({ ...editDraft, occupation: val })}
+                placeholder="Select Profession"
+                searchable
+                maxHeight="max-h-[240px]"
               />
             </div>
 
@@ -1600,15 +1640,20 @@ export function MyProfile({ initialPreview = false }: { initialPreview?: boolean
           {/* Personal & Community Details */}
           <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
             <div>
-              <label className="block text-xs font-bold uppercase tracking-wider text-[var(--foreground)] mb-1.5">
-                Height
-              </label>
-              <input
-                type="text"
+              <ModernSelect
+                label="Height"
                 value={editDraft.height}
-                onChange={(e) => setEditDraft({ ...editDraft, height: e.target.value })}
-                placeholder="e.g. 170 cm, 5'7&quot;"
-                className="w-full rounded-xl border border-[var(--border)] bg-white px-3.5 py-2.5 text-xs text-[var(--foreground)] focus:outline-none focus:ring-2 focus:ring-[var(--primary)]"
+                options={(() => {
+                  const opts = HEIGHT_OPTIONS_CM.map((h) => ({ value: h.value, label: h.label }));
+                  if (editDraft.height && !opts.some((o) => o.value === editDraft.height || o.label.includes(editDraft.height))) {
+                    opts.unshift({ value: editDraft.height, label: editDraft.height });
+                  }
+                  return opts;
+                })()}
+                onChange={(val) => setEditDraft({ ...editDraft, height: val })}
+                placeholder="Select Height"
+                searchable
+                maxHeight="max-h-[220px]"
               />
             </div>
 

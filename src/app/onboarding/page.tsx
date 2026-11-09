@@ -55,6 +55,10 @@ import {
   POPULAR_INDIAN_STATES,
   HEIGHT_OPTIONS_CM,
   POPULAR_EDUCATION_OPTIONS,
+  NATIONALITY_OPTIONS,
+  KERALA_DISTRICTS,
+  MOTHER_TONGUE_OPTIONS,
+  PROFESSION_OPTIONS,
 } from "@/lib/data/education-profession-data";
 
 const STEPS = [
@@ -1548,19 +1552,24 @@ export default function OnboardingPage() {
                         {/* 2. Nationality, State & City */}
                         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                           <div>
-                            <label className="block text-xs font-semibold uppercase tracking-wider text-[var(--muted-strong)] mb-1.5">
-                              Nationality <span className="text-rose-500">*</span>
-                            </label>
-                            <input
-                              name="nationality"
-                              type="text"
+                            <ModernSelect
+                              label="Nationality"
                               required
+                              name="nationality"
                               value={profileData.nationality ?? "Indian"}
-                              onChange={(e) =>
-                                setProfileData((prev: any) => ({ ...prev, nationality: e.target.value }))
+                              options={(() => {
+                                const opts = NATIONALITY_OPTIONS.map((n) => ({ value: n, label: n }));
+                                if (profileData.nationality && !opts.some((o) => o.value.toLowerCase() === profileData.nationality.toLowerCase())) {
+                                  opts.unshift({ value: profileData.nationality, label: profileData.nationality });
+                                }
+                                return opts;
+                              })()}
+                              onChange={(val) =>
+                                setProfileData((prev: any) => ({ ...prev, nationality: val }))
                               }
-                              placeholder="e.g. Indian"
-                              className="h-12 w-full rounded-xl border border-[var(--border)] bg-white px-4 text-sm text-[var(--foreground)] outline-none focus:border-[var(--primary)] focus:ring-4 focus:ring-[var(--primary)]/10 transition"
+                              placeholder="Select Nationality"
+                              searchable
+                              maxHeight="max-h-[220px]"
                             />
                           </div>
 
@@ -1575,24 +1584,48 @@ export default function OnboardingPage() {
                                 setProfileData((prev: any) => ({ ...prev, state: val }))
                               }
                               placeholder="Select State"
+                              searchable
                               maxHeight="max-h-[220px]"
                             />
                           </div>
 
                           <div>
-                            <label className="block text-xs font-semibold uppercase tracking-wider text-[var(--muted-strong)] mb-1.5">
-                              City / District
-                            </label>
-                            <input
-                              name="city"
-                              type="text"
-                              value={profileData.city ?? ""}
-                              onChange={(e) =>
-                                setProfileData((prev: any) => ({ ...prev, city: e.target.value }))
-                              }
-                              placeholder="e.g. Kochi, Kozhikode"
-                              className="h-12 w-full rounded-xl border border-[var(--border)] bg-white px-4 text-sm text-[var(--foreground)] outline-none focus:border-[var(--primary)] focus:ring-4 focus:ring-[var(--primary)]/10 transition"
-                            />
+                            {(profileData.state || "Kerala").toLowerCase().includes("kerala") ? (
+                              <ModernSelect
+                                label="City / District"
+                                name="city"
+                                value={profileData.city ?? ""}
+                                options={(() => {
+                                  const opts = KERALA_DISTRICTS.map((d) => ({ value: d, label: d }));
+                                  if (profileData.city && !opts.some((o) => o.value.toLowerCase() === profileData.city.toLowerCase())) {
+                                    opts.unshift({ value: profileData.city, label: profileData.city });
+                                  }
+                                  return opts;
+                                })()}
+                                onChange={(val) =>
+                                  setProfileData((prev: any) => ({ ...prev, city: val }))
+                                }
+                                placeholder="Select District"
+                                searchable
+                                maxHeight="max-h-[220px]"
+                              />
+                            ) : (
+                              <div>
+                                <label className="block text-xs font-semibold uppercase tracking-wider text-[var(--muted-strong)] mb-1.5">
+                                  City / District
+                                </label>
+                                <input
+                                  name="city"
+                                  type="text"
+                                  value={profileData.city ?? ""}
+                                  onChange={(e) =>
+                                    setProfileData((prev: any) => ({ ...prev, city: e.target.value }))
+                                  }
+                                  placeholder="e.g. Bengaluru, Chennai"
+                                  className="h-12 w-full rounded-xl border border-[var(--border)] bg-white px-4 text-sm text-[var(--foreground)] outline-none focus:border-[var(--primary)] focus:ring-4 focus:ring-[var(--primary)]/10 transition"
+                                />
+                              </div>
+                            )}
                           </div>
                         </div>
 
@@ -1613,8 +1646,8 @@ export default function OnboardingPage() {
                           />
                         </div>
 
-                        {/* 4. Religion and Caste */}
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        {/* 4. Religion, Caste & Mother Tongue */}
+                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                           <div>
                             <ModernSelect
                               label="Religion"
@@ -1654,6 +1687,29 @@ export default function OnboardingPage() {
                                 setProfileData((prev: any) => ({ ...prev, caste: val }))
                               }
                               placeholder="Select Caste / Community"
+                              searchable
+                              maxHeight="max-h-[220px]"
+                            />
+                          </div>
+
+                          <div>
+                            <ModernSelect
+                              label="Mother Tongue"
+                              required
+                              name="motherTongue"
+                              value={profileData.motherTongue || "Malayalam"}
+                              options={(() => {
+                                const opts = MOTHER_TONGUE_OPTIONS.map((lang) => ({ value: lang, label: lang }));
+                                if (profileData.motherTongue && !opts.some((o) => o.value.toLowerCase() === profileData.motherTongue.toLowerCase())) {
+                                  opts.unshift({ value: profileData.motherTongue, label: profileData.motherTongue });
+                                }
+                                return opts;
+                              })()}
+                              onChange={(val) =>
+                                setProfileData((prev: any) => ({ ...prev, motherTongue: val }))
+                              }
+                              placeholder="Select Mother Tongue"
+                              searchable
                               maxHeight="max-h-[220px]"
                             />
                           </div>
@@ -1917,22 +1973,28 @@ export default function OnboardingPage() {
 
                         {/* Job Title / Profession */}
                         <div>
-                          <label className="block text-xs font-semibold uppercase tracking-wider text-[var(--muted-strong)] mb-1.5">
-                            Job Title / Profession Designation
-                          </label>
-                          <input
+                          <ModernSelect
+                            label="Job Title / Profession Designation"
                             name="profession"
-                            type="text"
                             value={profileData.occupation ?? profileData.profession ?? ""}
-                            onChange={(e) =>
+                            options={(() => {
+                              const opts = PROFESSION_OPTIONS.map((p) => ({ value: p, label: p }));
+                              const cur = profileData.occupation || profileData.profession;
+                              if (cur && !opts.some((o) => o.value.toLowerCase() === cur.toLowerCase())) {
+                                opts.unshift({ value: cur, label: cur });
+                              }
+                              return opts;
+                            })()}
+                            onChange={(val) =>
                               setProfileData((prev: any) => ({
                                 ...prev,
-                                occupation: e.target.value,
-                                profession: e.target.value,
+                                occupation: val,
+                                profession: val,
                               }))
                             }
-                            placeholder="e.g. Higher Secondary Teacher / Officer"
-                            className="h-12 w-full rounded-xl border border-[var(--border)] bg-white px-4 text-sm text-[var(--foreground)] outline-none focus:border-[var(--primary)] focus:ring-4 focus:ring-[var(--primary)]/10 transition"
+                            placeholder="Select or search profession"
+                            searchable
+                            maxHeight="max-h-[260px]"
                           />
                         </div>
 
