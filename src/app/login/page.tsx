@@ -1183,6 +1183,9 @@ export default function LoginPage() {
                         type={showPassword ? "text" : "password"}
                         required
                         minLength={6}
+                        autoCapitalize="none"
+                        autoCorrect="off"
+                        spellCheck={false}
                         value={password}
                         onChange={(e) => setPassword(e.target.value)}
                         placeholder="Enter your password"

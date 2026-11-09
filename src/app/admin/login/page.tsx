@@ -188,6 +188,9 @@ function AdminLoginForm() {
                   placeholder="admin@example.com"
                   required
                   autoFocus
+                  autoCapitalize="none"
+                  autoCorrect="off"
+                  spellCheck={false}
                   className="w-full bg-[#1D040C] border border-[#4A1024] rounded-xl pl-10 pr-4 py-2.5 text-sm text-white placeholder:text-white/30 focus:outline-none focus:border-[#F29CA3] focus:ring-1 focus:ring-[#F29CA3]"
                 />
               </div>
@@ -208,6 +211,9 @@ function AdminLoginForm() {
                   }}
                   placeholder="••••••••••••"
                   required
+                  autoCapitalize="none"
+                  autoCorrect="off"
+                  spellCheck={false}
                   className="w-full bg-[#1D040C] border border-[#4A1024] rounded-xl pl-10 pr-10 py-2.5 text-sm text-white placeholder:text-white/30 focus:outline-none focus:border-[#F29CA3] focus:ring-1 focus:ring-[#F29CA3]"
                 />
                 <button
