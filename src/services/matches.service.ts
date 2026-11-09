@@ -89,7 +89,13 @@ export function mapConnectionToProfile(u: any, idx = 0): Profile {
     community: profile?.community || partner.community || undefined,
     lookingFor: profile?.lookingFor || partner.lookingFor || "A kind, emotionally mature partner.",
     isShortlisted: Boolean(partner.isShortlisted || u.isShortlisted || u.status === 'SHORTLISTED'),
-    isInterestSent: Boolean(partner.isInterestSent || u.isInterestSent || u.status === 'PENDING' || u.status === 'ACCEPTED'),
+    isMatched: Boolean(partner.isMatched || u.isMatched || u.status === 'ACCEPTED' || u.connectionStatus === 'MATCHED'),
+    isInterestSent: Boolean(
+      (partner.isInterestSent || u.isInterestSent || u.status === 'PENDING') &&
+        u.status !== 'ACCEPTED' &&
+        u.connectionStatus !== 'MATCHED' &&
+        !u.isMatched
+    ),
     connectionStatus: partner.connectionStatus || u.connectionStatus || u.status,
   };
 }

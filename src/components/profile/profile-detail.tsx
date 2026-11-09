@@ -279,8 +279,8 @@ export function ProfileDetail({
 
           setIsMatched(isMutual);
           setIsDeclined(isDeclinedStatus);
-          setIsInterestSent(Boolean(!isDeclinedStatus && (res.isInterestSent || isMutual || res.connectionStatus === 'SENT')));
-          setIsInterestReceived(Boolean(!isDeclinedStatus && (res.isInterestReceived || res.connectionStatus === 'RECEIVED')));
+          setIsInterestSent(Boolean(!isDeclinedStatus && !isMutual && (res.isInterestSent || res.connectionStatus === 'SENT')));
+          setIsInterestReceived(Boolean(!isDeclinedStatus && !isMutual && (res.isInterestReceived || res.connectionStatus === 'RECEIVED')));
           setIsShortlisted(Boolean(!isDeclinedStatus && (res.isShortlisted || res.connectionStatus === 'SHORTLISTED')));
 
           setProfile(mapApiProfileToDetail(res, targetId));
@@ -311,7 +311,7 @@ export function ProfileDetail({
           });
           if (isMutual) {
             setIsMatched(true);
-            setIsInterestSent(true);
+            setIsInterestSent(false);
           }
         })
         .catch(() => {});
@@ -496,14 +496,16 @@ export function ProfileDetail({
       toast.info('Preview Mode', 'Simulated: Interest withdrawn.');
       return;
     }
-    if (!profile || !isInterestSent || isMatched) return;
+    if (!profile) return;
     try {
       await matchesService.cancelInterest(profile.id);
       setIsInterestSent(false);
+      setIsMatched(false);
       toast.success('Interest Withdrawn', `Your connection request to ${profile.name} was cancelled.`);
-    } catch {
-      setIsInterestSent(false);
-      toast.info('Interest Withdrawn', `Connection request to ${profile.name} cancelled.`);
+    } catch (err: any) {
+      toast.error('Could not cancel request', {
+        description: err?.message || 'Please try again.',
+      });
     }
   };
 

@@ -734,7 +734,8 @@ export default function DiscoverPage() {
           const initialPassed = new Set<string>();
 
           const mapped: Profile[] = rawList.map((u: any, idx: number) => {
-            if (u.isInterestSent || u.connectionStatus === 'SENT' || u.connectionStatus === 'MATCHED') {
+            const isSent = (u.isInterestSent || u.connectionStatus === 'SENT') && u.connectionStatus !== 'MATCHED' && !u.isMatched;
+            if (isSent) {
               initialSent.add(u.id);
             }
             if (u.isInterestReceived || u.connectionStatus === 'RECEIVED') {
@@ -802,26 +803,10 @@ export default function DiscoverPage() {
               lookingFor: prof.lookingFor || '',
             };
           });
-          setSentInterestIds((prev) => {
-            const next = new Set(prev);
-            initialSent.forEach((id) => next.add(id));
-            return next;
-          });
-          setReceivedInterestIds((prev) => {
-            const next = new Set(prev);
-            initialReceived.forEach((id) => next.add(id));
-            return next;
-          });
-          setShortlistedIds((prev) => {
-            const next = new Set(prev);
-            initialShortlisted.forEach((id) => next.add(id));
-            return next;
-          });
-          setPassedIds((prev) => {
-            const next = new Set(prev);
-            initialPassed.forEach((id) => next.add(id));
-            return next;
-          });
+          setSentInterestIds(initialSent);
+          setReceivedInterestIds(initialReceived);
+          setShortlistedIds(initialShortlisted);
+          setPassedIds(initialPassed);
           setProfiles(mapped);
         } else {
           setProfiles([]);

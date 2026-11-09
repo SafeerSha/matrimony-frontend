@@ -223,11 +223,10 @@ function InterestsContent() {
         'Interest Withdrawn',
         `Your connection request to ${name} has been cancelled.`
       );
-    } catch {
-      setSentItems((prev) => prev.filter((p) => p.id !== id));
-      toast.info(
-        'Interest Withdrawn',
-        `Cancelled request to ${name}.`
+    } catch (err: any) {
+      toast.error(
+        'Failed to Cancel',
+        err?.message || `Could not cancel request to ${name}.`
       );
     }
   };
