@@ -38,6 +38,7 @@ import {
   IconBan,
   IconEdit,
   IconX,
+  IconArrowsMaximize,
 } from '@tabler/icons-react';
 import { getProfileUniqueId, formatLastActive, getRegistrationBadge } from '@/lib/demo-data';
 import { PageLoader } from '@/components/ui/page-loader';
@@ -49,6 +50,7 @@ import { Chip } from '@/components/ui/chip';
 import { VerificationBadge } from '@/components/ui/verification-badge';
 import { ProfileCard } from '@/components/profile/profile-card';
 import { RegistrationCategoryBadge } from '@/components/ui/registration-badge';
+import { SecureImageViewer } from '@/components/ui/secure-image-viewer';
 import { matchesService, profileService } from '@/services';
 import { subscriptionService } from '@/services/subscription.service';
 import { toast } from '@/lib/toast';
@@ -145,6 +147,7 @@ export function ProfileDetail({
   });
   const [relatedProfiles, setRelatedProfiles] = useState<Profile[]>([]);
   const [activePhotoIdx, setActivePhotoIdx] = useState(0);
+  const [isViewerOpen, setIsViewerOpen] = useState(false);
   const [brokenPhotos, setBrokenPhotos] = useState<Record<number, boolean>>({});
   const [isShortlisted, setIsShortlisted] = useState(false);
   const [isInterestSent, setIsInterestSent] = useState(false);
@@ -642,12 +645,23 @@ export function ProfileDetail({
           {/* Main Visual Gallery Showcase (Desktop: 7 cols) */}
           <div className="lg:col-span-7 relative flex flex-col bg-[var(--surface-muted)]">
             {/* Active Hero Portrait Photo */}
-            <div className="relative h-[420px] sm:h-[520px] lg:h-[580px] w-full overflow-hidden bg-stone-900">
+            <div
+              className={cn(
+                'relative h-[420px] sm:h-[520px] lg:h-[580px] w-full overflow-hidden bg-stone-900 select-none',
+                galleryPhotos.length > 0 && !brokenPhotos[activePhotoIdx] && 'cursor-pointer group'
+              )}
+              onClick={() => {
+                if (galleryPhotos.length > 0 && !brokenPhotos[activePhotoIdx]) {
+                  setIsViewerOpen(true);
+                }
+              }}
+              title="Click photo to open full-screen viewer"
+            >
               {galleryPhotos.length > 0 && !brokenPhotos[activePhotoIdx] ? (
                 <img
                   src={galleryPhotos[activePhotoIdx]}
                   alt={`${profile.name} - Photo ${activePhotoIdx + 1}`}
-                  className="h-full w-full object-cover object-center transition-all duration-500 ease-out"
+                  className="h-full w-full object-cover object-center transition-all duration-500 ease-out group-hover:scale-[1.01]"
                   onError={() => setBrokenPhotos((prev) => ({ ...prev, [activePhotoIdx]: true }))}
                 />
               ) : (
@@ -702,14 +716,28 @@ export function ProfileDetail({
                 ) : null}
               </div>
 
-              {/* Gallery Counter Badge */}
-              {galleryPhotos.length > 1 && (
-                <div className="absolute top-4 right-4 z-10">
+              {/* Gallery Counter & Full-Screen Trigger Badge */}
+              <div className="absolute top-4 right-4 z-10 flex items-center gap-1.5">
+                {galleryPhotos.length > 1 && (
                   <span className="rounded-full bg-black/40 backdrop-blur-md text-white text-[11px] font-semibold px-2.5 py-1">
                     Photo {activePhotoIdx + 1} of {galleryPhotos.length}
                   </span>
-                </div>
-              )}
+                )}
+                {galleryPhotos.length > 0 && !brokenPhotos[activePhotoIdx] && (
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setIsViewerOpen(true);
+                    }}
+                    title="Open full-screen image viewer"
+                    aria-label="View full screen"
+                    className="grid h-7 w-7 place-items-center rounded-full bg-black/40 text-white/90 hover:bg-black/70 hover:text-white backdrop-blur-md transition-all active:scale-95"
+                  >
+                    <IconArrowsMaximize className="h-3.5 w-3.5" />
+                  </button>
+                )}
+              </div>
 
               {/* Photo Navigation Chevrons */}
               {galleryPhotos.length > 1 && (
@@ -768,7 +796,17 @@ export function ProfileDetail({
                   <button
                     key={idx}
                     type="button"
-                    onClick={() => setActivePhotoIdx(idx)}
+                    onClick={() => {
+                      if (activePhotoIdx === idx) {
+                        setIsViewerOpen(true);
+                      } else {
+                        setActivePhotoIdx(idx);
+                      }
+                    }}
+                    onDoubleClick={() => {
+                      setActivePhotoIdx(idx);
+                      setIsViewerOpen(true);
+                    }}
                     aria-label={`View photo ${idx + 1}`}
                     className={cn(
                       'relative h-14 w-14 sm:h-16 sm:w-16 shrink-0 overflow-hidden rounded-xl border-2 transition-all active-press focus-ring',
@@ -1732,6 +1770,15 @@ export function ProfileDetail({
         </div>,
         document.body
       )}
+      {/* Secure Dedicated Full-Screen Image Viewer */}
+      <SecureImageViewer
+        isOpen={isViewerOpen}
+        onClose={() => setIsViewerOpen(false)}
+        images={galleryPhotos}
+        initialIndex={activePhotoIdx}
+        profileName={profile?.name}
+        profileId={profile?.profileId || (profile ? getProfileUniqueId(profile) : undefined)}
+      />
     </div>
   );
 }
