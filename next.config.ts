@@ -102,6 +102,25 @@ const nextConfig: NextConfig = {
       }
     ];
   },
+  async redirects() {
+    return [
+      {
+        source: "/contact-us",
+        destination: "/contact",
+        permanent: true,
+      },
+      {
+        source: "/refunds",
+        destination: "/refund-policy",
+        permanent: true,
+      },
+      {
+        source: "/cancellation-policy",
+        destination: "/refund-policy",
+        permanent: true,
+      },
+    ];
+  },
   async rewrites() {
     const backendTarget =
       process.env.BACKEND_API_URL ||

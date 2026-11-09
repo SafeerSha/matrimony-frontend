@@ -206,12 +206,18 @@ export default function TermsPage() {
       {/* Footer */}
       <div className="mt-12 pt-6 border-t border-[var(--border)] flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-[var(--muted)]">
         <p>© {new Date().getFullYear()} IshtamChat.com. All rights reserved.</p>
-        <div className="flex items-center gap-4">
+        <div className="flex flex-wrap items-center gap-4">
           <Link href="/privacy" className="hover:underline">
             Privacy Policy
           </Link>
-          <Link href="/support" className="hover:underline">
-            Support
+          <Link href="/refund-policy" className="hover:underline">
+            Refunds & Cancellations
+          </Link>
+          <Link href="/contact" className="hover:underline">
+            Contact Us
+          </Link>
+          <Link href="/pricing" className="hover:underline">
+            Pricing (INR)
           </Link>
           <Link href="/" className="font-semibold text-[var(--primary)] hover:underline">
             Home
