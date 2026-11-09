@@ -139,10 +139,8 @@ export default function SubscriptionPage() {
         return;
       }
 
-      // Open Cashfree Drop-in Checkout Modal
-      const result = await triggerCashfreeCheckout(order.paymentSessionId, {
-        redirectTarget: '_modal',
-      });
+      // Open Cashfree Checkout (auto-selects _self on mobile for native UPI, _modal on desktop)
+      const result = await triggerCashfreeCheckout(order.paymentSessionId);
 
       if (result?.error) {
         toast.error('Payment Incomplete', {

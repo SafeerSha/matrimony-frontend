@@ -27,7 +27,13 @@ export const triggerCashfreeCheckout = async (
     );
   }
 
-  const target = options?.redirectTarget || '_modal';
+  // Auto-detect mobile device or small viewport for reliable payment completion
+  const isMobile =
+    typeof window !== 'undefined' &&
+    (window.innerWidth < 768 ||
+      /Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent));
+
+  const target = options?.redirectTarget || (isMobile ? '_self' : '_modal');
 
   try {
     return await cashfree.checkout({
