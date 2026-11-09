@@ -17,7 +17,6 @@ import {
   IconAlertTriangle,
   IconX,
   IconSparkles,
-  IconCalendar,
   IconCheck,
   IconLoader2,
   IconSettings,
@@ -118,7 +117,6 @@ function AssignPlanModal({
   }, [plans]);
 
   const [selectedOption, setSelectedOption] = useState<string>('');
-  const [customDays, setCustomDays] = useState<number>(30);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
@@ -132,11 +130,9 @@ function AssignPlanModal({
 
     if (matched) {
       setSelectedOption(matched.id);
-      setCustomDays(matched.durationDays);
     } else {
       const popularOrFirst = activePlans.find((p) => p.popular) || activePlans[0];
       setSelectedOption(popularOrFirst?.id || 'BASIC');
-      setCustomDays(popularOrFirst?.durationDays || 30);
     }
   }, [user, isOpen, activePlans]);
 
@@ -169,12 +165,11 @@ function AssignPlanModal({
         const res = await adminService.assignUserPlan(user.id, {
           planId: plan?.id,
           planCode: plan?.code,
-          customDurationDays: customDays,
           action: 'apply',
         });
         toast.success(
           'Plan Activated',
-          `${plan?.name || 'Subscription'} applied to ${displayName} (${customDays} days valid).`
+          `${plan?.name || 'Subscription'} applied to ${displayName} (${plan?.durationDays ?? 30} days validity).`
         );
         onPlanAssigned(res.user);
         onClose();
@@ -260,10 +255,7 @@ function AssignPlanModal({
               return (
                 <div
                   key={p.id}
-                  onClick={() => {
-                    setSelectedOption(p.id);
-                    setCustomDays(p.durationDays);
-                  }}
+                  onClick={() => setSelectedOption(p.id)}
                   className={cn(
                     'relative rounded-xl border p-3.5 cursor-pointer transition-all flex flex-col justify-between text-left select-none',
                     isSelected
@@ -309,10 +301,7 @@ function AssignPlanModal({
 
             {/* Downgrade to Basic Option */}
             <div
-              onClick={() => {
-                setSelectedOption('REVOKE');
-                setCustomDays(0);
-              }}
+              onClick={() => setSelectedOption('REVOKE')}
               className={cn(
                 'relative rounded-xl border p-3.5 cursor-pointer transition-all flex flex-col justify-between text-left select-none sm:col-span-2',
                 selectedOption === 'REVOKE'
@@ -344,50 +333,6 @@ function AssignPlanModal({
             </div>
           </div>
         </div>
-
-        {/* Custom Duration Selector */}
-        {selectedOption !== 'REVOKE' && (
-          <div className="space-y-2 pt-2 border-t border-[var(--border)]">
-            <div className="flex items-center justify-between">
-              <label className="text-xs font-bold uppercase tracking-wider text-[var(--muted-strong)] flex items-center gap-1.5">
-                <IconCalendar className="h-3.5 w-3.5 text-[var(--primary)]" />
-                Permit Duration
-              </label>
-              <span className="text-xs font-bold text-[var(--primary)]">
-                {customDays} Days validity
-              </span>
-            </div>
-            <div className="flex items-center gap-2 flex-wrap">
-              {[15, 30, 60, 90, 180, 365].map((d) => (
-                <button
-                  key={d}
-                  type="button"
-                  onClick={() => setCustomDays(d)}
-                  className={cn(
-                    'text-xs px-2.5 py-1 rounded-lg border font-semibold transition-all cursor-pointer',
-                    customDays === d
-                      ? 'bg-[var(--primary)] text-white border-[var(--primary)] shadow-xs'
-                      : 'bg-[var(--surface)] text-[var(--foreground)] border-[var(--border)] hover:bg-[var(--surface-muted)]',
-                  )}
-                >
-                  {d} Days
-                </button>
-              ))}
-              <div className="flex items-center gap-1.5 ml-auto">
-                <span className="text-[11px] text-[var(--muted)]">Custom:</span>
-                <input
-                  type="number"
-                  min={1}
-                  max={3650}
-                  value={customDays}
-                  onChange={(e) => setCustomDays(Math.max(1, parseInt(e.target.value) || 1))}
-                  className="w-16 text-xs px-2 py-1 rounded-lg border border-[var(--border)] bg-[var(--surface)] text-[var(--foreground)] font-bold text-center focus:outline-none focus:ring-1 focus:ring-[var(--primary)]"
-                />
-                <span className="text-[11px] text-[var(--muted)]">days</span>
-              </div>
-            </div>
-          </div>
-        )}
 
         {/* Modal Action Buttons */}
         <div className="flex items-center justify-end gap-2.5 pt-3 border-t border-[var(--border)]">
