@@ -360,14 +360,14 @@ function InterestsContent() {
       {/* TAB A: RECEIVED INTERESTS                                */}
       {/* -------------------------------------------------------- */}
       {tab === 'received' && (
-        <div className="space-y-4 animate-content-appear stagger-3">
+        <div className="animate-content-appear stagger-3">
           {isLoading && receivedItems.length === 0 ? (
-            <div className="space-y-4">
-              <div className="h-44 w-full bg-white rounded-3xl border border-[var(--border)] skeleton-shimmer" />
-              <div className="h-44 w-full bg-white rounded-3xl border border-[var(--border)] skeleton-shimmer" />
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5">
+              <div className="h-[510px] w-full bg-white rounded-[2rem] border border-[var(--border)] skeleton-shimmer" />
+              <div className="h-[510px] w-full bg-white rounded-[2rem] border border-[var(--border)] skeleton-shimmer" />
             </div>
           ) : filteredReceived.length > 0 ? (
-            <div className="space-y-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5">
               {filteredReceived.map((profile) => (
                 <InterestCard
                   key={profile.id}
@@ -402,14 +402,14 @@ function InterestsContent() {
       {/* TAB B: SENT INTERESTS                                    */}
       {/* -------------------------------------------------------- */}
       {tab === 'sent' && (
-        <div className="space-y-4 animate-content-appear stagger-3">
+        <div className="animate-content-appear stagger-3">
           {isLoading && sentItems.length === 0 ? (
-            <div className="space-y-4">
-              <div className="h-44 w-full bg-white rounded-3xl border border-[var(--border)] skeleton-shimmer" />
-              <div className="h-44 w-full bg-white rounded-3xl border border-[var(--border)] skeleton-shimmer" />
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5">
+              <div className="h-[510px] w-full bg-white rounded-[2rem] border border-[var(--border)] skeleton-shimmer" />
+              <div className="h-[510px] w-full bg-white rounded-[2rem] border border-[var(--border)] skeleton-shimmer" />
             </div>
           ) : filteredSent.length > 0 ? (
-            <div className="space-y-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5">
               {filteredSent.map((profile) => (
                 <InterestCard
                   key={profile.id}
@@ -430,15 +430,13 @@ function InterestsContent() {
         </div>
       )}
 
-
-
       {/* -------------------------------------------------------- */}
       {/* TAB D: DECLINED REQUESTS                                 */}
       {/* -------------------------------------------------------- */}
       {tab === 'declined' && (
-        <div className="space-y-4 animate-content-appear stagger-3">
+        <div className="animate-content-appear stagger-3">
           {filteredDeclined.length > 0 ? (
-            <div className="space-y-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5">
               {filteredDeclined.map((profile) => (
                 <InterestCard
                   key={profile.id}

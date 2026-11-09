@@ -95,7 +95,7 @@ function MatchesContent() {
             </p>
           </div>
           <h1 className="text-xl sm:text-3xl font-bold tracking-tight text-[var(--foreground)] font-editorial-title leading-tight truncate">
-            Mutual Matches
+            Mutual Interests
           </h1>
         </div>
 

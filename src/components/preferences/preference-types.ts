@@ -3,10 +3,13 @@ export interface PartnerPreferences {
   maxAge: number;
   minHeight: string;
   maxHeight: string;
+  gender?: string;
+  matrimonyCommunity?: string;
   locations: string[];
   openToRelocate: boolean;
   religions: string[];
   caste: string;
+  languages: string[];
   education: string[];
   professions: string[];
   minIncome: string;
@@ -22,10 +25,13 @@ export const defaultPreferences: PartnerPreferences = {
   maxAge: 30,
   minHeight: "5'2\"",
   maxHeight: "5'11\"",
+  gender: 'any',
+  matrimonyCommunity: 'Kerala',
   locations: ['Kerala', 'Bengaluru', 'UAE / Gulf'],
   openToRelocate: true,
   religions: ['Open to all communities'],
   caste: 'Open to all',
+  languages: ['Malayalam', 'English'],
   education: ['Graduate Degree', 'Postgraduate / Masters'],
   professions: ['Software / IT', 'Healthcare / Medical', 'Design / Creative'],
   minIncome: '₹8 Lakhs+',

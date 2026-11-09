@@ -38,17 +38,35 @@ interface PreferenceModalEditorProps {
 }
 
 const LOCATION_OPTIONS = [
+  'All locations',
   'Kerala',
+  'Kochi',
+  'Thrissur',
   'Bengaluru',
+  'Calicut',
+  'Kottayam',
   'Chennai',
+  'Trivandrum',
+  'Dubai/UAE',
   'Mumbai',
   'Hyderabad',
   'Delhi NCR',
-  'UAE / Gulf',
   'US / Canada',
   'UK / Europe',
   'Australia',
-  'Any location',
+];
+
+const COMMUNITY_OPTIONS = [
+  'Kerala Matrimony',
+  'Telugu Matrimony',
+  'Bharat Matrimony',
+  'Open to all',
+];
+
+const GENDER_OPTIONS = [
+  { id: 'any', label: 'All Genders' },
+  { id: 'women', label: 'Seeking Brides (Women)' },
+  { id: 'men', label: 'Seeking Grooms (Men)' },
 ];
 
 const RELIGION_OPTIONS = [
@@ -56,40 +74,68 @@ const RELIGION_OPTIONS = [
   'Hindu',
   'Muslim',
   'Christian',
+  'Inter-faith',
   'Jain',
   'Sikh',
   'Buddhist',
   'Spiritual / Non-religious',
 ];
 
+const CASTE_PRESETS = [
+  'Open to all',
+  'No Caste Bar',
+  'Nair',
+  'Ezhava',
+  'Brahmin',
+  'Sunni',
+  'Latin Catholic',
+  'Syrian Catholic',
+  'Viswakarma',
+];
+
+const LANGUAGE_OPTIONS = [
+  'Any language',
+  'Malayalam',
+  'Tamil',
+  'Telugu',
+  'Hindi',
+  'English',
+  'Kannada',
+];
+
 const EDUCATION_OPTIONS = [
   'Any qualification',
+  'Doctorate',
+  "Master's Degree",
+  "Bachelor's Degree",
+  'Professional Degree (MBBS/CA/LLB)',
   'Graduate Degree',
   'Postgraduate / Masters',
-  'Doctorate / PhD',
-  'Professional (CA/MBBS/LLB/MBA)',
   'Engineering / Tech',
 ];
 
 const PROFESSION_OPTIONS = [
   'Any profession',
   'Software / IT',
-  'Healthcare / Medical',
+  'Doctor / Healthcare',
+  'Designer / Creative',
+  'Civil Services / Govt',
   'Finance & Banking',
-  'Government / Civil Services',
-  'Design / Creative',
-  'Business & Entrepreneurship',
+  'Entrepreneur / Business',
   'Teaching / Academia',
 ];
 
 const INCOME_OPTIONS = [
   'Doesn\'t matter',
+  '₹5L - ₹10L PA',
+  '₹10L - ₹25L PA',
+  '₹25L - ₹50L PA',
+  '₹50L+ PA',
   '₹5 Lakhs+',
   '₹8 Lakhs+',
   '₹12 Lakhs+',
   '₹18 Lakhs+',
   '₹25 Lakhs+',
-  '₹40 Lakhs+',
   '₹50 Lakhs+',
 ];
 
@@ -102,7 +148,9 @@ const MARITAL_STATUS_OPTIONS = [
 ];
 
 const INTENT_OPTIONS = [
-  'Serious Marriage (within 6 months)',
+  'Ready to marry soon (<6 mo)',
+  'Looking to marry within 1 year',
+  'Exploring compatibility first',
   'Serious Marriage (within 1 year)',
   'Flexible Timeline / Mutual Understanding',
   'Simple / Intimate Wedding preferred',
@@ -171,16 +219,16 @@ export function PreferenceModalEditor({
   // Section configs
   const titles: Record<PreferenceEditSectionId, { title: string; desc: string }> = {
     age_height: {
-      title: 'Age & Height Range',
-      desc: 'Set the ideal age bracket and physical height preferences for your partner.',
+      title: 'Age, Height & Gender',
+      desc: 'Set the ideal age bracket, physical height, and gender preference for your partner.',
     },
     location: {
       title: 'Location & Relocation',
       desc: 'Specify regions or cities where you would like your prospective partner to be located.',
     },
     religion_community: {
-      title: 'Religion & Community',
-      desc: 'Indicate your community preferences and requirements.',
+      title: 'Religion, Community & Language',
+      desc: 'Indicate your community, caste, faith, and mother tongue language preferences.',
     },
     education_profession: {
       title: 'Education, Career & Income',
@@ -345,7 +393,34 @@ export function PreferenceModalEditor({
                   />
                 </div>
               </div>
+            </div>
 
+            {/* Looking For / Gender Preference */}
+            <div className="rounded-2xl bg-[#FFF9F6] p-4 sm:p-5 border border-[#E9DDE0] space-y-3">
+              <span className="text-xs font-bold uppercase tracking-wider text-[#7A1835] block">
+                Looking For (Gender Preference)
+              </span>
+              <div className="flex flex-wrap gap-2">
+                {GENDER_OPTIONS.map((g) => {
+                  const isSelected = (draft.gender || 'any') === g.id;
+                  return (
+                    <button
+                      key={g.id}
+                      type="button"
+                      onClick={() => setDraft({ ...draft, gender: g.id })}
+                      className={cn(
+                        'text-xs font-semibold px-3 py-2 rounded-xl border flex items-center gap-1.5 transition-all',
+                        isSelected
+                          ? 'bg-[#7A1835] text-white border-[#7A1835] shadow-2xs'
+                          : 'bg-white text-[#211B1E] border-[#E9DDE0] hover:bg-[#FAF3EC]'
+                      )}
+                    >
+                      {isSelected && <IconCheck className="h-3 w-3" />}
+                      <span>{g.label}</span>
+                    </button>
+                  );
+                })}
+              </div>
             </div>
           </div>
         )}
@@ -411,12 +486,43 @@ export function PreferenceModalEditor({
           </div>
         )}
 
-        {/* 3. RELIGION & COMMUNITY */}
+        {/* 3. RELIGION, COMMUNITY & LANGUAGE */}
         {sectionId === 'religion_community' && (
           <div className="space-y-5">
+            {/* Matrimony Community */}
             <div>
               <label className="block text-xs font-bold uppercase tracking-wider text-[#766B6F] mb-1.5">
-                Religion / Community Preference
+                Matrimony Community
+              </label>
+              <div className="flex flex-wrap gap-2">
+                {COMMUNITY_OPTIONS.map((comm) => {
+                  const commVal = comm.replace(' Matrimony', '');
+                  const currentVal = draft.matrimonyCommunity || 'Kerala';
+                  const isSelected = currentVal === commVal || (commVal === 'Open to all' && (!draft.matrimonyCommunity || draft.matrimonyCommunity === 'Open to all'));
+                  return (
+                    <button
+                      key={comm}
+                      type="button"
+                      onClick={() => setDraft({ ...draft, matrimonyCommunity: commVal })}
+                      className={cn(
+                        'text-xs font-semibold px-3 py-2 rounded-xl border flex items-center gap-1.5 transition-all',
+                        isSelected
+                          ? 'bg-[#7A1835] text-white border-[#7A1835] shadow-2xs'
+                          : 'bg-white text-[#211B1E] border-[#E9DDE0] hover:bg-[#FAF3EC]'
+                      )}
+                    >
+                      {isSelected && <IconCheck className="h-3 w-3" />}
+                      <span>{comm}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Religion Preference */}
+            <div>
+              <label className="block text-xs font-bold uppercase tracking-wider text-[#766B6F] mb-1.5">
+                Religion / Faith Preference
               </label>
               <div className="flex flex-wrap gap-2">
                 {RELIGION_OPTIONS.map((rel) => {
@@ -441,17 +547,78 @@ export function PreferenceModalEditor({
               </div>
             </div>
 
+            {/* Caste / Community */}
             <div>
               <label className="block text-xs font-bold uppercase tracking-wider text-[#766B6F] mb-1.5">
-                Caste / Denomination
+                Caste / Community
               </label>
+              <div className="flex flex-wrap gap-1.5 mb-2.5">
+                {CASTE_PRESETS.map((caste) => {
+                  const isSelected = draft.caste === caste;
+                  return (
+                    <button
+                      key={caste}
+                      type="button"
+                      onClick={() => setDraft({ ...draft, caste })}
+                      className={cn(
+                        'text-xs font-semibold px-2.5 py-1.5 rounded-xl border transition-all',
+                        isSelected
+                          ? 'bg-[#7A1835] text-white border-[#7A1835]'
+                          : 'bg-white text-[#211B1E] border-[#E9DDE0] hover:bg-[#FAF3EC]'
+                      )}
+                    >
+                      {caste}
+                    </button>
+                  );
+                })}
+              </div>
               <input
                 type="text"
                 value={draft.caste}
                 onChange={(e) => setDraft({ ...draft, caste: e.target.value })}
-                placeholder="e.g. Open to all or specify"
+                placeholder="Or specify custom caste / denomination..."
                 className="w-full rounded-xl bg-white border border-[#E9DDE0] p-2.5 text-xs text-[#211B1E] outline-none focus:border-[#7A1835]"
               />
+            </div>
+
+            {/* Language / Mother Tongue */}
+            <div>
+              <label className="block text-xs font-bold uppercase tracking-wider text-[#766B6F] mb-1.5">
+                Language / Mother Tongue
+              </label>
+              <div className="flex flex-wrap gap-2">
+                {LANGUAGE_OPTIONS.map((lang) => {
+                  const list = draft.languages || [];
+                  const isSelected = list.includes(lang) || (lang === 'Any language' && list.length === 0);
+                  return (
+                    <button
+                      key={lang}
+                      type="button"
+                      onClick={() => {
+                        if (lang === 'Any language') {
+                          setDraft({ ...draft, languages: [] });
+                        } else {
+                          const cleaned = list.filter((l) => l !== 'Any language');
+                          if (cleaned.includes(lang)) {
+                            setDraft({ ...draft, languages: cleaned.filter((l) => l !== lang) });
+                          } else {
+                            setDraft({ ...draft, languages: [...cleaned, lang] });
+                          }
+                        }
+                      }}
+                      className={cn(
+                        'text-xs font-semibold px-3 py-2 rounded-xl border flex items-center gap-1.5 transition-all',
+                        isSelected
+                          ? 'bg-[#7A1835] text-white border-[#7A1835] shadow-2xs'
+                          : 'bg-white text-[#211B1E] border-[#E9DDE0] hover:bg-[#FAF3EC]'
+                      )}
+                    >
+                      {isSelected && <IconCheck className="h-3 w-3" />}
+                      <span>{lang}</span>
+                    </button>
+                  );
+                })}
+              </div>
             </div>
           </div>
         )}

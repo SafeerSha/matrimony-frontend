@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import {
   IconCheck,
   IconX,
@@ -9,16 +10,12 @@ import {
   IconMapPin,
   IconBriefcase,
   IconSchool,
-  IconCalendar,
   IconClock,
   IconArrowRight,
-  IconShieldCheck,
-  IconUsers,
-  IconHeart,
   IconTrash,
   IconBookmark,
+  IconUser,
 } from '@tabler/icons-react';
-import { Avatar } from './avatar';
 import { Badge } from './badge';
 import { Button } from './button';
 import { Card } from './card';
@@ -63,6 +60,7 @@ export function InterestCard({
   type,
   onAccept,
   onDecline,
+  onChat,
   onRemove,
   onShortlist,
   isShortlisted,
@@ -71,353 +69,370 @@ export function InterestCard({
   isRemoving,
   className,
 }: InterestCardProps) {
+  const router = useRouter();
   const formattedId = getProfileUniqueId(profile);
   const [imgError, setImgError] = useState(false);
 
+  const handleCardClick = () => {
+    router.push(`/app/profile?user=${profile.id}`);
+  };
+
   return (
     <Card
-      variant="default"
+      variant="interactive"
+      role="link"
+      tabIndex={0}
+      aria-label={`View ${profile.name}'s profile`}
+      onClick={handleCardClick}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          handleCardClick();
+        }
+      }}
       className={cn(
-        'group relative overflow-hidden rounded-3xl border border-[var(--champagne-border)] bg-white p-0 shadow-[var(--elevation-card)] transition-all duration-300 hover:shadow-[var(--elevation-card-hover)]',
-        type === 'declined' && 'opacity-70 bg-[var(--surface-muted)]/50',
+        'group relative overflow-hidden rounded-[2rem] border border-[var(--champagne-border)] bg-[var(--surface-muted)] p-0 shadow-[var(--elevation-card)] hover:shadow-[var(--elevation-floating)] transition-all duration-300 cursor-pointer h-[510px] sm:h-[530px] w-full select-none',
+        type === 'declined' && 'opacity-75',
         className
       )}
     >
-      <div className="flex flex-col md:flex-row">
-        {/* Large Profile Photography Section (3:4 ratio portrait or dominant square) */}
-        <div className="relative h-64 sm:h-72 md:h-auto md:w-56 lg:w-64 shrink-0 overflow-hidden bg-[var(--surface-muted)]">
-          {profile.image && !imgError ? (
-            <img
-              src={profile.image}
-              alt={profile.name}
-              className="h-full w-full object-cover object-center transition-transform duration-700 ease-out group-hover:scale-[1.03]"
-              loading="lazy"
-              onError={() => setImgError(true)}
-            />
-          ) : (
-            <div className="relative h-full w-full min-h-[16rem] flex flex-col items-center justify-center bg-gradient-to-br from-[#7D1633] via-[#630E26] to-[#450718] p-6 text-center select-none overflow-hidden">
-              {/* Subtle ambient gold radial lighting */}
-              <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_top,rgba(201,151,87,0.22),transparent_70%)]" />
-              <div className="pointer-events-none absolute -bottom-10 -right-10 h-32 w-32 rounded-full bg-[radial-gradient(circle,rgba(201,151,87,0.15),transparent_70%)]" />
-
-              <div className="relative z-10 grid h-20 w-20 place-items-center rounded-full bg-gradient-to-b from-white/20 to-white/5 backdrop-blur-md border border-[#F5D8A8]/60 shadow-[0_10px_25px_rgba(0,0,0,0.3)] text-[#FFF2D6]">
-                <span className="font-editorial-title text-3xl font-bold tracking-tight">
-                  {profile.name?.charAt(0)?.toUpperCase() || 'M'}
-                </span>
-              </div>
-              <p className="relative z-10 mt-3.5 text-sm font-bold text-white tracking-tight drop-shadow-xs">
-                {profile.name}
-              </p>
-              <span className="relative z-10 mt-1.5 inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-black/25 backdrop-blur-md border border-white/15 text-[10px] font-medium text-[#F7DFBA]">
-                Photo Pending
+      {/* 1. Full-Bleed Portrait Photo */}
+      <div className="absolute inset-0 h-full w-full overflow-hidden bg-[var(--surface-muted)]">
+        {profile.image && !imgError ? (
+          <img
+            src={profile.image}
+            alt={profile.name}
+            className="h-full w-full object-cover object-center transition-transform duration-700 ease-out group-hover:scale-[1.03]"
+            loading="lazy"
+            onError={() => setImgError(true)}
+          />
+        ) : (
+          <div className="relative h-full w-full flex flex-col items-center justify-center bg-gradient-to-br from-[#7D1633] via-[#630E26] to-[#450718] p-6 text-center select-none overflow-hidden">
+            <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_top,rgba(201,151,87,0.22),transparent_70%)]" />
+            <div className="relative z-10 grid h-24 w-24 place-items-center rounded-full bg-gradient-to-b from-white/20 to-white/5 backdrop-blur-md border border-[#F5D8A8]/60 shadow-[0_10px_25px_rgba(0,0,0,0.3)] text-[#FFF2D6]">
+              <span className="font-editorial-title text-4xl font-bold tracking-tight">
+                {profile.name?.charAt(0)?.toUpperCase() || 'M'}
               </span>
+            </div>
+            <p className="relative z-10 mt-3.5 text-base font-bold text-white tracking-tight drop-shadow-xs">
+              {profile.name}
+            </p>
+            <span className="relative z-10 mt-1.5 inline-flex items-center gap-1 px-3 py-1 rounded-full bg-black/30 backdrop-blur-md border border-white/15 text-[11px] font-medium text-[#F7DFBA]">
+              Photo Pending
+            </span>
+          </div>
+        )}
+
+        {/* Ambient Warm Gradient */}
+        {profile.image && <div className="absolute inset-0 photo-overlay-warm" aria-hidden="true" />}
+
+        {/* Dark Bottom & Subtle Top Vignette Gradient Overlay */}
+        <div
+          className="absolute inset-0 bg-gradient-to-t from-black/95 via-black/45 via-50% to-black/25 pointer-events-none"
+          aria-hidden="true"
+        />
+      </div>
+
+      {/* 2. Top Floating Badges */}
+      <div className="absolute top-3.5 left-3.5 right-3.5 flex items-center justify-between gap-1.5 z-10 pointer-events-none">
+        {/* Left Status Pill */}
+        <div className="flex items-center gap-1.5">
+          {type === 'received' && (
+            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-black/45 backdrop-blur-md text-white border border-white/20 text-[11px] font-bold shadow-xs">
+              <IconClock className="h-3 w-3 text-amber-300" /> Awaiting Response
+            </span>
+          )}
+          {type === 'sent' && (
+            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-black/45 backdrop-blur-md text-[#F7DFBA] border border-amber-300/30 text-[11px] font-bold shadow-xs">
+              <IconClock className="h-3 w-3 text-amber-300" /> Interest Delivered
+            </span>
+          )}
+          {type === 'accepted' && (
+            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-950/70 backdrop-blur-md text-emerald-200 border border-emerald-400/40 text-[11px] font-bold shadow-xs">
+              <IconCheck className="h-3 w-3 text-emerald-400 stroke-[2.5]" /> Connected
+            </span>
+          )}
+          {type === 'declined' && (
+            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-black/45 backdrop-blur-md text-stone-300 border border-white/15 text-[11px] font-bold shadow-xs">
+              Declined
+            </span>
+          )}
+          {type === 'favorite' && (
+            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-black/45 backdrop-blur-md text-[#F7DFBA] border border-amber-300/30 text-[11px] font-bold shadow-xs">
+              <IconBookmark className="h-3 w-3 text-amber-300 fill-current" /> Shortlisted
+            </span>
+          )}
+          {type === 'shortlisted_you' && (
+            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-black/45 backdrop-blur-md text-[#F7DFBA] border border-amber-300/30 text-[11px] font-bold shadow-xs">
+              <IconBookmark className="h-3 w-3 text-amber-300 fill-current" /> Shortlisted You
+            </span>
+          )}
+          {profile.online && (
+            <Badge
+              tone="neutral"
+              size="sm"
+              dot
+              dotColor="bg-emerald-500"
+              className="bg-black/40 backdrop-blur-md text-white border-white/20 text-[10px] font-medium"
+            >
+              Online
+            </Badge>
+          )}
+        </div>
+
+        {/* Right Matrimony ID tag */}
+        {formattedId && (
+          <span className="rounded-full bg-black/45 backdrop-blur-md text-white/90 border border-white/15 text-[10px] font-semibold px-2.5 py-1 tracking-wider uppercase shadow-xs">
+            ID: {formattedId}
+          </span>
+        )}
+      </div>
+
+      {/* 3. Bottom Overlaid Information & Action Controls */}
+      <div className="absolute inset-x-0 bottom-0 p-4 sm:p-5 text-white z-10 space-y-2">
+        {/* Name, Age, Verification */}
+        <div className="flex items-center gap-2">
+          <h3 className="font-editorial-title text-xl sm:text-2xl font-bold tracking-tight text-white drop-shadow-sm truncate group-hover:text-[#F7DFBA] transition-colors">
+            {profile.name}, {profile.age}
+          </h3>
+          {profile.verified && <VerificationBadge type="general" showIconOnly size="sm" />}
+        </div>
+
+        {/* Profession · Education */}
+        {(profile.profession || profile.education) && (
+          <p className="text-xs sm:text-sm font-semibold text-white/90 truncate">
+            {[profile.profession, profile.education].filter(Boolean).join(' · ')}
+          </p>
+        )}
+
+        {/* Location with Pin */}
+        {(profile.city || profile.state) && (
+          <p className="flex items-center gap-1 text-xs text-white/85 truncate">
+            <IconMapPin className="h-3.5 w-3.5 text-[#D8B28C] shrink-0" />
+            <span>
+              {[profile.city, profile.state].filter(Boolean).join(', ')}
+            </span>
+          </p>
+        )}
+
+        {/* Bio / About snippet */}
+        {profile.about && (
+          <p className="text-[11px] leading-relaxed text-white/75 italic line-clamp-1 pt-0.5">
+            "{profile.about}"
+          </p>
+        )}
+
+        {/* Action Controls Row */}
+        <div className="w-full pt-2 flex items-center gap-2">
+          {/* RECEIVED TAB ACTIONS: Decline (round) + View Profile (round) + Accept Interest (hero pill) */}
+          {type === 'received' && (
+            <>
+              {onDecline && (
+                <Button
+                  variant="secondary"
+                  size="icon"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onDecline(profile.id);
+                  }}
+                  className="rounded-full aspect-square h-10 w-10 sm:h-11 sm:w-11 shrink-0 p-0 flex items-center justify-center bg-white/95 backdrop-blur-md text-rose-600 border border-white/70 hover:bg-white hover:scale-105 active-press shadow-md transition-all"
+                  title="Decline Interest"
+                  aria-label="Decline"
+                >
+                  <IconX className="h-5 w-5 stroke-[2.3]" />
+                </Button>
+              )}
+
+              <Link
+                href={`/app/profile?user=${profile.id}`}
+                className="focus-ring shrink-0"
+                onClick={(e) => e.stopPropagation()}
+              >
+                <Button
+                  variant="secondary"
+                  size="icon"
+                  className="rounded-full aspect-square h-10 w-10 sm:h-11 sm:w-11 shrink-0 p-0 bg-white/95 backdrop-blur-md text-[var(--foreground)] border border-white/60 shadow-sm hover:bg-white hover:scale-105 active-press flex items-center justify-center transition-all"
+                  title={`View ${profile.name}'s Profile`}
+                  aria-label="View Profile"
+                >
+                  <IconUser className="h-4.5 w-4.5 text-[var(--foreground)]" />
+                </Button>
+              </Link>
+
+              {onAccept && (
+                <Button
+                  variant="primary"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onAccept(profile.id);
+                  }}
+                  className="flex-1 min-w-0 h-10 sm:h-11 rounded-full px-3 font-bold text-xs sm:text-sm flex items-center justify-center gap-1.5 bg-gradient-to-b from-[#9E1D3B] via-[#801835] to-[#5E0E24] text-white border-t border-t-white/35 border-x border-x-[#72122B]/60 border-b-[3px] border-b-[#420816] shadow-[0_4px_12px_rgba(94,14,36,0.5),inset_0_1.5px_1px_rgba(255,255,255,0.35)] hover:brightness-110 active-press select-none truncate"
+                  title="Accept Interest & Connect"
+                >
+                  <IconCheck className="h-4 w-4 stroke-[2.5]" />
+                  <span>Accept Interest</span>
+                </Button>
+              )}
+            </>
+          )}
+
+          {/* SENT TAB ACTIONS */}
+          {type === 'sent' && (
+            <div className="flex items-center justify-between gap-2 w-full">
+              <div className="flex items-center gap-1.5 text-xs font-semibold text-amber-300 bg-black/40 backdrop-blur-md px-3 py-1.5 rounded-full border border-amber-300/20">
+                <span className="relative flex h-2 w-2">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75"></span>
+                  <span className="relative inline-flex rounded-full h-2 w-2 bg-amber-500"></span>
+                </span>
+                <span>Waiting for response</span>
+              </div>
+
+              <Link
+                href={`/app/profile?user=${profile.id}`}
+                className="focus-ring ml-auto"
+                onClick={(e) => e.stopPropagation()}
+              >
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  className="rounded-full px-4 text-xs font-bold bg-white/95 text-[var(--foreground)] hover:bg-white active-press border border-white/60 shadow-sm"
+                  rightIcon={<IconArrowRight className="h-3.5 w-3.5" />}
+                >
+                  View Profile
+                </Button>
+              </Link>
             </div>
           )}
 
-          {/* Ambient Warm Gradient */}
-          {profile.image && <div className="absolute inset-0 photo-overlay-warm" aria-hidden="true" />}
+          {/* DECLINED TAB ACTIONS */}
+          {type === 'declined' && (
+            <div className="flex items-center justify-between gap-2 w-full">
+              <span className="text-xs text-white/70 bg-black/40 backdrop-blur-md px-3 py-1.5 rounded-full border border-white/10">
+                Request declined
+              </span>
 
-          {/* Top Floating Badges */}
-          <div className="absolute top-3 left-3 flex flex-wrap items-center gap-1.5 z-10">
-            {profile.compatibility && (
-              <Badge
-                tone="accent"
-                size="sm"
-                icon={<IconUsers className="h-2.5 w-2.5 fill-current" />}
-                className="backdrop-blur-md shadow-xs text-[11px] bg-white/95 text-[var(--primary)] border-[#EEDCC8] font-bold"
+              <Link
+                href={`/app/profile?user=${profile.id}`}
+                className="focus-ring ml-auto"
+                onClick={(e) => e.stopPropagation()}
               >
-                {profile.compatibility}% Match
-              </Badge>
-            )}
-
-            {profile.online && (
-              <Badge
-                tone="neutral"
-                size="sm"
-                dot
-                dotColor="bg-emerald-500"
-                className="bg-white/95 backdrop-blur-md text-[var(--foreground)] border-white/80 text-[11px] shadow-xs font-semibold"
-              >
-                Online
-              </Badge>
-            )}
-          </div>
-
-          {/* Matrimony ID tag on Photo */}
-          <div className="absolute bottom-3 left-3 z-10">
-            <span className="rounded-full bg-black/60 backdrop-blur-md text-white/95 border border-white/10 text-[10px] font-semibold px-2.5 py-0.5 tracking-wider uppercase shadow-xs">
-              ID: {formattedId}
-            </span>
-          </div>
-        </div>
-
-        {/* Content Body */}
-        <div className="p-5 sm:p-6 flex-1 flex flex-col justify-between space-y-4">
-          <div className="space-y-3">
-            {/* Header: Name, Age, Verification */}
-            <div className="flex flex-wrap items-center justify-between gap-2">
-              <div className="flex items-center gap-2">
-                <Link
-                  href={`/app/profile?user=${profile.id}`}
-                  className="font-editorial-title text-2xl font-bold tracking-tight text-[var(--foreground)] hover:text-[var(--primary)] transition-colors"
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  className="rounded-full px-4 text-xs font-bold bg-white/95 text-[var(--foreground)] hover:bg-white active-press border border-white/60 shadow-sm"
+                  rightIcon={<IconArrowRight className="h-3.5 w-3.5" />}
                 >
-                  {profile.name}, {profile.age}
-                </Link>
-                {profile.verified && <VerificationBadge type="general" size="sm" />}
-              </div>
-
-              {/* Status pill based on tab type */}
-              <div>
-                {type === 'received' && (
-                  <span className="inline-flex items-center gap-1.5 text-[11px] font-bold text-[var(--primary)] bg-[var(--primary-light)] px-3 py-1 rounded-full border border-[var(--primary)]/20 shadow-2xs">
-                    <IconClock className="h-3 w-3" /> Awaiting Response
-                  </span>
-                )}
-                {type === 'accepted' && (
-                  <span className="inline-flex items-center gap-1.5 text-[11px] font-bold text-emerald-800 bg-emerald-50 px-3 py-1 rounded-full border border-emerald-200/90 shadow-2xs">
-                    <IconCheck className="h-3 w-3 stroke-[2.5]" /> Connected
-                  </span>
-                )}
-                {type === 'sent' && (
-                  <span className="inline-flex items-center gap-1.5 text-[11px] font-bold text-[#8F591E] bg-gradient-to-r from-[#FFF8EE] to-[#FFF3E0] px-3 py-1 rounded-full border border-[#F3DFC1] shadow-2xs">
-                    <IconClock className="h-3 w-3 text-[#B87A28]" /> Interest Delivered
-                  </span>
-                )}
-                {type === 'declined' && (
-                  <span className="inline-flex items-center gap-1 text-[11px] font-bold text-stone-600 bg-stone-100 px-3 py-1 rounded-full border border-stone-200 shadow-2xs">
-                    Declined
-                  </span>
-                )}
-              </div>
+                  View Profile
+                </Button>
+              </Link>
             </div>
+          )}
 
-            {/* Profession, Education & Location */}
-            <div className="flex flex-wrap items-center gap-y-1.5 gap-x-4 text-xs font-semibold">
-              <span className="flex items-center gap-1.5 text-[var(--foreground)] font-bold">
-                <IconBriefcase className="h-3.5 w-3.5 text-[var(--primary)] shrink-0" />
-                {profile.profession}
-              </span>
+          {/* ACCEPTED TAB ACTIONS */}
+          {type === 'accepted' && (
+            <div className="flex items-center gap-2 w-full">
+              <Link
+                href={`/app/profile?user=${profile.id}`}
+                className="focus-ring shrink-0"
+                onClick={(e) => e.stopPropagation()}
+              >
+                <Button
+                  variant="secondary"
+                  size="icon"
+                  className="rounded-full aspect-square h-10 w-10 sm:h-11 sm:w-11 shrink-0 p-0 bg-white/95 backdrop-blur-md text-[var(--foreground)] border border-white/60 shadow-sm hover:bg-white hover:scale-105 active-press flex items-center justify-center transition-all"
+                  title="View Profile"
+                  aria-label="View Profile"
+                >
+                  <IconUser className="h-4.5 w-4.5 text-[var(--foreground)]" />
+                </Button>
+              </Link>
 
-              {profile.education && (
-                <span className="flex items-center gap-1.5 text-[var(--muted-strong)]">
-                  <IconSchool className="h-3.5 w-3.5 text-[var(--primary)]/75 shrink-0" />
-                  {profile.education}
-                </span>
-              )}
-
-              <span className="flex items-center gap-1.5 text-[#8F591E] font-semibold">
-                <IconMapPin className="h-3.5 w-3.5 text-[#B87A28] shrink-0" />
-                {profile.city}
-                {profile.state ? `, ${profile.state}` : ''}
-              </span>
-            </div>
-
-            {/* Short Introduction / Summary */}
-            {profile.about && (
-              <p className="text-xs leading-relaxed text-[#2C1D24] italic bg-[#FFFAF5] p-3.5 rounded-2xl border border-[var(--champagne-border)]/80 line-clamp-2 shadow-2xs">
-                "{profile.about}"
-              </p>
-            )}
-
-            {/* Sent / Received timestamp if present */}
-            {profile.sentAt && (
-              <p className="text-[11px] font-medium text-[var(--muted)] flex items-center gap-1">
-                <IconClock className="h-3 w-3 text-[var(--muted)]/80 inline" />
-                {type === 'sent' ? 'Sent' : 'Received'} {profile.sentAt}
-              </p>
-            )}
-          </div>
-
-          {/* Action Row */}
-          <div className="pt-3 border-t border-[var(--border)] flex flex-wrap items-center gap-2.5">
-            {/* RECEIVED TAB ACTIONS: Accept, Decline, View Profile */}
-            {type === 'received' && (
-              <>
+              <Link
+                href={`/app/messages?user=${profile.id}`}
+                className="focus-ring flex-1"
+                onClick={(e) => e.stopPropagation()}
+              >
                 <Button
                   variant="primary"
-                  size="md"
-                  onClick={() => onAccept?.(profile.id)}
-                  className="rounded-xl px-5 text-xs font-bold shadow-xs active-press flex-1 sm:flex-none"
-                  leftIcon={<IconCheck className="h-4 w-4" />}
+                  className="w-full h-10 sm:h-11 rounded-full px-4 font-bold text-xs sm:text-sm flex items-center justify-center gap-1.5 shadow-sm active-press truncate"
+                  leftIcon={<IconMessageCircle className="h-4 w-4" />}
                 >
-                  Accept Interest
+                  Chat with {profile.name.split(' ')[0]}
                 </Button>
+              </Link>
+            </div>
+          )}
 
+          {/* FAVORITE TAB ACTIONS */}
+          {type === 'favorite' && (
+            <div className="flex items-center justify-between gap-2 w-full">
+              {onRemove && (
                 <Button
-                  variant="outline"
-                  size="md"
-                  onClick={() => onDecline?.(profile.id)}
-                  className="rounded-xl px-4 text-xs font-semibold text-[var(--muted-strong)] hover:text-red-700 hover:border-red-200 active-press flex-1 sm:flex-none"
-                  leftIcon={<IconX className="h-4 w-4" />}
+                  variant="secondary"
+                  size="sm"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onRemove(profile.id);
+                  }}
+                  disabled={isRemoving}
+                  className="rounded-full px-3.5 text-xs font-semibold bg-white/90 text-rose-600 hover:text-rose-700 hover:bg-white active-press border border-white/60 shadow-sm"
+                  leftIcon={<IconTrash className="h-3.5 w-3.5" />}
                 >
-                  Decline
+                  {isRemoving ? 'Removing...' : 'Remove'}
                 </Button>
+              )}
 
-                <Link
-                  href={`/app/profile?user=${profile.id}`}
-                  className="focus-ring w-full sm:w-auto sm:ml-auto"
+              <Link
+                href={`/app/profile?user=${profile.id}`}
+                className="focus-ring ml-auto"
+                onClick={(e) => e.stopPropagation()}
+              >
+                <Button
+                  variant="primary"
+                  size="sm"
+                  className="rounded-full px-4 text-xs font-bold shadow-sm"
+                  rightIcon={<IconArrowRight className="h-3.5 w-3.5" />}
                 >
-                  <Button
-                    variant="secondary"
-                    size="md"
-                    className="w-full sm:w-auto rounded-xl px-4 text-xs font-semibold"
-                  >
-                    View Profile
-                  </Button>
-                </Link>
-              </>
-            )}
+                  View Profile
+                </Button>
+              </Link>
+            </div>
+          )}
 
-            {/* ACCEPTED TAB ACTIONS: Chat, View Profile */}
-            {type === 'accepted' && (
-              <>
-                <Link
-                  href={`/app/messages?user=${profile.id}`}
-                  className="focus-ring flex-1 sm:flex-none"
+          {/* SHORTLISTED_YOU TAB ACTIONS */}
+          {type === 'shortlisted_you' && (
+            <div className="flex items-center justify-between gap-2 w-full">
+              {onShortlist && (
+                <Button
+                  variant={isShortlisted ? 'primary' : 'secondary'}
+                  size="sm"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onShortlist(profile.id);
+                  }}
+                  className="rounded-full px-3.5 text-xs font-semibold active-press bg-white/90 text-[var(--foreground)]"
+                  leftIcon={<IconBookmark className="h-3.5 w-3.5 fill-current" />}
                 >
-                  <Button
-                    variant="primary"
-                    size="md"
-                    className="w-full rounded-xl px-5 text-xs font-bold shadow-xs active-press"
-                    leftIcon={<IconMessageCircle className="h-4 w-4" />}
-                  >
-                    Chat with {profile.name.split(' ')[0]}
-                  </Button>
-                </Link>
+                  {isShortlisted ? 'Shortlisted' : 'Shortlist Back'}
+                </Button>
+              )}
 
-                <Link
-                  href={`/app/profile?user=${profile.id}`}
-                  className="focus-ring w-full sm:w-auto sm:ml-auto"
+              {onSendInterest && (
+                <Button
+                  variant="primary"
+                  size="sm"
+                  disabled={isInterestSent}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onSendInterest(profile.id);
+                  }}
+                  className="rounded-full px-4 text-xs font-bold shadow-sm"
                 >
-                  <Button
-                    variant="secondary"
-                    size="md"
-                    className="w-full sm:w-auto rounded-xl px-4 text-xs font-semibold"
-                  >
-                    View Profile
-                  </Button>
-                </Link>
-              </>
-            )}
-
-            {/* SENT TAB ACTIONS: View Profile */}
-            {type === 'sent' && (
-              <div className="flex items-center justify-between w-full">
-                <span className="flex items-center gap-2 text-xs font-semibold text-[var(--muted-strong)]">
-                  <span className="relative flex h-2 w-2">
-                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75"></span>
-                    <span className="relative inline-flex rounded-full h-2 w-2 bg-amber-500"></span>
-                  </span>
-                  Waiting for response
-                </span>
-                <Link href={`/app/profile?user=${profile.id}`} className="focus-ring">
-                  <Button
-                    variant="secondary"
-                    size="md"
-                    className="rounded-xl px-4 text-xs font-bold border border-[#DECFC4] bg-white text-[var(--foreground)] hover:border-[var(--accent)] hover:text-[var(--primary)] hover:bg-[#FFFDFB] shadow-2xs active-press transition-all"
-                    rightIcon={<IconArrowRight className="h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5" />}
-                  >
-                    View Profile
-                  </Button>
-                </Link>
-              </div>
-            )}
-
-            {/* DECLINED TAB ACTIONS: View Profile */}
-            {type === 'declined' && (
-              <div className="flex items-center justify-between w-full">
-                <span className="text-xs text-[var(--muted)]">
-                  Request declined
-                </span>
-                <Link href={`/app/profile?user=${profile.id}`} className="focus-ring">
-                  <Button
-                    variant="secondary"
-                    size="sm"
-                    className="rounded-xl px-3 text-xs font-semibold"
-                  >
-                    View Profile
-                  </Button>
-                </Link>
-              </div>
-            )}
-
-            {/* FAVORITE TAB ACTIONS: View Profile & Remove */}
-            {type === 'favorite' && (
-              <div className="flex flex-wrap items-center justify-between gap-2.5 w-full">
-                <span className="text-xs font-semibold text-[var(--primary)] flex items-center gap-1.5">
-                  <IconBookmark className="h-4 w-4 fill-current" />
-                  Saved in Shortlist
-                </span>
-                <div className="flex items-center gap-2 ml-auto">
-                  {onRemove && (
-                    <Button
-                      variant="outline"
-                      size="md"
-                      onClick={() => onRemove(profile.id)}
-                      disabled={isRemoving}
-                      className="rounded-xl px-3.5 text-xs font-semibold text-rose-600 hover:text-rose-700 hover:border-rose-300 hover:bg-rose-50 active-press transition-colors"
-                      leftIcon={<IconTrash className="h-3.5 w-3.5" />}
-                    >
-                      {isRemoving ? 'Removing...' : 'Remove'}
-                    </Button>
-                  )}
-                  <Link href={`/app/profile?user=${profile.id}`} className="focus-ring">
-                    <Button
-                      variant="secondary"
-                      size="md"
-                      className="rounded-xl px-4 text-xs font-semibold"
-                    >
-                      View Profile
-                    </Button>
-                  </Link>
-                </div>
-              </div>
-            )}
-
-            {/* SHORTLISTED YOU TAB ACTIONS: Shortlist Back, Send Interest, View Profile */}
-            {type === 'shortlisted_you' && (
-              <div className="flex flex-wrap items-center justify-between gap-2.5 w-full">
-                <span className="text-xs font-semibold text-[#8B5A2B] flex items-center gap-1.5">
-                  <IconBookmark className="h-4 w-4 text-[var(--accent)] fill-current" />
-                  Shortlisted Your Profile
-                </span>
-                <div className="flex flex-wrap items-center gap-2 ml-auto">
-                  {onShortlist && (
-                    <Button
-                      variant={isShortlisted ? 'primary' : 'outline'}
-                      size="md"
-                      onClick={() => onShortlist(profile.id)}
-                      className="rounded-xl px-3.5 text-xs font-semibold active-press"
-                      leftIcon={<IconBookmark className="h-3.5 w-3.5 fill-current" />}
-                    >
-                      {isShortlisted ? 'Shortlisted' : 'Shortlist Back'}
-                    </Button>
-                  )}
-                  {onSendInterest && (
-                    <Button
-                      variant="primary"
-                      size="md"
-                      disabled={isInterestSent}
-                      onClick={() => onSendInterest(profile.id)}
-                      className="rounded-xl px-3.5 text-xs font-semibold active-press"
-                      leftIcon={<IconHeart className="h-3.5 w-3.5 fill-current" />}
-                    >
-                      {isInterestSent ? 'Interest Sent' : 'Send Interest'}
-                    </Button>
-                  )}
-                  <Link href={`/app/profile?user=${profile.id}`} className="focus-ring">
-                    <Button
-                      variant="secondary"
-                      size="md"
-                      className="rounded-xl px-3.5 text-xs font-semibold"
-                    >
-                      View Profile
-                    </Button>
-                  </Link>
-                </div>
-              </div>
-            )}
-          </div>
+                  {isInterestSent ? 'Interest Sent' : 'Send Interest'}
+                </Button>
+              )}
+            </div>
+          )}
         </div>
       </div>
     </Card>

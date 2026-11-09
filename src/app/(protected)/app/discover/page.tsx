@@ -216,6 +216,70 @@ function parsePreferencesToFilters(prefs: any) {
     }
   }
 
+  // Annual Income
+  const rawInc = String(prefs.minIncome || prefs.income || '').trim();
+  if (rawInc && rawInc !== 'Any' && rawInc !== "Doesn't matter") {
+    if (rawInc.includes('50L') || rawInc.includes('50 Lakh')) {
+      res.selectedIncome = '₹50L+ PA';
+    } else if (rawInc.includes('25L') || rawInc.includes('25 Lakh')) {
+      res.selectedIncome = '₹25L - ₹50L PA';
+    } else if (rawInc.includes('10L') || rawInc.includes('12L') || rawInc.includes('18L') || rawInc.includes('10 Lakh')) {
+      res.selectedIncome = '₹10L - ₹25L PA';
+    } else if (rawInc.includes('5L') || rawInc.includes('8L') || rawInc.includes('5 Lakh') || rawInc.includes('8 Lakh')) {
+      res.selectedIncome = '₹5L - ₹10L PA';
+    } else {
+      const match = ['₹5L - ₹10L PA', '₹10L - ₹25L PA', '₹25L - ₹50L PA', '₹50L+ PA'].find(
+        (i) => i.toLowerCase() === rawInc.toLowerCase()
+      );
+      if (match) res.selectedIncome = match;
+    }
+  }
+
+  // Language / Mother Tongue
+  const rawLangList: string[] = Array.isArray(prefs.languages)
+    ? prefs.languages
+    : prefs.language
+      ? [prefs.language]
+      : [];
+  const validLangs = rawLangList.filter((l: string) => l && l !== 'Any' && l !== 'Any language');
+  if (validLangs.length > 0) {
+    const langStr = validLangs.join(' ').toLowerCase();
+    const matchedLang = ['Malayalam', 'Tamil', 'Telugu', 'Hindi', 'English', 'Kannada'].find((l) =>
+      langStr.includes(l.toLowerCase())
+    );
+    if (matchedLang) {
+      res.selectedLanguage = matchedLang;
+    }
+  }
+
+  // Partner Intent
+  const rawIntent = String(prefs.partnerIntent || prefs.intent || '').toLowerCase();
+  if (rawIntent && rawIntent !== 'any') {
+    if (rawIntent.includes('6 mo') || rawIntent.includes('<6') || rawIntent.includes('6 months') || rawIntent.includes('soon')) {
+      res.selectedIntent = 'Ready to marry soon (<6 mo)';
+    } else if (rawIntent.includes('1 year') || rawIntent.includes('serious')) {
+      res.selectedIntent = 'Looking to marry within 1 year';
+    } else if (rawIntent.includes('compatib') || rawIntent.includes('explor') || rawIntent.includes('flexible')) {
+      res.selectedIntent = 'Exploring compatibility first';
+    }
+  }
+
+  // Matrimony Community
+  if (prefs.matrimonyCommunity) {
+    const mc = String(prefs.matrimonyCommunity).toLowerCase();
+    if (mc.includes('kerala')) res.selectedMarriageSubCategory = 'Kerala';
+    else if (mc.includes('telugu')) res.selectedMarriageSubCategory = 'Telugu';
+    else if (mc.includes('bharat')) res.selectedMarriageSubCategory = 'Bharat';
+  }
+
+  // Gender Preference
+  if (prefs.gender) {
+    const g = String(prefs.gender).toLowerCase();
+    if (g === 'women' || g === 'woman' || g === 'female') res.selectedGender = 'women';
+    else if (g === 'men' || g === 'man' || g === 'male') res.selectedGender = 'men';
+    else if (g === 'any' || g === 'all') res.selectedGender = 'any';
+  }
+
   return res;
 }
 export type DiscoveryCategory = 'Marriage' | 'Friendship' | 'Live-In' | 'Living Together';
@@ -472,13 +536,22 @@ export default function DiscoverPage() {
     const parsed = parsePreferencesToFilters(getStoredPreferences());
     return parsed?.selectedProfession || 'Any';
   });
-  const [selectedIncome, setSelectedIncome] = useState<string>('Any');
+  const [selectedIncome, setSelectedIncome] = useState<string>(() => {
+    const parsed = parsePreferencesToFilters(getStoredPreferences());
+    return parsed?.selectedIncome || 'Any';
+  });
   const [selectedMaritalStatus, setSelectedMaritalStatus] = useState<string>(() => {
     const parsed = parsePreferencesToFilters(getStoredPreferences());
     return parsed?.selectedMaritalStatus || 'Any';
   });
-  const [selectedLanguage, setSelectedLanguage] = useState<string>('Any');
-  const [selectedIntent, setSelectedIntent] = useState<string>('Any');
+  const [selectedLanguage, setSelectedLanguage] = useState<string>(() => {
+    const parsed = parsePreferencesToFilters(getStoredPreferences());
+    return parsed?.selectedLanguage || 'Any';
+  });
+  const [selectedIntent, setSelectedIntent] = useState<string>(() => {
+    const parsed = parsePreferencesToFilters(getStoredPreferences());
+    return parsed?.selectedIntent || 'Any';
+  });
   const [selectedDiet, setSelectedDiet] = useState<string>(() => {
     const parsed = parsePreferencesToFilters(getStoredPreferences());
     return parsed?.selectedDiet || "Doesn't Matter";
@@ -509,15 +582,20 @@ export default function DiscoverPage() {
     if (parsed.selectedDiet !== undefined) setSelectedDiet(parsed.selectedDiet);
     if (parsed.selectedEducation !== undefined) setSelectedEducation(parsed.selectedEducation);
     if (parsed.selectedProfession !== undefined) setSelectedProfession(parsed.selectedProfession);
+    if (parsed.selectedIncome !== undefined) setSelectedIncome(parsed.selectedIncome);
+    if (parsed.selectedLanguage !== undefined) setSelectedLanguage(parsed.selectedLanguage);
+    if (parsed.selectedIntent !== undefined) setSelectedIntent(parsed.selectedIntent);
+    if (parsed.selectedMarriageSubCategory !== undefined) setSelectedMarriageSubCategory(parsed.selectedMarriageSubCategory);
+    if (parsed.selectedGender !== undefined) setSelectedGender(parsed.selectedGender);
   }, []);
 
   const handleApplySavedPreferences = useCallback(() => {
     const prefs = savedPreferencesRef.current || getStoredPreferences();
     if (prefs) {
       applyPreferencesToState(prefs);
-      toast.success('Partner Preferences Applied', 'Your saved partner preferences are now active in Discover.');
+      toast.success('Default Preferences Applied', 'Your default partner preferences are now active in Discover.');
     } else {
-      toast.info('No Saved Preferences', 'Configure your preferences in Partner Preferences settings.');
+      toast.info('No Default Preferences', 'Configure your preferences in Partner Preferences settings.');
     }
   }, [applyPreferencesToState]);
   useEffect(() => {
@@ -789,26 +867,30 @@ export default function DiscoverPage() {
           const pTongue = (p.motherTongue || '').toLowerCase();
           const pCity = (p.city || '').toLowerCase();
 
+          const keralaCities = ['kochi', 'thrissur', 'calicut', 'kottayam', 'trivandrum', 'palakkad', 'kozhikode', 'ernakulam', 'kannur', 'alappuzha', 'kollam', 'malappuram', 'kasaragod', 'wayanad', 'pathanamthitta', 'idukki'];
+          const teluguCities = ['hyderabad', 'visakhapatnam', 'vizag', 'vijayawada', 'guntur', 'warangal', 'tirupati', 'kurnool', 'nellore', 'rajahmundry'];
+
+          const isKerala =
+            pComm.includes('kerala') ||
+            pState.includes('kerala') ||
+            pTongue.includes('malayalam') ||
+            keralaCities.some((c) => pCity.includes(c));
+
+          const isTelugu =
+            pComm.includes('telugu') ||
+            pState.includes('andhra') ||
+            pState.includes('telangana') ||
+            pTongue.includes('telugu') ||
+            teluguCities.some((c) => pCity.includes(c));
+
           if (selectedMarriageSubCategory === 'Kerala') {
-            const isKerala =
-              pComm.includes('kerala') ||
-              pState.includes('kerala') ||
-              pTongue.includes('malayalam') ||
-              ['kochi', 'thrissur', 'calicut', 'kottayam', 'trivandrum', 'palakkad', 'kozhikode', 'ernakulam', 'kannur', 'alappuzha', 'kollam', 'malappuram', 'kasaragod', 'wayanad', 'pathanamthitta', 'idukki'].some((c) => pCity.includes(c)) ||
-              (!pComm && !pState && !pTongue && !pCity);
-            if (!isKerala) return false;
+            const isKeralaMatch = isKerala || (!pComm && !pState && !pTongue && !pCity);
+            if (!isKeralaMatch) return false;
           } else if (selectedMarriageSubCategory === 'Telugu') {
-            const isTelugu =
-              pComm.includes('telugu') ||
-              pState.includes('andhra') ||
-              pState.includes('telangana') ||
-              pTongue.includes('telugu') ||
-              ['hyderabad', 'visakhapatnam', 'vizag', 'vijayawada', 'guntur', 'warangal', 'tirupati', 'kurnool', 'nellore', 'rajahmundry'].some((c) => pCity.includes(c));
             if (!isTelugu) return false;
           } else if (selectedMarriageSubCategory === 'Bharat') {
-            // Bharat represents Pan-India. Matches all national profiles
-            const isBharat = true;
-            if (!isBharat) return false;
+            // Bharat represents Pan-India: exclude Kerala and Telugu matrimony profiles
+            if (isKerala || isTelugu) return false;
           }
         }
 
@@ -1433,14 +1515,14 @@ export default function DiscoverPage() {
       <div className="sticky top-16 z-30 pt-1.5 pb-0.5 sm:pt-2 sm:pb-1 bg-transparent pointer-events-none transition-all shrink-0 px-2 sm:px-4">
         <div className="flex items-center justify-between sm:justify-center w-full max-w-2xl mx-auto gap-1.5 shrink-0 pointer-events-auto">
           {/* View Switcher: Mobile only (hidden on desktop) */}
-          <div className="flex sm:hidden items-center h-[36px] bg-white/95 backdrop-blur-xl p-0.5 rounded-2xl border border-[var(--border)]/90 shadow-[0_4px_16px_rgba(20,10,15,0.08)] shrink-0 transition-[width,padding] duration-200 ease-out">
+          <div className="flex sm:hidden items-center h-[36px] sm:h-[38px] bg-white/95 backdrop-blur-xl p-0.5 rounded-full border border-[var(--border)]/90 shadow-[0_4px_16px_rgba(20,10,15,0.08)] shrink-0 transition-[width,padding] duration-200 ease-out">
             <button
               type="button"
               onClick={() => setViewMode('swipe')}
               aria-pressed={viewMode === 'swipe'}
               aria-label="Swipe View"
               className={cn(
-                'focus-ring flex items-center justify-center px-2.5 h-full rounded-xl text-[11px] font-bold transition-colors duration-150 active-press select-none cursor-pointer',
+                'focus-ring flex items-center justify-center px-2.5 h-full rounded-full text-[11px] sm:text-xs font-bold transition-colors duration-150 active-press select-none cursor-pointer',
                 viewMode === 'swipe'
                   ? 'bg-slate-100 text-[var(--primary)] shadow-xs'
                   : 'text-[var(--muted)] hover:text-[var(--foreground)]'
@@ -1467,7 +1549,7 @@ export default function DiscoverPage() {
               aria-pressed={viewMode === 'grid'}
               aria-label="Grid View"
               className={cn(
-                'focus-ring flex items-center justify-center px-2.5 h-full rounded-xl text-[11px] font-bold transition-colors duration-150 active-press select-none cursor-pointer',
+                'focus-ring flex items-center justify-center px-2.5 h-full rounded-full text-[11px] sm:text-xs font-bold transition-colors duration-150 active-press select-none cursor-pointer',
                 viewMode === 'grid'
                   ? 'bg-slate-100 text-[var(--primary)] shadow-xs'
                   : 'text-[var(--muted)] hover:text-[var(--foreground)]'
@@ -1499,7 +1581,7 @@ export default function DiscoverPage() {
                 aria-haspopup="listbox"
                 aria-expanded={isCategoryMenuOpen}
                 className={cn(
-                  'focus-ring flex items-center gap-1.5 sm:gap-2 h-[36px] sm:h-[38px] px-2.5 sm:px-3.5 rounded-2xl text-[11px] sm:text-xs font-bold transition-colors duration-150 active-press select-none cursor-pointer border shadow-[0_4px_16px_rgba(20,10,15,0.08)] backdrop-blur-xl',
+                  'focus-ring flex items-center gap-1.5 sm:gap-2 h-[36px] sm:h-[38px] px-2.5 sm:px-3.5 rounded-full text-[11px] sm:text-xs font-bold transition-colors duration-150 active-press select-none cursor-pointer border shadow-[0_4px_16px_rgba(20,10,15,0.08)] backdrop-blur-xl',
                   isCategoryMenuOpen
                     ? 'bg-stone-100 text-stone-900 border-stone-300'
                     : 'bg-white/95 text-stone-800 border-[var(--border)]/90 hover:bg-stone-50'
@@ -1669,15 +1751,20 @@ export default function DiscoverPage() {
             </div>
 
             {/* Search & Filters Trigger Button */}
-            <Button
-              variant={activeFiltersCount > 0 || query ? 'primary' : 'secondary'}
+            <button
+              type="button"
               onClick={() => setIsFilterOpen(true)}
-              className="h-[36px] sm:h-[38px] px-3 sm:px-4 rounded-2xl text-[11px] sm:text-xs font-bold gap-1.5 sm:gap-2 active-press shadow-[0_4px_16px_rgba(20,10,15,0.08)] bg-white/95 backdrop-blur-xl border border-[var(--border)]/90 shrink-0"
-              leftIcon={<IconAdjustments className="h-3.5 w-3.5" />}
               aria-label="Search and filter profiles"
+              className={cn(
+                'focus-ring flex items-center justify-center gap-1.5 sm:gap-2 h-[36px] sm:h-[38px] px-3 sm:px-4 rounded-full text-[11px] sm:text-xs font-bold transition-all duration-150 active-press select-none cursor-pointer shrink-0 border shadow-[0_4px_16px_rgba(20,10,15,0.08)] backdrop-blur-xl',
+                activeFiltersCount > 0 || query
+                  ? 'bg-gradient-to-r from-[#9E1D3B] via-[var(--primary)] to-[var(--primary-deep)] text-white border-white/20 hover:from-[#AD2344] hover:to-[var(--primary)] shadow-[0_4px_16px_var(--primary-shadow)]'
+                  : 'bg-white/95 text-stone-800 border-[var(--border)]/90 hover:bg-stone-50'
+              )}
             >
+              <IconAdjustments className="h-3.5 w-3.5 shrink-0" />
               <span>Search</span>
-            </Button>
+            </button>
           </div>
         </div>
 
@@ -1953,9 +2040,7 @@ export default function DiscoverPage() {
                         ) : null}
                       </div>
 
-                      <span className="inline-block rounded-full bg-white/85 backdrop-blur-md text-[var(--primary-deep)] px-2.5 py-0.5 text-[10px] font-semibold border border-white/60 shadow-xs">
-                        ✓ Matches
-                      </span>
+
                     </div>
 
                     {/* Identity & Action Overlay on Photo */}
@@ -2119,7 +2204,7 @@ export default function DiscoverPage() {
                   className="text-xs font-bold text-[#7A1835] border-[#EAD8C7] hover:bg-[#FAF3EC]"
                   leftIcon={<IconAdjustments className="h-3.5 w-3.5 text-[#7A1835]" />}
                 >
-                  Saved Prefs
+                  Default
                 </Button>
               </div>
 
@@ -2174,14 +2259,14 @@ export default function DiscoverPage() {
           )
         }
       >
-        <div className="space-y-6 pb-4">
+        <div className="space-y-3 pb-2">
           {/* Segmented Tab Bar: Preferences vs ID Search */}
           <div className="flex rounded-2xl bg-[#F6EFEB] p-1 border border-[#EAD8C7]">
             <button
               type="button"
               onClick={() => setFilterModalTab('preferences')}
               className={cn(
-                "flex-1 flex items-center justify-center gap-2 py-2.5 px-3 rounded-xl text-xs font-bold transition-all duration-200",
+                "flex-1 flex items-center justify-center gap-2 py-2 px-3 rounded-xl text-xs font-bold transition-all duration-200",
                 filterModalTab === 'preferences'
                   ? "bg-white text-[#7A1835] shadow-sm font-extrabold"
                   : "text-[#766B6F] hover:text-[#2D1B22]"
@@ -2194,7 +2279,7 @@ export default function DiscoverPage() {
               type="button"
               onClick={() => setFilterModalTab('id_search')}
               className={cn(
-                "flex-1 flex items-center justify-center gap-2 py-2.5 px-3 rounded-xl text-xs font-bold transition-all duration-200",
+                "flex-1 flex items-center justify-center gap-2 py-2 px-3 rounded-xl text-xs font-bold transition-all duration-200",
                 filterModalTab === 'id_search'
                   ? "bg-white text-[#7A1835] shadow-sm font-extrabold"
                   : "text-[#766B6F] hover:text-[#2D1B22]"
@@ -2206,442 +2291,440 @@ export default function DiscoverPage() {
           </div>
 
           {filterModalTab === 'preferences' ? (
-            <>
-          {/* Match counter banner inside drawer */}
-          <div className="rounded-2xl bg-gradient-to-br from-[#FAF3EC] to-[#FFF9F6] p-4 border border-[#EAD8C7] flex items-center justify-between">
-            <div className="flex items-center gap-2.5">
-              <IconUsers className="h-5 w-5 text-[var(--accent)]" />
-              <div>
-                <p className="text-xs font-bold text-[#5C1027]">Partner Matches</p>
-                <p className="text-[12px] font-semibold text-[var(--foreground)]">
-                  {filteredProfiles.length} profiles match your preferences
-                </p>
-              </div>
-            </div>
-            <span className="font-editorial-title text-xl font-bold text-[#5C1027]">
-              {filteredProfiles.length}
-            </span>
-          </div>
-
-          {/* 0. Search & Sort */}
-          <div className="space-y-4 pb-5 mb-5 border-b border-[var(--border)]">
-            <div>
-              <ModernSelect
-                label="Sort By"
-                value={sortBy}
-                onChange={(val) => setSortBy(val as SortOption)}
-                options={[
-                  { value: "recommended", label: "Recommended Matches" },
-                  { value: "recent", label: "Recently Active" },
-                  { value: "new", label: "New Profiles" },
-                  { value: "nearby", label: "Nearby Location" },
-                ]}
-                size="sm"
-              />
-            </div>
-          </div>
-
-          {/* 1. Age Range Slider / Inputs */}
-          <div className="space-y-2">
-            <div className="flex justify-between items-center">
-              <label className="text-xs font-bold uppercase tracking-wider text-[var(--foreground)]">
-                Age Range
-              </label>
-              <span className="text-xs font-bold text-[var(--primary)]">
-                {minAge} – {maxAge} years
-              </span>
-            </div>
-            {/* Dual Range slider representation */}
-            <input
-              type="range"
-              min={18}
-              max={65}
-              value={maxAge}
-              onChange={(e) => setMaxAge(Math.max(minAge + 1, Number(e.target.value)))}
-              className="w-full accent-[var(--primary)] cursor-pointer"
-            />
-            <div className="grid grid-cols-2 gap-3 pt-1">
-              <div>
-                <label className="text-[11px] text-[var(--muted)]">Min Age</label>
-                <input
-                  type="number"
-                  min={18}
-                  max={60}
-                  value={minAge}
-                  onChange={(e) => setMinAge(Number(e.target.value))}
-                  className="h-11 w-full rounded-xl border border-[var(--border)] bg-[var(--surface)] px-3 text-sm font-semibold outline-none focus:border-[var(--primary)]"
-                />
-              </div>
-              <div>
-                <label className="text-[11px] text-[var(--muted)]">Max Age</label>
-                <input
-                  type="number"
-                  min={18}
-                  max={70}
-                  value={maxAge}
-                  onChange={(e) => setMaxAge(Number(e.target.value))}
-                  className="h-11 w-full rounded-xl border border-[var(--border)] bg-[var(--surface)] px-3 text-sm font-semibold outline-none focus:border-[var(--primary)]"
-                />
-              </div>
-            </div>
-          </div>
-
-          {/* 1.5 Height Range */}
-          <div className="space-y-2">
-            <div className="flex justify-between items-center">
-              <label className="text-xs font-bold uppercase tracking-wider text-[var(--foreground)]">
-                Height Range
-              </label>
-              <span className="text-xs font-bold text-[var(--primary)]">
-                {minHeight} – {maxHeight}
-              </span>
-            </div>
-            <div className="grid grid-cols-2 gap-3 pt-1">
-              <div>
-                <ModernSelect
-                  label="Min Height"
-                  value={minHeight}
-                  onChange={(val) => setMinHeight(val)}
-                  options={HEIGHT_SELECT_OPTIONS}
-                  size="sm"
-                />
-              </div>
-              <div>
-                <ModernSelect
-                  label="Max Height"
-                  value={maxHeight}
-                  onChange={(val) => setMaxHeight(val)}
-                  options={HEIGHT_SELECT_OPTIONS}
-                  size="sm"
-                />
-              </div>
-            </div>
-          </div>
-
-          {/* 1.6 Marriage Sub-Category (Kerala, Telugu, Bharat) */}
-          {selectedCategory === 'Marriage' && (
-            <div className="space-y-2">
-              <div className="flex items-center justify-between">
-                <label className="text-xs font-bold uppercase tracking-wider text-[var(--foreground)]">
-                  Matrimony Community
-                </label>
-                <span className="text-[10px] font-semibold text-[#80132E] bg-rose-50 border border-rose-200/60 px-2 py-0.5 rounded-full">
-                  {selectedMarriageSubCategory} Matrimony
+            <div className="space-y-3">
+              {/* Match counter banner inside drawer */}
+              <div className="rounded-xl bg-gradient-to-br from-[#FAF3EC] to-[#FFF9F6] p-2.5 px-3.5 border border-[#EAD8C7] flex items-center justify-between">
+                <div className="flex items-center gap-2.5">
+                  <IconUsers className="h-4 w-4 text-[var(--accent)]" />
+                  <div>
+                    <p className="text-[11px] font-bold text-[#5C1027]">Partner Matches</p>
+                    <p className="text-[11px] font-medium text-[var(--foreground)]">
+                      {filteredProfiles.length} profiles match your preferences
+                    </p>
+                  </div>
+                </div>
+                <span className="font-editorial-title text-lg font-bold text-[#5C1027]">
+                  {filteredProfiles.length}
                 </span>
               </div>
-              <div className="flex flex-wrap gap-2">
-                {MARRIAGE_SUB_OPTIONS.map((sub) => {
-                  const isSubSelected = selectedMarriageSubCategory === sub.id;
-                  const SubIcon = sub.icon;
-                  return (
-                    <Chip
-                      key={sub.id}
-                      size="sm"
-                      selected={isSubSelected}
-                      onClick={() => handleMarriageSubCategoryChange(sub.id)}
-                      interactive
-                    >
-                      <span className="flex items-center gap-1.5">
-                        <SubIcon className="h-3.5 w-3.5" />
-                        <span>{sub.title}</span>
-                        <span className="text-[10px] opacity-75">({sub.badge})</span>
-                      </span>
-                    </Chip>
-                  );
-                })}
-              </div>
-            </div>
-          )}
 
-          {/* 2. Gender Preference */}
-          <div className="space-y-2">
-            <div className="flex items-center justify-between">
-              <label className="text-xs font-bold uppercase tracking-wider text-[var(--foreground)]">
-                Looking for
-              </label>
-              <span className="text-[10px] font-semibold text-[var(--accent)] bg-[var(--accent-light)]/20 px-2 py-0.5 rounded-full">
-                {selectedCategory === 'Friendship'
-                  ? 'Friendship Connections'
-                  : (selectedCategory === 'Live-In' || selectedCategory === 'Living Together')
-                    ? 'Live-In Relationships'
-                    : 'Foundation Matchmaking'}
-              </span>
-            </div>
-            <div className="flex flex-wrap gap-2">
-              {(selectedCategory === 'Friendship'
-                ? [
-                  { value: 'any', label: 'All Genders (Friends)' },
-                  { value: 'women', label: 'Women' },
-                  { value: 'men', label: 'Men' },
-                ]
-                : myGender === 'male' || myGender === 'man'
-                  ? [
-                    { value: 'women', label: 'Seeking Brides (Women)' },
-                  ]
-                  : myGender === 'female' || myGender === 'woman'
+              {/* 0. Sort By */}
+              <div>
+                <ModernSelect
+                  label="Sort By"
+                  value={sortBy}
+                  onChange={(val) => setSortBy(val as SortOption)}
+                  options={[
+                    { value: "recommended", label: "Recommended Matches" },
+                    { value: "recent", label: "Recently Active" },
+                    { value: "new", label: "New Profiles" },
+                    { value: "nearby", label: "Nearby Location" },
+                  ]}
+                  size="sm"
+                />
+              </div>
+
+              {/* 1. Age Range Slider / Inputs */}
+              <div className="space-y-1.5">
+                <div className="flex justify-between items-center">
+                  <label className="text-[11px] font-bold uppercase tracking-wider text-[var(--foreground)]">
+                    Age Range
+                  </label>
+                  <span className="text-xs font-bold text-[var(--primary)]">
+                    {minAge} – {maxAge} years
+                  </span>
+                </div>
+                {/* Dual Range slider representation */}
+                <input
+                  type="range"
+                  min={18}
+                  max={65}
+                  value={maxAge}
+                  onChange={(e) => setMaxAge(Math.max(minAge + 1, Number(e.target.value)))}
+                  className="w-full accent-[var(--primary)] cursor-pointer"
+                />
+                <div className="grid grid-cols-2 gap-2 pt-0.5">
+                  <div>
+                    <label className="text-[10px] font-semibold text-[var(--muted)]">Min Age</label>
+                    <input
+                      type="number"
+                      min={18}
+                      max={60}
+                      value={minAge}
+                      onChange={(e) => setMinAge(Number(e.target.value))}
+                      className="h-9 w-full rounded-xl border border-[var(--border)] bg-[var(--surface)] px-2.5 text-xs font-semibold outline-none focus:border-[var(--primary)]"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-[10px] font-semibold text-[var(--muted)]">Max Age</label>
+                    <input
+                      type="number"
+                      min={18}
+                      max={70}
+                      value={maxAge}
+                      onChange={(e) => setMaxAge(Number(e.target.value))}
+                      className="h-9 w-full rounded-xl border border-[var(--border)] bg-[var(--surface)] px-2.5 text-xs font-semibold outline-none focus:border-[var(--primary)]"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* 1.5 Height Range */}
+              <div className="space-y-1.5">
+                <div className="flex justify-between items-center">
+                  <label className="text-[11px] font-bold uppercase tracking-wider text-[var(--foreground)]">
+                    Height Range
+                  </label>
+                  <span className="text-xs font-bold text-[var(--primary)]">
+                    {minHeight} – {maxHeight}
+                  </span>
+                </div>
+                <div className="grid grid-cols-2 gap-2 pt-0.5">
+                  <div>
+                    <ModernSelect
+                      label="Min Height"
+                      value={minHeight}
+                      onChange={(val) => setMinHeight(val)}
+                      options={HEIGHT_SELECT_OPTIONS}
+                      size="sm"
+                    />
+                  </div>
+                  <div>
+                    <ModernSelect
+                      label="Max Height"
+                      value={maxHeight}
+                      onChange={(val) => setMaxHeight(val)}
+                      options={HEIGHT_SELECT_OPTIONS}
+                      size="sm"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* 1.6 Marriage Sub-Category (Kerala, Telugu, Bharat) */}
+              {selectedCategory === 'Marriage' && (
+                <div className="space-y-1.5">
+                  <div className="flex items-center justify-between">
+                    <label className="text-[11px] font-bold uppercase tracking-wider text-[var(--foreground)]">
+                      Matrimony Community
+                    </label>
+                    <span className="text-[10px] font-semibold text-[#80132E] bg-rose-50 border border-rose-200/60 px-2 py-0.5 rounded-full">
+                      {selectedMarriageSubCategory} Matrimony
+                    </span>
+                  </div>
+                  <div className="flex flex-wrap gap-1.5">
+                    {MARRIAGE_SUB_OPTIONS.map((sub) => {
+                      const isSubSelected = selectedMarriageSubCategory === sub.id;
+                      const SubIcon = sub.icon;
+                      return (
+                        <Chip
+                          key={sub.id}
+                          size="sm"
+                          selected={isSubSelected}
+                          onClick={() => handleMarriageSubCategoryChange(sub.id)}
+                          interactive
+                        >
+                          <span className="flex items-center gap-1.5">
+                            <SubIcon className="h-3.5 w-3.5" />
+                            <span>{sub.title}</span>
+                            <span className="text-[10px] opacity-75">({sub.badge})</span>
+                          </span>
+                        </Chip>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+
+              {/* 2. Gender Preference */}
+              <div className="space-y-1.5">
+                <div className="flex items-center justify-between">
+                  <label className="text-[11px] font-bold uppercase tracking-wider text-[var(--foreground)]">
+                    Looking for
+                  </label>
+                  <span className="text-[10px] font-semibold text-[var(--accent)] bg-[var(--accent-light)]/20 px-2 py-0.5 rounded-full">
+                    {selectedCategory === 'Friendship'
+                      ? 'Friendship Connections'
+                      : (selectedCategory === 'Live-In' || selectedCategory === 'Living Together')
+                        ? 'Live-In Relationships'
+                        : 'Foundation Matchmaking'}
+                  </span>
+                </div>
+                <div className="flex flex-wrap gap-1.5">
+                  {(selectedCategory === 'Friendship'
                     ? [
-                      { value: 'men', label: 'Seeking Grooms (Men)' },
-                    ]
-                    : [
-                      { value: 'any', label: 'All Genders' },
+                      { value: 'any', label: 'All Genders (Friends)' },
                       { value: 'women', label: 'Women' },
                       { value: 'men', label: 'Men' },
                     ]
-              ).map((g) => (
-                <Chip
-                  key={g.value}
-                  size="sm"
-                  selected={selectedGender === g.value}
-                  onClick={() => setSelectedGender(g.value as any)}
-                  interactive
-                >
-                  {g.label}
-                </Chip>
-              ))}
-            </div>
-          </div>
+                    : myGender === 'male' || myGender === 'man'
+                      ? [
+                        { value: 'women', label: 'Seeking Brides (Women)' },
+                      ]
+                      : myGender === 'female' || myGender === 'woman'
+                        ? [
+                          { value: 'men', label: 'Seeking Grooms (Men)' },
+                        ]
+                        : [
+                          { value: 'any', label: 'All Genders' },
+                          { value: 'women', label: 'Women' },
+                          { value: 'men', label: 'Men' },
+                        ]
+                  ).map((g) => (
+                    <Chip
+                      key={g.value}
+                      size="sm"
+                      selected={selectedGender === g.value}
+                      onClick={() => setSelectedGender(g.value as any)}
+                      interactive
+                    >
+                      {g.label}
+                    </Chip>
+                  ))}
+                </div>
+              </div>
 
-          {/* 3. Location / City Chips */}
-          <div className="space-y-2">
-            <label className="text-xs font-bold uppercase tracking-wider text-[var(--foreground)]">
-              Location / City
-            </label>
-            <div className="flex flex-wrap gap-2">
-              {[
-                'All locations',
-                'Kochi',
-                'Thrissur',
-                'Bengaluru',
-                'Calicut',
-                'Kottayam',
-                'Chennai',
-                'Trivandrum',
-                'Dubai/UAE',
-              ].map((c) => (
-                <Chip
-                  key={c}
-                  size="sm"
-                  selected={city === c}
-                  onClick={() => setCity(c)}
-                  interactive
-                >
-                  {c}
-                </Chip>
-              ))}
-            </div>
-          </div>
+              {/* 3. Location / City Chips */}
+              <div className="space-y-1.5">
+                <label className="text-[11px] font-bold uppercase tracking-wider text-[var(--foreground)]">
+                  Location / City
+                </label>
+                <div className="flex flex-wrap gap-1.5">
+                  {[
+                    'All locations',
+                    'Kochi',
+                    'Thrissur',
+                    'Bengaluru',
+                    'Calicut',
+                    'Kottayam',
+                    'Chennai',
+                    'Trivandrum',
+                    'Dubai/UAE',
+                  ].map((c) => (
+                    <Chip
+                      key={c}
+                      size="sm"
+                      selected={city === c}
+                      onClick={() => setCity(c)}
+                      interactive
+                    >
+                      {c}
+                    </Chip>
+                  ))}
+                </div>
+              </div>
 
-          {/* 4. Religion */}
-          <div className="space-y-2">
-            <label className="text-xs font-bold uppercase tracking-wider text-[var(--foreground)]">
-              Religion
-            </label>
-            <div className="flex flex-wrap gap-2">
-              {['Any', 'Hindu', 'Muslim', 'Christian', 'Inter-faith', 'Jain', 'Sikh'].map((r) => (
-                <Chip
-                  key={r}
-                  size="sm"
-                  selected={selectedReligion === r}
-                  onClick={() => setSelectedReligion(r)}
-                  interactive
-                >
-                  {r}
-                </Chip>
-              ))}
-            </div>
-          </div>
+              {/* 4. Religion */}
+              <div className="space-y-1.5">
+                <label className="text-[11px] font-bold uppercase tracking-wider text-[var(--foreground)]">
+                  Religion
+                </label>
+                <div className="flex flex-wrap gap-1.5">
+                  {['Any', 'Hindu', 'Muslim', 'Christian', 'Inter-faith', 'Jain', 'Sikh'].map((r) => (
+                    <Chip
+                      key={r}
+                      size="sm"
+                      selected={selectedReligion === r}
+                      onClick={() => setSelectedReligion(r)}
+                      interactive
+                    >
+                      {r}
+                    </Chip>
+                  ))}
+                </div>
+              </div>
 
-          {/* 5. Caste / Community */}
-          <div className="space-y-2">
-            <label className="text-xs font-bold uppercase tracking-wider text-[var(--foreground)]">
-              Caste & Community
-            </label>
-            <div className="flex flex-wrap gap-2">
-              {[
-                'Any',
-                'No Caste Bar',
-                'Nair',
-                'Ezhava',
-                'Brahmin',
-                'Sunni',
-                'Latin Catholic',
-                'Syrian Catholic',
-                'Viswakarma',
-              ].map((caste) => (
-                <Chip
-                  key={caste}
-                  size="sm"
-                  selected={selectedCaste === caste}
-                  onClick={() => setSelectedCaste(caste)}
-                  interactive
-                >
-                  {caste}
-                </Chip>
-              ))}
-            </div>
-          </div>
+              {/* 5. Caste / Community */}
+              <div className="space-y-1.5">
+                <label className="text-[11px] font-bold uppercase tracking-wider text-[var(--foreground)]">
+                  Caste & Community
+                </label>
+                <div className="flex flex-wrap gap-1.5">
+                  {[
+                    'Any',
+                    'No Caste Bar',
+                    'Nair',
+                    'Ezhava',
+                    'Brahmin',
+                    'Sunni',
+                    'Latin Catholic',
+                    'Syrian Catholic',
+                    'Viswakarma',
+                  ].map((caste) => (
+                    <Chip
+                      key={caste}
+                      size="sm"
+                      selected={selectedCaste === caste}
+                      onClick={() => setSelectedCaste(caste)}
+                      interactive
+                    >
+                      {caste}
+                    </Chip>
+                  ))}
+                </div>
+              </div>
 
-          {/* 6. Education Level */}
-          <div className="space-y-2">
-            <label className="text-xs font-bold uppercase tracking-wider text-[var(--foreground)]">
-              Education
-            </label>
-            <div className="flex flex-wrap gap-2">
-              {["Any", "Doctorate", "Master's Degree", "Bachelor's Degree", 'Professional Degree (MBBS/CA/LLB)'].map(
-                (edu) => (
-                  <Chip
-                    key={edu}
-                    size="sm"
-                    selected={selectedEducation === edu}
-                    onClick={() => setSelectedEducation(edu)}
-                    interactive
-                  >
-                    {edu}
-                  </Chip>
-                )
-              )}
-            </div>
-          </div>
+              {/* 6. Education Level */}
+              <div className="space-y-1.5">
+                <label className="text-[11px] font-bold uppercase tracking-wider text-[var(--foreground)]">
+                  Education
+                </label>
+                <div className="flex flex-wrap gap-1.5">
+                  {["Any", "Doctorate", "Master's Degree", "Bachelor's Degree", 'Professional Degree (MBBS/CA/LLB)'].map(
+                    (edu) => (
+                      <Chip
+                        key={edu}
+                        size="sm"
+                        selected={selectedEducation === edu}
+                        onClick={() => setSelectedEducation(edu)}
+                        interactive
+                      >
+                        {edu}
+                      </Chip>
+                    )
+                  )}
+                </div>
+              </div>
 
-          {/* 7. Profession */}
-          <div className="space-y-2">
-            <label className="text-xs font-bold uppercase tracking-wider text-[var(--foreground)]">
-              Profession
-            </label>
-            <div className="flex flex-wrap gap-2">
-              {[
-                'Any',
-                'Software / IT',
-                'Doctor / Healthcare',
-                'Designer / Creative',
-                'Civil Services / Govt',
-                'Finance & Banking',
-                'Entrepreneur / Business',
-              ].map((prof) => (
-                <Chip
-                  key={prof}
-                  size="sm"
-                  selected={selectedProfession === prof}
-                  onClick={() => setSelectedProfession(prof)}
-                  interactive
-                >
-                  {prof}
-                </Chip>
-              ))}
-            </div>
-          </div>
+              {/* 7. Profession */}
+              <div className="space-y-1.5">
+                <label className="text-[11px] font-bold uppercase tracking-wider text-[var(--foreground)]">
+                  Profession
+                </label>
+                <div className="flex flex-wrap gap-1.5">
+                  {[
+                    'Any',
+                    'Software / IT',
+                    'Doctor / Healthcare',
+                    'Designer / Creative',
+                    'Civil Services / Govt',
+                    'Finance & Banking',
+                    'Entrepreneur / Business',
+                  ].map((prof) => (
+                    <Chip
+                      key={prof}
+                      size="sm"
+                      selected={selectedProfession === prof}
+                      onClick={() => setSelectedProfession(prof)}
+                      interactive
+                    >
+                      {prof}
+                    </Chip>
+                  ))}
+                </div>
+              </div>
 
-          {/* 8. Annual Income */}
-          <div className="space-y-2">
-            <label className="text-xs font-bold uppercase tracking-wider text-[var(--foreground)]">
-              Annual Income
-            </label>
-            <div className="flex flex-wrap gap-2">
-              {['Any', '₹5L - ₹10L PA', '₹10L - ₹25L PA', '₹25L - ₹50L PA', '₹50L+ PA'].map((inc) => (
-                <Chip
-                  key={inc}
-                  size="sm"
-                  selected={selectedIncome === inc}
-                  onClick={() => setSelectedIncome(inc)}
-                  interactive
-                >
-                  {inc}
-                </Chip>
-              ))}
-            </div>
-          </div>
+              {/* 8. Annual Income */}
+              <div className="space-y-1.5">
+                <label className="text-[11px] font-bold uppercase tracking-wider text-[var(--foreground)]">
+                  Annual Income
+                </label>
+                <div className="flex flex-wrap gap-1.5">
+                  {['Any', '₹5L - ₹10L PA', '₹10L - ₹25L PA', '₹25L - ₹50L PA', '₹50L+ PA'].map((inc) => (
+                    <Chip
+                      key={inc}
+                      size="sm"
+                      selected={selectedIncome === inc}
+                      onClick={() => setSelectedIncome(inc)}
+                      interactive
+                    >
+                      {inc}
+                    </Chip>
+                  ))}
+                </div>
+              </div>
 
-          {/* 9. Marital Status */}
-          <div className="space-y-2">
-            <label className="text-xs font-bold uppercase tracking-wider text-[var(--foreground)]">
-              Marital Status
-            </label>
-            <div className="flex flex-wrap gap-2">
-              {['Any', 'Never married', 'Divorced', 'Widowed', 'Awaiting divorce'].map((status) => (
-                <Chip
-                  key={status}
-                  size="sm"
-                  selected={selectedMaritalStatus === status}
-                  onClick={() => setSelectedMaritalStatus(status)}
-                  interactive
-                >
-                  {status}
-                </Chip>
-              ))}
-            </div>
-          </div>
+              {/* 9. Marital Status */}
+              <div className="space-y-1.5">
+                <label className="text-[11px] font-bold uppercase tracking-wider text-[var(--foreground)]">
+                  Marital Status
+                </label>
+                <div className="flex flex-wrap gap-1.5">
+                  {['Any', 'Never married', 'Divorced', 'Widowed', 'Awaiting divorce'].map((status) => (
+                    <Chip
+                      key={status}
+                      size="sm"
+                      selected={selectedMaritalStatus === status}
+                      onClick={() => setSelectedMaritalStatus(status)}
+                      interactive
+                    >
+                      {status}
+                    </Chip>
+                  ))}
+                </div>
+              </div>
 
-          {/* 10. Mother Tongue / Language */}
-          <div className="space-y-2">
-            <label className="text-xs font-bold uppercase tracking-wider text-[var(--foreground)]">
-              Language / Mother Tongue
-            </label>
-            <div className="flex flex-wrap gap-2">
-              {['Any', 'Malayalam', 'Tamil', 'Telugu', 'Hindi', 'English', 'Kannada'].map((lang) => (
-                <Chip
-                  key={lang}
-                  size="sm"
-                  selected={selectedLanguage === lang}
-                  onClick={() => setSelectedLanguage(lang)}
-                  interactive
-                >
-                  {lang}
-                </Chip>
-              ))}
-            </div>
-          </div>
+              {/* 10. Mother Tongue / Language */}
+              <div className="space-y-1.5">
+                <label className="text-[11px] font-bold uppercase tracking-wider text-[var(--foreground)]">
+                  Language / Mother Tongue
+                </label>
+                <div className="flex flex-wrap gap-1.5">
+                  {['Any', 'Malayalam', 'Tamil', 'Telugu', 'Hindi', 'English', 'Kannada'].map((lang) => (
+                    <Chip
+                      key={lang}
+                      size="sm"
+                      selected={selectedLanguage === lang}
+                      onClick={() => setSelectedLanguage(lang)}
+                      interactive
+                    >
+                      {lang}
+                    </Chip>
+                  ))}
+                </div>
+              </div>
 
-          {/* 11. Partner Intent */}
-          <div className="space-y-2">
-            <label className="text-xs font-bold uppercase tracking-wider text-[var(--foreground)]">
-              Partner Intent
-            </label>
-            <div className="flex flex-wrap gap-2">
-              {[
-                'Any',
-                'Ready to marry soon (<6 mo)',
-                'Looking to marry within 1 year',
-                'Exploring compatibility first',
-              ].map((intent) => (
-                <Chip
-                  key={intent}
-                  size="sm"
-                  selected={selectedIntent === intent}
-                  onClick={() => setSelectedIntent(intent)}
-                  interactive
-                >
-                  {intent}
-                </Chip>
-              ))}
-            </div>
-          </div>
+              {/* 11. Partner Intent */}
+              <div className="space-y-1.5">
+                <label className="text-[11px] font-bold uppercase tracking-wider text-[var(--foreground)]">
+                  Partner Intent
+                </label>
+                <div className="flex flex-wrap gap-1.5">
+                  {[
+                    'Any',
+                    'Ready to marry soon (<6 mo)',
+                    'Looking to marry within 1 year',
+                    'Exploring compatibility first',
+                  ].map((intent) => (
+                    <Chip
+                      key={intent}
+                      size="sm"
+                      selected={selectedIntent === intent}
+                      onClick={() => setSelectedIntent(intent)}
+                      interactive
+                    >
+                      {intent}
+                    </Chip>
+                  ))}
+                </div>
+              </div>
 
-          {/* 12. Diet Habits */}
-          <div className="space-y-2">
-            <label className="text-xs font-bold uppercase tracking-wider text-[var(--foreground)]">
-              Diet Habits
-            </label>
-            <div className="flex flex-wrap gap-2">
-              {["Doesn't Matter", 'Vegetarian', 'Eggetarian', 'Non-Vegetarian'].map((diet) => (
-                <Chip
-                  key={diet}
-                  size="sm"
-                  selected={selectedDiet === diet}
-                  onClick={() => setSelectedDiet(diet)}
-                  interactive
-                >
-                  {diet}
-                </Chip>
-              ))}
+              {/* 12. Diet Habits */}
+              <div className="space-y-1.5">
+                <label className="text-[11px] font-bold uppercase tracking-wider text-[var(--foreground)]">
+                  Diet Habits
+                </label>
+                <div className="flex flex-wrap gap-1.5">
+                  {["Doesn't Matter", 'Vegetarian', 'Eggetarian', 'Non-Vegetarian'].map((diet) => (
+                    <Chip
+                      key={diet}
+                      size="sm"
+                      selected={selectedDiet === diet}
+                      onClick={() => setSelectedDiet(diet)}
+                      interactive
+                    >
+                      {diet}
+                    </Chip>
+                  ))}
+                </div>
+              </div>
             </div>
-          </div>
-          </>
           ) : (
             <div className="space-y-2 py-1">
               {/* Search Input with fixed IMC- prefix badge */}
               <div className="space-y-2">
                 <label className="text-[11px] font-bold uppercase tracking-wider text-[var(--muted-strong)]">
-                  Enter Matrimony ID
+                  Enter Ishtamchat ID
                 </label>
                 <div className="relative flex items-center rounded-2xl border-2 border-[#EAD8C7] focus-within:border-[#7A1835] bg-white shadow-sm overflow-hidden transition-all duration-200">
                   <div className="bg-[#FAF3EC] border-r border-[#EAD8C7] px-3.5 py-3 text-xs font-extrabold tracking-wider text-[#7A1835] select-none flex items-center gap-1.5 shrink-0">
@@ -2658,7 +2741,7 @@ export default function DiscoverPage() {
                         executeIdSearch(idSearchInput);
                       }
                     }}
-                    placeholder="A00002"
+                    placeholder="A00001"
                     maxLength={6}
                     className="w-full bg-transparent px-3.5 py-3 text-sm font-bold tracking-wider uppercase text-[var(--foreground)] placeholder:text-[var(--muted)]/50 outline-none"
                   />
@@ -2677,28 +2760,10 @@ export default function DiscoverPage() {
                       <IconX className="h-4 w-4" />
                     </button>
                   )}
-                  <button
-                    type="button"
-                    onClick={() => executeIdSearch(idSearchInput)}
-                    disabled={!idSearchInput.trim() || isIdSearching}
-                    className="mr-2 px-4 py-2 rounded-xl bg-[#7A1835] text-white text-xs font-bold hover:bg-[#5C1027] disabled:opacity-40 transition-colors shrink-0 flex items-center gap-1.5"
-                  >
-                    {isIdSearching ? (
-                      <>
-                        <IconLoader2 className="h-3.5 w-3.5 animate-spin" />
-                        <span>Searching...</span>
-                      </>
-                    ) : (
-                      <>
-                        <IconSearch className="h-3.5 w-3.5" />
-                        <span>Search</span>
-                      </>
-                    )}
-                  </button>
                 </div>
                 <div className="flex items-center justify-between text-[11px] text-[#766B6F] px-1">
                   <span>
-                    Format: <span className="font-bold text-[#2D1B22]">IMC-</span> followed by 6 alphanumeric characters (e.g. <span className="font-bold text-[#7A1835]">A00002</span>)
+                    Format: <span className="font-bold text-[#2D1B22]">IMC-</span> followed by 6 alphanumeric characters (e.g. <span className="font-bold text-[#7A1835]">A00001</span>)
                   </span>
                   <span>{idSearchInput.length}/6</span>
                 </div>
@@ -2794,7 +2859,6 @@ export default function DiscoverPage() {
                     </div>
 
                     <div className="mt-3.5 pt-3 border-t border-[#F2E8DF] flex items-center justify-between text-xs font-bold text-[#7A1835]">
-                      <span>Click card to view complete profile</span>
                       <span className="text-[11px] font-extrabold underline flex items-center gap-1">
                         <span>Open Profile</span>
                         <IconArrowRight className="h-3 w-3" />

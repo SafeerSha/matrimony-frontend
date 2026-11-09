@@ -66,12 +66,6 @@ export function MatchCard({
             >
               {match.name}, {match.age}
             </Link>
-
-            {match.compatibility && (
-              <Badge tone="accent" size="sm" icon={<IconUsers className="h-2.5 w-2.5" />}>
-                {match.compatibility}% Match
-              </Badge>
-            )}
           </div>
 
           <p className="mt-1 flex items-center gap-1.5 text-xs">

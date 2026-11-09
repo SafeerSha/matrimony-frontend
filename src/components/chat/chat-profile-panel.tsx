@@ -140,15 +140,6 @@ export function ChatProfilePanel({
             </div>
           )}
           <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent pointer-events-none" />
-
-          {/* Compatibility Pill */}
-          <div className="absolute top-3 left-3">
-            <span className="inline-flex items-center gap-1.5 rounded-full bg-white/95 px-2.5 py-1 text-[11px] font-bold text-[#7A1835] shadow-sm backdrop-blur-xs">
-              <IconUsers className="h-3 w-3 text-[#D8B28C]" />
-              {compatibility}% Match
-            </span>
-          </div>
-
           {/* Name & Basic info over photo overlay */}
           <div className="absolute bottom-3 left-3 right-3 text-white">
             <div className="flex items-center gap-1.5">

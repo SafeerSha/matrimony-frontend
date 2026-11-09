@@ -592,14 +592,7 @@ export function ProfileDetail({
                     Public View
                   </Badge>
                 ) : (
-                  <Badge
-                    tone="accent"
-                    size="md"
-                    icon={<IconUsers className="h-3 w-3 fill-current" />}
-                    className="backdrop-blur-md shadow-xs text-xs font-bold"
-                  >
-                    {profile.compatibility}% Matches
-                  </Badge>
+                  null
                 )}
 
                 {profile.online ? (
@@ -1465,7 +1458,7 @@ export function ProfileDetail({
       {isMounted && !isPreview && createPortal(
         <div
           className={cn(
-            "fixed bottom-[calc(4.875rem+env(safe-area-inset-bottom,0px))] inset-x-0 z-40 flex md:hidden justify-center px-4 pointer-events-none transition-all duration-300 ease-out",
+            "fixed bottom-[calc(3.875rem+env(safe-area-inset-bottom,0px))] inset-x-0 z-40 flex md:hidden justify-center px-4 pointer-events-none transition-all duration-300 ease-out",
             showFloatingDock
               ? "opacity-100 translate-y-0 scale-100"
               : "opacity-0 translate-y-6 scale-95 pointer-events-none"

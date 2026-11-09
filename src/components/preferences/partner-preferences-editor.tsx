@@ -27,7 +27,6 @@ import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { PreferenceSectionCard } from './preference-section-card';
-import { PreferenceSummarySidebar } from './preference-summary-sidebar';
 import {
   PreferenceModalEditor,
   PreferenceEditSectionId,
@@ -80,8 +79,11 @@ export function PartnerPreferencesEditor({
                 maxAge: safeMaxAge,
                 minHeight: safeMinHeight,
                 maxHeight: safeMaxHeight,
+                gender: p.gender || prev.gender || 'any',
+                matrimonyCommunity: p.matrimonyCommunity || prev.matrimonyCommunity || 'Kerala',
                 religions: Array.isArray(p.religions) && p.religions.length > 0 ? p.religions : (p.religions ? [p.religions] : prev.religions),
                 locations: Array.isArray(p.locations) && p.locations.length > 0 ? p.locations : (p.locations ? [p.locations] : prev.locations),
+                languages: Array.isArray(p.languages) && p.languages.length > 0 ? p.languages : (p.language ? [p.language] : (prev.languages || ['Malayalam', 'English'])),
                 diet: Array.isArray(p.diet) && p.diet.length > 0 ? p.diet : (p.diet ? [p.diet] : prev.diet),
                 maritalStatus: Array.isArray(p.maritalStatus) && p.maritalStatus.length > 0 ? p.maritalStatus : (p.maritalStatus ? [p.maritalStatus] : prev.maritalStatus),
                 education: Array.isArray(p.education) && p.education.length > 0 ? p.education : (p.education ? [p.education] : prev.education),
@@ -127,8 +129,11 @@ export function PartnerPreferencesEditor({
         maxAge: safeMaxAge,
         minHeight: safeMinHeight,
         maxHeight: safeMaxHeight,
+        gender: preferences.gender || 'any',
+        matrimonyCommunity: preferences.matrimonyCommunity || 'Kerala',
         religions: Array.isArray(preferences.religions) ? preferences.religions : [preferences.religions].filter(Boolean),
         locations: Array.isArray(preferences.locations) ? preferences.locations : [preferences.locations].filter(Boolean),
+        languages: Array.isArray(preferences.languages) ? preferences.languages : [preferences.languages].filter(Boolean),
         diet: Array.isArray(preferences.diet) ? preferences.diet : [preferences.diet].filter(Boolean),
         maritalStatus: Array.isArray(preferences.maritalStatus) ? preferences.maritalStatus : [preferences.maritalStatus].filter(Boolean),
         education: Array.isArray(preferences.education) ? preferences.education : [preferences.education].filter(Boolean),
@@ -193,11 +198,41 @@ export function PartnerPreferencesEditor({
             <SectionHeader
               eyebrow="Matchmaking Criteria"
               title="Your Partner Preferences"
-              // description="Tell us what matters to you. You can change these preferences anytime to adjust your recommendations."
+              description="Customize your partner criteria to get tailored recommendations across Discover."
             />
           </div>
 
-          <div className="flex items-center gap-2 self-start sm:self-auto shrink-0">
+          <div className="flex items-center gap-2 self-start sm:self-auto shrink-0 flex-wrap">
+            <Button
+              variant="outline"
+              size="md"
+              onClick={handleReset}
+              className="rounded-2xl text-xs font-bold gap-1.5 border-[#E9DDE0]"
+              leftIcon={<IconRefresh className="h-3.5 w-3.5" />}
+            >
+              <span>Reset</span>
+            </Button>
+
+            <Button
+              variant="primary"
+              size="md"
+              onClick={handleSave}
+              disabled={isSaving}
+              className={cn(
+                'rounded-2xl text-xs font-bold gap-1.5 shadow-sm transition-all',
+                hasChanges ? 'bg-[#7A1835] hover:bg-[#5C1027]' : ''
+              )}
+              leftIcon={
+                isSaving ? (
+                  <IconLoader2 className="h-3.5 w-3.5 animate-spin" />
+                ) : (
+                  <IconDeviceFloppy className="h-3.5 w-3.5 text-[#D8B28C]" />
+                )
+              }
+            >
+              <span>{isSaving ? 'Saving...' : 'Save Preferences'}</span>
+            </Button>
+
             <Link href="/app/discover">
               <Button
                 variant="secondary"
@@ -212,29 +247,36 @@ export function PartnerPreferencesEditor({
         </div>
       )}
 
-      {/* Main Grid: Left Editable Sections vs Right Summary Profile */}
-      <div className="grid gap-6 lg:grid-cols-[1fr_340px] xl:grid-cols-[1fr_360px]">
-        {/* LEFT COLUMN: EDITABLE PREFERENCE SECTIONS */}
-        <div className="space-y-2">
-          {/* Mobile Quick Action Strip (Sticky/Top on 360px-430px screens) */}
-          <div className="flex lg:hidden items-center justify-between gap-3 p-3.5 rounded-2xl bg-white border border-[#E9DDE0] shadow-xs">
-            <div className="flex items-center gap-2.5">
-              <div className="h-9 w-9 rounded-xl bg-[#FAF3EC] text-[#7A1835] flex items-center justify-center font-bold text-xs shrink-0">
-                <IconAdjustments className="h-4 w-4 text-[#7A1835]" />
-              </div>
-              <div>
-                <span className="text-xs font-bold text-[#211B1E] block">Match Criteria</span>
-                <span className="text-[10px] font-medium text-[#766B6F]">
-                  {hasChanges ? 'Changes staged — tap Save' : 'Tap any card below to edit'}
-                </span>
-              </div>
+      {/* Main Single Column Container */}
+      <div className="max-w-4xl mx-auto space-y-3">
+        {/* Mobile Quick Action Strip (Sticky/Top on 360px-430px screens) */}
+        <div className="flex sm:hidden items-center justify-between gap-3 p-3 rounded-2xl bg-white border border-[#E9DDE0] shadow-xs">
+          <div className="flex items-center gap-2.5">
+            <div className="h-9 w-9 rounded-xl bg-[#FAF3EC] text-[#7A1835] flex items-center justify-center font-bold text-xs shrink-0">
+              <IconAdjustments className="h-4 w-4 text-[#7A1835]" />
             </div>
+            <div>
+              <span className="text-xs font-bold text-[#211B1E] block">Match Criteria</span>
+              <span className="text-[10px] font-medium text-[#766B6F]">
+                {hasChanges ? 'Changes staged — tap Save' : 'Tap any card below to edit'}
+              </span>
+            </div>
+          </div>
+          <div className="flex items-center gap-1.5 shrink-0">
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={handleReset}
+              className="rounded-xl text-xs font-bold px-2.5 h-9"
+            >
+              Reset
+            </Button>
             <Button
               size="sm"
               onClick={handleSave}
               disabled={isSaving}
               className={cn(
-                'rounded-xl text-xs font-bold px-4 h-9 shadow-xs active-press shrink-0 transition-all',
+                'rounded-xl text-xs font-bold px-3.5 h-9 shadow-xs active-press transition-all',
                 hasChanges
                   ? 'bg-[#7A1835] hover:bg-[#5C1027] text-white'
                   : 'bg-[#FAF3EC] text-[#7A1835] border border-[#EAD8C7]'
@@ -243,32 +285,33 @@ export function PartnerPreferencesEditor({
               {isSaving ? <IconLoader2 className="h-3.5 w-3.5 animate-spin" /> : 'Save'}
             </Button>
           </div>
+        </div>
 
-          {/* Quick Notice Banner */}
-          <div className="hidden lg:flex rounded-2xl bg-gradient-to-r from-[#FAF3EC] via-[#FFF9F6] to-[#FFF5F7] p-4 border border-[#EAD8C7] items-center justify-between gap-3">
-            <div className="flex items-center gap-2.5">
-              <IconAdjustments className="h-4 w-4 text-[#7A1835] shrink-0" />
-              <p className="text-xs text-[#5C1027] font-medium">
-                Tap on any card to edit its filters with sliders, chips and compact controls.
-              </p>
-            </div>
-            {hasChanges && (
-              <span className="shrink-0 text-[10px] font-bold text-amber-800 bg-amber-100 px-2 py-0.5 rounded-full">
-                Unsaved changes
-              </span>
-            )}
+        {/* Quick Notice Banner */}
+        <div className="hidden sm:flex rounded-2xl bg-gradient-to-r from-[#FAF3EC] via-[#FFF9F6] to-[#FFF5F7] p-3.5 border border-[#EAD8C7] items-center justify-between gap-3 shadow-2xs">
+          <div className="flex items-center gap-2.5">
+            <IconAdjustments className="h-4 w-4 text-[#7A1835] shrink-0" />
+            <p className="text-xs text-[#5C1027] font-medium">
+              Tap on any card to edit its filters with sliders, chips, and compact controls.
+            </p>
           </div>
+          {hasChanges && (
+            <span className="shrink-0 text-[10px] font-bold text-amber-800 bg-amber-100 px-2 py-0.5 rounded-full">
+              Unsaved changes
+            </span>
+          )}
+        </div>
 
-          {/* Section 1: Age & Physical Attributes */}
+          {/* Section 1: Age, Height & Gender */}
           <PreferenceSectionCard
             id="age_height"
             icon={<IconCalendar className="h-5 w-5" />}
-            title="Age & Height"
-            subtitle="Preferred age window and physical stature"
+            title="Age, Height & Gender"
+            subtitle="Preferred age window, stature, and seeking preference"
             statusText={`${preferences.minAge} – ${preferences.maxAge} yrs`}
             onEdit={() => handleEditSection('age_height')}
             preview={
-              <div className="grid grid-cols-2 gap-3 text-xs">
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 text-xs">
                 <div className="rounded-2xl bg-[#FFF9F6] p-3 border border-[#E9DDE0]/70">
                   <span className="block text-[10px] font-semibold uppercase tracking-wider text-[#766B6F]">
                     Age Bracket
@@ -283,6 +326,18 @@ export function PartnerPreferencesEditor({
                   </span>
                   <span className="text-sm font-bold text-[#211B1E] mt-0.5 block">
                     {preferences.minHeight} to {preferences.maxHeight}
+                  </span>
+                </div>
+                <div className="col-span-2 sm:col-span-1 rounded-2xl bg-[#FFF9F6] p-3 border border-[#E9DDE0]/70">
+                  <span className="block text-[10px] font-semibold uppercase tracking-wider text-[#766B6F]">
+                    Seeking
+                  </span>
+                  <span className="text-sm font-bold text-[#7A1835] mt-0.5 block">
+                    {preferences.gender === 'women'
+                      ? 'Brides (Women)'
+                      : preferences.gender === 'men'
+                        ? 'Grooms (Men)'
+                        : 'All Genders'}
                   </span>
                 </div>
               </div>
@@ -361,26 +416,51 @@ export function PartnerPreferencesEditor({
             }
           />
 
-          {/* Section 4: Religion & Community */}
+          {/* Section 4: Religion, Community & Language */}
           <PreferenceSectionCard
             id="religion_community"
             icon={<IconUsers className="h-5 w-5" />}
-            title="Religion & Community"
-            subtitle="Faith, community outlook"
+            title="Religion, Community & Language"
+            subtitle="Faith, matrimony community, caste & mother tongue"
             onEdit={() => handleEditSection('religion_community')}
             preview={
-              <div className="flex flex-wrap items-center gap-2">
-                {preferences.religions.map((r) => (
-                  <span
-                    key={r}
-                    className="rounded-xl bg-[#FFF9F6] text-[#211B1E] px-3 py-1 text-xs font-semibold border border-[#E9DDE0]"
-                  >
-                    {r}
+              <div className="space-y-2 text-xs">
+                <div className="flex flex-wrap items-center gap-1.5">
+                  <span className="text-[#766B6F] font-semibold mr-1">Community:</span>
+                  <span className="rounded-xl bg-[#FAF3EC] text-[#7A1835] px-2.5 py-0.5 font-bold border border-[#EAD8C7]">
+                    {preferences.matrimonyCommunity ? `${preferences.matrimonyCommunity} Matrimony` : 'Kerala Matrimony'}
                   </span>
-                ))}
-                <span className="rounded-xl bg-[#FAF3EC] text-[#7A1835] px-3 py-1 text-xs font-semibold border border-[#EAD8C7]">
-                  Caste: {preferences.caste}
-                </span>
+                  <span className="rounded-xl bg-[#FAF3EC] text-[#7A1835] px-2.5 py-0.5 font-semibold border border-[#EAD8C7]">
+                    Caste: {preferences.caste || 'Open to all'}
+                  </span>
+                </div>
+
+                <div className="flex flex-wrap items-center gap-1.5">
+                  <span className="text-[#766B6F] font-semibold mr-1">Religion:</span>
+                  {preferences.religions.map((r) => (
+                    <span
+                      key={r}
+                      className="rounded-xl bg-[#FFF9F6] text-[#211B1E] px-2.5 py-0.5 font-medium border border-[#E9DDE0]"
+                    >
+                      {r}
+                    </span>
+                  ))}
+                </div>
+
+                <div className="flex flex-wrap items-center gap-1.5">
+                  <span className="text-[#766B6F] font-semibold mr-1">Language:</span>
+                  {(preferences.languages && preferences.languages.length > 0
+                    ? preferences.languages
+                    : ['Malayalam', 'English']
+                  ).map((lang) => (
+                    <span
+                      key={lang}
+                      className="rounded-xl bg-gradient-to-r from-[#FAF3EC] to-[#FFF9F6] text-[#7A1835] px-2.5 py-0.5 font-semibold border border-[#EAD8C7]"
+                    >
+                      {lang}
+                    </span>
+                  ))}
+                </div>
               </div>
             }
           />
@@ -451,17 +531,35 @@ export function PartnerPreferencesEditor({
               </div>
             }
           />
-        </div>
+        {/* Bottom Save & Reset Action Bar */}
+        <div className="flex items-center justify-between pt-5 pb-2 border-t border-[#E9DDE0] gap-3">
+          <Button
+            variant="outline"
+            size="md"
+            onClick={handleReset}
+            className="rounded-2xl text-xs font-bold gap-1.5 border-[#E9DDE0]"
+            leftIcon={<IconRefresh className="h-3.5 w-3.5" />}
+          >
+            <span>Reset to Default</span>
+          </Button>
 
-        {/* RIGHT COLUMN: PREFERENCE PROFILE SUMMARY SIDEBAR */}
-        <aside className="lg:sticky lg:top-20 h-fit">
-          <PreferenceSummarySidebar
-            preferences={preferences}
-            onSave={handleSave}
-            onReset={handleReset}
-            isSaving={isSaving}
-          />
-        </aside>
+          <Button
+            variant="primary"
+            size="md"
+            onClick={handleSave}
+            disabled={isSaving}
+            className="rounded-2xl text-xs font-bold gap-1.5 shadow-sm min-w-[170px]"
+            leftIcon={
+              isSaving ? (
+                <IconLoader2 className="h-3.5 w-3.5 animate-spin" />
+              ) : (
+                <IconDeviceFloppy className="h-3.5 w-3.5 text-[#D8B28C]" />
+              )
+            }
+          >
+            <span>{isSaving ? 'Saving...' : 'Save Preferences'}</span>
+          </Button>
+        </div>
       </div>
 
       {/* MODAL / SHEET EDITOR */}

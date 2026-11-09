@@ -287,16 +287,16 @@ function FavoritesContent() {
 
       {/* Profiles List */}
       {isLoading ? (
-        <div className="space-y-4 animate-content-appear stagger-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5 animate-content-appear stagger-3">
           {[...Array(3)].map((_, i) => (
             <div
               key={i}
-              className="h-52 w-full skeleton-shimmer rounded-3xl bg-[var(--surface-muted)] border border-[var(--border)]"
+              className="h-[510px] w-full skeleton-shimmer rounded-[2rem] bg-[var(--surface-muted)] border border-[var(--border)]"
             />
           ))}
         </div>
       ) : filteredList.length > 0 ? (
-        <div className="space-y-4 animate-content-appear stagger-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5 animate-content-appear stagger-3">
           {filteredList.map((profile) => (
             <InterestCard
               key={profile.id}

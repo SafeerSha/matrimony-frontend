@@ -150,7 +150,7 @@ export function MobileNav({
   return (
     <div
       className={cn(
-        "fixed inset-x-0 bottom-0 z-50 md:hidden flex flex-col items-center pointer-events-none",
+        "fixed inset-x-0 bottom-[-7px] z-50 md:hidden flex flex-col items-center pointer-events-none",
         className
       )}
       aria-label="Mobile navigation"

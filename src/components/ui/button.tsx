@@ -67,15 +67,23 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(function Button
   },
   ref
 ) {
-  const hasCustomRounding = className ? /\brounded-(?:none|sm|md|lg|xl|2xl|3xl|full)\b/.test(className) : false;
-  const hasCustomDimensions = className ? /\b[hw]-/.test(className) : false;
+  const hasCustomRounding = className ? /\b(?:[a-z0-9_-]+:)?rounded-(?:none|sm|md|lg|xl|2xl|3xl|full|\[[^\]]+\])\b/.test(className) : false;
+  const hasCustomHeight = className ? /\b(?:[a-z0-9_-]+:)?(?:min-)?h-(?:\d+(?:\.\d+)?|\[[^\]]+\]|full|auto)\b/.test(className) : false;
+  const hasCustomWidth = className ? /\b(?:[a-z0-9_-]+:)?(?:min-)?w-(?:\d+(?:\.\d+)?|\[[^\]]+\]|full|auto)\b/.test(className) : false;
+  const hasCustomPadding = className ? /\b(?:[a-z0-9_-]+:)?p[xy]?-(?:\d+(?:\.\d+)?|\[[^\]]+\])\b/.test(className) : false;
   const rawSizeClass = sizes[size] || sizes.md;
   let sizeClass = rawSizeClass;
   if (hasCustomRounding) {
     sizeClass = sizeClass.replace(/\brounded-(?:sm|md|lg|xl|2xl|3xl|full)\b/g, "").trim();
   }
-  if (hasCustomDimensions) {
-    sizeClass = sizeClass.replace(/\b[hw]-\d+\b/g, "").replace(/\bmin-h-\d+\b/g, "").trim();
+  if (hasCustomHeight) {
+    sizeClass = sizeClass.replace(/\b(?:min-)?h-\d+\b/g, "").replace(/\bpy-\d+(?:\.\d+)?\b/g, "").trim();
+  }
+  if (hasCustomWidth) {
+    sizeClass = sizeClass.replace(/\b(?:min-)?w-\d+\b/g, "").trim();
+  }
+  if (hasCustomPadding) {
+    sizeClass = sizeClass.replace(/\bp[xy]-\d+(?:\.\d+)?\b/g, "").trim();
   }
   const variantClass = variants[variant] || variants.primary;
 

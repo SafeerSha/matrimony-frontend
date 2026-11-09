@@ -23,7 +23,7 @@ import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { SectionHeader } from '@/components/ui/section-header';
-import { notificationService, parseNotificationText, NotificationItem } from '@/services';
+import { notificationService, parseNotificationText, NotificationItem, authService } from '@/services';
 import { toast } from '@/lib/toast';
 import { cn } from '@/lib/cn';
 import { FeatureGate } from '@/components/ui/under-development';
@@ -88,9 +88,22 @@ export default function NotificationsPage() {
   useEffect(() => {
     async function loadNotifications() {
       try {
-        const data = await notificationService.getNotifications();
+        const [data, currentUser] = await Promise.all([
+          notificationService.getNotifications(),
+          authService.getCurrentUser().catch(() => null),
+        ]);
+        const currentUserId = currentUser?.id;
+
         if (data && data.length > 0) {
-          const mapped: NotificationDisplayItem[] = data.map((n) => {
+          // Strictly show incoming events only — exclude any notifications sent by or referencing the logged-in user
+          const incomingOnly = data.filter((n) => {
+            if (currentUserId && (n.referenceId === currentUserId || n.sender?.id === currentUserId)) {
+              return false;
+            }
+            return true;
+          });
+
+          const mapped: NotificationDisplayItem[] = incomingOnly.map((n) => {
             const createdTime = new Date(n.createdAt).getTime();
             const now = Date.now();
             const diffHours = (now - createdTime) / (1000 * 60 * 60);

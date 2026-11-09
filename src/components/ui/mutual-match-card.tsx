@@ -72,16 +72,8 @@ export function MutualMatchCard({
             <IconUsers className="h-3.5 w-3.5" />
           </span>
           <span className="text-[10px] font-bold uppercase tracking-wider text-[var(--primary)]">
-            Mutual Match
+            Mutual Accepted
           </span>
-        </div>
-
-        <div className="flex items-center gap-2">
-          {match.compatibility && (
-            <Badge tone="accent" size="sm" className="font-bold text-[10px] bg-white/95 text-[var(--primary)] border-[var(--champagne-border)] shadow-xs">
-              {match.compatibility}% Matches
-            </Badge>
-          )}
         </div>
       </div>
 
