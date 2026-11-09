@@ -150,6 +150,13 @@ export default function SubscriptionPage() {
         return;
       }
 
+      if (result?.redirect) {
+        toast.info('Redirecting', {
+          description: 'Redirecting to complete payment...',
+        });
+        return;
+      }
+
       // Reconcile and confirm payment with backend
       toast.info('Verifying Payment', {
         description: 'Confirming transaction...',

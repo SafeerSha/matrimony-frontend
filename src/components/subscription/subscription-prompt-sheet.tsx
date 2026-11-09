@@ -53,7 +53,7 @@ export function SubscriptionPromptSheet({
   const description = customDescription || (isFreeTrial
     ? 'To celebrate our launch, enjoy unlimited messaging, verified contacts, and priority connections with zero payment required.'
     : 'Upgrade your membership to enjoy exclusive communication and connection features.');
-  const ctaText = customCtaText || (isFreeTrial ? 'Claim Free Trial 🎉' : 'Explore Membership Plans');
+  const ctaText = customCtaText || (isFreeTrial ? 'Claim Free Trial 🎉' : 'Explore Subscription Plans');
 
   useEffect(() => {
     setMounted(true);
@@ -146,15 +146,15 @@ export function SubscriptionPromptSheet({
 
   const features: SubscriptionFeatureItem[] = customFeatures && customFeatures.length > 0
     ? customFeatures.map((item, idx) => {
-        if (typeof item === 'string') {
-          return {
-            icon: defaultFeatures[idx % defaultFeatures.length].icon,
-            title: item,
-            description: '',
-          };
-        }
-        return item;
-      })
+      if (typeof item === 'string') {
+        return {
+          icon: defaultFeatures[idx % defaultFeatures.length].icon,
+          title: item,
+          description: '',
+        };
+      }
+      return item;
+    })
     : defaultFeatures;
 
   return createPortal(
@@ -191,7 +191,7 @@ export function SubscriptionPromptSheet({
         <div className="h-1 w-full bg-gradient-to-r from-transparent via-[var(--accent)]/60 to-transparent shrink-0" />
 
         {/* Drag Handle & Close Bar */}
-        <div 
+        <div
           className="relative pt-3 pb-1 px-5 flex items-center justify-between shrink-0 touch-none"
           onTouchMove={(e) => e.stopPropagation()}
         >
@@ -214,7 +214,7 @@ export function SubscriptionPromptSheet({
         </div>
 
         {/* Scrollable Sheet Content with overscroll-contain & touch-pan-y */}
-        <div 
+        <div
           className="flex-1 overflow-y-auto px-5 sm:px-6 pt-1 pb-4 scrollbar-none overscroll-contain touch-pan-y select-text"
           onWheel={(e) => e.stopPropagation()}
         >
@@ -279,7 +279,7 @@ export function SubscriptionPromptSheet({
         </div>
 
         {/* Bottom Fixed Action Panel */}
-        <div 
+        <div
           className="px-5 sm:px-6 pt-2 pb-[max(1.25rem,env(safe-area-inset-bottom))] border-t border-[#EEDCC8]/60 bg-white/80 backdrop-blur-md shrink-0 space-y-2 touch-none overscroll-none"
           onTouchMove={(e) => e.stopPropagation()}
         >

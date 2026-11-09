@@ -53,7 +53,7 @@ const securityHeaders = [
   { key: "X-Frame-Options", value: "DENY" },
   { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
   { key: "Permissions-Policy", value: "camera=(), microphone=(), geolocation=()" },
-  { key: "Cross-Origin-Opener-Policy", value: "same-origin" },
+  { key: "Cross-Origin-Opener-Policy", value: "same-origin-allow-popups" },
   { key: "Cross-Origin-Resource-Policy", value: "same-origin" },
   {
     key: "Content-Security-Policy",
@@ -63,11 +63,12 @@ const securityHeaders = [
       "form-action 'self'",
       "frame-ancestors 'none'",
       "object-src 'none'",
-      "script-src 'self' 'unsafe-inline' 'unsafe-eval'",
-      "style-src 'self' 'unsafe-inline'",
-      `img-src ${imgOrigins}`,
-      "font-src 'self' data:",
-      `connect-src ${connectOrigins}`,
+      "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://sdk.cashfree.com https://*.cashfree.com",
+      "style-src 'self' 'unsafe-inline' https://sdk.cashfree.com https://*.cashfree.com",
+      `img-src ${imgOrigins} https://*.cashfree.com`,
+      "font-src 'self' data: https://*.cashfree.com",
+      `connect-src ${connectOrigins} https://api.cashfree.com https://sandbox.cashfree.com https://*.cashfree.com`,
+      "frame-src 'self' https://sdk.cashfree.com https://api.cashfree.com https://sandbox.cashfree.com https://payments.cashfree.com https://payments-test.cashfree.com https://*.cashfree.com",
       "worker-src 'self' blob:",
       "manifest-src 'self'"
     ].join("; ")
