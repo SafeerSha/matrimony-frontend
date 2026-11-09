@@ -232,17 +232,6 @@ export function PartnerPreferencesEditor({
             >
               <span>{isSaving ? 'Saving...' : 'Save Preferences'}</span>
             </Button>
-
-            <Link href="/app/discover">
-              <Button
-                variant="secondary"
-                size="md"
-                className="rounded-2xl text-xs font-bold gap-1.5 border-[#E9DDE0]"
-                leftIcon={<IconCompass className="h-3.5 w-3.5 text-[#7A1835]" />}
-              >
-                <span>View Matches</span>
-              </Button>
-            </Link>
           </div>
         </div>
       )}

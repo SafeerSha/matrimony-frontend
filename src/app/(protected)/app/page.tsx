@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useRef } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import {
   IconArrowRight,
   IconBell,
@@ -39,12 +40,15 @@ function SafeCardImage({ src, alt, name }: { src?: string | null; alt: string; n
     return (
       <div className="relative h-full w-full bg-gradient-to-br from-[#7D1633] via-[#630E26] to-[#450718] flex flex-col items-center justify-center text-white select-none overflow-hidden">
         <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_top,rgba(201,151,87,0.22),transparent_70%)]" />
-        <div className="relative z-10 grid h-14 w-14 place-items-center rounded-full bg-gradient-to-b from-white/20 to-white/5 backdrop-blur-md text-[#FFF2D6] border border-[#F5D8A8]/60 shadow-md mb-1.5">
-          <span className="font-editorial-title text-xl font-bold">
+        <div className="relative z-10 grid h-20 w-20 place-items-center rounded-full bg-gradient-to-b from-white/20 to-white/5 backdrop-blur-md text-[#FFF2D6] border border-[#F5D8A8]/60 shadow-md mb-2">
+          <span className="font-editorial-title text-3xl font-bold">
             {name?.charAt(0)?.toUpperCase() || 'M'}
           </span>
         </div>
-        <span className="relative z-10 text-[9px] font-medium text-[#F7DFBA] px-2 py-0.5 rounded-full bg-black/25 border border-white/10">Photo Pending</span>
+        <p className="relative z-10 text-sm font-bold text-white tracking-tight drop-shadow-xs mb-1">
+          {name}
+        </p>
+        <span className="relative z-10 text-[10px] font-medium text-[#F7DFBA] px-2.5 py-0.5 rounded-full bg-black/25 border border-white/10">Photo Pending</span>
       </div>
     );
   }
@@ -60,6 +64,7 @@ function SafeCardImage({ src, alt, name }: { src?: string | null; alt: string; n
 }
 
 export default function DashboardPage() {
+  const router = useRouter();
   const [currentUser, setCurrentUser] = useState<any>(null);
   const [userProfile, setUserProfile] = useState<any>(null);
   const [recommendations, setRecommendations] = useState<Profile[]>([]);
@@ -578,10 +583,10 @@ export default function DashboardPage() {
         />
 
         {isLoading ? (
-          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-            <ProfileCardSkeleton />
-            <ProfileCardSkeleton />
-            <ProfileCardSkeleton />
+          <div className="grid gap-3.5 sm:grid-cols-2 lg:grid-cols-3">
+            <div className="h-[510px] sm:h-[530px] w-full rounded-[2rem] bg-white border border-[var(--border)] skeleton-shimmer" />
+            <div className="h-[510px] sm:h-[530px] w-full rounded-[2rem] bg-white border border-[var(--border)] skeleton-shimmer hidden sm:block" />
+            <div className="h-[510px] sm:h-[530px] w-full rounded-[2rem] bg-white border border-[var(--border)] skeleton-shimmer hidden lg:block" />
           </div>
         ) : recommendations.length === 0 ? (
           <Card className="p-6 text-center rounded-2xl border-dashed border-[var(--border)] bg-[var(--surface-muted)]/40">
@@ -600,7 +605,7 @@ export default function DashboardPage() {
             </div>
           </Card>
         ) : (
-          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {recommendations.slice(0, 3).map((profile) => {
               const isShortlisted = shortlistedIds.has(profile.id);
               const isInterestSent = sentInterestIds.has(profile.id);
@@ -609,22 +614,40 @@ export default function DashboardPage() {
                 <Card
                   key={profile.id}
                   variant="interactive"
-                  className="group relative overflow-hidden rounded-2xl border-[var(--border)] bg-white p-0 flex flex-col justify-between shadow-xs"
+                  role="link"
+                  tabIndex={0}
+                  aria-label={`View ${profile.name}'s profile`}
+                  onClick={() => router.push(`/app/profile?user=${profile.id}`)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                      e.preventDefault();
+                      router.push(`/app/profile?user=${profile.id}`);
+                    }
+                  }}
+                  className="group relative overflow-hidden rounded-[2rem] border border-[var(--champagne-border)] bg-[var(--surface-muted)] p-0 shadow-[var(--elevation-card)] hover:shadow-[var(--elevation-floating)] transition-all duration-300 cursor-pointer h-[510px] sm:h-[530px] w-full select-none"
                 >
-                  {/* Photo area with warm matrimonial overlay */}
-                  <div className="relative h-64 sm:h-72 overflow-hidden bg-[var(--surface-muted)]">
+                  {/* 1. Full-Bleed Portrait Photo */}
+                  <div className="absolute inset-0 h-full w-full overflow-hidden bg-[var(--surface-muted)]">
                     <SafeCardImage src={profile.image} alt={profile.name} name={profile.name} />
 
-                    {/* Gradient overlay */}
+                    {/* Warm Matrimonial Overlay */}
                     <div className="absolute inset-0 photo-overlay-warm" aria-hidden="true" />
 
-                    {/* Top Badges */}
-                    <div className="absolute left-2.5 top-2.5 flex items-center gap-1.5 z-10">
+                    {/* Dark Bottom & Subtle Top Vignette Gradient Overlay */}
+                    <div
+                      className="absolute inset-0 bg-gradient-to-t from-black/95 via-black/45 via-50% to-black/25 pointer-events-none"
+                      aria-hidden="true"
+                    />
+                  </div>
+
+                  {/* 2. Top Floating Badges */}
+                  <div className="absolute top-3.5 left-3.5 right-3.5 flex items-center justify-between gap-1.5 z-10 pointer-events-none">
+                    <div className="flex items-center gap-1.5 flex-wrap">
                       <Badge
                         tone="accent"
                         size="sm"
                         icon={<IconUsers className="h-2.5 w-2.5 fill-current" />}
-                        className="backdrop-blur-md shadow-2xs"
+                        className="backdrop-blur-md shadow-2xs font-bold"
                       >
                         {profile.compatibility}% Match
                       </Badge>
@@ -635,9 +658,9 @@ export default function DashboardPage() {
                           size="sm"
                           dot
                           dotColor="bg-emerald-500"
-                          className="bg-white/90 backdrop-blur-md text-[var(--foreground)] border-white/80 font-medium"
+                          className="bg-black/40 backdrop-blur-md text-white border-white/20 text-[10px] font-medium"
                         >
-                          Online now
+                          Online
                         </Badge>
                       ) : profile.lastActiveAt ? (
                         <Badge
@@ -653,96 +676,99 @@ export default function DashboardPage() {
                     {/* Shortlist IconHeart Button */}
                     <button
                       type="button"
-                      onClick={() => handleShortlist(profile.id, profile.name)}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleShortlist(profile.id, profile.name);
+                      }}
                       aria-label={
                         isShortlisted
                           ? `Remove ${profile.name} from shortlist`
                           : `Shortlist ${profile.name}`
                       }
                       className={cn(
-                        'focus-ring absolute right-2.5 top-2.5 z-10 grid h-8 w-8 place-items-center rounded-full backdrop-blur-md transition-all duration-200 active-press',
+                        'pointer-events-auto focus-ring grid h-9 w-9 place-items-center rounded-full backdrop-blur-md transition-all duration-200 active-press shrink-0',
                         isShortlisted
                           ? 'bg-white text-[var(--primary)] shadow-md'
-                          : 'bg-black/30 text-white hover:bg-white hover:text-[var(--primary)]'
+                          : 'bg-black/35 text-white hover:bg-white hover:text-[var(--primary)] border border-white/20'
                       )}
                     >
                       <IconHeart
                         className={cn(
-                          'h-4 w-4 transition-transform duration-200',
+                          'h-4.5 w-4.5 transition-transform duration-200',
                           isShortlisted && 'fill-[var(--primary)] scale-110'
                         )}
                       />
                     </button>
-
-                    {/* Bottom Photo Identity */}
-                    <div className="absolute inset-x-0 bottom-0 p-3.5 text-white z-10">
-                      <div className="flex items-center gap-1.5">
-                        <h3 className="font-editorial-title text-xl font-bold tracking-tight text-white drop-shadow-sm">
-                          {profile.name}, {profile.age}
-                        </h3>
-                        {profile.verified && (
-                          <VerificationBadge type="general" showIconOnly />
-                        )}
-                      </div>
-                      <p className="mt-0.5 flex items-center gap-1 text-[11px] text-white/90">
-                        <IconMapPin className="h-3 w-3 text-[var(--accent)] shrink-0" />
-                        <span>{profile.city}, {profile.state}</span>
-                      </p>
-                    </div>
                   </div>
 
-                  {/* Body Content */}
-                  <div className="p-3.5 sm:p-4 flex-1 flex flex-col justify-between space-y-3">
-                    <div className="space-y-2">
-                      {/* Contextual Indicators */}
-                      <div className="flex flex-wrap gap-1">
-                        <span className="rounded-md bg-[var(--primary-light)] text-[var(--primary-deep)] px-2 py-0.5 text-[10px] font-semibold border border-[var(--primary)]/15">
-                          ✓ Matches preferences
-                        </span>
-                        <span className="rounded-md bg-[var(--surface-muted)] text-[var(--muted-strong)] px-2 py-0.5 text-[10px] font-medium border border-[var(--border)]">
+                  {/* 3. Bottom Overlaid Information & Action Controls */}
+                  <div className="absolute inset-x-0 bottom-0 p-4 sm:p-5 text-white z-10 space-y-2">
+                    {/* Name, Age, Verification */}
+                    <div className="flex items-center gap-2">
+                      <h3 className="font-editorial-title text-xl sm:text-2xl font-bold tracking-tight text-white drop-shadow-sm truncate group-hover:text-[#F7DFBA] transition-colors">
+                        {profile.name}, {profile.age}
+                      </h3>
+                      {profile.verified && <VerificationBadge type="general" showIconOnly size="sm" />}
+                    </div>
+
+                    {/* Profession · Education */}
+                    {(profile.profession || profile.education) && (
+                      <p className="text-xs sm:text-sm font-semibold text-white/90 truncate flex items-center gap-1.5">
+                        <IconBriefcase className="h-3.5 w-3.5 text-[#F7DFBA] shrink-0" />
+                        <span>{[profile.profession, profile.education].filter(Boolean).join(' · ')}</span>
+                      </p>
+                    )}
+
+                    {/* Location with Pin */}
+                    {(profile.city || profile.state) && (
+                      <p className="flex items-center gap-1 text-xs text-white/85 truncate">
+                        <IconMapPin className="h-3.5 w-3.5 text-[#D8B28C] shrink-0" />
+                        <span>{[profile.city, profile.state].filter(Boolean).join(', ')}</span>
+                      </p>
+                    )}
+
+                    {/* Contextual Indicators */}
+                    <div className="flex flex-wrap gap-1.5 pt-0.5">
+                      <span className="rounded-full bg-white/15 backdrop-blur-md text-[#FFF2D6] px-2.5 py-0.5 text-[10px] font-semibold border border-white/20 shadow-2xs">
+                        ✓ Matches preferences
+                      </span>
+                      {profile.verified && (
+                        <span className="rounded-full bg-black/30 backdrop-blur-md text-white/85 px-2.5 py-0.5 text-[10px] font-medium border border-white/15">
                           Verified profile
                         </span>
-                      </div>
-
-                      <div className="space-y-1">
-                        <p className="text-xs font-bold text-[var(--foreground)] flex items-center gap-1">
-                          <IconBriefcase className="h-3 w-3 text-[var(--primary)] shrink-0" />
-                          <span className="truncate">{profile.profession}</span>
-                        </p>
-                        <p className="text-[11px] text-[var(--muted-strong)] font-semibold flex items-center gap-1">
-                          <IconSchool className="h-3 w-3 text-[#801835]/75 shrink-0" />
-                          <span className="truncate">{profile.education}</span>
-                        </p>
-                      </div>
-
-                      {profile.about && (
-                        <p className="line-clamp-2 text-[11px] leading-relaxed text-[#2C1D24] bg-[#FFFAF5] p-2 rounded-xl italic border border-[var(--champagne-border)]/80 shadow-2xs">
-                          "{profile.about}"
-                        </p>
                       )}
                     </div>
 
-                    {/* Action Row */}
-                    <div className="pt-2.5 border-t border-[var(--border)] flex items-center gap-2">
-                      <Button
-                        href={`/app/profile?user=${profile.id}`}
-                        variant="secondary"
-                        size="sm"
-                        className="flex-1 h-8.5 text-xs font-bold rounded-xl"
+                    {/* Action Controls Row */}
+                    <div className="pt-2 flex items-center gap-2.5">
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          router.push(`/app/profile?user=${profile.id}`);
+                        }}
+                        className="flex-1 h-10 rounded-full bg-white/95 text-[var(--foreground)] hover:bg-white text-xs font-bold transition shadow-sm flex items-center justify-center active-press"
                       >
                         View Profile
-                      </Button>
+                      </button>
 
-                      <Button
-                        variant={isInterestSent ? 'blush' : 'primary'}
-                        size="sm"
+                      <button
+                        type="button"
                         disabled={isInterestSent}
-                        onClick={() => handleSendInterest(profile.id, profile.name)}
-                        className="flex-1 h-8.5 text-xs font-bold rounded-xl"
-                        leftIcon={<IconHeart className="h-3 w-3" />}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleSendInterest(profile.id, profile.name);
+                        }}
+                        className={cn(
+                          'flex-1 h-10 rounded-full text-xs font-bold transition shadow-sm flex items-center justify-center gap-1.5 active-press',
+                          isInterestSent
+                            ? 'bg-white/20 backdrop-blur-md text-white/80 cursor-not-allowed border border-white/25'
+                            : 'bg-gradient-to-r from-[var(--primary)] to-[var(--primary-deep)] text-white hover:opacity-95 shadow-[0_4px_14px_rgba(125,22,51,0.4)]'
+                        )}
                       >
-                        {isInterestSent ? 'Interest Sent' : 'Send Interest'}
-                      </Button>
+                        <IconHeart className={cn('h-3.5 w-3.5', isInterestSent && 'fill-current')} />
+                        <span>{isInterestSent ? 'Interest Sent' : 'Send Interest'}</span>
+                      </button>
                     </div>
                   </div>
                 </Card>
