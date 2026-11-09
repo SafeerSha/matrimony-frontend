@@ -1230,7 +1230,7 @@ export function ProfileDetail({
                   <p className="text-[11px] font-semibold text-[var(--muted)]">Brothers</p>
                   <p className="text-xs font-bold text-[var(--foreground)] mt-0.5">
                     {profile.brothersCount !== undefined
-                      ? `${profile.brothersCount} (${profile.brothersMarried || 0} m)`
+                      ? `${profile.brothersCount} (${profile.brothersMarried || 0} mrd)`
                       : '0'}
                   </p>
                 </div>
@@ -1238,7 +1238,7 @@ export function ProfileDetail({
                   <p className="text-[11px] font-semibold text-[var(--muted)]">Sisters</p>
                   <p className="text-xs font-bold text-[var(--foreground)] mt-0.5">
                     {profile.sistersCount !== undefined
-                      ? `${profile.sistersCount} (${profile.sistersMarried || 0} m)`
+                      ? `${profile.sistersCount} (${profile.sistersMarried || 0} mrd)`
                       : '0'}
                   </p>
                 </div>
