@@ -63,6 +63,33 @@ function SafeCardImage({ src, alt, name }: { src?: string | null; alt: string; n
   );
 }
 
+const DISTRICT_CLUSTERS: Record<string, string[]> = {
+  kozhikode: ['kozhikode', 'calicut', 'malappuram', 'wayanad', 'kannur'],
+  malappuram: ['malappuram', 'kozhikode', 'calicut', 'palakkad', 'thrissur', 'wayanad'],
+  palakkad: ['palakkad', 'malappuram', 'thrissur', 'coimbatore'],
+  thrissur: ['thrissur', 'ernakulam', 'kochi', 'cochin', 'palakkad', 'malappuram'],
+  ernakulam: ['ernakulam', 'kochi', 'cochin', 'thrissur', 'alappuzha', 'kottayam', 'idukki'],
+  kottayam: ['kottayam', 'ernakulam', 'alappuzha', 'idukki', 'pathanamthitta'],
+  alappuzha: ['alappuzha', 'alleppey', 'ernakulam', 'kottayam', 'kollam', 'pathanamthitta'],
+  idukki: ['idukki', 'ernakulam', 'kottayam', 'pathanamthitta'],
+  pathanamthitta: ['pathanamthitta', 'kollam', 'alappuzha', 'kottayam', 'thiruvananthapuram', 'trivandrum'],
+  kollam: ['kollam', 'quilon', 'thiruvananthapuram', 'trivandrum', 'pathanamthitta', 'alappuzha'],
+  thiruvananthapuram: ['thiruvananthapuram', 'trivandrum', 'kollam'],
+  kannur: ['kannur', 'cannapore', 'kasaragod', 'kozhikode', 'wayanad'],
+  kasaragod: ['kasaragod', 'kannur', 'mangalore'],
+  wayanad: ['wayanad', 'kozhikode', 'kannur', 'malappuram'],
+  bangalore: ['bangalore', 'bengaluru', 'mysore', 'hosur'],
+  bengaluru: ['bengaluru', 'bangalore', 'mysore', 'hosur'],
+};
+
+function formatCityName(city?: string): string {
+  if (!city) return '';
+  return city
+    .split(' ')
+    .map((w) => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase())
+    .join(' ');
+}
+
 export default function DashboardPage() {
   const router = useRouter();
   const [currentUser, setCurrentUser] = useState<any>(null);
@@ -70,6 +97,7 @@ export default function DashboardPage() {
   const [recommendations, setRecommendations] = useState<Profile[]>([]);
   const [newProfiles, setNewProfiles] = useState<Profile[]>([]);
   const [nearbyProfiles, setNearbyProfiles] = useState<Profile[]>([]);
+  const [nearYouType, setNearYouType] = useState<'exact' | 'cluster' | 'fallback'>('fallback');
   const [pendingReceived, setPendingReceived] = useState<Profile[]>([]);
   const [mutualMatchesCount, setMutualMatchesCount] = useState<number>(0);
   const [shortlistedCount, setShortlistedCount] = useState<number>(0);
@@ -117,15 +145,16 @@ export default function DashboardPage() {
           matchesService.getConnections('received'),
           matchesService.getConnections('matches'),
           matchesService.getConnections('shortlisted_by_me'),
-          matchesService.searchProfiles({ limit: 10 }),
+          matchesService.searchProfiles({ limit: 30 }),
         ]);
 
+        let mappedRecommendations: Profile[] = [];
         // Recommendations mapping
         if (recRes.status === 'fulfilled' && recRes.value) {
           const raw = recRes.value;
           const list = Array.isArray(raw) ? raw : (raw as any)?.data || [];
           if (list.length > 0) {
-            const mapped = list.map((u: any, idx: number) => {
+            mappedRecommendations = list.map((u: any, idx: number) => {
               const prof = u.profile || {};
               const photos = u.photos || prof.photos || [];
               const birthDate = prof.dateOfBirth || u.dateOfBirth;
@@ -158,9 +187,12 @@ export default function DashboardPage() {
                 lookingFor: prof.partnerExpectations || '',
               };
             });
-            setRecommendations(mapped);
+            setRecommendations(mappedRecommendations);
           }
         }
+
+        // Deduplication set: top recommendations displayed in Section 4
+        const topRecIds = new Set(mappedRecommendations.slice(0, 3).map((p) => p.id));
 
         // Received interests mapping
         if (receivedRes.status === 'fulfilled' && receivedRes.value) {
@@ -228,13 +260,42 @@ export default function DashboardPage() {
                 lookingFor: prof.partnerExpectations || '',
               };
             });
-            setNewProfiles(mappedSearch);
 
-            // Nearby profiles: match user city if available, otherwise fallback to top entries
-            const nearby = resolvedCity
-              ? mappedSearch.filter((p: Profile) => p.city.toLowerCase().includes(resolvedCity.toLowerCase()))
-              : [];
-            setNearbyProfiles(nearby.length > 0 ? nearby.slice(0, 3) : mappedSearch.slice(0, 3));
+            // 1. Deduplicate Recently Joined rail:
+            // Exclude the top 3 recommended profiles so users see distinct, fresh members
+            const nonRecProfiles = mappedSearch.filter((p) => !topRecIds.has(p.id));
+            setNewProfiles(nonRecProfiles.length >= 3 ? nonRecProfiles : mappedSearch);
+
+            // 2. Location Proximity for "Near You":
+            // Filter candidates excluding profiles already in top recommendations
+            const candidates = mappedSearch.filter((p) => !topRecIds.has(p.id));
+            const pool = candidates.length >= 3 ? candidates : mappedSearch;
+            const cleanCity = (resolvedCity || '').trim().toLowerCase();
+
+            if (cleanCity) {
+              const exactMatches = pool.filter(
+                (p) => p.city && p.city.toLowerCase().includes(cleanCity)
+              );
+              const cluster = DISTRICT_CLUSTERS[cleanCity] || [cleanCity];
+              const clusterMatches = pool.filter(
+                (p) => p.city && cluster.some((c) => p.city.toLowerCase().includes(c))
+              );
+
+              if (exactMatches.length > 0) {
+                setNearbyProfiles(exactMatches.slice(0, 3));
+                setNearYouType('exact');
+              } else if (clusterMatches.length > 0) {
+                setNearbyProfiles(clusterMatches.slice(0, 3));
+                setNearYouType('cluster');
+              } else {
+                // Honest regional fallback: no profiles in city or neighboring cluster
+                setNearbyProfiles(pool.slice(0, 3));
+                setNearYouType('fallback');
+              }
+            } else {
+              setNearbyProfiles(pool.slice(0, 3));
+              setNearYouType('fallback');
+            }
           }
         }
       } catch (err) {
@@ -321,6 +382,7 @@ export default function DashboardPage() {
   const displayName = currentUser?.firstName || currentUser?.name || '';
   const profileCompletion = userProfile?.completionRate || 78;
   const userCity = userProfile?.profile?.city || userProfile?.city || '';
+  const userState = userProfile?.profile?.state || userProfile?.state || 'Kerala';
 
   return (
     <div className="w-full max-w-full min-w-0 space-y-3 sm:space-y-4 pb-6 overflow-x-hidden">
@@ -869,8 +931,24 @@ export default function DashboardPage() {
       <section className="space-y-2">
         <SectionHeader
           eyebrow="Near You"
-          title={userCity ? `Members near ${userCity}` : "Members in your region"}
-          description="Explore matches close to your hometown for seamless family connections."
+          title={
+            nearYouType === 'exact'
+              ? `Members in ${formatCityName(userCity)}`
+              : nearYouType === 'cluster'
+              ? `Members near ${formatCityName(userCity)}`
+              : userCity
+              ? `Members across ${userState}`
+              : 'Members in your region'
+          }
+          description={
+            nearYouType === 'exact'
+              ? `Explore matches living in ${formatCityName(userCity)} for convenient family meetings.`
+              : nearYouType === 'cluster'
+              ? `Matches from neighboring districts around ${formatCityName(userCity)}.`
+              : userCity
+              ? `No members registered in ${formatCityName(userCity)} yet — showing verified members across ${userState}.`
+              : 'Explore matches close to your hometown for seamless family connections.'
+          }
           action={
             <Link
               href="/app/discover"
