@@ -942,39 +942,37 @@ export function ProfileDetail({
               ) : (
                 <>
                   <div className="flex items-center gap-2.5 sm:gap-3">
-                    {/* Send / Cancel Interest Button */}
-                    <div className="flex-1 flex items-center gap-2 min-w-0">
-                      <button
-                        type="button"
-                        disabled={isInterestSent}
-                        onClick={handleSendInterest}
-                        className={cn(
-                          'flex-1 min-w-0 font-bold shadow-md rounded-2xl text-xs sm:text-sm h-12 sm:h-13 active:scale-[0.985] px-4 sm:px-6 flex items-center justify-center gap-2 transition-all',
-                          isInterestSent
-                            ? 'bg-gradient-to-r from-[#FDF2F4] to-[#FCE7EB] text-[var(--blush-deep)] border border-[#F7C6CE]'
-                            : 'bg-gradient-to-r from-[#9E1D3B] via-[var(--primary)] to-[var(--primary-deep)] text-white hover:brightness-105'
-                        )}
-                      >
-                        {isInterestSent ? (
-                          <IconCheck className="h-4.5 w-4.5 shrink-0" />
-                        ) : (
-                          <IconHeart className="h-4.5 w-4.5 fill-white shrink-0" />
-                        )}
-                        <span className="truncate">{isInterestSent ? 'Interest Sent' : 'Send Interest'}</span>
-                      </button>
-
-                      {isInterestSent && (
-                        <button
-                          type="button"
-                          onClick={handleCancelInterest}
-                          title="Withdraw sent interest"
-                          className="h-12 sm:h-13 px-3.5 rounded-2xl font-bold text-xs border border-rose-200 bg-rose-50 text-rose-700 hover:bg-rose-100 transition active:scale-[0.985] flex items-center gap-1.5 shrink-0 shadow-2xs"
-                        >
-                          <IconX className="h-4 w-4" />
-                          <span>Cancel</span>
-                        </button>
+                    {/* Send / Cancel Interest Unified Button */}
+                    <button
+                      type="button"
+                      onClick={isInterestSent ? handleCancelInterest : handleSendInterest}
+                      title={isInterestSent ? 'Click to cancel interest request' : 'Send connection interest'}
+                      className={cn(
+                        'group/interest flex-1 min-w-0 font-bold shadow-md rounded-2xl text-xs sm:text-sm h-12 sm:h-13 active:scale-[0.985] px-4 sm:px-6 flex items-center justify-center gap-2 transition-all cursor-pointer',
+                        isInterestSent
+                          ? 'bg-[#FDF2F4] hover:bg-rose-100/90 text-[#9E1D3B] hover:text-rose-700 border border-[#F7C6CE] hover:border-rose-300'
+                          : 'bg-gradient-to-r from-[#9E1D3B] via-[var(--primary)] to-[var(--primary-deep)] text-white hover:brightness-105'
                       )}
-                    </div>
+                    >
+                      {isInterestSent ? (
+                        <>
+                          <span className="inline-flex items-center gap-1.5 group-hover/interest:hidden">
+                            <IconCheck className="h-4.5 w-4.5 shrink-0" />
+                            <span className="truncate">Interest Sent</span>
+                            <span className="text-[11px] text-[#9E1D3B]/75 font-medium ml-0.5">(Cancel)</span>
+                          </span>
+                          <span className="hidden items-center gap-1.5 group-hover/interest:inline-flex text-rose-700">
+                            <IconX className="h-4.5 w-4.5 shrink-0" />
+                            <span className="truncate">Cancel Interest</span>
+                          </span>
+                        </>
+                      ) : (
+                        <>
+                          <IconHeart className="h-4.5 w-4.5 fill-white shrink-0" />
+                          <span className="truncate">Send Interest</span>
+                        </>
+                      )}
+                    </button>
 
                     {/* Favorite Button */}
                     <button
@@ -1530,11 +1528,19 @@ export function ProfileDetail({
                 {isInterestSent ? (
                   <button
                     type="button"
-                    disabled
-                    className="flex-1 min-w-0 font-bold rounded-full text-xs sm:text-sm h-11 border border-[var(--champagne-border)] bg-white text-[var(--primary)] shadow-2xs select-none cursor-default px-4 flex items-center justify-center gap-2"
+                    onClick={handleCancelInterest}
+                    title="Click to cancel interest request"
+                    className="group/interest flex-1 min-w-0 font-bold rounded-full text-xs sm:text-sm h-11 border border-[#F7C6CE] bg-[#FDF2F4] hover:bg-rose-100 text-[#9E1D3B] hover:text-rose-700 shadow-2xs cursor-pointer px-4 flex items-center justify-center gap-2 transition-all active:scale-[0.985]"
                   >
-                    <IconCheck className="h-4.5 w-4.5 stroke-[2.5] text-[var(--primary)] shrink-0" />
-                    <span className="truncate">Interest Sent</span>
+                    <span className="inline-flex items-center gap-1.5 group-hover/interest:hidden">
+                      <IconCheck className="h-4 w-4 stroke-[2.5] text-[#9E1D3B] shrink-0" />
+                      <span className="truncate">Interest Sent</span>
+                      <span className="text-[10px] text-[#9E1D3B]/75 font-medium">(Cancel)</span>
+                    </span>
+                    <span className="hidden items-center gap-1.5 group-hover/interest:inline-flex text-rose-700">
+                      <IconX className="h-4 w-4 shrink-0" />
+                      <span className="truncate">Cancel Interest</span>
+                    </span>
                   </button>
                 ) : (
                   <button
