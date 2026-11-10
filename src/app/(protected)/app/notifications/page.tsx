@@ -16,6 +16,7 @@ import {
   IconClock,
   IconExternalLink,
   IconUsers,
+  IconCrown,
 } from '@tabler/icons-react';
 import { PageLoader } from '@/components/ui/page-loader';
 import { Avatar } from '@/components/ui/avatar';
@@ -127,7 +128,21 @@ export default function NotificationsPage() {
                 }
               : undefined;
 
-            if (n.type.includes('INTEREST')) {
+            if (n.type.includes('PAYMENT') || n.type.includes('SUBSCRIPTION')) {
+              type = 'SYSTEM';
+              if (n.type === 'PAYMENT_SUCCESS') {
+                title = 'Payment Successful 🎉';
+              } else if (n.type === 'PAYMENT_FAILED') {
+                title = 'Payment Unsuccessful';
+              } else if (n.type === 'PAYMENT_PENDING') {
+                title = 'Payment Confirmation Pending';
+              } else {
+                title = 'Membership Update';
+              }
+              text = n.content;
+              link = '/app/subscription?tab=transactions';
+              actionLabel = 'View Transactions';
+            } else if (n.type.includes('INTEREST')) {
               type = 'INTEREST';
               title = n.sender ? `${n.sender.name} sent you an interest` : 'New Interest Received';
               text = n.sender?.city ? `Based in ${n.sender.city}` : n.content;
