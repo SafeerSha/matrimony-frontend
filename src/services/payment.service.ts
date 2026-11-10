@@ -13,7 +13,7 @@ export interface CreateOrderResponse {
 
 export interface VerifyOrderResponse {
   orderId: string;
-  paymentStatus: 'SUCCESS' | 'PENDING' | 'FAILED';
+  paymentStatus: 'SUCCESS' | 'PENDING' | 'FAILED' | 'USER_DROPPED';
   paymentId?: string;
   subscription?: UserSubscriptionStatus;
   message?: string;
