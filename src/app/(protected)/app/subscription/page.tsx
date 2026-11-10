@@ -77,29 +77,32 @@ export default function SubscriptionPage() {
       if (verification.paymentStatus === 'SUCCESS') {
         await refreshSubscription();
         setPendingPayment(null);
-        setStatusModal({
+        setStatusModal((prev) => ({
+          ...prev,
           isOpen: true,
           status: 'SUCCESS',
           orderId,
-          planName: displayTierName,
-        });
+          planName: prev.planName || displayTierName,
+        }));
       } else if (verification.paymentStatus === 'USER_DROPPED') {
         setPendingPayment(null);
-        setStatusModal({
+        setStatusModal((prev) => ({
+          ...prev,
           isOpen: true,
           status: 'USER_DROPPED',
           orderId,
-          planName: displayTierName,
-        });
+          planName: prev.planName || displayTierName,
+        }));
       } else if (verification.paymentStatus === 'FAILED') {
         setPendingPayment(null);
-        setStatusModal({
+        setStatusModal((prev) => ({
+          ...prev,
           isOpen: true,
           status: 'FAILED',
           orderId,
-          planName: displayTierName,
+          planName: prev.planName || displayTierName,
           message: verification.message,
-        });
+        }));
       } else {
         toast.info('Still Processing', {
           description: 'Your bank has not completed processing yet. Please check back in a couple of minutes.',
@@ -309,6 +312,7 @@ export default function SubscriptionPage() {
           planName,
           amount: order.amount,
           message: verification.message,
+          tierId,
         });
       } else {
         setPendingPayment(null);
