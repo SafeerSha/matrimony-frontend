@@ -238,6 +238,14 @@ export async function apiFetch<T>(
         rawMessage.includes("ThrottlerException") ||
         rawMessage.toLowerCase().includes("too many requests")
       ) {
+        // If the backend sent an exact countdown message (e.g. "Too many attempts. For your security, please wait 35 seconds...")
+        if (
+          rawMessage &&
+          !rawMessage.includes("ThrottlerException") &&
+          (rawMessage.toLowerCase().includes("wait") || rawMessage.toLowerCase().includes("second"))
+        ) {
+          return rawMessage;
+        }
         return "Too many requests. For your security, please wait a minute before trying again.";
       }
 

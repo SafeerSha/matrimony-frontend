@@ -76,12 +76,6 @@ export default function LandingPage() {
           <HeroCommunityPill orientation="horizontal" variant="navbar" clickable={false} className="hidden lg:flex mr-1 xl:mr-2" />
 
           <a
-            href="#pricing"
-            className="focus-ring hidden sm:inline-flex rounded-xl bg-white/70 backdrop-blur-md border border-[var(--border)] px-3.5 py-2 text-xs sm:text-sm font-semibold text-[var(--foreground)] hover:text-[var(--primary)] hover:bg-white/95 shadow-sm transition"
-          >
-            Plans (INR)
-          </a>
-          <a
             href="#contact"
             className="focus-ring hidden sm:inline-flex rounded-xl bg-white/70 backdrop-blur-md border border-[var(--border)] px-3.5 py-2 text-xs sm:text-sm font-semibold text-[var(--foreground)] hover:text-[var(--primary)] hover:bg-white/95 shadow-sm transition"
           >
