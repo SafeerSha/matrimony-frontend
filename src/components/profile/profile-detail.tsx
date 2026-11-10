@@ -1128,38 +1128,45 @@ export function ProfileDetail({
       {/* 3. CONTEXTUAL PROFILE INSIGHTS: "Why You May Connect"     */}
       {/* ======================================================== */}
       {previewHighlights && previewHighlights.length > 0 && (
-        <Card
-          variant="champagne"
-          className="rounded-3xl border border-[#EAD8C7] bg-gradient-to-br from-[#FAF3EC] via-[#FFF9F6] to-[#FFF5F7] p-6 sm:p-7 shadow-[var(--elevation-card)]"
-        >
-          <div className="flex items-center gap-3">
-            <div className="grid h-10 w-10 place-items-center rounded-2xl bg-[var(--primary)] text-white shadow-xs">
-              <IconShieldCheck className="h-5 w-5 fill-current" />
-            </div>
+        <Card className="p-5 sm:p-6 rounded-3xl">
+          <div className="flex items-center gap-2.5 pb-3.5 border-b border-[var(--border)]">
+            <IconCircleCheck className="h-5 w-5 text-emerald-600" />
             <div>
-              <h2 className="font-editorial-title text-xl sm:text-2xl font-bold text-[#5C1027]">
-                {isPreview ? `Why candidates may connect with ${profile.name.split(' ')[0]}` : `Why you may connect with ${profile.name.split(' ')[0]}`}
+              <h2 className="font-editorial-title text-xl font-bold text-[var(--foreground)]">
+                {isPreview
+                  ? `Why candidates may connect with ${profile.name.split(' ')[0]}`
+                  : `Why you may connect with ${profile.name.split(' ')[0]}`}
               </h2>
-              <p className="text-xs text-[var(--muted-strong)]">
-                Contextual profile alignment based on your partner preferences and lifestyle criteria.
+              <p className="text-xs text-[var(--muted)]">
+                Key alignment based on your partner and lifestyle preferences
               </p>
             </div>
           </div>
 
-          <div className="mt-5 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5">
+          <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
             {previewHighlights.map((hl: any, idx: number) => (
-              <div key={idx} className="rounded-2xl bg-white/90 p-4 border border-[#EAD8C7]/70 backdrop-blur-xs flex flex-col justify-between">
-                <div>
-                  <p className="text-xs font-bold text-[var(--primary)] flex items-center gap-1.5">
-                    <span>✓ {hl.title}</span>
-                  </p>
-                  <p className="mt-1 text-xs text-[var(--foreground)] font-semibold truncate">
-                    {hl.value}
-                  </p>
+              <div
+                key={idx}
+                className="rounded-2xl bg-[var(--surface-muted)]/70 p-3.5 border border-[var(--border)] flex items-start gap-3"
+              >
+                <div className="mt-0.5 grid h-5 w-5 shrink-0 place-items-center rounded-full bg-emerald-100 text-emerald-800 text-[11px] font-bold">
+                  ✓
                 </div>
-                <p className="mt-1.5 text-[11px] text-[var(--muted)] leading-relaxed">
-                  {hl.description}
-                </p>
+                <div className="min-w-0">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className="text-xs font-bold text-[var(--foreground)]">
+                      {hl.title}
+                    </span>
+                    <span className="text-xs font-semibold text-[var(--primary)] bg-[var(--primary)]/10 px-2 py-0.5 rounded-full">
+                      {hl.value}
+                    </span>
+                  </div>
+                  {hl.description && (
+                    <p className="text-xs text-[var(--muted)] mt-1 leading-relaxed">
+                      {hl.description}
+                    </p>
+                  )}
+                </div>
               </div>
             ))}
           </div>
