@@ -843,7 +843,6 @@ export function MyProfile({ initialPreview = false }: { initialPreview?: boolean
                 src={displayImage}
                 name={displayName}
                 size="xl"
-                className="h-20 w-20 sm:h-24 sm:w-24 ring-4 ring-[var(--surface-muted)] shadow-md"
               />
             </div>
 
