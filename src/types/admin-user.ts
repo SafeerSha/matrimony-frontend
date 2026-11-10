@@ -15,6 +15,7 @@ export interface AdminUserListItem {
   lastName: string | null;
   profileId: string | null;
   lastActiveAt: string;
+  isOnline?: boolean;
   createdAt: string;
   profile?: {
     id: string;

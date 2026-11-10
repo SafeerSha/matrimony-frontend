@@ -28,6 +28,7 @@ import { Avatar } from '@/components/ui/avatar';
 import { Modal } from '@/components/ui/modal';
 import { cn } from '@/lib/cn';
 import { adminService, type AdminPlanItem } from '@/services/admin.service';
+import { chatService } from '@/services/chat.service';
 import type { AdminUserListItem, AdminUserQueryFilters } from '@/types/admin-user';
 import { toast } from '@/lib/toast';
 import { ModernSelect, type ModernSelectOption } from '@/components/ui/modern-select';
@@ -145,6 +146,7 @@ interface AssignPlanModalProps {
   plans: AdminPlanItem[];
   onClose: () => void;
   onPlanAssigned: (updatedUser: AdminUserListItem) => void;
+  isOnline?: boolean;
 }
 
 function AssignPlanModal({
@@ -153,6 +155,7 @@ function AssignPlanModal({
   plans,
   onClose,
   onPlanAssigned,
+  isOnline,
 }: AssignPlanModalProps) {
   const activePlans = useMemo(() => {
     const list = plans.length > 0 ? plans.filter((p) => p.isActive) : DEFAULT_PLANS;
@@ -254,6 +257,7 @@ function AssignPlanModal({
             src={user.photos?.[0]?.url ?? ''}
             name={displayName}
             size="md"
+            online={isOnline ?? user.isOnline ?? false}
             className="border border-[var(--border)] shrink-0"
           />
           <div className="flex-1 min-w-0">
@@ -629,9 +633,31 @@ export function UserManagement() {
   const [actionLoadingId, setActionLoadingId] = useState<string | null>(null);
   const [pendingConfirm, setPendingConfirm] = useState<PendingConfirm | null>(null);
 
+  // Real-time live presence tracking
+  const [livePresence, setLivePresence] = useState<Record<string, boolean>>({});
+
+  // Subscribe to live WebSocket presence updates
+  useEffect(() => {
+    chatService.connect();
+    const cleanup = chatService.onPresence((data) => {
+      if (data?.userId) {
+        setLivePresence((prev) => ({
+          ...prev,
+          [data.userId]: Boolean(data.isOnline),
+        }));
+      }
+    });
+    return cleanup;
+  }, []);
+
   // Manual Subscription Plan Assignment state
   const [availablePlans, setAvailablePlans] = useState<AdminPlanItem[]>([]);
   const [selectedUserForPlan, setSelectedUserForPlan] = useState<AdminUserListItem | null>(null);
+
+  // Real-time count of active online users in current list
+  const onlineCount = useMemo(() => {
+    return users.filter((u) => livePresence[u.id] ?? u.isOnline).length;
+  }, [users, livePresence]);
 
   // Load plans on mount so modal is instant
   useEffect(() => {
@@ -692,6 +718,16 @@ export function UserManagement() {
         setUsers(res.data ?? []);
         setTotalPages(res.meta?.totalPages ?? 1);
         setTotalCount(res.meta?.total ?? 0);
+
+        if (Array.isArray(res.data)) {
+          const initialPresence: Record<string, boolean> = {};
+          res.data.forEach((u) => {
+            if (typeof u.isOnline === 'boolean') {
+              initialPresence[u.id] = u.isOnline;
+            }
+          });
+          setLivePresence((prev) => ({ ...initialPresence, ...prev }));
+        }
       } catch (err: unknown) {
         if (err instanceof Error && err.name === 'AbortError') return;
         const message = err instanceof Error ? err.message : 'Failed to fetch users';
@@ -807,6 +843,7 @@ export function UserManagement() {
         plans={availablePlans}
         onClose={() => setSelectedUserForPlan(null)}
         onPlanAssigned={handlePlanAssigned}
+        isOnline={selectedUserForPlan ? (livePresence[selectedUserForPlan.id] ?? selectedUserForPlan.isOnline ?? false) : false}
       />
 
       <div className="space-y-6 animate-in fade-in slide-in-from-bottom-3 duration-300">
@@ -819,6 +856,12 @@ export function UserManagement() {
             </p>
           </div>
           <div className="flex items-center gap-2">
+            {onlineCount > 0 && (
+              <Badge tone="default" size="md" className="px-2.5 py-1 font-semibold text-xs bg-emerald-50 text-emerald-800 border-emerald-200/80 flex items-center gap-1.5">
+                <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
+                <span>{onlineCount} Online</span>
+              </Badge>
+            )}
             <Badge tone="default" size="md" className="px-3 py-1 font-semibold text-xs">
               {totalCount} Total
             </Badge>
@@ -972,6 +1015,7 @@ export function UserManagement() {
                   const isPaid = u.subscriptionTier === 'PAID';
                   const isBlocked = u.isBanned;
                   const isActing = actionLoadingId === u.id;
+                  const isOnline = livePresence[u.id] ?? u.isOnline ?? false;
 
                   return (
                     <div
@@ -986,6 +1030,7 @@ export function UserManagement() {
                             src={u.photos?.[0]?.url ?? ''}
                             name={displayName}
                             size="md"
+                            online={isOnline}
                             className="border border-[var(--border)] shrink-0"
                           />
                           <div className="min-w-0">
@@ -993,6 +1038,15 @@ export function UserManagement() {
                               <span className="font-bold text-sm text-[var(--foreground)] truncate">
                                 {displayName}
                               </span>
+                              {isOnline && (
+                                <span
+                                  className="inline-flex items-center gap-1 text-[10px] font-semibold text-emerald-700 bg-emerald-50 border border-emerald-200/80 rounded-full px-1.5 py-0.2"
+                                  title="User is currently connected & active"
+                                >
+                                  <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                                  Online
+                                </span>
+                              )}
                               {u.role === 'ADMIN' && (
                                 <Badge tone="accent" size="sm" className="text-[10px] py-0 px-1 font-semibold">
                                   Admin
@@ -1160,6 +1214,7 @@ export function UserManagement() {
                       const isPaid = u.subscriptionTier === 'PAID';
                       const isBlocked = u.isBanned;
                       const isActing = actionLoadingId === u.id;
+                      const isOnline = livePresence[u.id] ?? u.isOnline ?? false;
 
                       return (
                         <tr
@@ -1174,6 +1229,7 @@ export function UserManagement() {
                                 src={u.photos?.[0]?.url ?? ''}
                                 name={displayName}
                                 size="md"
+                                online={isOnline}
                                 className="border border-[var(--border)] shrink-0"
                               />
                               <div className="min-w-0">
@@ -1181,6 +1237,15 @@ export function UserManagement() {
                                   <span className="font-semibold text-[var(--foreground)] truncate">
                                     {displayName}
                                   </span>
+                                  {isOnline && (
+                                    <span
+                                      className="inline-flex items-center gap-1 text-[10px] font-semibold text-emerald-700 bg-emerald-50 border border-emerald-200/80 rounded-full px-1.5 py-0.2"
+                                      title="User is currently connected & active"
+                                    >
+                                      <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                                      Online
+                                    </span>
+                                  )}
                                   {u.role === 'ADMIN' && (
                                     <Badge tone="accent" size="sm" className="text-[10px] py-0 px-1">
                                       Admin
