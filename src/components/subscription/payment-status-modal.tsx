@@ -14,9 +14,11 @@ import {
   IconHeartHandshake,
   IconCheck,
   IconLoader2,
+  IconCopy,
 } from '@tabler/icons-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/cn';
+import { toast } from '@/lib/toast';
 
 export type PaymentModalStatus = 'SUCCESS' | 'FAILED' | 'PENDING' | 'USER_DROPPED' | null;
 
@@ -51,6 +53,7 @@ export function PaymentStatusModal({
   const [isPaused, setIsPaused] = useState(false);
   const [isChecking, setIsChecking] = useState(false);
   const [timeLeft, setTimeLeft] = useState<number>(0);
+  const [copied, setCopied] = useState(false);
   const modalRef = useRef<HTMLDivElement>(null);
 
   // Default auto-close durations:
@@ -132,6 +135,31 @@ export function PaymentStatusModal({
       await onCheckStatus();
     } finally {
       setIsChecking(false);
+    }
+  };
+
+  const handleCopyOrderId = async () => {
+    if (!orderId) return;
+    try {
+      if (navigator?.clipboard?.writeText) {
+        await navigator.clipboard.writeText(orderId);
+      } else {
+        const textArea = document.createElement('textarea');
+        textArea.value = orderId;
+        textArea.style.position = 'fixed';
+        textArea.style.opacity = '0';
+        document.body.appendChild(textArea);
+        textArea.focus();
+        textArea.select();
+        document.execCommand('copy');
+        document.body.removeChild(textArea);
+      }
+      setCopied(true);
+      toast.success('Order reference copied to clipboard');
+      setTimeout(() => setCopied(false), 2200);
+    } catch (e) {
+      console.error('Failed to copy orderId:', e);
+      toast.info(`Order ID: ${orderId}`);
     }
   };
 
@@ -439,11 +467,32 @@ export function PaymentStatusModal({
                 </div>
               )}
               {orderId && (
-                <div className="flex items-center justify-between text-stone-600">
-                  <span>Order Reference:</span>
-                  <span className="font-mono text-[11px] font-semibold text-stone-700 bg-white px-2 py-0.5 rounded-md border border-stone-200/80">
-                    {orderId.length > 24 ? `${orderId.slice(0, 10)}...${orderId.slice(-8)}` : orderId}
-                  </span>
+                <div className="flex items-center justify-between text-stone-600 gap-2">
+                  <span className="shrink-0 text-xs">Order Reference:</span>
+                  <button
+                    type="button"
+                    onClick={handleCopyOrderId}
+                    title="Click to copy full Order ID"
+                    aria-label="Copy Order Reference"
+                    className={cn(
+                      'group font-mono text-[11px] font-semibold px-2 py-1 rounded-md border transition-all flex items-center gap-1.5 cursor-pointer active:scale-95 select-all focus:outline-none focus:ring-2 focus:ring-[var(--primary)]/30',
+                      copied
+                        ? 'bg-emerald-50 text-emerald-700 border-emerald-300 shadow-xs'
+                        : 'bg-white text-stone-700 border-stone-200/90 hover:bg-stone-50 hover:border-stone-400 shadow-2xs'
+                    )}
+                  >
+                    <span>
+                      {orderId.length > 24 ? `${orderId.slice(0, 10)}...${orderId.slice(-8)}` : orderId}
+                    </span>
+                    {copied ? (
+                      <span className="flex items-center gap-0.5 text-[10px] text-emerald-600 font-bold">
+                        <IconCheck className="h-3 w-3 stroke-[2.5]" />
+                        <span>Copied!</span>
+                      </span>
+                    ) : (
+                      <IconCopy className="h-3 w-3 text-stone-400 group-hover:text-stone-700 transition-colors shrink-0" />
+                    )}
+                  </button>
                 </div>
               )}
             </div>
