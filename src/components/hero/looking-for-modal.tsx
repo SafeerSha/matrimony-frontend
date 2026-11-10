@@ -285,7 +285,7 @@ export function LookingForModal({
       cleanEmail = email.trim().toLowerCase();
       const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
       if (!cleanEmail || !emailRegex.test(cleanEmail)) {
-        setError("Please enter a valid email address (e.g. name@gmail.com)");
+        setError("Please enter a valid email address (e.g. name@email.com)");
         return;
       }
     } else {

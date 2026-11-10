@@ -144,6 +144,16 @@ function SettingsContent() {
   const [emailError, setEmailError] = useState<string | null>(null);
   const [emailResendTimer, setEmailResendTimer] = useState(0);
 
+  // Registered Mobile Modal State
+  const [isPhoneModalOpen, setIsPhoneModalOpen] = useState(false);
+  const [phoneModalStep, setPhoneModalStep] = useState<'input' | 'otp'>('input');
+  const [phoneInput, setPhoneInput] = useState('');
+  const [phoneOtp, setPhoneOtp] = useState('');
+  const [isSendingPhoneOtp, setIsSendingPhoneOtp] = useState(false);
+  const [isSavingPhone, setIsSavingPhone] = useState(false);
+  const [phoneError, setPhoneError] = useState<string | null>(null);
+  const [phoneResendTimer, setPhoneResendTimer] = useState(0);
+
   // Timer effect for OTP resend countdown
   useEffect(() => {
     if (emailResendTimer > 0) {
@@ -153,6 +163,15 @@ function SettingsContent() {
       return () => clearInterval(timer);
     }
   }, [emailResendTimer]);
+
+  useEffect(() => {
+    if (phoneResendTimer > 0) {
+      const timer = setInterval(() => {
+        setPhoneResendTimer((prev) => (prev > 0 ? prev - 1 : 0));
+      }, 1000);
+      return () => clearInterval(timer);
+    }
+  }, [phoneResendTimer]);
 
   const handleOpenEmailModal = () => {
     setEmailInput('');
@@ -167,7 +186,7 @@ function SettingsContent() {
     const cleanEmail = emailInput.trim().toLowerCase();
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!cleanEmail || !emailRegex.test(cleanEmail)) {
-      setEmailError('Please enter a valid email address (e.g. name@gmail.com).');
+      setEmailError('Please enter a valid email address (e.g. name@email.com).');
       return;
     }
     const currentRegisteredEmail = (currentUser?.email || currentUser?.user?.email || '').trim().toLowerCase();
@@ -248,6 +267,109 @@ function SettingsContent() {
       });
     } finally {
       setIsSavingEmail(false);
+    }
+  };
+
+  const handleOpenPhoneModal = () => {
+    setPhoneInput('');
+    setPhoneOtp('');
+    setPhoneModalStep('input');
+    setPhoneError(null);
+    setPhoneResendTimer(0);
+    setIsPhoneModalOpen(true);
+  };
+
+  const handleSendPhoneOtp = async () => {
+    const rawDigits = phoneInput.trim().replace(/\D/g, '');
+    const cleanDigits = rawDigits.startsWith('91') && rawDigits.length > 10 ? rawDigits.slice(2) : rawDigits;
+    if (!cleanDigits || cleanDigits.length !== 10 || !/^[6-9]\d{9}$/.test(cleanDigits)) {
+      setPhoneError('Please enter a valid 10-digit mobile number (e.g. 9876543210).');
+      return;
+    }
+    const currentRegisteredPhone = (currentUser?.phone || (currentUser as any)?.user?.phone || '').replace(/\D/g, '');
+    const current10 = currentRegisteredPhone.startsWith('91') && currentRegisteredPhone.length > 10 ? currentRegisteredPhone.slice(2) : currentRegisteredPhone;
+    if (current10 && cleanDigits === current10) {
+      setPhoneError('New mobile number must be different from your current registered mobile number.');
+      return;
+    }
+
+    const cleanPhone = `+91${cleanDigits}`;
+    setIsSendingPhoneOtp(true);
+    setPhoneError(null);
+    try {
+      await authService.sendOtp({ phone: cleanPhone, purpose: 'change_phone' });
+      setPhoneModalStep('otp');
+      setPhoneResendTimer(60);
+      toast.info('Verification Code Sent', {
+        description: `We've sent a 6-digit verification code via SMS to ${cleanPhone}`,
+      });
+    } catch (err: any) {
+      const msg = err?.message || 'Failed to send verification code. Please check the mobile number and try again.';
+      setPhoneError(msg);
+      toast.error('Send Failed', {
+        description: msg,
+      });
+    } finally {
+      setIsSendingPhoneOtp(false);
+    }
+  };
+
+  const handleResendPhoneOtp = async () => {
+    if (phoneResendTimer > 0 || isSendingPhoneOtp) return;
+    const rawDigits = phoneInput.trim().replace(/\D/g, '');
+    const cleanDigits = rawDigits.startsWith('91') && rawDigits.length > 10 ? rawDigits.slice(2) : rawDigits;
+    const cleanPhone = `+91${cleanDigits}`;
+    setIsSendingPhoneOtp(true);
+    setPhoneError(null);
+    try {
+      await authService.sendOtp({ phone: cleanPhone, purpose: 'change_phone' });
+      setPhoneResendTimer(60);
+      toast.info('Code Resent', {
+        description: `A new verification code was sent to ${cleanPhone}`,
+      });
+    } catch (err: any) {
+      const msg = err?.message || 'Failed to resend verification code.';
+      setPhoneError(msg);
+      toast.error('Resend Failed', {
+        description: msg,
+      });
+    } finally {
+      setIsSendingPhoneOtp(false);
+    }
+  };
+
+  const handleVerifyAndUpdatePhone = async (codeToVerify?: string) => {
+    const rawDigits = phoneInput.trim().replace(/\D/g, '');
+    const cleanDigits = rawDigits.startsWith('91') && rawDigits.length > 10 ? rawDigits.slice(2) : rawDigits;
+    const cleanPhone = `+91${cleanDigits}`;
+    const cleanOtp = (codeToVerify ?? phoneOtp).trim();
+    if (!cleanOtp || cleanOtp.length !== 6) {
+      setPhoneError('Please enter the 6-digit verification code.');
+      return;
+    }
+
+    setIsSavingPhone(true);
+    setPhoneError(null);
+    try {
+      await profileService.updateProfile('me', { phone: cleanPhone, phoneOtp: cleanOtp });
+      setCurrentUser((prev: any) => ({
+        ...prev,
+        phone: cleanPhone,
+        isPhoneVerified: true,
+        user: { ...(prev?.user || {}), phone: cleanPhone, isPhoneVerified: true },
+      }));
+      toast.success('Mobile Number Updated', {
+        description: `Your registered mobile number has been successfully updated to ${cleanPhone}.`,
+      });
+      setIsPhoneModalOpen(false);
+    } catch (err: any) {
+      const msg = err?.message || 'Invalid or expired verification code. Please check and try again.';
+      setPhoneError(msg);
+      toast.error('Verification Failed', {
+        description: msg,
+      });
+    } finally {
+      setIsSavingPhone(false);
     }
   };
 
@@ -595,7 +717,7 @@ function SettingsContent() {
                         <IconMail className="h-5 w-5" />
                       </div>
                       <div className="min-w-0 flex-1">
-                        <h4 className="text-xs font-bold text-[#211B1E]">Registered Email (Gmail)</h4>
+                        <h4 className="text-xs font-bold text-[#211B1E]">Registered Email</h4>
                         <p className="text-[11px] text-[#766B6F] mt-0.5">
                           Used for logging in, verification codes, and critical account alerts
                         </p>
@@ -609,6 +731,35 @@ function SettingsContent() {
                         variant="secondary"
                         size="xs"
                         onClick={handleOpenEmailModal}
+                        className="rounded-xl text-xs font-bold gap-1 shadow-2xs cursor-pointer"
+                      >
+                        <IconEdit className="h-3.5 w-3.5 text-[var(--primary)]" />
+                        <span>Change</span>
+                      </Button>
+                    </div>
+                  </div>
+
+                  {/* Row: Mobile Number (Dynamic & Editable) */}
+                  <div className="p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4">
+                    <div className="flex items-center gap-3.5 min-w-0 flex-1">
+                      <div className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-[#FAF3EC] text-[#7A1835]">
+                        <IconPhone className="h-5 w-5" />
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <h4 className="text-xs font-bold text-[#211B1E]">Registered Mobile Number</h4>
+                        <p className="text-[11px] text-[#766B6F] mt-0.5">
+                          Used for SMS verification, login OTPs, and instant match notifications
+                        </p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2 self-start sm:self-auto shrink-0">
+                      <span className="text-xs font-semibold text-[#211B1E] bg-[#FFF9F6] border border-[#E9DDE0] px-3 py-1.5 rounded-xl break-all max-w-[220px] truncate">
+                        {currentUser?.phone || (currentUser as any)?.user?.phone || 'Not set'}
+                      </span>
+                      <Button
+                        variant="secondary"
+                        size="xs"
+                        onClick={handleOpenPhoneModal}
                         className="rounded-xl text-xs font-bold gap-1 shadow-2xs cursor-pointer"
                       >
                         <IconEdit className="h-3.5 w-3.5 text-[var(--primary)]" />
@@ -1164,7 +1315,7 @@ function SettingsContent() {
                         </div>
                         <div className="min-w-0 flex-1">
                           <span className="text-[11px] sm:text-xs font-bold text-[#211B1E] block truncate">
-                            Registered Email (Gmail)
+                            Registered Email
                           </span>
                           {isEmailVerified ? (
                             <span className="text-[9.5px] sm:text-[10px] text-emerald-700 font-semibold flex items-center gap-1">
@@ -1664,7 +1815,7 @@ function SettingsContent() {
 
             <div>
               <label className="block text-xs font-bold uppercase tracking-wider text-[var(--foreground)] mb-1.5">
-                New Email Address (Gmail)
+                New Email Address
               </label>
               <input
                 type="email"
@@ -1679,7 +1830,7 @@ function SettingsContent() {
                     handleSendEmailOtp();
                   }
                 }}
-                placeholder="newname@gmail.com"
+                placeholder="newname@email.com"
                 autoFocus
                 className="w-full rounded-xl border border-[var(--border)] bg-white px-3.5 py-2.5 text-sm text-[var(--foreground)] focus:outline-none focus:ring-2 focus:ring-[var(--primary)]"
               />
@@ -1810,6 +1961,192 @@ function SettingsContent() {
                   </span>
                 ) : (
                   <span>Verify & Update Email</span>
+                )}
+              </Button>
+            </div>
+          </div>
+        )}
+      </Modal>
+
+      {/* CHANGE MOBILE MODAL WITH OTP VERIFICATION */}
+      <Modal
+        isOpen={isPhoneModalOpen}
+        onClose={() => {
+          if (!isSavingPhone && !isSendingPhoneOtp) {
+            setIsPhoneModalOpen(false);
+          }
+        }}
+        title="Change Registered Mobile Number"
+        description={
+          phoneModalStep === 'input'
+            ? 'Enter your new mobile number. We will send a 6-digit verification code to confirm ownership.'
+            : 'Enter the 6-digit verification code sent to your new mobile number to complete the update.'
+        }
+      >
+        {phoneModalStep === 'input' ? (
+          <div className="space-y-4 pt-1">
+            {/* Current Mobile Info */}
+            <div className="p-3 rounded-xl bg-[#FAF3EC] border border-[#EAD8C7] flex items-center justify-between gap-2 text-xs">
+              <span className="text-[#766B6F]">Current Mobile:</span>
+              <span className="font-bold text-[#211B1E] truncate max-w-[220px]">
+                {currentUser?.phone || (currentUser as any)?.user?.phone || 'Not set'}
+              </span>
+            </div>
+
+            <div>
+              <label className="block text-xs font-bold uppercase tracking-wider text-[var(--foreground)] mb-1.5">
+                New Mobile Number
+              </label>
+              <div className="flex gap-2">
+                <span className="inline-flex items-center px-3.5 rounded-xl border border-[var(--border)] bg-[#FAF3EC] text-xs font-bold text-[#7A1835]">
+                  +91
+                </span>
+                <input
+                  type="tel"
+                  value={phoneInput}
+                  onChange={(e) => {
+                    const val = e.target.value.replace(/\D/g, '').slice(0, 10);
+                    setPhoneInput(val);
+                    if (phoneError) setPhoneError(null);
+                  }}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      e.preventDefault();
+                      handleSendPhoneOtp();
+                    }
+                  }}
+                  placeholder="9876543210"
+                  autoFocus
+                  className="flex-1 rounded-xl border border-[var(--border)] bg-white px-3.5 py-2.5 text-sm text-[var(--foreground)] focus:outline-none focus:ring-2 focus:ring-[var(--primary)]"
+                />
+              </div>
+              {phoneError && (
+                <p className="mt-1.5 text-xs text-rose-600 font-semibold">{phoneError}</p>
+              )}
+            </div>
+
+            <p className="text-xs text-[var(--muted)] leading-relaxed bg-[#FFF9F6] p-3 rounded-xl border border-[#E9DDE0]">
+              🔒 Confidential: Your mobile number is protected with privacy shield settings and only shared with verified mutual matches according to your privacy rules.
+            </p>
+
+            <div className="flex items-center justify-end gap-2 pt-2">
+              <Button
+                variant="secondary"
+                size="sm"
+                onClick={() => setIsPhoneModalOpen(false)}
+                className="rounded-xl cursor-pointer"
+              >
+                Cancel
+              </Button>
+              <Button
+                variant="primary"
+                size="sm"
+                disabled={isSendingPhoneOtp || !phoneInput.trim()}
+                onClick={handleSendPhoneOtp}
+                className="rounded-xl font-bold cursor-pointer"
+              >
+                {isSendingPhoneOtp ? (
+                  <span className="flex items-center gap-2">
+                    <IconLoader2 className="h-4 w-4 animate-spin" />
+                    <span>Sending Code...</span>
+                  </span>
+                ) : (
+                  <span>Send Verification Code</span>
+                )}
+              </Button>
+            </div>
+          </div>
+        ) : (
+          <div className="space-y-4 pt-1">
+            {/* Back button & recipient indicator */}
+            <div className="flex items-center justify-between pb-1">
+              <button
+                type="button"
+                onClick={() => {
+                  setPhoneModalStep('input');
+                  setPhoneOtp('');
+                  setPhoneError(null);
+                }}
+                className="inline-flex items-center gap-1 text-xs font-semibold text-[#80132E] hover:underline cursor-pointer"
+              >
+                <IconArrowLeft className="h-3.5 w-3.5" />
+                <span>Edit Mobile Number</span>
+              </button>
+              <span className="text-xs text-[#766B6F] font-medium truncate max-w-[200px]">
+                {phoneInput.startsWith('+') ? phoneInput : `+91 ${phoneInput}`}
+              </span>
+            </div>
+
+            <div className="p-3 rounded-xl bg-[#FAF3EC] border border-[#EAD8C7] text-xs text-[#211B1E] leading-relaxed">
+              We sent a 6-digit verification code to <span className="font-bold">{phoneInput.startsWith('+') ? phoneInput : `+91 ${phoneInput}`}</span>. Please enter the code below to verify ownership.
+            </div>
+
+            <div className="space-y-2">
+              <label className="block text-xs font-bold uppercase tracking-wider text-[var(--foreground)] text-center">
+                Enter 6-Digit Code
+              </label>
+              <div className="flex justify-center py-1">
+                <ModernOtpInput
+                  value={phoneOtp}
+                  onChange={(val) => {
+                    setPhoneOtp(val);
+                    if (phoneError) setPhoneError(null);
+                  }}
+                  onComplete={(code) => {
+                    handleVerifyAndUpdatePhone(code);
+                  }}
+                  error={!!phoneError}
+                  autoFocus
+                />
+              </div>
+              {phoneError && (
+                <p className="text-xs text-rose-600 font-semibold text-center">{phoneError}</p>
+              )}
+            </div>
+
+            {/* Resend OTP */}
+            <div className="text-center pt-1">
+              {phoneResendTimer > 0 ? (
+                <span className="text-xs text-[#766B6F]">
+                  Resend code in <span className="font-semibold text-[#211B1E]">{phoneResendTimer}s</span>
+                </span>
+              ) : (
+                <button
+                  type="button"
+                  onClick={handleResendPhoneOtp}
+                  disabled={isSendingPhoneOtp}
+                  className="inline-flex items-center gap-1.5 text-xs font-bold text-[#80132E] hover:underline cursor-pointer disabled:opacity-50"
+                >
+                  <IconRefresh className={cn('h-3.5 w-3.5', isSendingPhoneOtp && 'animate-spin')} />
+                  <span>Didn't receive the code? Resend Code</span>
+                </button>
+              )}
+            </div>
+
+            <div className="flex items-center justify-end gap-2 pt-2 border-t border-[#E9DDE0]">
+              <Button
+                variant="secondary"
+                size="sm"
+                onClick={() => setIsPhoneModalOpen(false)}
+                disabled={isSavingPhone}
+                className="rounded-xl cursor-pointer"
+              >
+                Cancel
+              </Button>
+              <Button
+                variant="primary"
+                size="sm"
+                disabled={isSavingPhone || phoneOtp.length !== 6}
+                onClick={() => handleVerifyAndUpdatePhone()}
+                className="rounded-xl font-bold cursor-pointer"
+              >
+                {isSavingPhone ? (
+                  <span className="flex items-center gap-2">
+                    <IconLoader2 className="h-4 w-4 animate-spin" />
+                    <span>Verifying...</span>
+                  </span>
+                ) : (
+                  <span>Verify & Update Mobile</span>
                 )}
               </Button>
             </div>

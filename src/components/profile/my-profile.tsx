@@ -1096,7 +1096,7 @@ export function MyProfile({ initialPreview = false }: { initialPreview?: boolean
               <div className="mt-3.5 flex items-center justify-between rounded-2xl bg-white p-3.5 border border-[#EAD8C7] shadow-2xs">
                 <div className="min-w-0 flex-1">
                   <span className="text-[10px] font-bold uppercase tracking-wider text-[#7A1835] block">
-                    Registered Email (Gmail)
+                    Registered Email
                   </span>
                   <span className="text-xs font-bold text-[#211B1E] truncate block mt-0.5">
                     {profile?.email || (profile as any)?.user?.email || 'Not specified'}
@@ -1479,7 +1479,7 @@ export function MyProfile({ initialPreview = false }: { initialPreview?: boolean
           <div className="p-3.5 rounded-2xl bg-gradient-to-r from-[#FAF3EC] via-[#FAF0F3] to-[#FFF9F6] border border-[#EAD8C7] flex items-center justify-between gap-3">
             <div className="min-w-0 flex-1">
               <label className="block text-xs font-bold uppercase tracking-wider text-[#7A1835] mb-0.5">
-                Registered Email (Gmail)
+                Registered Email
               </label>
               <div className="text-xs font-bold text-[#211B1E] truncate">
                 {profile?.email || (profile as any)?.user?.email || 'Not specified'}

@@ -703,17 +703,8 @@ export default function DashboardPage() {
                   </div>
 
                   {/* 2. Top Floating Badges */}
-                  <div className="absolute top-3.5 left-3.5 right-3.5 flex items-center justify-between gap-1.5 z-10 pointer-events-none">
-                    <div className="flex items-center gap-1.5 flex-wrap">
-                      <Badge
-                        tone="accent"
-                        size="sm"
-                        icon={<IconUsers className="h-2.5 w-2.5 fill-current" />}
-                        className="backdrop-blur-md shadow-2xs font-bold"
-                      >
-                        {profile.compatibility}% Match
-                      </Badge>
-
+                  {(profile.online || profile.lastActiveAt) && (
+                    <div className="absolute top-3.5 left-3.5 right-3.5 flex items-center gap-1.5 z-10 pointer-events-none">
                       {profile.online ? (
                         <Badge
                           tone="neutral"
@@ -734,34 +725,7 @@ export default function DashboardPage() {
                         </Badge>
                       ) : null}
                     </div>
-
-                    {/* Shortlist IconHeart Button */}
-                    <button
-                      type="button"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleShortlist(profile.id, profile.name);
-                      }}
-                      aria-label={
-                        isShortlisted
-                          ? `Remove ${profile.name} from shortlist`
-                          : `Shortlist ${profile.name}`
-                      }
-                      className={cn(
-                        'pointer-events-auto focus-ring grid h-9 w-9 place-items-center rounded-full backdrop-blur-md transition-all duration-200 active-press shrink-0',
-                        isShortlisted
-                          ? 'bg-white text-[var(--primary)] shadow-md'
-                          : 'bg-black/35 text-white hover:bg-white hover:text-[var(--primary)] border border-white/20'
-                      )}
-                    >
-                      <IconHeart
-                        className={cn(
-                          'h-4.5 w-4.5 transition-transform duration-200',
-                          isShortlisted && 'fill-[var(--primary)] scale-110'
-                        )}
-                      />
-                    </button>
-                  </div>
+                  )}
 
                   {/* 3. Bottom Overlaid Information & Action Controls */}
                   <div className="absolute inset-x-0 bottom-0 p-4 sm:p-5 text-white z-10 space-y-2">
@@ -790,16 +754,13 @@ export default function DashboardPage() {
                     )}
 
                     {/* Contextual Indicators */}
-                    <div className="flex flex-wrap gap-1.5 pt-0.5">
-                      <span className="rounded-full bg-white/15 backdrop-blur-md text-[#FFF2D6] px-2.5 py-0.5 text-[10px] font-semibold border border-white/20 shadow-2xs">
-                        ✓ Matches preferences
-                      </span>
-                      {profile.verified && (
+                    {profile.verified && (
+                      <div className="flex flex-wrap gap-1.5 pt-0.5">
                         <span className="rounded-full bg-black/30 backdrop-blur-md text-white/85 px-2.5 py-0.5 text-[10px] font-medium border border-white/15">
                           Verified profile
                         </span>
-                      )}
-                    </div>
+                      </div>
+                    )}
 
                     {/* Action Controls Row */}
                     <div className="pt-2 flex items-center gap-2.5">
@@ -989,9 +950,6 @@ export default function DashboardPage() {
                       >
                         {p.name}, {p.age}
                       </Link>
-                      <Badge tone="accent" size="sm">
-                        {p.compatibility}%
-                      </Badge>
                     </div>
 
                     <p className="mt-0.5 text-[11px] text-[var(--muted)] truncate flex items-center gap-1">
