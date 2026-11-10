@@ -26,18 +26,12 @@ export default function PricingPage() {
 
       {/* Header */}
       <div className="text-center max-w-3xl mx-auto mb-12 sm:mb-16">
-        <span className="text-xs font-bold uppercase tracking-wider text-[var(--primary)] bg-[var(--primary-light)] px-3 py-1 rounded-full">
-          Transparent Pricing (INR)
-        </span>
-        <h1 className="text-3xl sm:text-5xl font-editorial-title font-bold text-[var(--foreground)] mt-4">
-          Chat Permit Membership Plans
-        </h1>
         <p className="mt-3 text-sm sm:text-base text-[var(--muted)] leading-relaxed">
-          Unlock unlimited direct messaging with mutual matches, view verified contact numbers, and expand your daily discovery. All plans are billed in Indian National Rupees (INR).
+          Unlock unlimited direct messaging with mutual matches, view verified contact numbers, and expand your daily discovery.
         </p>
         <div className="mt-4 inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-50 text-emerald-800 text-xs font-medium border border-emerald-200">
           <IconShieldCheck className="h-4 w-4 text-emerald-600" />
-          <span>Official Payment Gateway: Cashfree Payments (UPI, Cards, Net Banking)</span>
+          <span>Secure Checkout (UPI, Cards, Net Banking)</span>
         </div>
       </div>
 

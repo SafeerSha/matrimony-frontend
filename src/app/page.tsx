@@ -169,18 +169,15 @@ export default function LandingPage() {
         <div className="relative mx-auto max-w-[1400px] px-4 sm:px-6 lg:px-8">
           {/* Section Heading */}
           <div className="mx-auto max-w-2xl text-center">
-            <span className="inline-flex items-center gap-1.5 px-3.5 py-1 rounded-full bg-[#FAF3EC] text-[#8C5D30] text-xs font-bold uppercase tracking-wider border border-[#EAD7C5] shadow-2xs">
-              ✦ TRANSPARENT PRICING IN INR
-            </span>
             <h2 className="mt-4 font-editorial-title text-2xl sm:text-4xl lg:text-[2.6rem] font-bold text-[#211B1E] tracking-tight leading-tight">
-              Chat Permit Membership Plans
+              Subscription Plans
             </h2>
             <p className="mt-3 text-sm sm:text-base text-[#766B6F] leading-relaxed font-normal">
-              Direct messaging with mutual matches, verified contact number quotas, and elevated discovery. All prices are listed in Indian National Rupees (INR).
+              Direct messaging with mutual matches, verified contact number quotas, and elevated discovery.
             </p>
             <div className="mt-4 inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-50 text-emerald-800 text-xs font-medium border border-emerald-200">
               <IconShieldCheck className="h-4 w-4 text-emerald-600" />
-              <span>Secure Checkout Powered by Cashfree Payments (UPI, Cards, Net Banking)</span>
+              <span>Secure Checkout (UPI, Cards, Net Banking)</span>
             </div>
           </div>
 
