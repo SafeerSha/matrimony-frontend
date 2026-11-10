@@ -363,6 +363,15 @@ export default function SubscriptionPage() {
     };
   };
 
+  const getPlanTierRank = (codeOrId?: string, durationDays: number = 0, price: number = 0): number => {
+    const norm = (codeOrId || '').toUpperCase();
+    if (norm === 'ELITE' || norm.includes('YEAR') || durationDays >= 365 || price >= 4000) return 4;
+    if (norm === 'PLUS' || norm.includes('6') || durationDays >= 180 || price >= 2000) return 3;
+    if (norm === 'STANDARD' || norm.includes('3') || durationDays >= 90 || price >= 1000) return 2;
+    if (norm === 'BASIC' || norm.includes('1') || durationDays >= 30 || price >= 400) return 1;
+    return 0;
+  };
+
   return (
     <FeatureGate page="subscription" title="Membership & Subscription">
       <Script
@@ -709,11 +718,22 @@ export default function SubscriptionPage() {
         {!loadingPlans && !fetchError && plans.length > 0 && (
           <div className="w-full max-w-full min-w-0 grid gap-6 md:grid-cols-2 xl:grid-cols-4 max-w-7xl mx-auto">
             {plans.map((plan, index) => {
+              const currentTierRank = isSubscribed
+                ? getPlanTierRank(tier, subscription?.daysRemaining, 0)
+                : 0;
+              const planRank = getPlanTierRank(plan.id || plan.code, plan.durationDays, plan.price);
+
               const isCurrent =
                 isSubscribed &&
                 (tier?.toUpperCase() === plan.id?.toUpperCase() ||
                   tier?.toUpperCase() === plan.code?.toUpperCase() ||
                   tier === plan.dbId);
+
+              const isHigherTier = isSubscribed && planRank > currentTierRank;
+              const isLowerTier = isSubscribed && !isCurrent && planRank < currentTierRank;
+              const daysRemaining = subscription?.daysRemaining ?? 0;
+              const canRenewCurrent = isCurrent && daysRemaining <= 15;
+
               const visuals = getPlanVisuals(plan, index);
 
               return (
@@ -723,14 +743,24 @@ export default function SubscriptionPage() {
                     'relative p-6 flex flex-col justify-between rounded-2xl transition-all duration-300',
                     isCurrent
                       ? 'border-emerald-500 bg-gradient-to-b from-emerald-50/40 via-white to-white ring-2 ring-emerald-500/50 shadow-md'
-                      : plan.popular
-                        ? 'border-[var(--accent)] bg-gradient-to-b from-[#FFF9F6] via-white to-white shadow-[0_16px_40px_-15px_rgba(216,178,140,0.25)] ring-1 ring-[var(--accent)]/70'
-                        : 'border-[var(--border)] bg-white shadow-sm hover:shadow-md hover:border-[var(--primary)]/30'
+                      : isHigherTier
+                        ? 'border-amber-400/80 bg-gradient-to-b from-amber-50/20 via-white to-white shadow-md hover:border-amber-500'
+                        : isLowerTier
+                          ? 'border-stone-200 bg-stone-50/50 opacity-80'
+                          : plan.popular
+                            ? 'border-[var(--accent)] bg-gradient-to-b from-[#FFF9F6] via-white to-white shadow-[0_16px_40px_-15px_rgba(216,178,140,0.25)] ring-1 ring-[var(--accent)]/70'
+                            : 'border-[var(--border)] bg-white shadow-sm hover:shadow-md hover:border-[var(--primary)]/30'
                   )}
                 >
                   {isCurrent ? (
-                    <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-emerald-600 text-white text-[10px] font-bold uppercase tracking-wider px-3.5 py-1 rounded-full shadow-sm">
-                      Current Plan
+                    <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-emerald-600 text-white text-[10px] font-bold uppercase tracking-wider px-3.5 py-1 rounded-full shadow-sm flex items-center gap-1">
+                      <IconShieldCheck className="h-3 w-3" />
+                      <span>Current Plan</span>
+                    </div>
+                  ) : isHigherTier ? (
+                    <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-gradient-to-r from-amber-600 to-amber-700 text-white text-[10px] font-bold uppercase tracking-wider px-3.5 py-1 rounded-full shadow-sm flex items-center gap-1">
+                      <IconCrown className="h-3 w-3" />
+                      <span>Upgrade Tier</span>
                     </div>
                   ) : (
                     plan.popular && (
@@ -833,31 +863,69 @@ export default function SubscriptionPage() {
                     </div>
                   </div>
 
-                  {/* CTA Button */}
-                  <Button
-                    disabled={isCurrent || processing !== null}
-                    onClick={() => handleUpgrade(plan.id, plan.name)}
-                    className={cn(
-                      'w-full h-11 text-xs sm:text-sm font-bold shadow-sm transition-all mt-auto',
-                      isCurrent
-                        ? 'bg-emerald-100 text-emerald-800 border border-emerald-300 cursor-default'
-                        : plan.popular
-                          ? 'bg-[var(--primary)] text-white hover:bg-[var(--primary-deep)] shadow-[0_4px_16px_var(--primary-shadow)]'
-                          : 'bg-[var(--primary)] text-white hover:bg-[var(--primary-deep)] shadow-[0_4px_14px_var(--primary-shadow)]'
+                  {/* CTA Button & Smart Contextual Subtext */}
+                  <div className="mt-auto pt-2 space-y-2">
+                    <Button
+                      disabled={
+                        processing !== null ||
+                        (isCurrent && !canRenewCurrent) ||
+                        isLowerTier
+                      }
+                      onClick={() => handleUpgrade(plan.id, plan.name)}
+                      className={cn(
+                        'w-full h-11 text-xs sm:text-sm font-bold shadow-sm transition-all',
+                        isCurrent
+                          ? canRenewCurrent
+                            ? 'bg-emerald-600 hover:bg-emerald-700 text-white shadow-emerald-600/20'
+                            : 'bg-emerald-50 text-emerald-800 border border-emerald-300 cursor-default opacity-95'
+                          : isHigherTier
+                            ? 'bg-gradient-to-r from-[var(--primary)] to-[var(--primary-deep)] text-white hover:opacity-95 shadow-[0_4px_16px_var(--primary-shadow)]'
+                            : isLowerTier
+                              ? 'bg-stone-100 text-stone-400 border border-stone-200 cursor-not-allowed opacity-75'
+                              : plan.popular
+                                ? 'bg-[var(--primary)] text-white hover:bg-[var(--primary-deep)] shadow-[0_4px_16px_var(--primary-shadow)]'
+                                : 'bg-[var(--primary)] text-white hover:bg-[var(--primary-deep)] shadow-[0_4px_14px_var(--primary-shadow)]'
+                      )}
+                    >
+                      {processing === plan.id ? (
+                        <>
+                          <IconLoader2 className="mr-2 h-4 w-4 animate-spin" /> Processing...
+                        </>
+                      ) : isCurrent ? (
+                        canRenewCurrent ? (
+                          `Extend Validity (+${plan.durationDays}d)`
+                        ) : (
+                          `Active Plan (${daysRemaining}d left)`
+                        )
+                      ) : isHigherTier ? (
+                        `Upgrade to ${plan.badge || plan.name.split(' ')[0]}`
+                      ) : isLowerTier ? (
+                        'Included in Your Plan'
+                      ) : isFreeTrial ? (
+                        'Activate Free Pass'
+                      ) : (
+                        'Subscribe Now'
+                      )}
+                    </Button>
+
+                    {/* Helper subtext for subscribed members */}
+                    {isSubscribed && (
+                      <p className="text-[11px] text-center text-stone-500 leading-snug min-h-[16px]">
+                        {isCurrent && canRenewCurrent && (
+                          <span className="text-emerald-700 font-medium">Early renewal adds {plan.durationDays} days</span>
+                        )}
+                        {isCurrent && !canRenewCurrent && (
+                          <span>Valid until {subscription?.expiresAt ? new Date(subscription.expiresAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }) : 'renewal'}</span>
+                        )}
+                        {isHigherTier && (
+                          <span className="text-[var(--primary)] font-medium">+ Adds {plan.contactCredits} contacts & extends validity</span>
+                        )}
+                        {isLowerTier && (
+                          <span className="text-stone-400">Included in your active {displayTierName}</span>
+                        )}
+                      </p>
                     )}
-                  >
-                    {processing === plan.id ? (
-                      <>
-                        <IconLoader2 className="mr-2 h-4 w-4 animate-spin" /> Activating...
-                      </>
-                    ) : isCurrent ? (
-                      'Current Plan'
-                    ) : isFreeTrial ? (
-                      'Activate Free Pass'
-                    ) : (
-                      'Subscribe Now'
-                    )}
-                  </Button>
+                  </div>
                 </Card>
               );
             })}
