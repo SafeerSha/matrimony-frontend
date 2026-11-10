@@ -371,12 +371,26 @@ export default function SubscriptionPage() {
       />
       <div className="w-full max-w-full min-w-0 space-y-8 pb-10">
         <SectionHeader
-          eyebrow={isFreeTrial ? 'Launch Celebration' : 'Chat Permits'}
-          title={isFreeTrial ? 'Complimentary Member Interactions' : 'Unlock Member Interactions'}
+          eyebrow={
+            isFreeTrial
+              ? 'Launch Celebration'
+              : isSubscribed
+              ? 'Active Membership'
+              : 'Chat Permits'
+          }
+          title={
+            isFreeTrial
+              ? 'Complimentary Member Access'
+              : isSubscribed
+              ? 'Your Chat Permit & Privileges'
+              : 'Connect Directly with Matches'
+          }
           description={
             isFreeTrial
               ? 'Enjoy full complimentary access during our launch release with zero payment required.'
-              : 'An active Premium is required to send chat requests and converse with other members.'
+              : isSubscribed
+              ? 'Track your permit validity, remaining contact credits, and daily interest quotas.'
+              : 'An active Chat Permit unlocks unlimited direct messaging and verified contact numbers.'
           }
         />
 
