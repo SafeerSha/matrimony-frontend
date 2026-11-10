@@ -211,6 +211,7 @@ function SidebarContent({
             </p>
             <Link
               href="/app/subscription"
+              prefetch={false}
               className="mt-1 inline-flex items-center gap-1 text-[11px] font-bold text-[var(--primary)] hover:underline"
             >
               <span>Explore Plans</span>
@@ -227,6 +228,7 @@ function SidebarContent({
                 <Link
                   key={label}
                   href={href}
+                  prefetch={false}
                   className={cn(
                     "focus-ring flex items-center gap-3 rounded-2xl px-3 py-2 text-xs lg:text-sm transition-all duration-200 select-none active-press group",
                     "justify-center lg:justify-start",
