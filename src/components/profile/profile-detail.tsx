@@ -1554,25 +1554,35 @@ export function ProfileDetail({
         </div>
       </div>
 
-      {/* Contact Unlock Confirmation Dialog */}
-      {showUnlockModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in">
-          <div className="w-full max-w-sm rounded-2xl bg-[var(--surface)] p-5 border border-[var(--border)] shadow-xl space-y-4">
+      {/* Contact Unlock Confirmation Dialog (Portaled to document.body to remain strictly anchored to viewport center) */}
+      {isMounted && showUnlockModal && createPortal(
+        <div
+          className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in"
+          onClick={(e) => {
+            if (e.target === e.currentTarget && !isUnlockingContact) {
+              setShowUnlockModal(false);
+            }
+          }}
+        >
+          <div
+            className="w-full max-w-sm rounded-3xl bg-[var(--surface)] p-6 border border-[var(--border)] shadow-2xl space-y-4 animate-in zoom-in-95"
+            onClick={(e) => e.stopPropagation()}
+          >
             <div className="flex items-center gap-3">
-              <div className="h-10 w-10 rounded-xl bg-amber-100 text-amber-800 flex items-center justify-center shrink-0">
-                <IconPhone className="h-5 w-5" />
+              <div className="h-11 w-11 rounded-2xl bg-amber-50 text-amber-800 border border-amber-200/60 flex items-center justify-center shrink-0">
+                <IconPhone className="h-5 w-5 text-[var(--primary)]" />
               </div>
-              <div>
+              <div className="min-w-0">
                 <h3 className="text-base font-bold text-[var(--foreground)]">Unlock Verified Contact</h3>
-                <p className="text-xs text-[var(--muted)]">View direct phone number for {profile.name}</p>
+                <p className="text-xs text-[var(--muted)] truncate">View direct phone number for {profile.name}</p>
               </div>
             </div>
 
-            <div className="p-3 rounded-xl bg-[var(--surface-muted)] border border-[var(--border)] text-xs text-[var(--muted-strong)] space-y-1">
-              <p>
+            <div className="p-3.5 rounded-2xl bg-[var(--surface-muted)]/80 border border-[var(--border)] text-xs text-[var(--muted-strong)] space-y-1.5">
+              <p className="leading-relaxed">
                 This action consumes <strong>1 contact credit</strong> from your subscription permit.
               </p>
-              <p className="text-[var(--primary)] font-semibold">
+              <p className="text-[var(--primary)] font-bold">
                 Credits Remaining: {subscription?.contactCredits ?? 0}
               </p>
             </div>
@@ -1583,6 +1593,7 @@ export function ProfileDetail({
                 variant="outline"
                 onClick={() => setShowUnlockModal(false)}
                 disabled={isUnlockingContact}
+                className="rounded-xl"
               >
                 Cancel
               </Button>
@@ -1590,7 +1601,7 @@ export function ProfileDetail({
                 size="sm"
                 onClick={handleConfirmUnlock}
                 disabled={isUnlockingContact}
-                className="bg-gradient-to-r from-[#80132E] to-[#A22749] text-white font-bold"
+                className="bg-gradient-to-r from-[#80132E] to-[#A22749] text-white font-bold rounded-xl shadow-xs"
               >
                 {isUnlockingContact ? (
                   <span className="h-3.5 w-3.5 border border-current border-t-transparent rounded-full animate-spin mr-1.5" />
@@ -1601,7 +1612,8 @@ export function ProfileDetail({
               </Button>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
       {/* ======================================================== */}
