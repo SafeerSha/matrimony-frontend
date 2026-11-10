@@ -151,10 +151,6 @@ function AdminLoginForm() {
       <main className="relative z-10 w-full max-w-md mx-auto px-4 py-8">
         <div className="bg-[#2A0711]/90 backdrop-blur-xl border border-[#4A1024] rounded-3xl p-7 sm:p-9 shadow-2xl shadow-black/60">
           <div className="text-center mb-6">
-            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#4A1024] border border-[#6B1834] text-[11px] font-semibold text-[#F29CA3] mb-3">
-              <IconLock className="h-3 w-3" />
-              <span>Restricted Administrative Access</span>
-            </div>
             <h2 className="text-2xl font-bold tracking-tight text-white">
               Administrator Sign In
             </h2>
