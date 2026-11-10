@@ -86,13 +86,13 @@ export function NotificationsPopover({ className }: NotificationsPopoverProps) {
   const popoverRef = useRef<HTMLDivElement>(null);
 
   // Fetch notifications
-  useEffect(() => {
+  const loadNotifications = React.useCallback(() => {
     notificationService
       .getNotifications()
       .then((data) => {
         if (data && data.length > 0) {
           setItems(
-            data.slice(0, 6).map((n) => {
+            data.map((n) => {
               const link = getNotificationLink(n);
               const sender = n.sender;
               let title = "Notification";
@@ -142,6 +142,17 @@ export function NotificationsPopover({ className }: NotificationsPopoverProps) {
       });
   }, []);
 
+  useEffect(() => {
+    loadNotifications();
+  }, [loadNotifications]);
+
+  // Refresh latest notifications when opened
+  useEffect(() => {
+    if (isOpen) {
+      loadNotifications();
+    }
+  }, [isOpen, loadNotifications]);
+
   // Close on outside click
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
@@ -157,7 +168,9 @@ export function NotificationsPopover({ className }: NotificationsPopoverProps) {
     };
   }, [isOpen]);
 
-  const unreadCount = items.filter((i) => i.unread).length;
+  // Only show unread notifications in the dropdown popup
+  const unreadItems = items.filter((i) => i.unread);
+  const unreadCount = unreadItems.length;
 
   const handleMarkAllRead = async () => {
     try {
@@ -246,22 +259,23 @@ export function NotificationsPopover({ className }: NotificationsPopoverProps) {
 
           {/* List */}
           <div className="divide-y divide-[var(--border)]/60 my-1 max-h-72 overflow-y-auto scrollbar-none">
-            {items.length === 0 ? (
-              <div className="py-8 text-center text-xs text-[var(--muted)]">
-                No recent notifications
+            {unreadItems.length === 0 ? (
+              <div className="py-8 px-4 text-center space-y-1.5 select-none">
+                <div className="h-10 w-10 rounded-full bg-stone-100 text-stone-400 grid place-items-center mx-auto mb-2">
+                  <IconBell className="h-5 w-5" />
+                </div>
+                <p className="text-xs font-bold text-stone-800">No new notifications</p>
+                <p className="text-[11px] text-[var(--muted)]">
+                  You&apos;re all caught up! When you receive new interests, matches, or messages, they will appear here.
+                </p>
               </div>
             ) : (
-              items.map((item) => (
+              unreadItems.map((item) => (
                 <Link
                   key={item.id}
                   href={item.link}
                   onClick={() => handleItemClick(item)}
-                  className={cn(
-                    "flex items-start gap-3 p-2.5 rounded-2xl transition-all duration-150 group cursor-pointer select-none",
-                    item.unread
-                      ? "bg-rose-50/50 hover:bg-rose-50/90"
-                      : "hover:bg-[var(--surface-muted)]"
-                  )}
+                  className="flex items-start gap-3 p-2.5 rounded-2xl transition-all duration-150 group cursor-pointer select-none bg-rose-50/50 hover:bg-rose-50/90"
                 >
                   <div className="relative mt-0.5 shrink-0">
                     <Avatar
@@ -279,9 +293,7 @@ export function NotificationsPopover({ className }: NotificationsPopoverProps) {
                       <p className="text-xs font-bold text-[var(--foreground)] group-hover:text-[var(--primary)] transition-colors leading-tight truncate">
                         {item.title}
                       </p>
-                      {item.unread && (
-                        <span className="h-2 w-2 rounded-full bg-[var(--primary)] shrink-0" />
-                      )}
+                      <span className="h-2 w-2 rounded-full bg-[var(--primary)] shrink-0" />
                     </div>
                     <p className="mt-0.5 line-clamp-2 text-[11px] text-[var(--muted)] leading-snug">
                       {item.text}
