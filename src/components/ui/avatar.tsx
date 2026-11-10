@@ -74,7 +74,7 @@ export function Avatar({
   const showFallback = !src || imgError;
 
   return (
-    <div className={cn("relative inline-flex shrink-0 select-none leading-none", className)}>
+    <div className={cn("relative inline-flex shrink-0 select-none leading-none rounded-full", className)}>
       <div
         className={cn(
           "relative overflow-hidden rounded-full font-bold shadow-xs transition-transform duration-200 flex items-center justify-center shrink-0",
