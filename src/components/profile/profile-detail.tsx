@@ -127,6 +127,7 @@ function mapApiProfileToDetail(res: any, targetId: string = 'me'): Profile {
     country: res.country || 'India',
     diet: res.diet || '',
     phone: res.phone || res.user?.phone,
+    hasPhone: Boolean(res.hasPhone ?? (res.phone || res.user?.phone || res.isPhoneVerified)),
     isContactUnlocked: Boolean(res.isContactUnlocked),
   };
 }
@@ -1258,52 +1259,50 @@ export function ProfileDetail({
               )}
             </div>
 
-            {/* Verified Mobile Number Row */}
-            <div className="mt-5 pt-4 border-t border-[var(--border)] flex items-center justify-between gap-3 bg-[var(--surface-muted)]/70 p-3.5 rounded-2xl border border-[var(--border)]">
-              <div className="min-w-0">
-                <p className="text-xs font-semibold uppercase tracking-wider text-[var(--muted)] flex items-center gap-1.5">
-                  <IconPhone className="h-3.5 w-3.5 text-[var(--primary)]" />
-                  <span>Mobile Number</span>
-                </p>
-                <p className="text-sm font-bold text-[var(--foreground)] mt-0.5 tracking-wide truncate">
-                  {unlockedPhone || (isContactUnlocked && profile.phone) ? (
-                    unlockedPhone === 'Not provided' ? (
-                      <span className="text-xs text-[var(--muted-strong)] font-normal italic">Not registered by user</span>
-                    ) : (
+            {/* Verified Mobile Number Row (Only rendered if candidate has registered a mobile number) */}
+            {Boolean(profile.hasPhone || profile.phone || (unlockedPhone && unlockedPhone !== 'Not provided')) && (
+              <div className="mt-5 pt-4 border-t border-[var(--border)] flex items-center justify-between gap-3 bg-[var(--surface-muted)]/70 p-3.5 rounded-2xl border border-[var(--border)]">
+                <div className="min-w-0">
+                  <p className="text-xs font-semibold uppercase tracking-wider text-[var(--muted)] flex items-center gap-1.5">
+                    <IconPhone className="h-3.5 w-3.5 text-[var(--primary)]" />
+                    <span>Mobile Number</span>
+                  </p>
+                  <p className="text-sm font-bold text-[var(--foreground)] mt-0.5 tracking-wide truncate">
+                    {unlockedPhone || (isContactUnlocked && profile.phone) ? (
                       <a
                         href={`tel:${unlockedPhone || profile.phone}`}
-                        className="hover:underline text-[var(--primary)] font-mono"
+                        className="hover:underline text-[var(--primary)] font-mono font-bold"
                       >
                         {unlockedPhone || profile.phone}
                       </a>
-                    )
-                  ) : (
-                    <span className="font-mono text-[var(--muted-strong)]">+91 ••••• •••••</span>
-                  )}
-                </p>
-              </div>
+                    ) : (
+                      <span className="font-mono text-[var(--muted-strong)]">+91 ••••• •••••</span>
+                    )}
+                  </p>
+                </div>
 
-              {unlockedPhone || isContactUnlocked ? (
-                <span className="inline-flex items-center gap-1 rounded-full bg-emerald-100 text-emerald-800 px-3 py-1 text-xs font-bold border border-emerald-200 shrink-0">
-                  <IconCheck className="h-3 w-3" /> Unlocked
-                </span>
-              ) : (
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={handleUnlockClick}
-                  disabled={isUnlockingContact}
-                  className="h-8.5 px-3.5 text-xs font-bold text-[var(--primary)] border-[var(--primary)]/30 hover:bg-[var(--primary)]/10 shrink-0 gap-1.5"
-                >
-                  {isUnlockingContact ? (
-                    <span className="h-3.5 w-3.5 border border-current border-t-transparent rounded-full animate-spin" />
-                  ) : (
-                    <IconPhone className="h-3.5 w-3.5" />
-                  )}
-                  <span>View Number</span>
-                </Button>
-              )}
-            </div>
+                {unlockedPhone || isContactUnlocked ? (
+                  <span className="inline-flex items-center gap-1 rounded-full bg-emerald-100 text-emerald-800 px-3 py-1 text-xs font-bold border border-emerald-200 shrink-0">
+                    <IconCheck className="h-3 w-3" /> Unlocked
+                  </span>
+                ) : (
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={handleUnlockClick}
+                    disabled={isUnlockingContact}
+                    className="h-8.5 px-3.5 text-xs font-bold text-[var(--primary)] border-[var(--primary)]/30 hover:bg-[var(--primary)]/10 shrink-0 gap-1.5"
+                  >
+                    {isUnlockingContact ? (
+                      <span className="h-3.5 w-3.5 border border-current border-t-transparent rounded-full animate-spin" />
+                    ) : (
+                      <IconPhone className="h-3.5 w-3.5" />
+                    )}
+                    <span>View Number</span>
+                  </Button>
+                )}
+              </div>
+            )}
           </Card>
 
           {/* Section 2: Education & Career */}

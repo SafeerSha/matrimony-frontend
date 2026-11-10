@@ -30,6 +30,7 @@ export type Profile = {
   isInterestSent?: boolean;
   isMatched?: boolean;
   phone?: string;
+  hasPhone?: boolean;
   isContactUnlocked?: boolean;
   connectionStatus?: string;
   verified?: boolean;

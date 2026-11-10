@@ -14,6 +14,7 @@ export interface UserProfile {
   email?: string;
   emailOtp?: string;
   phone?: string;
+  hasPhone?: boolean;
   phoneOtp?: string;
   isPhoneVerified?: boolean;
   isContactUnlocked?: boolean;
