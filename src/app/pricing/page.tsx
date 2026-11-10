@@ -26,6 +26,9 @@ export default function PricingPage() {
 
       {/* Header */}
       <div className="text-center max-w-3xl mx-auto mb-12 sm:mb-16">
+        <h2 className="mt-4 font-editorial-title text-2xl sm:text-4xl lg:text-[2.6rem] font-bold text-[#211B1E] tracking-tight leading-tight">
+          Subscription Plans
+        </h2>
         <p className="mt-3 text-sm sm:text-base text-[var(--muted)] leading-relaxed">
           Unlock unlimited direct messaging with mutual matches, view verified contact numbers, and expand your daily discovery.
         </p>
