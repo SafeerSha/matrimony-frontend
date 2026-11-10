@@ -237,6 +237,7 @@ export function UserMenu({ user, className }: UserMenuProps) {
               </div>
               <Link
                 href="/app/subscription"
+                prefetch={false}
                 onClick={() => setIsOpen(false)}
                 className="text-[11px] font-bold text-[#8F591E] bg-[var(--champagne-light)] border border-[var(--champagne-border)] rounded-full px-2.5 py-0.5 hover:bg-[#FDF3E7] shadow-2xs transition-colors"
               >
@@ -249,6 +250,7 @@ export function UserMenu({ user, className }: UserMenuProps) {
           <div className="space-y-0.5 py-1">
             <Link
               href="/app/profile"
+              prefetch={false}
               onClick={() => setIsOpen(false)}
               className="flex items-center gap-3 rounded-xl px-3 py-2 text-xs font-semibold text-[var(--foreground)] hover:bg-[var(--primary-lighter)] hover:text-[var(--primary)] transition-colors"
               role="menuitem"
@@ -279,6 +281,7 @@ export function UserMenu({ user, className }: UserMenuProps) {
 
             <Link
               href="/app/settings"
+              prefetch={false}
               onClick={() => setIsOpen(false)}
               className="flex items-center gap-3 rounded-xl px-3 py-2 text-xs font-semibold text-[var(--foreground)] hover:bg-[var(--primary-lighter)] hover:text-[var(--primary)] transition-colors"
               role="menuitem"
@@ -289,6 +292,7 @@ export function UserMenu({ user, className }: UserMenuProps) {
 
             <Link
               href="/app/support"
+              prefetch={false}
               onClick={() => setIsOpen(false)}
               className="flex items-center gap-3 rounded-xl px-3 py-2 text-xs font-semibold text-[var(--foreground)] hover:bg-[var(--primary-lighter)] hover:text-[var(--primary)] transition-colors"
               role="menuitem"

@@ -10,6 +10,7 @@ import {
   IconShieldCheck,
   IconArrowRight,
   IconUsers,
+  IconCrown,
 } from "@tabler/icons-react";
 import { Avatar } from "@/components/ui/avatar";
 import { cn } from "@/lib/cn";
@@ -37,6 +38,16 @@ export function getNotificationLink(n: {
     c.includes("interest was accepted")
   ) {
     return "/app/matches";
+  }
+
+  // 2. Payment & Subscription updates -> Subscription Transactions tab
+  if (
+    t.includes("PAYMENT") ||
+    t.includes("SUBSCRIPTION") ||
+    c.includes("permit") ||
+    c.includes("subscription")
+  ) {
+    return "/app/subscription?tab=transactions";
   }
 
   // 2. Direct Messages -> Chat with the sender/reference user
@@ -85,7 +96,13 @@ export function NotificationsPopover({ className }: NotificationsPopoverProps) {
               const link = getNotificationLink(n);
               const sender = n.sender;
               let title = "Notification";
-              if (n.type === "NEW_INTEREST") {
+              if (n.type === "PAYMENT_SUCCESS") {
+                title = "Payment Successful 🎉";
+              } else if (n.type === "PAYMENT_FAILED") {
+                title = "Payment Failed";
+              } else if (n.type === "PAYMENT_PENDING") {
+                title = "Payment Confirmation Pending";
+              } else if (n.type === "NEW_INTEREST") {
                 title = sender?.name ? `${sender.name} sent you an interest` : "New interest received";
               } else if (n.type === "MATCH_ACCEPTED") {
                 title = sender?.name ? `Match accepted with ${sender.name}!` : "Match accepted!";
@@ -162,6 +179,8 @@ export function NotificationsPopover({ className }: NotificationsPopoverProps) {
 
   const getIcon = (type: string) => {
     const t = (type || "").toLowerCase();
+    if (t.includes("payment") || t.includes("subscription"))
+      return <IconCrown className="h-3 w-3 text-amber-600" />;
     if (t.includes("interest"))
       return <IconHeart className="h-3 w-3 text-[var(--primary)] fill-[var(--primary)]" />;
     if (t.includes("match")) return <IconUsers className="h-3 w-3 text-[var(--accent)]" />;

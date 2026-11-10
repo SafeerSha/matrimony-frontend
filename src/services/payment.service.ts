@@ -19,6 +19,22 @@ export interface VerifyOrderResponse {
   message?: string;
 }
 
+export interface PaymentTransactionItem {
+  id: string;
+  orderId: string;
+  cfOrderId?: string;
+  cfPaymentId?: string;
+  planCode: string;
+  planName: string;
+  amount: number;
+  currency: string;
+  status: 'SUCCESS' | 'FAILED' | 'PENDING' | 'USER_DROPPED';
+  paymentMethod?: string;
+  paymentMessage?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
 export const paymentService = {
   createOrder: (planCode: string) => {
     return apiFetch<CreateOrderResponse>('/payments/create-order', {
@@ -29,6 +45,12 @@ export const paymentService = {
 
   verifyOrder: (orderId: string) => {
     return apiFetch<VerifyOrderResponse>(`/payments/verify/${encodeURIComponent(orderId)}`, {
+      method: 'GET',
+    });
+  },
+
+  getUserTransactions: () => {
+    return apiFetch<PaymentTransactionItem[]>('/payments/transactions', {
       method: 'GET',
     });
   },
