@@ -10,6 +10,7 @@ import { CelebrationProvider } from "@/context/celebration-context";
 import { SubscriptionProvider, useSubscription } from "@/context/subscription-context";
 import { UpgradeModal } from "@/components/subscription/upgrade-modal";
 import { SubscriptionPromptSheet } from "@/components/subscription/subscription-prompt-sheet";
+import { PaymentStatusModal } from "@/components/subscription/payment-status-modal";
 import { toast } from "@/lib/toast";
 
 export interface AppShellProps {
@@ -24,6 +25,8 @@ function GlobalUpgradeModal() {
     closeChatPrompt,
     openUpgradeModal,
     promptOptions,
+    paymentStatusModal,
+    closePaymentStatusModal,
   } = useSubscription();
 
   return (
@@ -41,6 +44,31 @@ function GlobalUpgradeModal() {
         ctaText={promptOptions?.ctaText}
       />
       <UpgradeModal isOpen={isUpgradeModalOpen} onClose={closeUpgradeModal} />
+      <PaymentStatusModal
+        isOpen={paymentStatusModal.isOpen}
+        status={paymentStatusModal.status}
+        orderId={paymentStatusModal.orderId}
+        planName={paymentStatusModal.planName}
+        amount={paymentStatusModal.amount}
+        message={paymentStatusModal.message}
+        autoCloseDuration={paymentStatusModal.autoCloseDuration}
+        onRetry={paymentStatusModal.onRetry}
+        onCheckStatus={paymentStatusModal.onCheckStatus}
+        onContinue={() => {
+          if (paymentStatusModal.onContinue) {
+            paymentStatusModal.onContinue();
+          } else {
+            closePaymentStatusModal();
+          }
+        }}
+        onClose={() => {
+          if (paymentStatusModal.onClose) {
+            paymentStatusModal.onClose();
+          } else {
+            closePaymentStatusModal();
+          }
+        }}
+      />
     </>
   );
 }
