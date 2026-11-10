@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import Script from 'next/script';
+import { useRouter } from 'next/navigation';
 import {
   IconCheck,
   IconCrown,
@@ -21,6 +22,7 @@ import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { SectionHeader } from '@/components/ui/section-header';
 import { FeatureGate } from '@/components/ui/under-development';
+import { PaymentStatusModal, type PaymentModalStatus } from '@/components/subscription/payment-status-modal';
 import { CONTACT_INFO } from '@/config/contact';
 import { isFreeTrialMode } from '@/config/feature-flags';
 import { useSubscription } from '@/context/subscription-context';
@@ -31,6 +33,7 @@ import { cn } from '@/lib/cn';
 import { toast } from '@/lib/toast';
 
 export default function SubscriptionPage() {
+  const router = useRouter();
   const { isSubscribed, tier, subscription, refreshSubscription } = useSubscription();
   const [plans, setPlans] = useState<SubscriptionPlan[]>([]);
 
@@ -51,6 +54,18 @@ export default function SubscriptionPage() {
   const [processing, setProcessing] = useState<string | null>(null);
   const [pendingPayment, setPendingPayment] = useState<{ orderId: string } | null>(null);
   const [isCheckingPending, setIsCheckingPending] = useState(false);
+  const [statusModal, setStatusModal] = useState<{
+    isOpen: boolean;
+    status: PaymentModalStatus;
+    orderId?: string;
+    planName?: string;
+    amount?: number;
+    message?: string;
+    tierId?: string;
+  }>({
+    isOpen: false,
+    status: null,
+  });
   const isFreeTrial = isFreeTrialMode();
 
   const checkPendingStatus = async (orderId: string) => {
@@ -62,18 +77,28 @@ export default function SubscriptionPage() {
       if (verification.paymentStatus === 'SUCCESS') {
         await refreshSubscription();
         setPendingPayment(null);
-        toast.success('🎉 Payment Confirmed!', {
-          description: 'Your subscription permit and contact credits are now fully active.',
+        setStatusModal({
+          isOpen: true,
+          status: 'SUCCESS',
+          orderId,
+          planName: displayTierName,
         });
       } else if (verification.paymentStatus === 'USER_DROPPED') {
         setPendingPayment(null);
-        toast.info('Payment Cancelled', {
-          description: 'The transaction was cancelled. No amount was debited.',
+        setStatusModal({
+          isOpen: true,
+          status: 'USER_DROPPED',
+          orderId,
+          planName: displayTierName,
         });
       } else if (verification.paymentStatus === 'FAILED') {
         setPendingPayment(null);
-        toast.error('Payment Failed', {
-          description: verification.message || 'The payment failed or was declined by your bank.',
+        setStatusModal({
+          isOpen: true,
+          status: 'FAILED',
+          orderId,
+          planName: displayTierName,
+          message: verification.message,
         });
       } else {
         toast.info('Still Processing', {
@@ -128,27 +153,38 @@ export default function SubscriptionPage() {
           if (verification.paymentStatus === 'SUCCESS') {
             await refreshSubscription();
             setPendingPayment(null);
-            toast.success('🎉 Payment Successful!', {
-              description: 'Your chat permit and contact credits are now fully active.',
+            setStatusModal({
+              isOpen: true,
+              status: 'SUCCESS',
+              orderId: returnOrderId,
+              planName: displayTierName,
+              amount: currentPlan?.price,
             });
           } else if (verification.paymentStatus === 'USER_DROPPED') {
             setPendingPayment(null);
-            toast.info('Payment Cancelled', {
-              description: 'You cancelled the checkout session. No amount was debited.',
+            setStatusModal({
+              isOpen: true,
+              status: 'USER_DROPPED',
+              orderId: returnOrderId,
+              planName: displayTierName,
             });
           } else if (verification.paymentStatus === 'PENDING') {
             setPendingPayment({ orderId: returnOrderId });
-            toast.warning('Payment Pending Confirmation', {
-              description:
-                verification.message ||
-                'Your payment is being confirmed by your bank. If the amount was debited, your permit will activate automatically.',
+            setStatusModal({
+              isOpen: true,
+              status: 'PENDING',
+              orderId: returnOrderId,
+              planName: displayTierName,
+              message: verification.message,
             });
           } else {
             setPendingPayment(null);
-            toast.error('Payment Incomplete', {
-              description:
-                verification.message ||
-                'Payment could not be completed. Please try again.',
+            setStatusModal({
+              isOpen: true,
+              status: 'FAILED',
+              orderId: returnOrderId,
+              planName: displayTierName,
+              message: verification.message,
             });
           }
         } catch (e: any) {
@@ -210,12 +246,22 @@ export default function SubscriptionPage() {
           errorMsg.includes('cancel');
 
         if (isUserDrop) {
-          toast.info('Payment Cancelled', {
-            description: 'You cancelled the checkout session. No amount was debited.',
+          setStatusModal({
+            isOpen: true,
+            status: 'USER_DROPPED',
+            orderId: order.orderId,
+            planName,
+            amount: order.amount,
           });
         } else {
-          toast.error('Payment Incomplete', {
-            description: result.error.message || 'Payment was cancelled or could not be completed.',
+          setStatusModal({
+            isOpen: true,
+            status: 'FAILED',
+            orderId: order.orderId,
+            planName,
+            amount: order.amount,
+            message: result.error.message,
+            tierId,
           });
         }
         return;
@@ -238,30 +284,42 @@ export default function SubscriptionPage() {
       if (verification.paymentStatus === 'SUCCESS') {
         await refreshSubscription();
         setPendingPayment(null);
-        toast.success('🎉 Payment Successful!', {
-          description: `You are now subscribed to the ${planName}. Enjoy connecting!`,
+        setStatusModal({
+          isOpen: true,
+          status: 'SUCCESS',
+          orderId: order.orderId,
+          planName,
+          amount: order.amount,
         });
-        setTimeout(() => {
-          window.location.href = '/app';
-        }, 900);
       } else if (verification.paymentStatus === 'USER_DROPPED') {
         setPendingPayment(null);
-        toast.info('Payment Cancelled', {
-          description: 'You cancelled the payment. No amount was debited.',
+        setStatusModal({
+          isOpen: true,
+          status: 'USER_DROPPED',
+          orderId: order.orderId,
+          planName,
+          amount: order.amount,
         });
       } else if (verification.paymentStatus === 'PENDING') {
         setPendingPayment({ orderId: order.orderId });
-        toast.warning('Payment Pending Confirmation', {
-          description:
-            verification.message ||
-            'Your payment is being confirmed by your bank. If the amount was debited, your permit will activate automatically once confirmed.',
+        setStatusModal({
+          isOpen: true,
+          status: 'PENDING',
+          orderId: order.orderId,
+          planName,
+          amount: order.amount,
+          message: verification.message,
         });
       } else {
         setPendingPayment(null);
-        toast.error('Payment Incomplete', {
-          description:
-            verification.message ||
-            'Your payment could not be processed. Please try again or choose another payment method.',
+        setStatusModal({
+          isOpen: true,
+          status: 'FAILED',
+          orderId: order.orderId,
+          planName,
+          amount: order.amount,
+          message: verification.message,
+          tierId,
         });
       }
     } catch (err: any) {
@@ -847,6 +905,34 @@ export default function SubscriptionPage() {
             </a>
           </p>
         </div>
+
+        {/* Dynamic Payment Status Feedback Modal */}
+        <PaymentStatusModal
+          isOpen={statusModal.isOpen}
+          status={statusModal.status}
+          orderId={statusModal.orderId}
+          planName={statusModal.planName || displayTierName}
+          amount={statusModal.amount}
+          message={statusModal.message}
+          onRetry={
+            statusModal.tierId
+              ? () => {
+                  const targetTier = statusModal.tierId!;
+                  const targetPlan = statusModal.planName || 'Permit';
+                  setStatusModal((prev) => ({ ...prev, isOpen: false }));
+                  handleUpgrade(targetTier, targetPlan);
+                }
+              : undefined
+          }
+          onCheckStatus={
+            statusModal.orderId ? () => checkPendingStatus(statusModal.orderId!) : undefined
+          }
+          onContinue={() => {
+            setStatusModal((prev) => ({ ...prev, isOpen: false }));
+            router.push('/app');
+          }}
+          onClose={() => setStatusModal((prev) => ({ ...prev, isOpen: false }))}
+        />
       </div>
     </FeatureGate>
   );
