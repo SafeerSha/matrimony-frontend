@@ -202,12 +202,15 @@ export function ProfileDetail({
     setIsUnlockingContact(true);
     try {
       const res = await subscriptionService.unlockContact(targetUserId);
-      if (res.phone) {
+      setIsContactUnlocked(true);
+      setShowUnlockModal(false);
+      refreshSubscription();
+      if (res?.phone) {
         setUnlockedPhone(res.phone);
-        setIsContactUnlocked(true);
-        setShowUnlockModal(false);
         toast.success('Contact Unlocked', `Verified phone: ${res.phone}`);
-        refreshSubscription();
+      } else {
+        setUnlockedPhone('Not provided');
+        toast.info('Contact Unlocked', 'User has not registered a verified contact number yet.');
       }
     } catch (err: any) {
       const msg = err?.message || 'Failed to unlock contact number';
@@ -1264,12 +1267,16 @@ export function ProfileDetail({
                 </p>
                 <p className="text-sm font-bold text-[var(--foreground)] mt-0.5 tracking-wide truncate">
                   {unlockedPhone || (isContactUnlocked && profile.phone) ? (
-                    <a
-                      href={`tel:${unlockedPhone || profile.phone}`}
-                      className="hover:underline text-[var(--primary)] font-mono"
-                    >
-                      {unlockedPhone || profile.phone}
-                    </a>
+                    unlockedPhone === 'Not provided' ? (
+                      <span className="text-xs text-[var(--muted-strong)] font-normal italic">Not registered by user</span>
+                    ) : (
+                      <a
+                        href={`tel:${unlockedPhone || profile.phone}`}
+                        className="hover:underline text-[var(--primary)] font-mono"
+                      >
+                        {unlockedPhone || profile.phone}
+                      </a>
+                    )
                   ) : (
                     <span className="font-mono text-[var(--muted-strong)]">+91 ••••• •••••</span>
                   )}
