@@ -480,7 +480,7 @@ function SubscriptionContent() {
             )}
           >
             <IconCrown className="h-4 w-4" />
-            <span>Plans & Privileges</span>
+            <span>Plans</span>
           </button>
 
           <button
@@ -1101,53 +1101,6 @@ function SubscriptionContent() {
       {/* ==================================================================== */}
       {activeTab === 'transactions' && (
         <div className="space-y-6 max-w-7xl mx-auto">
-          {/* Summary Metric Chips */}
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-            <Card className="p-4 rounded-2xl border border-stone-200/90 bg-white shadow-2xs flex items-center justify-between">
-              <div>
-                <span className="text-xs text-stone-500 font-medium">Total Invested</span>
-                <p className="text-xl sm:text-2xl font-bold text-stone-900 mt-0.5">
-                  ₹{totalSpent.toLocaleString('en-IN')}
-                </p>
-                <p className="text-[11px] text-emerald-700 font-medium mt-0.5">
-                  {successfulTransactions.length} successful permit{successfulTransactions.length === 1 ? '' : 's'}
-                </p>
-              </div>
-              <div className="h-11 w-11 rounded-2xl bg-emerald-50 text-emerald-700 grid place-items-center">
-                <IconShieldCheck className="h-6 w-6" />
-              </div>
-            </Card>
-
-            <Card className="p-4 rounded-2xl border border-stone-200/90 bg-white shadow-2xs flex items-center justify-between">
-              <div>
-                <span className="text-xs text-stone-500 font-medium">Awaiting Settlement</span>
-                <p className="text-xl sm:text-2xl font-bold text-amber-900 mt-0.5">
-                  {pendingTransactions.length}
-                </p>
-                <p className="text-[11px] text-amber-700 font-medium mt-0.5">
-                  {pendingTransactions.length > 0 ? 'Pending bank verification' : 'Zero pending orders'}
-                </p>
-              </div>
-              <div className="h-11 w-11 rounded-2xl bg-amber-50 text-amber-700 grid place-items-center">
-                <IconClock className={cn('h-6 w-6', pendingTransactions.length > 0 && 'animate-pulse')} />
-              </div>
-            </Card>
-
-            <Card className="p-4 rounded-2xl border border-stone-200/90 bg-white shadow-2xs flex items-center justify-between">
-              <div>
-                <span className="text-xs text-stone-500 font-medium">Total Orders Logged</span>
-                <p className="text-xl sm:text-2xl font-bold text-stone-900 mt-0.5">
-                  {transactions.length}
-                </p>
-                <p className="text-[11px] text-stone-500 font-medium mt-0.5">
-                  Lifetime transaction audit log
-                </p>
-              </div>
-              <div className="h-11 w-11 rounded-2xl bg-[#FAF3EC] text-[#8C5D30] grid place-items-center">
-                <IconReceipt className="h-6 w-6" />
-              </div>
-            </Card>
-          </div>
 
           {/* Filter Pills */}
           <div className="flex items-center gap-1.5 p-1.5 bg-[#FAF4EF] rounded-2xl border border-[#EDE4DC] overflow-x-auto scrollbar-none w-full sm:w-fit">
