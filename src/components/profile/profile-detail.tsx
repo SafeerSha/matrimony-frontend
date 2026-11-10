@@ -8,7 +8,6 @@ import {
   IconArrowLeft,
   IconCircleCheck,
   IconHeart,
-  IconLock,
   IconMapPin,
   IconMessageCircle,
   IconBookmark,
@@ -1248,6 +1247,49 @@ export function ProfileDetail({
                 </div>
               )}
             </div>
+
+            {/* Verified Mobile Number Row */}
+            <div className="mt-5 pt-4 border-t border-[var(--border)] flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-[var(--surface-muted)]/70 p-3.5 rounded-2xl border border-[var(--border)]">
+              <div className="min-w-0">
+                <p className="text-xs font-semibold uppercase tracking-wider text-[var(--muted)] flex items-center gap-1.5">
+                  <IconPhone className="h-3.5 w-3.5 text-[var(--primary)]" />
+                  <span>Mobile Number</span>
+                </p>
+                <p className="text-sm font-bold text-[var(--foreground)] mt-0.5 tracking-wide">
+                  {unlockedPhone || (isContactUnlocked && profile.phone) ? (
+                    <a
+                      href={`tel:${unlockedPhone || profile.phone}`}
+                      className="hover:underline text-[var(--primary)] font-mono"
+                    >
+                      {unlockedPhone || profile.phone}
+                    </a>
+                  ) : (
+                    <span className="font-mono text-[var(--muted-strong)]">+91 ••••• •••••</span>
+                  )}
+                </p>
+              </div>
+
+              {unlockedPhone || isContactUnlocked ? (
+                <span className="inline-flex items-center gap-1 rounded-full bg-emerald-100 text-emerald-800 px-3 py-1 text-xs font-bold border border-emerald-200 shrink-0 self-start sm:self-auto">
+                  <IconCheck className="h-3 w-3" /> Unlocked
+                </span>
+              ) : (
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={handleUnlockClick}
+                  disabled={isUnlockingContact}
+                  className="h-8.5 px-3.5 text-xs font-bold text-[var(--primary)] border-[var(--primary)]/30 hover:bg-[var(--primary)]/10 shrink-0 self-start sm:self-auto gap-1.5"
+                >
+                  {isUnlockingContact ? (
+                    <span className="h-3.5 w-3.5 border border-current border-t-transparent rounded-full animate-spin" />
+                  ) : (
+                    <IconPhone className="h-3.5 w-3.5" />
+                  )}
+                  <span>View Number</span>
+                </Button>
+              )}
+            </div>
           </Card>
 
           {/* Section 2: Education & Career */}
@@ -1501,81 +1543,6 @@ export function ProfileDetail({
                 </span>
               </div>
             </div>
-          </Card>
-
-          {/* Privacy & Confidentiality Card */}
-          <Card className="p-5 sm:p-6 rounded-3xl space-y-4">
-            <div className="flex items-start gap-3">
-              <div className="grid h-10 w-10 shrink-0 place-items-center rounded-2xl bg-emerald-50 text-emerald-700 border border-emerald-200/70">
-                <IconShieldCheck className="h-5 w-5" />
-              </div>
-              <div>
-                <h3 className="font-bold text-sm text-[var(--foreground)]">
-                  100% Privacy Protected
-                </h3>
-                <p className="text-xs text-[var(--muted)] mt-0.5">
-                  Private information is protected under matrimonial privacy standards.
-                </p>
-              </div>
-            </div>
-
-            <div className="space-y-2.5 pt-2">
-              <div className="rounded-xl bg-[var(--surface-muted)] p-3 border border-[var(--border)] flex items-center justify-between gap-3">
-                <div className="min-w-0">
-                  <div className="flex items-center gap-1.5 text-[11px] font-semibold text-[var(--muted)]">
-                    <IconPhone className="h-3.5 w-3.5 text-[var(--primary)]" />
-                    <span>Verified Contact & Phone</span>
-                  </div>
-                  <p className="text-xs sm:text-sm font-bold text-[var(--foreground)] mt-0.5 truncate tracking-wide">
-                    {unlockedPhone || (isContactUnlocked && profile.phone) ? (
-                      <a href={`tel:${unlockedPhone || profile.phone}`} className="hover:underline text-[var(--primary)] font-mono">
-                        {unlockedPhone || profile.phone}
-                      </a>
-                    ) : (
-                      <span className="font-mono text-[var(--muted-strong)]">+91 ••••• •••••</span>
-                    )}
-                  </p>
-                </div>
-                {unlockedPhone || isContactUnlocked ? (
-                  <span className="inline-flex items-center gap-1 rounded-full bg-emerald-100 text-emerald-800 px-2.5 py-1 text-[11px] font-bold border border-emerald-200 shrink-0">
-                    <IconCheck className="h-3 w-3" /> Unlocked
-                  </span>
-                ) : (
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={handleUnlockClick}
-                    disabled={isUnlockingContact}
-                    className="h-8 text-xs font-bold text-[var(--primary)] border-[var(--primary)]/30 hover:bg-[var(--primary)]/10 shrink-0"
-                  >
-                    {isUnlockingContact ? (
-                      <span className="h-3.5 w-3.5 border border-current border-t-transparent rounded-full animate-spin" />
-                    ) : (
-                      <IconPhone className="h-3.5 w-3.5" />
-                    )}
-                    <span>View Number</span>
-                  </Button>
-                )}
-              </div>
-
-              <div className="rounded-xl bg-[var(--surface-muted)] p-3 border border-[var(--border)] flex items-center justify-between">
-                <div>
-                  <p className="text-[11px] font-semibold text-[var(--muted)]">
-                    Permanent Residential Address
-                  </p>
-                  <p className="text-xs font-semibold text-[var(--foreground)]">
-                    {[profile.city, profile.state].filter(Boolean).join(', ') || 'Protected'}
-                  </p>
-                </div>
-                <span className="inline-flex items-center gap-1 rounded-full bg-stone-200/60 px-2 py-0.5 text-[10px] font-bold text-stone-600">
-                  <IconLock className="h-3 w-3" /> Private
-                </span>
-              </div>
-            </div>
-
-            <p className="text-[11px] leading-relaxed text-[var(--muted)] italic pt-1">
-              Active members can view verified phone numbers using their plan contact credits. Family addresses are protected under matrimonial privacy standards.
-            </p>
           </Card>
         </div>
       </div>
