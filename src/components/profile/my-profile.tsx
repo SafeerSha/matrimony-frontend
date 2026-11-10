@@ -834,21 +834,20 @@ export function MyProfile({ initialPreview = false }: { initialPreview?: boolean
         </div>
       </div>
 
-      {/* Main Profile Cover & Hero Card */}
-      <Card className="overflow-hidden p-0 rounded-3xl border border-[var(--border)] shadow-[var(--elevation-card)]">
-        <div className="relative h-32 sm:h-44 bg-gradient-to-r from-[#5C1027] via-[#7A1835] to-[#8C1D3D]">
-          <div
-            className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_70%_30%,rgba(216,178,140,0.25)_0%,transparent_60%)]"
-            aria-hidden="true"
-          />
-          <div className="absolute -bottom-10 left-6 flex items-center justify-center rounded-full border-4 border-white bg-white shadow-md leading-none shrink-0">
-            <Avatar src={displayImage} name={displayName} size="xl" />
-          </div>
-        </div>
+      {/* Main Profile Hero Card */}
+      <Card className="p-5 sm:p-7 rounded-3xl border border-[var(--border)] shadow-[var(--elevation-card)]">
+        <div className="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 sm:gap-5">
+            <div className="relative shrink-0">
+              <Avatar
+                src={displayImage}
+                name={displayName}
+                size="xl"
+                className="h-20 w-20 sm:h-24 sm:w-24 ring-4 ring-[var(--surface-muted)] shadow-md"
+              />
+            </div>
 
-        <div className="px-6 pb-6 pt-12">
-          <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-            <div>
+            <div className="min-w-0">
               <div className="flex items-center flex-wrap gap-2.5">
                 <h2 className="font-editorial-title text-2xl sm:text-3xl font-bold text-[var(--foreground)]">
                   {displayName}, {age}
@@ -882,7 +881,7 @@ export function MyProfile({ initialPreview = false }: { initialPreview?: boolean
                 )}
               </p>
 
-              <div className="mt-3.5 flex flex-wrap items-center gap-2">
+              <div className="mt-3 flex flex-wrap items-center gap-2">
                 {/* IshtamChat ID Pill */}
                 <div className="inline-flex items-center gap-2 rounded-xl border border-[#EAD8C7] bg-[#FAF3EC] px-3 py-1 shadow-2xs">
                   <span className="text-[10px] font-bold uppercase tracking-wider text-[#8C5D30]">
@@ -897,24 +896,24 @@ export function MyProfile({ initialPreview = false }: { initialPreview?: boolean
                 <RegistrationCategoryBadge profile={profile} />
               </div>
             </div>
+          </div>
 
-            <div className="rounded-2xl bg-gradient-to-br from-[#FAF3EC] to-[#FFF9F6] p-4 sm:min-w-[240px] border border-[#EAD8C7] shadow-2xs">
-              <div className="flex justify-between items-end mb-2">
-                <p className="text-xs font-bold text-[#5C1027]">Profile Completeness</p>
-                <p className="text-lg font-bold text-[var(--primary)]">
-                  {completenessPercent}%
-                </p>
-              </div>
-              <div className="h-2 w-full overflow-hidden rounded-full bg-stone-200/80">
-                <div
-                  className="h-full rounded-full bg-gradient-to-r from-[var(--primary)] to-[var(--blush-deep)] transition-all duration-500"
-                  style={{ width: `${completenessPercent}%` }}
-                />
-              </div>
-              <p className="mt-2 text-[10px] font-semibold text-[var(--muted)]">
-                {photosCount} of 3 photos • {profile.bio ? 'Bio added' : 'Add bio'}
+          <div className="rounded-2xl bg-gradient-to-br from-[#FAF3EC] to-[#FFF9F6] p-4 lg:min-w-[240px] border border-[#EAD8C7] shadow-2xs shrink-0">
+            <div className="flex justify-between items-end mb-2">
+              <p className="text-xs font-bold text-[#5C1027]">Profile Completeness</p>
+              <p className="text-lg font-bold text-[var(--primary)]">
+                {completenessPercent}%
               </p>
             </div>
+            <div className="h-2 w-full overflow-hidden rounded-full bg-stone-200/80">
+              <div
+                className="h-full rounded-full bg-gradient-to-r from-[var(--primary)] to-[var(--blush-deep)] transition-all duration-500"
+                style={{ width: `${completenessPercent}%` }}
+              />
+            </div>
+            <p className="mt-2 text-[10px] font-semibold text-[var(--muted)]">
+              {photosCount} of 3 photos • {profile.bio ? 'Bio added' : 'Add bio'}
+            </p>
           </div>
         </div>
       </Card>
