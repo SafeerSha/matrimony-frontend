@@ -233,7 +233,7 @@ export default function LoginPage() {
       const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
       if (!cleanEmail || !emailRegex.test(cleanEmail)) {
         setIsLoading(false);
-        setErrorMessage("Please enter a valid email address (e.g. name@gmail.com).");
+        setErrorMessage("Please enter a valid email address (e.g. name@email.com).");
         return;
       }
 
@@ -833,17 +833,17 @@ export default function LoginPage() {
                   {(errorMessage.toLowerCase().includes("banned") ||
                     errorMessage.toLowerCase().includes("suspended") ||
                     errorMessage.toLowerCase().includes("blocked")) && (
-                    <div className="pt-2 border-t border-red-200/80 text-xs text-red-900 flex items-center justify-between gap-2">
-                      <span>Believe this is a mistake or need assistance?</span>
-                      <button
-                        type="button"
-                        onClick={() => setIsSupportModalOpen(true)}
-                        className="font-bold underline hover:text-red-950 transition-colors shrink-0 cursor-pointer text-xs"
-                      >
-                        Contact Support
-                      </button>
-                    </div>
-                  )}
+                      <div className="pt-2 border-t border-red-200/80 text-xs text-red-900 flex items-center justify-between gap-2">
+                        <span>Believe this is a mistake or need assistance?</span>
+                        <button
+                          type="button"
+                          onClick={() => setIsSupportModalOpen(true)}
+                          className="font-bold underline hover:text-red-950 transition-colors shrink-0 cursor-pointer text-xs"
+                        >
+                          Contact Support
+                        </button>
+                      </div>
+                    )}
                   {errorMessage.toLowerCase().includes("does not have a password") && (
                     <button
                       type="button"
@@ -888,7 +888,7 @@ export default function LoginPage() {
                             htmlFor="email"
                             className="block text-[11px] sm:text-xs font-semibold uppercase tracking-wider text-[var(--muted-strong)] mb-1.5"
                           >
-                            Email Address (Gmail)
+                            Email Address
                           </label>
                           <div className="relative flex items-center">
                             <span className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3.5 sm:pl-4 text-[var(--muted)] group-focus-within:text-[var(--primary)] transition-colors">
@@ -905,7 +905,7 @@ export default function LoginPage() {
                                 setErrorMessage(null);
                                 setEmail(e.target.value);
                               }}
-                              placeholder="name@gmail.com"
+                              placeholder="name@email.com"
                               className={cn(
                                 "h-12 sm:h-12.5 lg:h-13 w-full rounded-xl border pl-11 pr-4 text-sm sm:text-base font-medium",
                                 "text-[var(--foreground)] placeholder:text-[var(--muted-light)]",
@@ -1257,15 +1257,6 @@ export default function LoginPage() {
                   Create a profile
                 </button>
               </div>
-              <div className="text-[11px] text-[var(--muted)]">
-                <span>Looking for the Administrative Console? </span>
-                <Link
-                  href="/admin/login"
-                  className="font-semibold text-[var(--primary)] hover:underline"
-                >
-                  Sign in to Admin Portal
-                </Link>
-              </div>
             </div>
           </div>
         </div>
@@ -1309,7 +1300,7 @@ export default function LoginPage() {
                       handleSendForgotOtp();
                     }
                   }}
-                  placeholder="name@gmail.com"
+                  placeholder="name@email.com"
                   autoFocus
                   className="w-full rounded-xl border border-[var(--border)] bg-white pl-10 pr-3.5 py-2.5 text-sm text-[var(--foreground)] focus:outline-none focus:ring-2 focus:ring-[var(--primary)]"
                 />
@@ -1509,11 +1500,10 @@ export default function LoginPage() {
           <div className="space-y-2.5">
             {/* WhatsApp */}
             <a
-              href={`${CONTACT_INFO.whatsappUrl}${
-                identifier.trim()
+              href={`${CONTACT_INFO.whatsappUrl}${identifier.trim()
                   ? `%20regarding%20account%20access%20for%20${encodeURIComponent(identifier.trim())}`
                   : ''
-              }`}
+                }`}
               target="_blank"
               rel="noopener noreferrer"
               className="flex items-center justify-between p-3.5 rounded-xl border border-emerald-200 bg-emerald-50/70 hover:bg-emerald-100/70 text-emerald-950 transition group cursor-pointer"
@@ -1552,8 +1542,7 @@ export default function LoginPage() {
               href={`mailto:${CONTACT_INFO.email}?subject=${encodeURIComponent(
                 'Account Access Assistance / Ban Review Request'
               )}&body=${encodeURIComponent(
-                `Hello IshtamChat Support,\n\nI am contacting you regarding my account access.\n\nAccount Identifier: ${
-                  identifier.trim() || '[Please enter your email or mobile]'
+                `Hello IshtamChat Support,\n\nI am contacting you regarding my account access.\n\nAccount Identifier: ${identifier.trim() || '[Please enter your email or mobile]'
                 }\nReason / Details: \n\nThank you.`
               )}`}
               className="flex items-center justify-between p-3.5 rounded-xl border border-[var(--border)] bg-white hover:bg-[var(--surface-muted)] text-[var(--foreground)] transition group cursor-pointer"

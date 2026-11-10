@@ -167,7 +167,7 @@ function SettingsContent() {
     const cleanEmail = emailInput.trim().toLowerCase();
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!cleanEmail || !emailRegex.test(cleanEmail)) {
-      setEmailError('Please enter a valid email address (e.g. name@gmail.com).');
+      setEmailError('Please enter a valid email address (e.g. name@email.com).');
       return;
     }
     const currentRegisteredEmail = (currentUser?.email || currentUser?.user?.email || '').trim().toLowerCase();
@@ -595,7 +595,7 @@ function SettingsContent() {
                         <IconMail className="h-5 w-5" />
                       </div>
                       <div className="min-w-0 flex-1">
-                        <h4 className="text-xs font-bold text-[#211B1E]">Registered Email (Gmail)</h4>
+                        <h4 className="text-xs font-bold text-[#211B1E]">Registered Email</h4>
                         <p className="text-[11px] text-[#766B6F] mt-0.5">
                           Used for logging in, verification codes, and critical account alerts
                         </p>
@@ -1164,7 +1164,7 @@ function SettingsContent() {
                         </div>
                         <div className="min-w-0 flex-1">
                           <span className="text-[11px] sm:text-xs font-bold text-[#211B1E] block truncate">
-                            Registered Email (Gmail)
+                            Registered Email
                           </span>
                           {isEmailVerified ? (
                             <span className="text-[9.5px] sm:text-[10px] text-emerald-700 font-semibold flex items-center gap-1">
@@ -1664,7 +1664,7 @@ function SettingsContent() {
 
             <div>
               <label className="block text-xs font-bold uppercase tracking-wider text-[var(--foreground)] mb-1.5">
-                New Email Address (Gmail)
+                New Email Address
               </label>
               <input
                 type="email"
@@ -1679,7 +1679,7 @@ function SettingsContent() {
                     handleSendEmailOtp();
                   }
                 }}
-                placeholder="newname@gmail.com"
+                placeholder="newname@email.com"
                 autoFocus
                 className="w-full rounded-xl border border-[var(--border)] bg-white px-3.5 py-2.5 text-sm text-[var(--foreground)] focus:outline-none focus:ring-2 focus:ring-[var(--primary)]"
               />
