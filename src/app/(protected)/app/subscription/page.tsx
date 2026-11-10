@@ -45,7 +45,8 @@ function SubscriptionContent() {
   const searchParams = useSearchParams();
 
   // Tab State (Defaults to 'plans', or 'transactions' if passed in query param)
-  const initialTab: SubscriptionTab = searchParams.get('tab') === 'transactions' ? 'transactions' : 'plans';
+  const tabParam = searchParams.get('tab');
+  const initialTab: SubscriptionTab = tabParam === 'transactions' ? 'transactions' : 'plans';
   const [activeTab, setActiveTab] = useState<SubscriptionTab>(initialTab);
 
   const {
@@ -72,25 +73,22 @@ function SubscriptionContent() {
   const [checkingOrderId, setCheckingOrderId] = useState<string | null>(null);
   const [copiedOrderId, setCopiedOrderId] = useState<string | null>(null);
 
-  // Sync tab with URL search parameter when it changes
+  // Sync tab with URL search parameter if changed externally (e.g. browser back/forward or notification link)
   useEffect(() => {
-    const tabParam = searchParams.get('tab');
-    if (tabParam === 'transactions' && activeTab !== 'transactions') {
-      setActiveTab('transactions');
-    }
-  }, [searchParams, activeTab]);
+    const targetTab: SubscriptionTab = searchParams.get('tab') === 'transactions' ? 'transactions' : 'plans';
+    setActiveTab(targetTab);
+  }, [searchParams]);
 
   const handleTabChange = (tab: SubscriptionTab) => {
     setActiveTab(tab);
-    if (typeof window !== 'undefined') {
-      const url = new URL(window.location.href);
-      if (tab === 'transactions') {
-        url.searchParams.set('tab', 'transactions');
-      } else {
-        url.searchParams.delete('tab');
-      }
-      window.history.replaceState({}, '', url.toString());
+    const params = new URLSearchParams(searchParams.toString());
+    if (tab === 'transactions') {
+      params.set('tab', 'transactions');
+    } else {
+      params.delete('tab');
     }
+    const queryString = params.toString();
+    router.replace(`/app/subscription${queryString ? `?${queryString}` : ''}`, { scroll: false });
   };
 
   const currentPlan = plans.find(
@@ -449,22 +447,22 @@ function SubscriptionContent() {
           isFreeTrial
             ? 'Launch Celebration'
             : isSubscribed
-            ? 'Active Membership'
-            : 'Chat Permits'
+              ? 'Active Membership'
+              : 'Chat Permits'
         }
         title={
           isFreeTrial
             ? 'Complimentary Member Access'
             : isSubscribed
-            ? 'Your Chat Permit & Privileges'
-            : 'Connect Directly with Matches'
+              ? 'Your Chat Permit & Privileges'
+              : 'Connect Directly with Matches'
         }
         description={
           isFreeTrial
             ? 'Enjoy full complimentary access during our launch release with zero payment required.'
             : isSubscribed
-            ? 'Track your permit validity, remaining contact credits, and daily interest quotas.'
-            : 'An active Chat Permit unlocks unlimited direct messaging and verified contact numbers.'
+              ? 'Track your permit validity, remaining contact credits, and daily interest quotas.'
+              : 'An active Chat Permit unlocks unlimited direct messaging and verified contact numbers.'
         }
       />
 
@@ -1448,9 +1446,6 @@ function SubscriptionContent() {
 
       {/* Customer Care Footer */}
       <div className="text-center mt-12 max-w-md mx-auto space-y-2">
-        <p className="text-xs text-[var(--muted)]">
-          Secure 256-bit SSL encrypted checkout. Membership plans activate immediately upon confirmation.
-        </p>
         <p className="text-xs text-[var(--muted)]">
           Need customized plan assistance or payment receipt inquiry? Contact customer care at{' '}
           <a
