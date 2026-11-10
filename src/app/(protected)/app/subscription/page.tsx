@@ -22,7 +22,6 @@ import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { SectionHeader } from '@/components/ui/section-header';
 import { FeatureGate } from '@/components/ui/under-development';
-import { PaymentStatusModal, type PaymentModalStatus } from '@/components/subscription/payment-status-modal';
 import { CONTACT_INFO } from '@/config/contact';
 import { isFreeTrialMode } from '@/config/feature-flags';
 import { useSubscription } from '@/context/subscription-context';
@@ -34,7 +33,14 @@ import { toast } from '@/lib/toast';
 
 export default function SubscriptionPage() {
   const router = useRouter();
-  const { isSubscribed, tier, subscription, refreshSubscription } = useSubscription();
+  const {
+    isSubscribed,
+    tier,
+    subscription,
+    refreshSubscription,
+    openPaymentStatusModal,
+    closePaymentStatusModal,
+  } = useSubscription();
   const [plans, setPlans] = useState<SubscriptionPlan[]>([]);
 
   const currentPlan = plans.find(
@@ -54,18 +60,6 @@ export default function SubscriptionPage() {
   const [processing, setProcessing] = useState<string | null>(null);
   const [pendingPayment, setPendingPayment] = useState<{ orderId: string } | null>(null);
   const [isCheckingPending, setIsCheckingPending] = useState(false);
-  const [statusModal, setStatusModal] = useState<{
-    isOpen: boolean;
-    status: PaymentModalStatus;
-    orderId?: string;
-    planName?: string;
-    amount?: number;
-    message?: string;
-    tierId?: string;
-  }>({
-    isOpen: false,
-    status: null,
-  });
   const isFreeTrial = isFreeTrialMode();
 
   const checkPendingStatus = async (orderId: string) => {
@@ -77,24 +71,26 @@ export default function SubscriptionPage() {
       if (verification.paymentStatus === 'SUCCESS') {
         await refreshSubscription();
         setPendingPayment(null);
-        setStatusModal({
-          isOpen: true,
+        openPaymentStatusModal({
           status: 'SUCCESS',
           orderId,
           planName: displayTierName,
+          amount: currentPlan?.price,
+          onContinue: () => {
+            closePaymentStatusModal();
+            router.push('/app');
+          },
         });
       } else if (verification.paymentStatus === 'USER_DROPPED') {
         setPendingPayment(null);
-        setStatusModal({
-          isOpen: true,
+        openPaymentStatusModal({
           status: 'USER_DROPPED',
           orderId,
           planName: displayTierName,
         });
       } else if (verification.paymentStatus === 'FAILED') {
         setPendingPayment(null);
-        setStatusModal({
-          isOpen: true,
+        openPaymentStatusModal({
           status: 'FAILED',
           orderId,
           planName: displayTierName,
@@ -132,67 +128,6 @@ export default function SubscriptionPage() {
   useEffect(() => {
     loadPlans();
   }, []);
-
-  // Listen for return redirect URL with ?order_id=... from Cashfree
-  useEffect(() => {
-    if (typeof window === 'undefined') return;
-    const urlParams = new URLSearchParams(window.location.search);
-    const returnOrderId = urlParams.get('order_id');
-
-    if (returnOrderId) {
-      console.log('[SubscriptionPage] Return redirect detected from Cashfree for order:', returnOrderId);
-      window.history.replaceState({}, '', window.location.pathname);
-
-      (async () => {
-        try {
-          toast.info('Verifying Payment', {
-            description: 'Checking order status with payment gateway...',
-          });
-          const verification = await paymentService.verifyOrder(returnOrderId);
-          console.log('[SubscriptionPage] Return order verification outcome:', verification);
-          if (verification.paymentStatus === 'SUCCESS') {
-            await refreshSubscription();
-            setPendingPayment(null);
-            setStatusModal({
-              isOpen: true,
-              status: 'SUCCESS',
-              orderId: returnOrderId,
-              planName: displayTierName,
-              amount: currentPlan?.price,
-            });
-          } else if (verification.paymentStatus === 'USER_DROPPED') {
-            setPendingPayment(null);
-            setStatusModal({
-              isOpen: true,
-              status: 'USER_DROPPED',
-              orderId: returnOrderId,
-              planName: displayTierName,
-            });
-          } else if (verification.paymentStatus === 'PENDING') {
-            setPendingPayment({ orderId: returnOrderId });
-            setStatusModal({
-              isOpen: true,
-              status: 'PENDING',
-              orderId: returnOrderId,
-              planName: displayTierName,
-              message: verification.message,
-            });
-          } else {
-            setPendingPayment(null);
-            setStatusModal({
-              isOpen: true,
-              status: 'FAILED',
-              orderId: returnOrderId,
-              planName: displayTierName,
-              message: verification.message,
-            });
-          }
-        } catch (e: any) {
-          console.error('[SubscriptionPage] Failed to verify return order:', e);
-        }
-      })();
-    }
-  }, [refreshSubscription]);
 
   const handleUpgrade = async (tierId: string, planName: string) => {
     setProcessing(tierId);
@@ -246,22 +181,21 @@ export default function SubscriptionPage() {
           errorMsg.includes('cancel');
 
         if (isUserDrop) {
-          setStatusModal({
-            isOpen: true,
+          openPaymentStatusModal({
             status: 'USER_DROPPED',
             orderId: order.orderId,
             planName,
             amount: order.amount,
           });
         } else {
-          setStatusModal({
-            isOpen: true,
+          openPaymentStatusModal({
             status: 'FAILED',
             orderId: order.orderId,
             planName,
             amount: order.amount,
             message: result.error.message,
             tierId,
+            onRetry: () => handleUpgrade(tierId, planName),
           });
         }
         return;
@@ -284,17 +218,19 @@ export default function SubscriptionPage() {
       if (verification.paymentStatus === 'SUCCESS') {
         await refreshSubscription();
         setPendingPayment(null);
-        setStatusModal({
-          isOpen: true,
+        openPaymentStatusModal({
           status: 'SUCCESS',
           orderId: order.orderId,
           planName,
           amount: order.amount,
+          onContinue: () => {
+            closePaymentStatusModal();
+            router.push('/app');
+          },
         });
       } else if (verification.paymentStatus === 'USER_DROPPED') {
         setPendingPayment(null);
-        setStatusModal({
-          isOpen: true,
+        openPaymentStatusModal({
           status: 'USER_DROPPED',
           orderId: order.orderId,
           planName,
@@ -302,24 +238,25 @@ export default function SubscriptionPage() {
         });
       } else if (verification.paymentStatus === 'PENDING') {
         setPendingPayment({ orderId: order.orderId });
-        setStatusModal({
-          isOpen: true,
+        openPaymentStatusModal({
           status: 'PENDING',
           orderId: order.orderId,
           planName,
           amount: order.amount,
+          tierId,
           message: verification.message,
+          onCheckStatus: () => checkPendingStatus(order.orderId),
         });
       } else {
         setPendingPayment(null);
-        setStatusModal({
-          isOpen: true,
+        openPaymentStatusModal({
           status: 'FAILED',
           orderId: order.orderId,
           planName,
           amount: order.amount,
           message: verification.message,
           tierId,
+          onRetry: () => handleUpgrade(tierId, planName),
         });
       }
     } catch (err: any) {
@@ -987,34 +924,6 @@ export default function SubscriptionPage() {
             </a>
           </p>
         </div>
-
-        {/* Dynamic Payment Status Feedback Modal */}
-        <PaymentStatusModal
-          isOpen={statusModal.isOpen}
-          status={statusModal.status}
-          orderId={statusModal.orderId}
-          planName={statusModal.planName || displayTierName}
-          amount={statusModal.amount}
-          message={statusModal.message}
-          onRetry={
-            statusModal.tierId
-              ? () => {
-                  const targetTier = statusModal.tierId!;
-                  const targetPlan = statusModal.planName || 'Permit';
-                  setStatusModal((prev) => ({ ...prev, isOpen: false }));
-                  handleUpgrade(targetTier, targetPlan);
-                }
-              : undefined
-          }
-          onCheckStatus={
-            statusModal.orderId ? () => checkPendingStatus(statusModal.orderId!) : undefined
-          }
-          onContinue={() => {
-            setStatusModal((prev) => ({ ...prev, isOpen: false }));
-            router.push('/app');
-          }}
-          onClose={() => setStatusModal((prev) => ({ ...prev, isOpen: false }))}
-        />
       </div>
     </FeatureGate>
   );
