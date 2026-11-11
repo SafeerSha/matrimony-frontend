@@ -1403,205 +1403,205 @@ export default function DiscoverPage() {
     const formattedId = getProfileUniqueId(profile);
 
     return (
-    <>
-      {/* Top Badges */}
-      <div className="absolute top-4 left-4 right-4 flex items-start justify-between gap-2 z-10 pointer-events-auto">
-        <div className="flex flex-wrap items-center gap-2 min-w-0">
-          {sentInterestIds.has(profile.id) ? (
-            <Badge
-              tone="accent"
-              size="sm"
-              className="bg-emerald-600/90 text-white font-bold backdrop-blur-md border-emerald-400/50 shadow-sm"
-            >
-              ✓ Interest Sent
-            </Badge>
-          ) : receivedInterestIds.has(profile.id) ? (
-            <Badge
-              tone="accent"
-              size="sm"
-              className="bg-gradient-to-r from-rose-600 to-pink-600 text-white font-bold backdrop-blur-md border-rose-400/50 shadow-sm"
-            >
-              ♥ Sent You an Interest
-            </Badge>
-          ) : profile.online ? (
-            <Badge
-              tone="neutral"
-              size="sm"
-              dot
-              dotColor="bg-emerald-500"
-              className="bg-white/90 backdrop-blur-md text-[var(--foreground)] border-white/80 font-medium"
-            >
-              Online now
-            </Badge>
-          ) : profile.lastActiveAt ? (
-            <Badge
-              tone="neutral"
-              size="sm"
-              className="bg-black/50 text-white/95 backdrop-blur-md border-white/20 text-[10px] font-medium"
-            >
-              {formatLastActive(profile.lastActiveAt)}
-            </Badge>
-          ) : null}
-        </div>
-
-        {formattedId && (
-          <span className="shrink-0 pointer-events-none rounded-full bg-black/45 backdrop-blur-md text-white/90 border border-white/15 text-[10px] font-semibold px-2.5 py-1 tracking-wider uppercase shadow-xs whitespace-nowrap">
-            ID: {formattedId}
-          </span>
-        )}
-      </div>
-
-      {/* Identity & Action Overlay on Photo */}
-      <div
-        className="absolute inset-x-0 bottom-0 p-3.5 sm:p-5 md:p-8 text-white z-10 space-y-1 sm:space-y-2 pointer-events-auto"
-      >
-        <div
-          className="group/name flex items-center gap-2 cursor-pointer w-fit active:opacity-80 transition-opacity"
-          onClick={(e) => {
-            e.stopPropagation();
-            router.push(`/app/profile?user=${profile.id}`);
-          }}
-        >
-          <h2 className="font-editorial-title text-2xl sm:text-3xl font-bold tracking-tight text-white drop-shadow-sm group-hover/name:text-[var(--accent-light)] transition-colors">
-            {profile.name}, {profile.age}
-          </h2>
-          {profile.verified && (
-            <VerificationBadge type="general" showIconOnly size="sm" />
-          )}
-        </div>
-
-        {(profile.education || profile.profession) && (
-          <div className="flex items-center gap-2 text-[11px] sm:text-xs font-semibold text-white/90">
-            {[profile.profession, profile.education].filter(Boolean).join(' • ')}
+      <>
+        {/* Top Badges */}
+        <div className="absolute top-4 left-4 right-4 flex items-start justify-between gap-2 z-10 pointer-events-auto">
+          <div className="flex flex-wrap items-center gap-2 min-w-0">
+            {sentInterestIds.has(profile.id) ? (
+              <Badge
+                tone="accent"
+                size="sm"
+                className="bg-emerald-600/90 text-white font-bold backdrop-blur-md border-emerald-400/50 shadow-sm"
+              >
+                ✓ Interest Sent
+              </Badge>
+            ) : receivedInterestIds.has(profile.id) ? (
+              <Badge
+                tone="accent"
+                size="sm"
+                className="bg-gradient-to-r from-rose-600 to-pink-600 text-white font-bold backdrop-blur-md border-rose-400/50 shadow-sm"
+              >
+                ♥ Sent You an Interest
+              </Badge>
+            ) : profile.online ? (
+              <Badge
+                tone="neutral"
+                size="sm"
+                dot
+                dotColor="bg-emerald-500"
+                className="bg-white/90 backdrop-blur-md text-[var(--foreground)] border-white/80 font-medium"
+              >
+                Online now
+              </Badge>
+            ) : profile.lastActiveAt ? (
+              <Badge
+                tone="neutral"
+                size="sm"
+                className="bg-black/50 text-white/95 backdrop-blur-md border-white/20 text-[10px] font-medium"
+              >
+                {formatLastActive(profile.lastActiveAt)}
+              </Badge>
+            ) : null}
           </div>
-        )}
 
-        {(profile.city || profile.state) && (
-          <p className="flex items-center gap-1.5 text-xs sm:text-sm text-white/90 font-medium">
-            <IconMapPin className="h-3.5 w-3.5 text-[var(--accent)] shrink-0" />
-            <span>
-              {[profile.city, profile.state].filter(Boolean).join(', ')}
+          {formattedId && (
+            <span className="shrink-0 pointer-events-none rounded-full bg-black/45 backdrop-blur-md text-white/90 border border-white/15 text-[10px] font-semibold px-2.5 py-1 tracking-wider uppercase shadow-xs whitespace-nowrap">
+              ID: {formattedId}
             </span>
-          </p>
-        )}
-
-        {/* Matrimonial Discovery Actions: Option 1 Hero Connect Pill + Left Quick-Actions */}
-        <div
-          className="w-full pt-2.5 sm:pt-3.5 flex items-center gap-2 sm:gap-2.5 max-w-full"
-          data-prevent-swipe="true"
-          onClick={(e) => e.stopPropagation()}
-          onPointerDown={(e) => e.stopPropagation()}
-        >
-          {/* Left Quick Actions: Pass, Chat, Star */}
-          <div className="flex items-center gap-2 sm:gap-2.5 shrink-0">
-            {/* Pass button: Large round icon button */}
-            <Button
-              variant="secondary"
-              size="icon"
-              onClick={(e) => {
-                e.stopPropagation();
-                if (triggerSwipe) {
-                  triggerSwipe('left');
-                } else {
-                  handlePass(profile.id);
-                }
-              }}
-              className="rounded-full aspect-square h-11 w-11 sm:h-12 sm:w-12 shrink-0 p-0 flex items-center justify-center bg-white/95 backdrop-blur-md text-rose-600 border border-white/70 hover:bg-white hover:scale-105 active-press shadow-md hover:shadow-lg transition-all"
-              title="Pass"
-              aria-label="Pass"
-            >
-              <IconX className="h-5.5 w-5.5 sm:h-6 sm:w-6 stroke-[2.3]" />
-            </Button>
-
-            {/* Chat button: Round icon button */}
-            <Button
-              variant="secondary"
-              size="icon"
-              onClick={handleChatClick(profile.id)}
-              className="rounded-full aspect-square h-10 w-10 sm:h-11 sm:w-11 shrink-0 p-0 bg-white/95 backdrop-blur-md text-[var(--foreground)] border border-white/60 shadow-md hover:bg-white hover:scale-105 active-press flex items-center justify-center transition-all"
-              title={`Chat with ${profile.name}`}
-              aria-label="Chat"
-            >
-              <IconMessageCircleFilled className="h-4.5 w-4.5 sm:h-5 sm:w-5 text-[var(--primary)] shrink-0" />
-            </Button>
-
-            {/* Favorite button: Round icon button */}
-            <Button
-              variant={
-                shortlistedIds.has(profile.id) ? 'primary' : 'outline'
-              }
-              size="icon"
-              onClick={(e) => {
-                e.stopPropagation();
-                handleShortlist(profile.id, profile.name);
-              }}
-              className={cn(
-                'rounded-full aspect-square h-10 w-10 sm:h-11 sm:w-11 shrink-0 p-0 border shadow-md active-press transition-all flex items-center justify-center',
-                shortlistedIds.has(profile.id)
-                  ? 'bg-gradient-to-tr from-[#D8B28C] via-[#C99757] to-[#9B6C2E] text-white border-[#EEDCC8]/60 hover:brightness-110 hover:scale-105 shadow-amber-950/20'
-                  : 'bg-white/95 backdrop-blur-md text-[var(--foreground)] border border-white/60 hover:bg-white hover:scale-105'
-              )}
-              title={shortlistedIds.has(profile.id) ? 'Favorited' : `Add ${profile.name} to favorites`}
-              aria-label={shortlistedIds.has(profile.id) ? 'Favorited' : 'Favorite'}
-            >
-              <IconStarFilled
-                className={cn(
-                  'h-4.5 w-4.5 sm:h-5 sm:w-5 shrink-0',
-                  shortlistedIds.has(profile.id)
-                    ? 'text-white'
-                    : 'text-[#C99757]'
-                )}
-              />
-            </Button>
-          </div>
-
-          {/* Right Hero Action: "Cancel Interest" if sent, or 3D "Send Interest" in Luxury Burgundy */}
-          {sentInterestIds.has(profile.id) ? (
-            <Button
-              variant="secondary"
-              disabled={cancellingInterestId === profile.id}
-              onClick={(e) => {
-                e.stopPropagation();
-                handleCancelInterest(profile.id, profile.name);
-              }}
-              className="flex-1 min-w-0 h-11 sm:h-12 rounded-full px-3 sm:px-4 font-bold text-xs sm:text-sm flex items-center justify-center gap-1.5 sm:gap-2 transition-all duration-150 select-none truncate bg-white/95 hover:bg-rose-50/90 backdrop-blur-md border border-rose-200/90 hover:border-rose-300 text-rose-700 hover:text-rose-800 shadow-sm active:scale-95 cursor-pointer"
-              title={`Cancel interest sent to ${profile.name}`}
-              aria-label="Cancel Interest"
-            >
-              {cancellingInterestId === profile.id ? (
-                <>
-                  <IconLoader2 className="h-4 w-4 sm:h-4.5 sm:w-4.5 animate-spin text-rose-600 shrink-0" />
-                  <span className="truncate text-rose-700 font-bold">Cancelling...</span>
-                </>
-              ) : (
-                <>
-                  <IconX className="h-4 w-4 sm:h-4.5 sm:w-4.5 shrink-0 stroke-[2.4] text-rose-600" />
-                  <span className="truncate text-rose-700 font-bold">Cancel Interest</span>
-                </>
-              )}
-            </Button>
-          ) : (
-            <Button
-              variant="primary"
-              onClick={(e) => {
-                e.stopPropagation();
-                if (triggerSwipe) {
-                  triggerSwipe('right');
-                } else {
-                  handleSendInterest(profile.id, profile.name, { silentToast: true });
-                }
-              }}
-              className="flex-1 min-w-0 h-11 sm:h-12 rounded-full px-3 sm:px-4 font-bold text-xs sm:text-sm flex items-center justify-center gap-1.5 sm:gap-2 transition-all duration-150 select-none truncate bg-gradient-to-b from-[#9E1D3B] via-[#801835] to-[#5E0E24] text-white border-t border-t-white/35 border-x border-x-[#72122B]/60 border-b-[3.5px] sm:border-b-[4px] border-b-[#420816] shadow-[0_4px_14px_rgba(94,14,36,0.5),inset_0_1.5px_1px_rgba(255,255,255,0.35)] hover:brightness-110 hover:-translate-y-0.5 hover:shadow-[0_6px_20px_rgba(94,14,36,0.6),inset_0_1.5px_1px_rgba(255,255,255,0.35)] active:scale-100 active:translate-y-[2px] active:border-b-[1px] active:shadow-[0_2px_6px_rgba(94,14,36,0.35)]"
-              title="Send Interest"
-              aria-label="Send Interest"
-            >
-              <IconHeartFilled className="h-4 w-4 sm:h-4.5 sm:w-4.5 shrink-0 text-white drop-shadow-[0_1px_1.5px_rgba(0,0,0,0.35)]" />
-              <span className="truncate tracking-wide drop-shadow-[0_1px_1.5px_rgba(0,0,0,0.35)]">Send Interest</span>
-            </Button>
           )}
         </div>
-      </div>
-    </>
+
+        {/* Identity & Action Overlay on Photo */}
+        <div
+          className="absolute inset-x-0 bottom-0 p-3.5 sm:p-5 md:p-8 text-white z-10 space-y-1 sm:space-y-2 pointer-events-auto"
+        >
+          <div
+            className="group/name flex items-center gap-2 cursor-pointer w-fit active:opacity-80 transition-opacity"
+            onClick={(e) => {
+              e.stopPropagation();
+              router.push(`/app/profile?user=${profile.id}`);
+            }}
+          >
+            <h2 className="font-editorial-title text-2xl sm:text-3xl font-bold tracking-tight text-white drop-shadow-sm group-hover/name:text-[var(--accent-light)] transition-colors">
+              {profile.name}, {profile.age}
+            </h2>
+            {profile.verified && (
+              <VerificationBadge type="general" showIconOnly size="sm" />
+            )}
+          </div>
+
+          {(profile.education || profile.profession) && (
+            <div className="flex items-center gap-2 text-[11px] sm:text-xs font-semibold text-white/90">
+              {[profile.profession, profile.education].filter(Boolean).join(' • ')}
+            </div>
+          )}
+
+          {(profile.city || profile.state) && (
+            <p className="flex items-center gap-1.5 text-xs sm:text-sm text-white/90 font-medium">
+              <IconMapPin className="h-3.5 w-3.5 text-[var(--accent)] shrink-0" />
+              <span>
+                {[profile.city, profile.state].filter(Boolean).join(', ')}
+              </span>
+            </p>
+          )}
+
+          {/* Matrimonial Discovery Actions: Option 1 Hero Connect Pill + Left Quick-Actions */}
+          <div
+            className="w-full pt-2.5 sm:pt-3.5 flex items-center gap-2 sm:gap-2.5 max-w-full"
+            data-prevent-swipe="true"
+            onClick={(e) => e.stopPropagation()}
+            onPointerDown={(e) => e.stopPropagation()}
+          >
+            {/* Left Quick Actions: Pass, Chat, Star */}
+            <div className="flex items-center gap-2 sm:gap-2.5 shrink-0">
+              {/* Pass button: Large round icon button */}
+              <Button
+                variant="secondary"
+                size="icon"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  if (triggerSwipe) {
+                    triggerSwipe('left');
+                  } else {
+                    handlePass(profile.id);
+                  }
+                }}
+                className="rounded-full aspect-square h-11 w-11 sm:h-12 sm:w-12 shrink-0 p-0 flex items-center justify-center bg-white/95 backdrop-blur-md text-rose-600 border border-white/70 hover:bg-white hover:scale-105 active-press shadow-md hover:shadow-lg transition-all"
+                title="Pass"
+                aria-label="Pass"
+              >
+                <IconX className="h-5.5 w-5.5 sm:h-6 sm:w-6 stroke-[2.3]" />
+              </Button>
+
+              {/* Chat button: Round icon button */}
+              <Button
+                variant="secondary"
+                size="icon"
+                onClick={handleChatClick(profile.id)}
+                className="rounded-full aspect-square h-10 w-10 sm:h-11 sm:w-11 shrink-0 p-0 bg-white/95 backdrop-blur-md text-[var(--foreground)] border border-white/60 shadow-md hover:bg-white hover:scale-105 active-press flex items-center justify-center transition-all"
+                title={`Chat with ${profile.name}`}
+                aria-label="Chat"
+              >
+                <IconMessageCircleFilled className="h-4.5 w-4.5 sm:h-5 sm:w-5 text-[var(--primary)] shrink-0" />
+              </Button>
+
+              {/* Favorite button: Round icon button */}
+              <Button
+                variant={
+                  shortlistedIds.has(profile.id) ? 'primary' : 'outline'
+                }
+                size="icon"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleShortlist(profile.id, profile.name);
+                }}
+                className={cn(
+                  'rounded-full aspect-square h-10 w-10 sm:h-11 sm:w-11 shrink-0 p-0 border shadow-md active-press transition-all flex items-center justify-center',
+                  shortlistedIds.has(profile.id)
+                    ? 'bg-gradient-to-tr from-[#D8B28C] via-[#C99757] to-[#9B6C2E] text-white border-[#EEDCC8]/60 hover:brightness-110 hover:scale-105 shadow-amber-950/20'
+                    : 'bg-white/95 backdrop-blur-md text-[var(--foreground)] border border-white/60 hover:bg-white hover:scale-105'
+                )}
+                title={shortlistedIds.has(profile.id) ? 'Favorited' : `Add ${profile.name} to favorites`}
+                aria-label={shortlistedIds.has(profile.id) ? 'Favorited' : 'Favorite'}
+              >
+                <IconStarFilled
+                  className={cn(
+                    'h-4.5 w-4.5 sm:h-5 sm:w-5 shrink-0',
+                    shortlistedIds.has(profile.id)
+                      ? 'text-white'
+                      : 'text-[#C99757]'
+                  )}
+                />
+              </Button>
+            </div>
+
+            {/* Right Hero Action: "Cancel Interest" if sent, or 3D "Send Interest" in Luxury Burgundy */}
+            {sentInterestIds.has(profile.id) ? (
+              <Button
+                variant="secondary"
+                disabled={cancellingInterestId === profile.id}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleCancelInterest(profile.id, profile.name);
+                }}
+                className="flex-1 min-w-0 h-11 sm:h-12 rounded-full px-3 sm:px-4 font-bold text-xs sm:text-sm flex items-center justify-center gap-1.5 sm:gap-2 transition-all duration-150 select-none truncate bg-white/95 hover:bg-rose-50/90 backdrop-blur-md border border-rose-200/90 hover:border-rose-300 text-rose-700 hover:text-rose-800 shadow-sm active:scale-95 cursor-pointer"
+                title={`Cancel interest sent to ${profile.name}`}
+                aria-label="Cancel Interest"
+              >
+                {cancellingInterestId === profile.id ? (
+                  <>
+                    <IconLoader2 className="h-4 w-4 sm:h-4.5 sm:w-4.5 animate-spin text-rose-600 shrink-0" />
+                    <span className="truncate text-rose-700 font-bold">Cancelling...</span>
+                  </>
+                ) : (
+                  <>
+                    <IconX className="h-4 w-4 sm:h-4.5 sm:w-4.5 shrink-0 stroke-[2.4] text-rose-600" />
+                    <span className="truncate text-rose-700 font-bold">Cancel Interest</span>
+                  </>
+                )}
+              </Button>
+            ) : (
+              <Button
+                variant="primary"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  if (triggerSwipe) {
+                    triggerSwipe('right');
+                  } else {
+                    handleSendInterest(profile.id, profile.name, { silentToast: true });
+                  }
+                }}
+                className="flex-1 min-w-0 h-11 sm:h-12 rounded-full px-3 sm:px-4 font-bold text-xs sm:text-sm flex items-center justify-center gap-1.5 sm:gap-2 transition-all duration-150 select-none truncate bg-gradient-to-b from-[#9E1D3B] via-[#801835] to-[#5E0E24] text-white border-t border-t-white/35 border-x border-x-[#72122B]/60 border-b-[3.5px] sm:border-b-[4px] border-b-[#420816] shadow-[0_4px_14px_rgba(94,14,36,0.5),inset_0_1.5px_1px_rgba(255,255,255,0.35)] hover:brightness-110 hover:-translate-y-0.5 hover:shadow-[0_6px_20px_rgba(94,14,36,0.6),inset_0_1.5px_1px_rgba(255,255,255,0.35)] active:scale-100 active:translate-y-[2px] active:border-b-[1px] active:shadow-[0_2px_6px_rgba(94,14,36,0.35)]"
+                title="Send Interest"
+                aria-label="Send Interest"
+              >
+                <IconHeartFilled className="h-4 w-4 sm:h-4.5 sm:w-4.5 shrink-0 text-white drop-shadow-[0_1px_1.5px_rgba(0,0,0,0.35)]" />
+                <span className="truncate tracking-wide drop-shadow-[0_1px_1.5px_rgba(0,0,0,0.35)]">Send Interest</span>
+              </Button>
+            )}
+          </div>
+        </div>
+      </>
     );
   };
 
@@ -1831,9 +1831,9 @@ export default function DiscoverPage() {
                             {/* When Marriage is selected, show Kerala, Telugu, Bharat sub-categories */}
                             {isMarriage && isSelected && (
                               <div className="ml-3 pl-2.5 border-l-2 border-rose-200/80 space-y-1 py-1 animate-content-appear">
-                                <div className="px-1 text-[9px] font-bold uppercase tracking-wider text-stone-600">
+                                {/* <div className="px-1 text-[9px] font-bold uppercase tracking-wider text-stone-600">
                                   Marriage Sub-Category
-                                </div>
+                                </div> */}
                                 <div className="space-y-0.5">
                                   {MARRIAGE_SUB_OPTIONS.map((sub) => {
                                     const isSubSelected = selectedMarriageSubCategory === sub.id;
