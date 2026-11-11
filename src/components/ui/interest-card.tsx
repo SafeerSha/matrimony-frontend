@@ -21,7 +21,7 @@ import { Button } from './button';
 import { Card } from './card';
 import { VerificationBadge } from './verification-badge';
 import { cn } from '@/lib/cn';
-import { getProfileUniqueId } from '@/lib/demo-data';
+import { formatLastActive, getProfileUniqueId } from '@/lib/demo-data';
 
 export interface InterestProfileData {
   id: string;
@@ -38,6 +38,7 @@ export interface InterestProfileData {
   sentAt?: string;
   verified?: boolean;
   online?: boolean;
+  lastActiveAt?: string;
 }
 
 export interface InterestCardProps {
@@ -136,9 +137,9 @@ export function InterestCard({
       </div>
 
       {/* 2. Top Floating Badges */}
-      <div className="absolute top-3.5 left-3.5 right-3.5 flex items-center justify-between gap-1.5 z-10 pointer-events-none">
+      <div className="absolute top-3.5 left-3.5 right-3.5 flex items-start justify-between gap-1.5 z-10 pointer-events-none">
         {/* Left Status Pill */}
-        <div className="flex items-center gap-1.5">
+        <div className="flex flex-wrap items-center gap-1.5 min-w-0">
           {type === 'received' && (
             <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-black/45 backdrop-blur-md text-white border border-white/20 text-[11px] font-bold shadow-xs">
               <IconClock className="h-3 w-3 text-amber-300" /> Awaiting Response
@@ -169,22 +170,30 @@ export function InterestCard({
               <IconBookmark className="h-3 w-3 text-amber-300 fill-current" /> Shortlisted You
             </span>
           )}
-          {profile.online && (
+          {profile.online ? (
             <Badge
               tone="neutral"
               size="sm"
               dot
               dotColor="bg-emerald-500"
-              className="bg-black/40 backdrop-blur-md text-white border-white/20 text-[10px] font-medium"
+              className="bg-black/40 backdrop-blur-md text-white border-white/20 text-[10px] font-medium whitespace-nowrap"
             >
               Online
             </Badge>
-          )}
+          ) : profile.lastActiveAt ? (
+            <Badge
+              tone="neutral"
+              size="sm"
+              className="bg-black/45 text-white/95 backdrop-blur-md border-white/20 text-[10px] font-medium whitespace-nowrap"
+            >
+              {formatLastActive(profile.lastActiveAt)}
+            </Badge>
+          ) : null}
         </div>
 
         {/* Right Matrimony ID tag */}
         {formattedId && (
-          <span className="rounded-full bg-black/45 backdrop-blur-md text-white/90 border border-white/15 text-[10px] font-semibold px-2.5 py-1 tracking-wider uppercase shadow-xs">
+          <span className="shrink-0 rounded-full bg-black/45 backdrop-blur-md text-white/90 border border-white/15 text-[10px] font-semibold px-2.5 py-1 tracking-wider uppercase shadow-xs whitespace-nowrap">
             ID: {formattedId}
           </span>
         )}

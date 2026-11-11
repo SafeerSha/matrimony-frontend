@@ -65,9 +65,27 @@ export function mapConnectionToProfile(u: any, idx = 0): Profile {
     profile?.image ||
     "";
 
+  const rawLastActive = partner.lastActiveAt || profile?.lastActiveAt || u.lastActiveAt || undefined;
+  const lastActiveAt =
+    rawLastActive instanceof Date
+      ? rawLastActive.toISOString()
+      : typeof rawLastActive === "string" && rawLastActive.trim().length > 0
+        ? rawLastActive
+        : undefined;
+  const lastActiveMs = lastActiveAt ? new Date(lastActiveAt).getTime() : NaN;
+  const isRecentlyActive = !isNaN(lastActiveMs) && Date.now() - lastActiveMs <= 5 * 60 * 1000;
+  const online =
+    typeof partner.isOnline === "boolean"
+      ? partner.isOnline
+      : typeof partner.online === "boolean"
+        ? partner.online
+        : typeof u.isOnline === "boolean"
+          ? u.isOnline
+          : isRecentlyActive;
+
   return {
     id,
-    profileId: partner.profileId || profile?.profileId || `SC-${id.slice(0, 6).toUpperCase()}`,
+    profileId: partner.profileId || profile?.profileId || undefined,
     name,
     age,
     city: profile?.city || partner.city || "Kochi",
@@ -77,7 +95,8 @@ export function mapConnectionToProfile(u: any, idx = 0): Profile {
     image,
     compatibility: partner.compatibility || profile?.compatibility || Math.floor(Math.random() * 15) + 85,
     verified: partner.isVerified ?? profile?.isVerified ?? true,
-    online: idx % 2 === 0,
+    online,
+    lastActiveAt,
     about: profile?.bio || partner.bio || profile?.about || partner.about || "Seeking a kind, caring partner to share life's journey with mutual respect and joy.",
     height: profile?.height ? `${profile.height}cm` : "5'5\"",
     maritalStatus: profile?.maritalStatus || partner.maritalStatus || "Never married",
