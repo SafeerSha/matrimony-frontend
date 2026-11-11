@@ -52,7 +52,7 @@ import { toast } from '@/lib/toast';
 import { useSubscription } from '@/context/subscription-context';
 import { cn } from '@/lib/cn';
 import { SwipeCard } from '@/components/discovery/swipe-card';
-import { type Profile, formatLastActive, getRegistrationBadge } from '@/lib/demo-data';
+import { type Profile, formatLastActive, getRegistrationBadge, getProfileUniqueId } from '@/lib/demo-data';
 
 export type DiscoveryViewMode = 'swipe' | 'grid';
 export type SortOption = 'recommended' | 'recent' | 'new' | 'nearby';
@@ -1399,45 +1399,56 @@ export default function DiscoverPage() {
     toast.info('Passes Cleared', 'Previously passed profiles are now back in your discovery feed.');
   };
 
-  const renderCardOverlay = (profile: Profile, triggerSwipe?: (dir: 'left' | 'right') => void) => (
+  const renderCardOverlay = (profile: Profile, triggerSwipe?: (dir: 'left' | 'right') => void) => {
+    const formattedId = getProfileUniqueId(profile);
+
+    return (
     <>
       {/* Top Badges */}
-      <div className="absolute top-4 left-4 flex items-center gap-2 z-10 pointer-events-auto">
-        {sentInterestIds.has(profile.id) ? (
-          <Badge
-            tone="accent"
-            size="sm"
-            className="bg-emerald-600/90 text-white font-bold backdrop-blur-md border-emerald-400/50 shadow-sm"
-          >
-            ✓ Interest Sent
-          </Badge>
-        ) : receivedInterestIds.has(profile.id) ? (
-          <Badge
-            tone="accent"
-            size="sm"
-            className="bg-gradient-to-r from-rose-600 to-pink-600 text-white font-bold backdrop-blur-md border-rose-400/50 shadow-sm"
-          >
-            ♥ Sent You an Interest
-          </Badge>
-        ) : profile.online ? (
-          <Badge
-            tone="neutral"
-            size="sm"
-            dot
-            dotColor="bg-emerald-500"
-            className="bg-white/90 backdrop-blur-md text-[var(--foreground)] border-white/80 font-medium"
-          >
-            Online now
-          </Badge>
-        ) : profile.lastActiveAt ? (
-          <Badge
-            tone="neutral"
-            size="sm"
-            className="bg-black/50 text-white/95 backdrop-blur-md border-white/20 text-[10px] font-medium"
-          >
-            {formatLastActive(profile.lastActiveAt)}
-          </Badge>
-        ) : null}
+      <div className="absolute top-4 left-4 right-4 flex items-start justify-between gap-2 z-10 pointer-events-auto">
+        <div className="flex flex-wrap items-center gap-2 min-w-0">
+          {sentInterestIds.has(profile.id) ? (
+            <Badge
+              tone="accent"
+              size="sm"
+              className="bg-emerald-600/90 text-white font-bold backdrop-blur-md border-emerald-400/50 shadow-sm"
+            >
+              ✓ Interest Sent
+            </Badge>
+          ) : receivedInterestIds.has(profile.id) ? (
+            <Badge
+              tone="accent"
+              size="sm"
+              className="bg-gradient-to-r from-rose-600 to-pink-600 text-white font-bold backdrop-blur-md border-rose-400/50 shadow-sm"
+            >
+              ♥ Sent You an Interest
+            </Badge>
+          ) : profile.online ? (
+            <Badge
+              tone="neutral"
+              size="sm"
+              dot
+              dotColor="bg-emerald-500"
+              className="bg-white/90 backdrop-blur-md text-[var(--foreground)] border-white/80 font-medium"
+            >
+              Online now
+            </Badge>
+          ) : profile.lastActiveAt ? (
+            <Badge
+              tone="neutral"
+              size="sm"
+              className="bg-black/50 text-white/95 backdrop-blur-md border-white/20 text-[10px] font-medium"
+            >
+              {formatLastActive(profile.lastActiveAt)}
+            </Badge>
+          ) : null}
+        </div>
+
+        {formattedId && (
+          <span className="shrink-0 pointer-events-none rounded-full bg-black/45 backdrop-blur-md text-white/90 border border-white/15 text-[10px] font-semibold px-2.5 py-1 tracking-wider uppercase shadow-xs whitespace-nowrap">
+            ID: {formattedId}
+          </span>
+        )}
       </div>
 
       {/* Identity & Action Overlay on Photo */}
@@ -1591,7 +1602,8 @@ export default function DiscoverPage() {
         </div>
       </div>
     </>
-  );
+    );
+  };
 
   return (
     <div className={cn(
@@ -2093,6 +2105,7 @@ export default function DiscoverPage() {
               const isShortlisted = shortlistedIds.has(profile.id);
               const isInterestSent = sentInterestIds.has(profile.id);
               const isInterestReceived = receivedInterestIds.has(profile.id);
+              const formattedId = getProfileUniqueId(profile);
 
               return (
                 <Card
@@ -2118,8 +2131,8 @@ export default function DiscoverPage() {
                     {profile.image && <div className="absolute inset-0 photo-overlay-warm" aria-hidden="true" />}
 
                     {/* Top Badges */}
-                    <div className="absolute top-3 left-3 right-3 flex items-center justify-between gap-1.5 z-10">
-                      <div className="flex items-center gap-1.5">
+                    <div className="absolute top-3 left-3 right-3 flex items-start justify-between gap-1.5 z-10 pointer-events-none">
+                      <div className="flex flex-wrap items-center gap-1.5 min-w-0">
                         {isInterestSent ? (
                           <Badge
                             tone="accent"
@@ -2157,7 +2170,11 @@ export default function DiscoverPage() {
                         ) : null}
                       </div>
 
-
+                      {formattedId && (
+                        <span className="shrink-0 rounded-full bg-black/45 backdrop-blur-md text-white/90 border border-white/15 text-[10px] font-semibold px-2.5 py-1 tracking-wider uppercase shadow-xs whitespace-nowrap">
+                          ID: {formattedId}
+                        </span>
+                      )}
                     </div>
 
                     {/* Identity & Action Overlay on Photo */}

@@ -38,6 +38,8 @@ export const PartnerProfileSchema = z.object({
   family: z.string().optional().nullable(),
   isVerified: z.boolean().optional(),
   online: z.boolean().optional(),
+  isOnline: z.boolean().optional(),
+  lastActiveAt: z.string().or(z.date()).optional().nullable(),
   compatibility: z.number().optional(),
   photos: z.array(PhotoSchema).optional().default([]),
   image: z.string().optional(),
