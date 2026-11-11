@@ -22,6 +22,18 @@ export interface SecureImageViewerProps {
   profileId?: string;
 }
 
+const WATERMARK_POSITIONS: ReadonlyArray<{ top: string; left: string; isCenter?: boolean }> = [
+  { top: '18%', left: '20%' },
+  { top: '18%', left: '50%' },
+  { top: '18%', left: '80%' },
+  { top: '50%', left: '20%' },
+  { top: '50%', left: '50%', isCenter: true },
+  { top: '50%', left: '80%' },
+  { top: '82%', left: '20%' },
+  { top: '82%', left: '50%' },
+  { top: '82%', left: '80%' },
+];
+
 export function SecureImageViewer({
   isOpen,
   onClose,
@@ -530,7 +542,7 @@ export function SecureImageViewer({
         </div>
 
         {/* ======================================================== */}
-        {/* STATIC "ishtamchat" OVERLAY (STANDARD 3-POINT COUNT)     */}
+        {/* STATIC "IshtamChat" WATERMARK OVERLAY (9-POINT GRID)     */}
         {/* Stays in stationary 1x position strictly over photo area */}
         {/* ======================================================== */}
         <div
@@ -540,44 +552,30 @@ export function SecureImageViewer({
           )}
           aria-hidden="true"
         >
-          {/* 1. Upper-Left Diagonal Watermark */}
-          <div className="absolute top-[22%] left-[26%] -translate-x-1/2 -translate-y-1/2 -rotate-[26deg] select-none pointer-events-none">
-            <span
-              className="text-sm sm:text-base font-black tracking-widest text-white/65 select-none uppercase drop-shadow-[0_1px_2px_rgba(0,0,0,0.85)]"
-              style={{
-                WebkitTextStroke: '0.6px rgba(0, 0, 0, 0.85)',
-                fontFamily: 'system-ui, -apple-system, sans-serif',
-              }}
+          {WATERMARK_POSITIONS.map((pos, idx) => (
+            <div
+              key={idx}
+              style={{ top: pos.top, left: pos.left }}
+              className="absolute -translate-x-1/2 -translate-y-1/2 -rotate-[26deg] select-none pointer-events-none"
             >
-              ishtamchat
-            </span>
-          </div>
-
-          {/* 2. Center Primary Diagonal Watermark */}
-          <div className="absolute top-[50%] left-[50%] -translate-x-1/2 -translate-y-1/2 -rotate-[26deg] select-none pointer-events-none">
-            <span
-              className="text-base sm:text-xl font-black tracking-widest text-white/75 select-none uppercase drop-shadow-[0_2px_3px_rgba(0,0,0,0.9)]"
-              style={{
-                WebkitTextStroke: '0.75px rgba(0, 0, 0, 0.9)',
-                fontFamily: 'system-ui, -apple-system, sans-serif',
-              }}
-            >
-              ishtamchat
-            </span>
-          </div>
-
-          {/* 3. Lower-Right Diagonal Watermark */}
-          <div className="absolute top-[78%] left-[74%] -translate-x-1/2 -translate-y-1/2 -rotate-[26deg] select-none pointer-events-none">
-            <span
-              className="text-sm sm:text-base font-black tracking-widest text-white/65 select-none uppercase drop-shadow-[0_1px_2px_rgba(0,0,0,0.85)]"
-              style={{
-                WebkitTextStroke: '0.6px rgba(0, 0, 0, 0.85)',
-                fontFamily: 'system-ui, -apple-system, sans-serif',
-              }}
-            >
-              ishtamchat
-            </span>
-          </div>
+              <span
+                className={cn(
+                  'tracking-wider select-none whitespace-nowrap',
+                  pos.isCenter
+                    ? 'text-xs sm:text-sm font-extrabold text-white/70 drop-shadow-[0_2px_3px_rgba(0,0,0,0.9)]'
+                    : 'text-[11px] sm:text-xs font-bold text-white/60 drop-shadow-[0_1px_2px_rgba(0,0,0,0.85)]'
+                )}
+                style={{
+                  WebkitTextStroke: pos.isCenter
+                    ? '0.55px rgba(0, 0, 0, 0.85)'
+                    : '0.45px rgba(0, 0, 0, 0.8)',
+                  fontFamily: 'system-ui, -apple-system, sans-serif',
+                }}
+              >
+                IshtamChat
+              </span>
+            </div>
+          ))}
         </div>
       </div>
 
