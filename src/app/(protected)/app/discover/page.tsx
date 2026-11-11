@@ -391,50 +391,138 @@ export default function DiscoverPage() {
   const [isIdSearching, setIsIdSearching] = useState(false);
   const [idSearchResult, setIdSearchResult] = useState<any | null>(null);
   const [idSearchError, setIdSearchError] = useState<string | null>(null);
+  const [idSearchErrorTitle, setIdSearchErrorTitle] = useState<string>('Member Not Found');
   const [hasSearchedId, setHasSearchedId] = useState(false);
   const savedPreferencesRef = useRef<any>(null);
+  const currentUserIdentityRef = useRef<{ id: string; profileId: string } | null>(null);
+  const latestIdSearchSeqRef = useRef<number>(0);
+
+  const resetIdSearch = useCallback(() => {
+    latestIdSearchSeqRef.current += 1;
+    setIdSearchInput('');
+    setIsIdSearching(false);
+    setIdSearchResult(null);
+    setIdSearchError(null);
+    setIdSearchErrorTitle('Member Not Found');
+    setHasSearchedId(false);
+  }, []);
 
   const executeIdSearch = useCallback(async (code: string) => {
     const raw = code.trim().toUpperCase();
-    if (!raw) return;
-    const cleanSuffix = raw.replace(/^IMC-?/i, '');
-    const fullId = `IMC-${cleanSuffix}`;
+    const cleanSuffix = raw.replace(/^IMC-?/i, '').replace(/[^A-Z0-9]/g, '');
 
+    if (!cleanSuffix) {
+      latestIdSearchSeqRef.current += 1;
+      setIsIdSearching(false);
+      setIdSearchResult(null);
+      setIdSearchError(null);
+      setHasSearchedId(false);
+      return;
+    }
+
+    if (!/^[A-Z0-9]{6}$/.test(cleanSuffix)) {
+      latestIdSearchSeqRef.current += 1;
+      setIsIdSearching(false);
+      setIdSearchResult(null);
+      setHasSearchedId(true);
+      setIdSearchErrorTitle('Invalid Member ID');
+      setIdSearchError('Please enter a valid 6-character Member ID after IMC- (e.g. A00025).');
+      return;
+    }
+
+    const fullId = `IMC-${cleanSuffix}`;
+    const myIdentity = currentUserIdentityRef.current;
+
+    if (myIdentity?.profileId && myIdentity.profileId === fullId) {
+      latestIdSearchSeqRef.current += 1;
+      setIsIdSearching(false);
+      setIdSearchResult(null);
+      setHasSearchedId(true);
+      setIdSearchErrorTitle('Own Profile Not Allowed');
+      setIdSearchError(`"${fullId}" is your own Member ID. Enter another member's ID to search.`);
+      return;
+    }
+
+    const searchSeq = ++latestIdSearchSeqRef.current;
     setIsIdSearching(true);
+    setIdSearchResult(null);
     setIdSearchError(null);
     setHasSearchedId(true);
 
     try {
-      const res = await profileService.getProfile(fullId);
-      if (res && (res.id || res.userId || (res as any).user?.id)) {
+      const res: any = await profileService.getProfile(fullId, { excludeSelf: true });
+      if (searchSeq !== latestIdSearchSeqRef.current) return;
+
+      const resUserId = String(res?.userId || res?.user?.id || res?.id || '');
+      const resProfileId = String(res?.profileId || res?.user?.profileId || '').trim().toUpperCase();
+      const resStatus = String(res?.status || res?.user?.status || '').toUpperCase();
+      const isInactive =
+        (resStatus && resStatus !== 'ACTIVE') ||
+        Boolean(res?.isBanned || res?.user?.isBanned) ||
+        Boolean(res?.deletedAt || res?.user?.deletedAt) ||
+        Boolean(res?.deactivatedAt || res?.user?.deactivatedAt);
+
+      if (
+        (myIdentity?.id && resUserId === myIdentity.id) ||
+        (myIdentity?.profileId && resProfileId === myIdentity.profileId)
+      ) {
+        setIdSearchResult(null);
+        setIdSearchErrorTitle('Own Profile Not Allowed');
+        setIdSearchError(`"${fullId}" is your own Member ID. Enter another member's ID to search.`);
+        return;
+      }
+
+      if (res && resUserId && !isInactive) {
         setIdSearchResult(res);
         setIdSearchError(null);
       } else {
         setIdSearchResult(null);
-        setIdSearchError(`No member found with ID ${fullId}`);
+        setIdSearchErrorTitle('Member Not Found');
+        setIdSearchError(`No active member found with ID ${fullId}`);
       }
-    } catch {
+    } catch (err: any) {
+      if (searchSeq !== latestIdSearchSeqRef.current) return;
+      const errCode = err?.details?.code;
+      const errMsg = String(err?.message || '');
       setIdSearchResult(null);
-      setIdSearchError(`No member found with ID ${fullId}. Please verify the ID and try again.`);
+
+      if (
+        errCode === 'SELF_PROFILE_SEARCH' ||
+        errMsg.toLowerCase().includes('own member id') ||
+        errMsg.toLowerCase().includes('own profile')
+      ) {
+        setIdSearchErrorTitle('Own Profile Not Allowed');
+        setIdSearchError(`"${fullId}" is your own Member ID. Enter another member's ID to search.`);
+      } else if (errCode === 'INVALID_MEMBER_ID_FORMAT' || errCode === 'INVALID_PROFILE_IDENTIFIER') {
+        setIdSearchErrorTitle('Invalid Member ID');
+        setIdSearchError(errMsg || 'Please enter a valid 6-character Member ID after IMC-.');
+      } else {
+        setIdSearchErrorTitle('Member Not Found');
+        setIdSearchError(`No active member found with ID ${fullId}. Please verify the ID and try again.`);
+      }
     } finally {
-      setIsIdSearching(false);
+      if (searchSeq === latestIdSearchSeqRef.current) {
+        setIsIdSearching(false);
+      }
     }
   }, []);
 
   const handleIdInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    let val = e.target.value.toUpperCase();
+    let val = e.target.value.trim().toUpperCase();
     if (val.startsWith('IMC-')) {
       val = val.slice(4);
     } else if (val.startsWith('IMC')) {
       val = val.slice(3);
     }
     val = val.replace(/[^A-Z0-9]/g, '').slice(0, 6);
+    latestIdSearchSeqRef.current += 1;
     setIdSearchInput(val);
     setIdSearchError(null);
 
     if (val.length === 6) {
       executeIdSearch(val);
     } else {
+      setIsIdSearching(false);
       setIdSearchResult(null);
       setHasSearchedId(false);
     }
@@ -620,6 +708,10 @@ export default function DiscoverPage() {
       .getProfile('me')
       .then((profile: any) => {
         if (!profile) return;
+        currentUserIdentityRef.current = {
+          id: String(profile.userId || profile.id || ''),
+          profileId: String(profile.profileId || profile.user?.profileId || '').trim().toUpperCase(),
+        };
         if (isDraftUser(profile)) {
           toast.warning(
             'Complete Profile Required',
@@ -2258,12 +2350,7 @@ export default function DiscoverPage() {
               <Button
                 variant="outline"
                 size="md"
-                onClick={() => {
-                  setIdSearchInput('');
-                  setIdSearchResult(null);
-                  setIdSearchError(null);
-                  setHasSearchedId(false);
-                }}
+                onClick={resetIdSearch}
                 className="text-xs font-bold"
               >
                 Clear
@@ -2777,19 +2864,14 @@ export default function DiscoverPage() {
                         executeIdSearch(idSearchInput);
                       }
                     }}
-                    placeholder="A00001"
+                    placeholder="A00025"
                     maxLength={6}
                     className="w-full bg-transparent px-3.5 py-3 text-sm font-bold tracking-wider uppercase text-[var(--foreground)] placeholder:text-[var(--muted)]/50 outline-none"
                   />
                   {idSearchInput && (
                     <button
                       type="button"
-                      onClick={() => {
-                        setIdSearchInput('');
-                        setIdSearchResult(null);
-                        setIdSearchError(null);
-                        setHasSearchedId(false);
-                      }}
+                      onClick={resetIdSearch}
                       className="p-2 mr-1 text-[var(--muted)] hover:text-[var(--foreground)] transition-colors"
                       title="Clear ID"
                     >
@@ -2799,7 +2881,7 @@ export default function DiscoverPage() {
                 </div>
                 <div className="flex items-center justify-between text-[11px] text-[#766B6F] px-1">
                   <span>
-                    Format: <span className="font-bold text-[#2D1B22]">IMC-</span> followed by 6 alphanumeric characters (e.g. <span className="font-bold text-[#7A1835]">A00001</span>)
+                    Format: <span className="font-bold text-[#2D1B22]">IMC-</span> followed by 6 alphanumeric characters (e.g. <span className="font-bold text-[#7A1835]">A00025</span>)
                   </span>
                   <span>{idSearchInput.length}/6</span>
                 </div>
@@ -2910,7 +2992,7 @@ export default function DiscoverPage() {
                   <div className="h-10 w-10 rounded-full bg-rose-100 flex items-center justify-center text-rose-600">
                     <IconUserX className="h-5 w-5" />
                   </div>
-                  <p className="text-sm font-bold text-rose-900">Member Not Found</p>
+                  <p className="text-sm font-bold text-rose-900">{idSearchErrorTitle}</p>
                   <p className="text-xs text-rose-700 max-w-xs">{idSearchError}</p>
                 </div>
               )}
@@ -2923,7 +3005,7 @@ export default function DiscoverPage() {
                   </div>
                   <p className="text-xs font-bold text-[#2D1B22]">Instant ID Lookup</p>
                   <p className="text-[11px] text-[#766B6F] max-w-xs mx-auto">
-                    Type the 6-character identifier (e.g. A00001, A00002). The search will run automatically as soon as all 6 characters are entered.
+                    Type the 6-character identifier (e.g. A00025, B00102). The search will run automatically as soon as all 6 characters are entered.
                   </p>
                 </div>
               )}
