@@ -17,17 +17,20 @@ export function Header({
   user,
   className,
 }: HeaderProps) {
-  const [isScrolled, setIsScrolled] = useState(false);
+  // Dynamic Island scroll effect commented out for the time being
+  // const [isScrolled, setIsScrolled] = useState(false);
+  const [isScrolled] = useState(false);
 
+  /*
   useEffect(() => {
     const handleScroll = () => {
       const scrollY = window.scrollY || document.documentElement.scrollTop || document.body.scrollTop || 0;
       setIsScrolled(scrollY > 20);
     };
-    
+
     // Check initial scroll position
     handleScroll();
-    
+
     window.addEventListener("scroll", handleScroll, { passive: true });
     document.addEventListener("scroll", handleScroll, { passive: true });
     return () => {
@@ -35,6 +38,7 @@ export function Header({
       document.removeEventListener("scroll", handleScroll);
     };
   }, []);
+  */
 
   return (
     <header
