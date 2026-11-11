@@ -87,8 +87,10 @@ export interface UserProfile {
 }
 
 export const profileService = {
-  getProfile: (userId: string | "me") => {
-    return apiFetch<UserProfile>(`/profiles/${userId}`, {
+  getProfile: (userId: string | "me", options?: { excludeSelf?: boolean }) => {
+    const encodedId = userId === "me" ? "me" : encodeURIComponent(userId);
+    const qs = options?.excludeSelf ? "?excludeSelf=true" : "";
+    return apiFetch<UserProfile>(`/profiles/${encodedId}${qs}`, {
       method: "GET",
     });
   },
