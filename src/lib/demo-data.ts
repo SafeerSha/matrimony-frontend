@@ -29,6 +29,7 @@ export type Profile = {
   isShortlisted?: boolean;
   isInterestSent?: boolean;
   isMatched?: boolean;
+  hasChat?: boolean;
   phone?: string;
   hasPhone?: boolean;
   isContactUnlocked?: boolean;

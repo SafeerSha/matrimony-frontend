@@ -41,6 +41,7 @@ export const PartnerProfileSchema = z.object({
   isOnline: z.boolean().optional(),
   lastActiveAt: z.string().or(z.date()).optional().nullable(),
   compatibility: z.number().optional(),
+  hasChat: z.boolean().optional(),
   photos: z.array(PhotoSchema).optional().default([]),
   image: z.string().optional(),
 });
@@ -61,6 +62,7 @@ export const LiveConnectionSchema = z.object({
   receiver: PartnerProfileSchema.optional().nullable(),
   partner: PartnerProfileSchema.optional().nullable(),
   isMutualMatch: z.boolean().optional(),
+  hasChat: z.boolean().optional(),
 });
 
 export type LiveConnection = z.infer<typeof LiveConnectionSchema>;

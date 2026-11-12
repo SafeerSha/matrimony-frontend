@@ -20,7 +20,7 @@ import { MutualMatchCard } from '@/components/ui/mutual-match-card';
 import { EmptyState } from '@/components/ui/empty-state';
 import { FeatureGate } from '@/components/ui/under-development';
 import { ProfileCardSkeleton } from '@/components/ui/skeleton';
-import { matchesService, profileService } from '@/services';
+import { chatService, matchesService, profileService } from '@/services';
 import { useCelebration } from '@/context/celebration-context';
 import type { Profile } from '@/lib/demo-data';
 
@@ -44,12 +44,42 @@ function MatchesContent() {
       ]);
 
       if (liveMatches.status === 'fulfilled') {
-        setMatches(liveMatches.value);
+        let resolvedMatches = liveMatches.value;
+
+        // Fallback if the backend /connections?type=matches response does not include `hasChat`
+        if (resolvedMatches.some((m) => m.hasChat === undefined)) {
+          try {
+            const conversations = await chatService.getConversations();
+            const chattedPartnerIds = new Set<string>();
+            for (const conv of conversations) {
+              if (conv.lastMessage) {
+                if (conv.participantId) chattedPartnerIds.add(conv.participantId);
+                if (conv.id) chattedPartnerIds.add(conv.id);
+                if (conv.participant?.id) chattedPartnerIds.add(conv.participant.id);
+                if (conv.participant?.userId) chattedPartnerIds.add(conv.participant.userId);
+              }
+            }
+            resolvedMatches = resolvedMatches.map((m) =>
+              m.hasChat !== undefined
+                ? m
+                : {
+                    ...m,
+                    hasChat: Boolean(
+                      chattedPartnerIds.has(m.id) || (m.userId && chattedPartnerIds.has(m.userId))
+                    ),
+                  }
+            );
+          } catch {
+            // Non-fatal: keep matches without fallback chat status
+          }
+        }
+
+        setMatches(resolvedMatches);
 
         // Auto-trigger celebration if ?celebrate=ID query param is present
         const celebrateId = searchParams.get('celebrate');
         if (celebrateId) {
-          const target = liveMatches.value.find((m) => m.id === celebrateId);
+          const target = resolvedMatches.find((m) => m.id === celebrateId);
           if (target) {
             celebrateMatch({ match: target });
           }
