@@ -61,6 +61,7 @@ export const adminService = {
     if (filters.limit) searchParams.set("limit", String(filters.limit));
     if (filters.search) searchParams.set("search", filters.search);
     if (filters.location) searchParams.set("location", filters.location);
+    if (filters.role && filters.role !== "ALL") searchParams.set("role", filters.role);
     if (filters.plan && filters.plan !== "ALL") searchParams.set("plan", filters.plan);
     if (filters.status && filters.status !== "ALL") searchParams.set("status", filters.status);
 

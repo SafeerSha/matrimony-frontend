@@ -19,6 +19,9 @@ export const rmService = {
     if (filters.search) searchParams.set("search", filters.search);
     if (filters.location) searchParams.set("location", filters.location);
     if (filters.category && filters.category !== "ALL") searchParams.set("category", filters.category);
+    if (filters.category === "Marriage" && filters.subCategories && filters.subCategories.length > 0) {
+      searchParams.set("subCategories", filters.subCategories.join(","));
+    }
     if (filters.plan && filters.plan !== "ALL") searchParams.set("plan", filters.plan);
     if (filters.status && filters.status !== "ALL") searchParams.set("status", filters.status);
     if (filters.verified && filters.verified !== "ALL") searchParams.set("verified", filters.verified);

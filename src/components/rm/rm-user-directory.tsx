@@ -18,6 +18,8 @@ import {
   IconHeartHandshake,
   IconHomeHeart,
   IconCheck,
+  IconChevronDown,
+  IconFilter,
 } from '@tabler/icons-react';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -28,6 +30,7 @@ import { SecureImageViewer } from '@/components/ui/secure-image-viewer';
 import { rmService } from '@/services/rm.service';
 import { chatService } from '@/services/chat.service';
 import type {
+  RmMarriageSubCategory,
   RmUserCategory,
   RmUserGender,
   RmUserListItem,
@@ -36,6 +39,12 @@ import type {
   RmUserStatus,
   RmUserVerified,
 } from '@/types/rm';
+
+const MARRIAGE_SUBCATEGORY_OPTIONS: { value: RmMarriageSubCategory; label: string }[] = [
+  { value: 'Kerala', label: 'Kerala Matrimony' },
+  { value: 'Telugu', label: 'Telugu Matrimony' },
+  { value: 'Bharat', label: 'Bharat Matrimony' },
+];
 
 const PLAN_OPTIONS: ModernSelectOption[] = [
   { value: 'ALL', label: 'All Plans' },
@@ -110,6 +119,8 @@ export function RmUserDirectory() {
   const [error, setError] = useState<string | null>(null);
 
   const [category, setCategory] = useState<RmUserCategory>('ALL');
+  const [subCategories, setSubCategories] = useState<RmMarriageSubCategory[]>([]);
+  const [isSubCatOpen, setIsSubCatOpen] = useState(false);
   const [search, setSearch] = useState('');
   const [location, setLocation] = useState('');
   const [plan, setPlan] = useState<RmUserPlan>('ALL');
@@ -124,6 +135,25 @@ export function RmUserDirectory() {
   const searchTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const locationTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const abortRef = useRef<AbortController | null>(null);
+  const subCatDropdownRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    if (!isSubCatOpen) return;
+    const handleClickOutside = (e: MouseEvent) => {
+      if (subCatDropdownRef.current && !subCatDropdownRef.current.contains(e.target as Node)) {
+        setIsSubCatOpen(false);
+      }
+    };
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setIsSubCatOpen(false);
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    window.addEventListener('keydown', handleKeyDown);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [isSubCatOpen]);
 
   useEffect(() => {
     const cleanup = chatService.onPresence((data) => {
@@ -159,6 +189,7 @@ export function RmUserDirectory() {
           search: search.trim() || undefined,
           location: location.trim() || undefined,
           category,
+          subCategories: category === 'Marriage' ? subCategories : undefined,
           plan,
           status,
           verified,
@@ -175,7 +206,7 @@ export function RmUserDirectory() {
     } finally {
       setLoading(false);
     }
-  }, [page, search, location, category, plan, status, verified, gender]);
+  }, [page, search, location, category, subCategories, plan, status, verified, gender]);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -200,8 +231,17 @@ export function RmUserDirectory() {
     locationTimerRef.current = setTimeout(() => setPage(1), 400);
   };
 
+  const toggleSubCategory = (value: RmMarriageSubCategory) => {
+    setSubCategories((prev) =>
+      prev.includes(value) ? prev.filter((item) => item !== value) : [...prev, value],
+    );
+    setPage(1);
+  };
+
   const resetFilters = () => {
     setCategory('ALL');
+    setSubCategories([]);
+    setIsSubCatOpen(false);
     setSearch('');
     setLocation('');
     setPlan('ALL');
@@ -213,6 +253,7 @@ export function RmUserDirectory() {
 
   const hasActiveFilters =
     category !== 'ALL' ||
+    subCategories.length > 0 ||
     search.trim() !== '' ||
     location.trim() !== '' ||
     plan !== 'ALL' ||
@@ -270,39 +311,163 @@ export function RmUserDirectory() {
           </div>
         </div>
 
-        {/* Category Tabs */}
-        <div className="flex flex-wrap items-center gap-2">
-          {categoryTabs.map((tab) => {
-            const Icon = tab.icon;
-            const active = category === tab.id;
-            return (
+        {/* Category Tabs + Marriage Subcategories Multi-Select */}
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div className="flex flex-wrap items-center gap-2">
+            {categoryTabs.map((tab) => {
+              const Icon = tab.icon;
+              const active = category === tab.id;
+              return (
+                <button
+                  key={tab.id}
+                  type="button"
+                  onClick={() => {
+                    setCategory(tab.id);
+                    if (tab.id !== 'Marriage') {
+                      setSubCategories([]);
+                      setIsSubCatOpen(false);
+                    }
+                    setPage(1);
+                  }}
+                  className={`inline-flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-bold border transition-all cursor-pointer ${
+                    active
+                      ? 'bg-[var(--primary)] text-white border-[var(--primary)] shadow-sm'
+                      : 'bg-[var(--surface)] text-[var(--muted-strong)] border-[var(--border)] hover:border-[var(--primary)]/50 hover:text-[var(--foreground)]'
+                  }`}
+                >
+                  <Icon className="h-4 w-4 shrink-0" />
+                  <span>{tab.label}</span>
+                  {typeof tab.count === 'number' && (
+                    <span
+                      className={`rounded-full px-1.5 py-0.5 text-[10px] font-bold ${
+                        active ? 'bg-white/20 text-white' : 'bg-[var(--surface-muted)] text-[var(--muted-strong)]'
+                      }`}
+                    >
+                      {tab.count}
+                    </span>
+                  )}
+                </button>
+              );
+            })}
+          </div>
+
+          {category === 'Marriage' && (
+            <div ref={subCatDropdownRef} className="relative z-30">
               <button
-                key={tab.id}
                 type="button"
-                onClick={() => {
-                  setCategory(tab.id);
-                  setPage(1);
-                }}
+                onClick={() => setIsSubCatOpen((prev) => !prev)}
+                aria-haspopup="listbox"
+                aria-expanded={isSubCatOpen}
                 className={`inline-flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-bold border transition-all cursor-pointer ${
-                  active
-                    ? 'bg-[var(--primary)] text-white border-[var(--primary)] shadow-sm'
-                    : 'bg-[var(--surface)] text-[var(--muted-strong)] border-[var(--border)] hover:border-[var(--primary)]/50 hover:text-[var(--foreground)]'
+                  subCategories.length > 0
+                    ? 'bg-[#FAF3EC] text-[#80132E] border-[#80132E]/50 shadow-xs'
+                    : 'bg-[var(--surface)] text-[var(--foreground)] border-[var(--border)] hover:border-[var(--primary)]/50'
                 }`}
               >
-                <Icon className="h-4 w-4 shrink-0" />
-                <span>{tab.label}</span>
-                {typeof tab.count === 'number' && (
-                  <span
-                    className={`rounded-full px-1.5 py-0.5 text-[10px] font-bold ${
-                      active ? 'bg-white/20 text-white' : 'bg-[var(--surface-muted)] text-[var(--muted-strong)]'
-                    }`}
-                  >
-                    {tab.count}
+                <IconFilter className="h-3.5 w-3.5 text-[var(--primary)] shrink-0" />
+                <span className="truncate max-w-[190px]">
+                  {subCategories.length === 0
+                    ? 'Subcategories: All'
+                    : `Subcategories: ${subCategories.join(', ')}`}
+                </span>
+                {subCategories.length > 0 && (
+                  <span className="rounded-full bg-[var(--primary)] text-white px-1.5 py-0.5 text-[10px] font-bold leading-none">
+                    {subCategories.length}
                   </span>
                 )}
+                <IconChevronDown
+                  className={`h-3.5 w-3.5 text-[var(--muted)] transition-transform ${
+                    isSubCatOpen ? 'rotate-180' : ''
+                  }`}
+                />
               </button>
-            );
-          })}
+
+              {isSubCatOpen && (
+                <div
+                  role="listbox"
+                  aria-multiselectable="true"
+                  className="absolute left-0 sm:left-auto sm:right-0 mt-2 w-64 rounded-2xl border border-[var(--border)] bg-white p-2 shadow-xl animate-in fade-in zoom-in-95 duration-150"
+                >
+                  <div className="px-2.5 py-1.5 border-b border-[var(--border)] flex items-center justify-between">
+                    <span className="text-[11px] font-bold uppercase tracking-wider text-[var(--muted-strong)]">
+                      Marriage Subcategories
+                    </span>
+                    {subCategories.length > 0 && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setSubCategories([]);
+                          setPage(1);
+                        }}
+                        className="text-[11px] font-bold text-[var(--primary)] hover:underline cursor-pointer"
+                      >
+                        Clear
+                      </button>
+                    )}
+                  </div>
+
+                  <div className="py-1.5 space-y-1">
+                    {MARRIAGE_SUBCATEGORY_OPTIONS.map((opt) => {
+                      const checked = subCategories.includes(opt.value);
+                      const count = stats?.marriageSubCategories?.[opt.value];
+                      return (
+                        <button
+                          key={opt.value}
+                          type="button"
+                          role="option"
+                          aria-selected={checked}
+                          onClick={() => toggleSubCategory(opt.value)}
+                          className={`w-full flex items-center justify-between gap-2 px-2.5 py-2 rounded-xl text-xs font-semibold transition-colors cursor-pointer ${
+                            checked
+                              ? 'bg-[#FAF3EC] text-[#80132E]'
+                              : 'text-[var(--foreground)] hover:bg-[var(--surface-muted)]'
+                          }`}
+                        >
+                          <span className="flex items-center gap-2.5 min-w-0">
+                            <span
+                              className={`grid h-4 w-4 place-items-center rounded border transition-colors shrink-0 ${
+                                checked
+                                  ? 'bg-[var(--primary)] border-[var(--primary)] text-white'
+                                  : 'border-[var(--border-strong)] bg-white'
+                              }`}
+                            >
+                              {checked && <IconCheck className="h-3 w-3 stroke-[3]" />}
+                            </span>
+                            <span className="truncate">{opt.label}</span>
+                          </span>
+                          {typeof count === 'number' && (
+                            <span className="rounded-full bg-[var(--surface-muted)] px-1.5 py-0.5 text-[10px] font-bold text-[var(--muted-strong)]">
+                              {count}
+                            </span>
+                          )}
+                        </button>
+                      );
+                    })}
+                  </div>
+
+                  <div className="pt-1.5 border-t border-[var(--border)] flex items-center justify-between px-2 pb-1">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setSubCategories(['Kerala', 'Telugu', 'Bharat']);
+                        setPage(1);
+                      }}
+                      className="text-[11px] font-semibold text-[var(--muted-strong)] hover:text-[var(--primary)] cursor-pointer"
+                    >
+                      Select All
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setIsSubCatOpen(false)}
+                      className="text-[11px] font-bold text-[var(--primary)] hover:underline cursor-pointer"
+                    >
+                      Done
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
         </div>
 
         {/* Filters */}

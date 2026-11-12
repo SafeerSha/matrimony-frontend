@@ -24,7 +24,6 @@ export default function RmUserProfilePage() {
   const userId = typeof params?.id === 'string' ? params.id : '';
 
   const [isAuthorized, setIsAuthorized] = useState<boolean | null>(null);
-  const [currentRmName, setCurrentRmName] = useState<string>('Relationship Manager');
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [openIssuesCount, setOpenIssuesCount] = useState<number>(0);
 
@@ -56,12 +55,6 @@ export default function RmUserProfilePage() {
         }
 
         if (isMounted) {
-          const rawUser = user as { firstName?: string; lastName?: string; email?: string } | null;
-          const fullName =
-            [rawUser?.firstName, rawUser?.lastName].filter(Boolean).join(' ').trim() ||
-            rawUser?.email?.split('@')[0] ||
-            'Relationship Manager';
-          setCurrentRmName(fullName);
           setIsAuthorized(true);
         }
       } catch {
@@ -241,7 +234,7 @@ export default function RmUserProfilePage() {
           <div className="flex items-center gap-3">
             <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-[#FAF3EC] border border-[#EAD8C7] text-xs font-semibold text-[#80132E]">
               <IconUserCheck className="h-4 w-4 text-emerald-600" />
-              <span>{currentRmName}</span>
+              <span>Relationship Manager</span>
             </div>
 
             <button

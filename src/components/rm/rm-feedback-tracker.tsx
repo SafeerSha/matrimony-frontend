@@ -16,6 +16,8 @@ import {
   IconUser,
   IconLoader2,
   IconCheck,
+  IconX,
+  IconClock,
 } from '@tabler/icons-react';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -410,15 +412,15 @@ export function RmFeedbackTracker({ onOpenCountChange, onViewUserProfile }: RmFe
         )}
       </Modal>
 
-      <div className="space-y-6 animate-in fade-in slide-in-from-bottom-3 duration-300">
+      <div className="space-y-4 animate-in fade-in slide-in-from-bottom-3 duration-300">
         {/* Header */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <div>
-            <h1 className="text-2xl font-bold text-[var(--foreground)] tracking-tight">
+            <h1 className="text-xl sm:text-2xl font-bold text-[var(--foreground)] tracking-tight">
               Feedback & Issue Tracking
             </h1>
-            <p className="text-sm text-[var(--muted)] mt-1">
-              Monitor user feedback, feature suggestions, and bug reports submitted across the platform.
+            <p className="text-xs sm:text-sm text-[var(--muted)] mt-0.5">
+              Monitor user feedback, feature suggestions, and bug reports across the platform.
             </p>
           </div>
           <Button
@@ -429,7 +431,7 @@ export function RmFeedbackTracker({ onOpenCountChange, onViewUserProfile }: RmFe
               fetchStats();
             }}
             disabled={loading}
-            className="self-start sm:self-auto flex items-center gap-1.5"
+            className="self-start sm:self-auto flex items-center gap-1.5 shrink-0"
           >
             <IconRefresh className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
             Refresh
@@ -437,153 +439,221 @@ export function RmFeedbackTracker({ onOpenCountChange, onViewUserProfile }: RmFe
         </div>
 
         {/* Summary KPI Strip */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
-          <Card className="p-4 border-[var(--border)] shadow-xs">
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-xs font-bold text-[var(--muted-strong)]">Total Submissions</span>
-              <span className="h-8 w-8 rounded-lg bg-[var(--primary-light)] text-[var(--primary)] grid place-items-center">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+          <button
+            type="button"
+            onClick={resetFilters}
+            className="text-left rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-3.5 sm:p-4 shadow-xs hover:border-[var(--primary)]/40 transition-colors cursor-pointer"
+          >
+            <div className="flex items-start justify-between gap-2">
+              <div className="min-w-0">
+                <span className="block text-xs font-semibold text-[var(--muted-strong)] truncate">
+                  Total Submissions
+                </span>
+                <p className="text-xl sm:text-2xl font-bold text-[var(--foreground)] tabular-nums mt-1">
+                  {stats?.total ?? '—'}
+                </p>
+                <span className="block text-[11px] text-[var(--muted)] mt-0.5">All categories</span>
+              </div>
+              <span className="h-8 w-8 rounded-xl bg-[var(--primary-light)] text-[var(--primary)] grid place-items-center shrink-0">
                 <IconMessageCircle className="h-4 w-4" />
               </span>
             </div>
-            <p className="text-2xl font-bold text-[var(--foreground)]">{stats?.total ?? '—'}</p>
-          </Card>
+          </button>
 
-          <Card className="p-4 border-[var(--border)] shadow-xs">
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-xs font-bold text-[var(--muted-strong)]">Open / Pending</span>
-              <span className="h-8 w-8 rounded-lg bg-amber-100 text-amber-800 grid place-items-center">
+          <button
+            type="button"
+            onClick={() => {
+              setTypeFilter('bug');
+              setStatusFilter('SUBMITTED');
+              setPage(1);
+            }}
+            className="text-left rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-3.5 sm:p-4 shadow-xs hover:border-amber-400/70 transition-colors cursor-pointer"
+          >
+            <div className="flex items-start justify-between gap-2">
+              <div className="min-w-0">
+                <span className="block text-xs font-semibold text-[var(--muted-strong)] truncate">
+                  Open / Pending Bugs
+                </span>
+                <p className="text-xl sm:text-2xl font-bold text-[var(--foreground)] tabular-nums mt-1">
+                  {stats?.openCount ?? '—'}
+                </p>
+                <span className="block text-[11px] text-[var(--muted)] mt-0.5">Submitted or in review</span>
+              </div>
+              <span className="h-8 w-8 rounded-xl bg-amber-100 text-amber-800 grid place-items-center shrink-0">
                 <IconAlertCircle className="h-4 w-4" />
               </span>
             </div>
-            <p className="text-2xl font-bold text-[var(--foreground)]">{stats?.openCount ?? '—'}</p>
-          </Card>
+          </button>
 
-          <Card className="p-4 border-[var(--border)] shadow-xs">
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-xs font-bold text-[var(--muted-strong)]">Bug Reports</span>
-              <span className="h-8 w-8 rounded-lg bg-rose-100 text-rose-700 grid place-items-center">
+          <button
+            type="button"
+            onClick={() => {
+              setTypeFilter('bug');
+              setStatusFilter('ALL');
+              setPage(1);
+            }}
+            className="text-left rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-3.5 sm:p-4 shadow-xs hover:border-rose-300 transition-colors cursor-pointer"
+          >
+            <div className="flex items-start justify-between gap-2">
+              <div className="min-w-0">
+                <span className="block text-xs font-semibold text-[var(--muted-strong)] truncate">
+                  Bug Reports
+                </span>
+                <p className="text-xl sm:text-2xl font-bold text-[var(--foreground)] tabular-nums mt-1">
+                  {stats?.byType?.bug ?? '—'}
+                </p>
+                <span className="block text-[11px] text-[var(--muted)] mt-0.5">All bug tickets</span>
+              </div>
+              <span className="h-8 w-8 rounded-xl bg-rose-100 text-rose-700 grid place-items-center shrink-0">
                 <IconBug className="h-4 w-4" />
               </span>
             </div>
-            <p className="text-2xl font-bold text-[var(--foreground)]">{stats?.byType?.bug ?? '—'}</p>
-          </Card>
+          </button>
 
-          <Card className="p-4 border-[var(--border)] shadow-xs">
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-xs font-bold text-[var(--muted-strong)]">Average Rating</span>
-              <span className="h-8 w-8 rounded-lg bg-emerald-100 text-emerald-700 grid place-items-center">
+          <div className="rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-3.5 sm:p-4 shadow-xs">
+            <div className="flex items-start justify-between gap-2">
+              <div className="min-w-0">
+                <span className="block text-xs font-semibold text-[var(--muted-strong)] truncate">
+                  Average Rating
+                </span>
+                <p className="text-xl sm:text-2xl font-bold text-[var(--foreground)] tabular-nums mt-1">
+                  {stats ? (
+                    <>
+                      {stats.averageRating.toFixed(1)}
+                      <span className="text-xs sm:text-sm font-semibold text-[var(--muted)] ml-1">/ 5</span>
+                    </>
+                  ) : (
+                    '—'
+                  )}
+                </p>
+                <span className="block text-[11px] text-[var(--muted)] mt-0.5">Across rated entries</span>
+              </div>
+              <span className="h-8 w-8 rounded-xl bg-emerald-100 text-emerald-700 grid place-items-center shrink-0">
                 <IconStarFilled className="h-4 w-4" />
               </span>
             </div>
-            <p className="text-2xl font-bold text-[var(--foreground)]">
-              {stats ? `${stats.averageRating.toFixed(1)} / 5` : '—'}
-            </p>
-          </Card>
+          </div>
         </div>
 
-        {/* Type Tabs */}
-        <div className="flex flex-wrap items-center gap-2">
-          {typeTabs.map((t) => {
-            const Icon = t.icon;
-            const active = typeFilter === t.id;
-            return (
-              <button
-                key={t.id}
-                type="button"
-                onClick={() => {
-                  setTypeFilter(t.id);
-                  setPage(1);
-                }}
-                className={`inline-flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-bold border transition-all cursor-pointer ${
-                  active
-                    ? 'bg-[var(--primary)] text-white border-[var(--primary)] shadow-sm'
-                    : 'bg-[var(--surface)] text-[var(--muted-strong)] border-[var(--border)] hover:border-[var(--primary)]/50 hover:text-[var(--foreground)]'
-                }`}
-              >
-                <Icon className="h-4 w-4 shrink-0" />
-                <span>{t.label}</span>
-                {typeof t.count === 'number' && (
-                  <span
-                    className={`rounded-full px-1.5 py-0.5 text-[10px] font-bold ${
-                      active ? 'bg-white/20 text-white' : 'bg-[var(--surface-muted)] text-[var(--muted-strong)]'
+        {/* Unified Category Tabs + Search & Filter Toolbar */}
+        <Card className="relative z-10 border border-[var(--border)] shadow-xs bg-[var(--surface)] overflow-visible">
+          <div className="px-3.5 py-2.5 sm:px-4 border-b border-[var(--border)] bg-[var(--surface-muted)]/35 flex flex-wrap items-center justify-between gap-2 rounded-t-2xl">
+            <div className="flex flex-wrap items-center gap-1.5">
+              {typeTabs.map((t) => {
+                const Icon = t.icon;
+                const active = typeFilter === t.id;
+                return (
+                  <button
+                    key={t.id}
+                    type="button"
+                    onClick={() => {
+                      setTypeFilter(t.id);
+                      setPage(1);
+                    }}
+                    className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold border transition-all cursor-pointer ${
+                      active
+                        ? 'bg-[var(--primary)] text-white border-[var(--primary)] shadow-xs'
+                        : 'bg-[var(--surface)] text-[var(--muted-strong)] border-[var(--border)] hover:border-[var(--primary)]/50 hover:text-[var(--foreground)]'
                     }`}
                   >
-                    {t.count}
-                  </span>
-                )}
-              </button>
-            );
-          })}
-        </div>
-
-        {/* Filter Bar */}
-        <Card className="relative z-10 p-4 border border-[var(--border)] shadow-xs bg-[var(--surface)]">
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-            <div className="relative">
-              <IconSearch className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-[var(--muted)]" />
-              <input
-                type="search"
-                placeholder="Search message, notes, user…"
-                value={search}
-                onChange={(e) => handleSearchChange(e.target.value)}
-                maxLength={100}
-                className="w-full h-10 pl-9 pr-3 text-xs sm:text-sm rounded-xl border border-[var(--border)] bg-[var(--background)] outline-none focus:border-[var(--primary)] transition-colors"
-              />
+                    <Icon className="h-3.5 w-3.5 shrink-0" />
+                    <span>{t.label}</span>
+                    {typeof t.count === 'number' && (
+                      <span
+                        className={`rounded-full px-1.5 py-0.5 text-[10px] font-bold leading-none tabular-nums ${
+                          active ? 'bg-white/20 text-white' : 'bg-[var(--surface-muted)] text-[var(--muted-strong)]'
+                        }`}
+                      >
+                        {t.count}
+                      </span>
+                    )}
+                  </button>
+                );
+              })}
             </div>
 
-            <ModernSelect
-              value={statusFilter}
-              onChange={(val) => {
-                setStatusFilter(val as 'ALL' | RmFeedbackStatus);
-                setPage(1);
-              }}
-              options={STATUS_FILTER_OPTIONS}
-              size="sm"
-              ariaLabel="Filter by status"
-            />
-
-            <ModernSelect
-              value={priorityFilter}
-              onChange={(val) => {
-                setPriorityFilter(val as 'ALL' | RmFeedbackPriority);
-                setPage(1);
-              }}
-              options={PRIORITY_FILTER_OPTIONS}
-              size="sm"
-              ariaLabel="Filter by priority"
-            />
-
-            <ModernSelect
-              value={ratingFilter}
-              onChange={(val) => {
-                setRatingFilter(val);
-                setPage(1);
-              }}
-              options={RATING_FILTER_OPTIONS}
-              size="sm"
-              ariaLabel="Filter by rating"
-            />
-          </div>
-
-          {hasActiveFilters && (
-            <div className="mt-3 pt-3 border-t border-[var(--border)] flex items-center justify-between text-xs">
-              <span className="text-[var(--muted)]">Filters active</span>
+            {hasActiveFilters && (
               <button
                 type="button"
                 onClick={resetFilters}
-                className="text-[var(--primary)] font-semibold hover:underline cursor-pointer"
+                className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-semibold text-[var(--primary)] hover:bg-[var(--primary-light)]/50 transition-colors cursor-pointer"
               >
-                Clear all filters
+                <IconX className="h-3.5 w-3.5" />
+                Clear filters
               </button>
+            )}
+          </div>
+
+          <div className="p-3.5 sm:p-4 grid grid-cols-1 md:grid-cols-12 gap-2.5 items-center">
+            <div className="relative md:col-span-6">
+              <IconSearch className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-[var(--muted)] pointer-events-none" />
+              <input
+                type="search"
+                placeholder="Search message, RM notes, user name, email, or profile ID…"
+                value={search}
+                onChange={(e) => handleSearchChange(e.target.value)}
+                maxLength={100}
+                className="w-full h-10 pl-9 pr-8 text-xs sm:text-sm rounded-xl border border-[var(--border)] bg-[var(--background)] outline-none focus:border-[var(--primary)] transition-colors"
+              />
+              {search && (
+                <button
+                  type="button"
+                  onClick={() => handleSearchChange('')}
+                  aria-label="Clear search"
+                  className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[var(--muted)] hover:text-[var(--foreground)] cursor-pointer p-0.5"
+                >
+                  <IconX className="h-3.5 w-3.5" />
+                </button>
+              )}
             </div>
-          )}
+
+            <div className="md:col-span-2">
+              <ModernSelect
+                value={statusFilter}
+                onChange={(val) => {
+                  setStatusFilter(val as 'ALL' | RmFeedbackStatus);
+                  setPage(1);
+                }}
+                options={STATUS_FILTER_OPTIONS}
+                size="sm"
+                ariaLabel="Filter by status"
+              />
+            </div>
+
+            <div className="md:col-span-2">
+              <ModernSelect
+                value={priorityFilter}
+                onChange={(val) => {
+                  setPriorityFilter(val as 'ALL' | RmFeedbackPriority);
+                  setPage(1);
+                }}
+                options={PRIORITY_FILTER_OPTIONS}
+                size="sm"
+                ariaLabel="Filter by priority"
+              />
+            </div>
+
+            <div className="md:col-span-2">
+              <ModernSelect
+                value={ratingFilter}
+                onChange={(val) => {
+                  setRatingFilter(val);
+                  setPage(1);
+                }}
+                options={RATING_FILTER_OPTIONS}
+                size="sm"
+                ariaLabel="Filter by rating"
+              />
+            </div>
+          </div>
         </Card>
 
         {/* Feedback List */}
         <Card className="border border-[var(--border)] overflow-hidden shadow-xs bg-[var(--surface)]">
           {error ? (
             <div className="p-8 text-center space-y-3" role="alert">
-              <IconAlertCircle className="h-10 w-10 text-rose-500 mx-auto" />
+              <IconAlertCircle className="h-9 w-9 text-rose-500 mx-auto" />
               <h3 className="text-sm font-bold text-[var(--foreground)]">Error loading feedback</h3>
               <p className="text-xs text-[var(--muted)] max-w-sm mx-auto">{error}</p>
               <Button size="sm" variant="outline" onClick={fetchFeedback}>
@@ -591,14 +661,14 @@ export function RmFeedbackTracker({ onOpenCountChange, onViewUserProfile }: RmFe
               </Button>
             </div>
           ) : loading ? (
-            <div className="p-12 text-center space-y-3">
-              <div className="h-7 w-7 border-2 border-[var(--primary)] border-t-transparent rounded-full animate-spin mx-auto" />
+            <div className="p-10 text-center space-y-2.5">
+              <div className="h-6 w-6 border-2 border-[var(--primary)] border-t-transparent rounded-full animate-spin mx-auto" />
               <p className="text-xs text-[var(--muted)]">Loading submissions…</p>
             </div>
           ) : items.length === 0 ? (
-            <div className="p-12 text-center space-y-3">
-              <IconMessageCircle className="h-10 w-10 text-[var(--muted)] mx-auto opacity-50" />
-              <h3 className="text-base font-bold text-[var(--foreground)]">No feedback records</h3>
+            <div className="p-10 text-center space-y-2.5">
+              <IconMessageCircle className="h-9 w-9 text-[var(--muted)] mx-auto opacity-50" />
+              <h3 className="text-sm sm:text-base font-bold text-[var(--foreground)]">No feedback records</h3>
               <p className="text-xs text-[var(--muted)] max-w-sm mx-auto">
                 No bug reports, feature ideas, or reviews match the selected filters.
               </p>
@@ -610,6 +680,17 @@ export function RmFeedbackTracker({ onOpenCountChange, onViewUserProfile }: RmFe
             </div>
           ) : (
             <>
+              <div className="px-4 py-2.5 sm:px-5 border-b border-[var(--border)] bg-[var(--surface-muted)]/30 flex items-center justify-between text-[11px] font-medium text-[var(--muted)]">
+                <span>
+                  Showing <strong className="text-[var(--foreground)]">{items.length}</strong> of{' '}
+                  <strong className="text-[var(--foreground)]">{totalCount}</strong>{' '}
+                  {totalCount === 1 ? 'submission' : 'submissions'}
+                </span>
+                <span>
+                  Page <strong className="text-[var(--foreground)]">{page}</strong> / {totalPages}
+                </span>
+              </div>
+
               <div className="divide-y divide-[var(--border)]">
                 {items.map((item) => {
                   const submitterName = item.user
@@ -622,22 +703,26 @@ export function RmFeedbackTracker({ onOpenCountChange, onViewUserProfile }: RmFe
                   return (
                     <div
                       key={item.id}
-                      className="p-4 sm:p-5 hover:bg-[var(--surface-muted)]/40 transition-colors space-y-3"
+                      className="p-4 sm:px-5 sm:py-4 hover:bg-[var(--surface-muted)]/35 transition-colors"
                     >
-                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
-                        <div className="flex flex-wrap items-center gap-2">
+                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                        <div className="flex flex-wrap items-center gap-1.5">
                           {renderTypeBadge(item.type)}
-                          {renderPriorityBadge(item.priority)}
                           {renderStatusBadge(item.status)}
-                          <span className="inline-flex items-center gap-1 text-xs font-bold text-amber-600 bg-amber-50 border border-amber-200 px-2 py-0.5 rounded-full">
-                            <IconStarFilled className="h-3 w-3" />
+                          {renderPriorityBadge(item.priority)}
+                          <span className="inline-flex items-center gap-1 text-[11px] font-bold text-amber-700 bg-amber-50 border border-amber-200 px-2 py-0.5 rounded-full tabular-nums">
+                            <IconStarFilled className="h-3 w-3 text-amber-500" />
                             {item.rating}/5
                           </span>
                         </div>
 
-                        <div className="flex items-center gap-2">
-                          <span className="text-[11px] text-[var(--muted)]">
-                            {new Date(item.createdAt).toLocaleString()}
+                        <div className="flex items-center justify-between sm:justify-end gap-2.5 shrink-0">
+                          <span className="inline-flex items-center gap-1 text-[11px] text-[var(--muted)] tabular-nums">
+                            <IconClock className="h-3 w-3 opacity-70" />
+                            {new Date(item.createdAt).toLocaleString(undefined, {
+                              dateStyle: 'medium',
+                              timeStyle: 'short',
+                            })}
                           </span>
                           <Button
                             size="xs"
@@ -651,58 +736,59 @@ export function RmFeedbackTracker({ onOpenCountChange, onViewUserProfile }: RmFe
                         </div>
                       </div>
 
-                      <p className="text-xs sm:text-sm text-[var(--foreground)] leading-relaxed whitespace-pre-wrap">
+                      <p className="mt-2.5 text-sm text-[var(--foreground)] leading-relaxed whitespace-pre-wrap">
                         {item.message}
                       </p>
 
                       {item.rmNotes && (
-                        <div className="rounded-xl bg-[#FAF3EC] border border-[#EAD8C7] px-3 py-2 text-xs text-[#5C0D24]">
-                          <span className="font-bold">RM Notes: </span>
+                        <div className="mt-2.5 rounded-xl bg-[#FAF3EC] border border-[#EAD8C7] px-3 py-2 text-xs text-[#5C0D24]">
+                          <span className="font-bold">Internal RM Notes: </span>
                           <span className="whitespace-pre-wrap">{item.rmNotes}</span>
                         </div>
                       )}
 
-                      <div className="flex flex-wrap items-center justify-between gap-2 pt-1 text-xs text-[var(--muted)]">
-                        <div className="flex items-center gap-2">
-                          {item.user ? (
-                            <>
+                      <div className="mt-3 pt-2.5 border-t border-[var(--border)]/60 flex flex-wrap items-center justify-between gap-2">
+                        {item.user ? (
+                          <>
+                            <div className="flex items-center gap-2 min-w-0">
                               <Avatar
                                 src={item.user.photos?.[0]?.url || ''}
                                 name={submitterName}
                                 size="sm"
-                                className="border border-[var(--border)]"
+                                className="border border-[var(--border)] shrink-0"
                               />
-                              <span className="font-semibold text-[var(--foreground)]">
+                              <span className="font-semibold text-xs text-[var(--foreground)] truncate">
                                 {submitterName}
                               </span>
                               {item.user.profileId && (
-                                <span className="font-mono text-[11px] text-[var(--muted)]">
-                                  ({item.user.profileId})
+                                <span className="px-1.5 py-0.5 rounded bg-[var(--surface-muted)] font-mono text-[11px] text-[var(--muted-strong)] shrink-0">
+                                  {item.user.profileId}
                                 </span>
                               )}
-                              {onViewUserProfile ? (
-                                <button
-                                  type="button"
-                                  onClick={() => onViewUserProfile(item.user!.id)}
-                                  className="inline-flex items-center gap-1 text-[11px] font-bold text-[var(--primary)] hover:underline cursor-pointer ml-1"
-                                >
-                                  <IconUser className="h-3 w-3" />
-                                  View Profile
-                                </button>
-                              ) : (
-                                <Link
-                                  href={`/rm/users/${item.user.id}`}
-                                  className="inline-flex items-center gap-1 text-[11px] font-bold text-[var(--primary)] hover:underline ml-1"
-                                >
-                                  <IconUser className="h-3 w-3" />
-                                  View Profile
-                                </Link>
-                              )}
-                            </>
-                          ) : (
-                            <span>Anonymous submission</span>
-                          )}
-                        </div>
+                            </div>
+
+                            {onViewUserProfile ? (
+                              <button
+                                type="button"
+                                onClick={() => onViewUserProfile(item.user!.id)}
+                                className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg border border-[var(--border)] bg-[var(--background)] hover:border-[var(--primary)]/50 hover:text-[var(--primary)] text-[11px] font-semibold text-[var(--foreground)] transition-colors cursor-pointer"
+                              >
+                                <IconUser className="h-3 w-3" />
+                                View Profile
+                              </button>
+                            ) : (
+                              <Link
+                                href={`/rm/users/${item.user.id}`}
+                                className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg border border-[var(--border)] bg-[var(--background)] hover:border-[var(--primary)]/50 hover:text-[var(--primary)] text-[11px] font-semibold text-[var(--foreground)] transition-colors"
+                              >
+                                <IconUser className="h-3 w-3" />
+                                View Profile
+                              </Link>
+                            )}
+                          </>
+                        ) : (
+                          <span className="text-xs text-[var(--muted)]">Anonymous submission</span>
+                        )}
                       </div>
                     </div>
                   );
@@ -710,10 +796,11 @@ export function RmFeedbackTracker({ onOpenCountChange, onViewUserProfile }: RmFe
               </div>
 
               {/* Pagination */}
-              <div className="flex flex-col sm:flex-row items-center justify-between gap-3 px-4 py-3.5 border-t border-[var(--border)] bg-[var(--surface-muted)]/40 text-xs">
+              <div className="flex flex-col sm:flex-row items-center justify-between gap-2.5 px-4 py-3 sm:px-5 border-t border-[var(--border)] bg-[var(--surface-muted)]/35 text-xs">
                 <span className="text-[var(--muted)]">
                   Page <strong className="text-[var(--foreground)]">{page}</strong> of{' '}
-                  <strong className="text-[var(--foreground)]">{totalPages}</strong> ({totalCount} items)
+                  <strong className="text-[var(--foreground)]">{totalPages}</strong> ({totalCount}{' '}
+                  {totalCount === 1 ? 'item' : 'items'})
                 </span>
                 <div className="flex items-center gap-2">
                   <Button
