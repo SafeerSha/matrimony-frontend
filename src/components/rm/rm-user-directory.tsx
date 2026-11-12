@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback, useRef } from 'react';
+import Link from 'next/link';
 import {
   IconSearch,
   IconMapPin,
@@ -23,7 +24,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Avatar } from '@/components/ui/avatar';
 import { ModernSelect, type ModernSelectOption } from '@/components/ui/modern-select';
-import { RmUserDetailModal } from '@/components/rm/rm-user-detail-modal';
+import { SecureImageViewer } from '@/components/ui/secure-image-viewer';
 import { rmService } from '@/services/rm.service';
 import { chatService } from '@/services/chat.service';
 import type {
@@ -117,7 +118,7 @@ export function RmUserDirectory() {
   const [gender, setGender] = useState<RmUserGender>('ALL');
   const [page, setPage] = useState(1);
 
-  const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
+  const [enlargedPhoto, setEnlargedPhoto] = useState<{ url: string; name: string; profileId?: string } | null>(null);
   const [livePresence, setLivePresence] = useState<Record<string, boolean>>({});
 
   const searchTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -228,10 +229,13 @@ export function RmUserDirectory() {
 
   return (
     <>
-      <RmUserDetailModal
-        userId={selectedUserId}
-        isOpen={Boolean(selectedUserId)}
-        onClose={() => setSelectedUserId(null)}
+      <SecureImageViewer
+        isOpen={Boolean(enlargedPhoto)}
+        onClose={() => setEnlargedPhoto(null)}
+        images={enlargedPhoto ? [enlargedPhoto.url] : []}
+        initialIndex={0}
+        profileName={enlargedPhoto?.name}
+        profileId={enlargedPhoto?.profileId}
       />
 
       <div className="space-y-6 animate-in fade-in slide-in-from-bottom-3 duration-300">
@@ -445,13 +449,36 @@ export function RmUserDirectory() {
                     <div key={u.id} className="p-4 space-y-3">
                       <div className="flex items-start justify-between gap-2.5">
                         <div className="flex items-center gap-3 min-w-0">
-                          <Avatar
-                            src={u.photos?.[0]?.url ?? ''}
-                            name={displayName}
-                            size="md"
-                            online={isOnline}
-                            className="border border-[var(--border)] shrink-0"
-                          />
+                          {u.photos?.[0]?.url ? (
+                            <button
+                              type="button"
+                              onClick={() =>
+                                setEnlargedPhoto({
+                                  url: u.photos![0].url,
+                                  name: displayName,
+                                  profileId: u.profileId ?? u.id,
+                                })
+                              }
+                              className="cursor-zoom-in rounded-full focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)] shrink-0"
+                              title="Enlarge photo"
+                            >
+                              <Avatar
+                                src={u.photos[0].url}
+                                name={displayName}
+                                size="md"
+                                online={isOnline}
+                                className="border border-[var(--border)] shrink-0"
+                              />
+                            </button>
+                          ) : (
+                            <Avatar
+                              src=""
+                              name={displayName}
+                              size="md"
+                              online={isOnline}
+                              className="border border-[var(--border)] shrink-0"
+                            />
+                          )}
                           <div className="min-w-0">
                             <div className="flex items-center gap-1.5 flex-wrap">
                               <span className="font-bold text-sm text-[var(--foreground)] truncate">
@@ -489,15 +516,16 @@ export function RmUserDirectory() {
                         </div>
                       </div>
 
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() => setSelectedUserId(u.id)}
-                        className="w-full text-xs font-bold gap-1.5"
-                      >
-                        <IconEye className="h-3.5 w-3.5" />
-                        View Full Profile
-                      </Button>
+                      <Link href={`/rm/users/${u.id}`} className="block w-full">
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="w-full text-xs font-bold gap-1.5"
+                        >
+                          <IconEye className="h-3.5 w-3.5" />
+                          View Full Profile
+                        </Button>
+                      </Link>
                     </div>
                   );
                 })}
@@ -542,13 +570,36 @@ export function RmUserDirectory() {
                         >
                           <td className="p-3.5 sm:p-4">
                             <div className="flex items-center gap-3">
-                              <Avatar
-                                src={u.photos?.[0]?.url ?? ''}
-                                name={displayName}
-                                size="md"
-                                online={isOnline}
-                                className="border border-[var(--border)] shrink-0"
-                              />
+                              {u.photos?.[0]?.url ? (
+                                <button
+                                  type="button"
+                                  onClick={() =>
+                                    setEnlargedPhoto({
+                                      url: u.photos![0].url,
+                                      name: displayName,
+                                      profileId: u.profileId ?? u.id,
+                                    })
+                                  }
+                                  className="cursor-zoom-in rounded-full focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)] shrink-0"
+                                  title="Enlarge photo"
+                                >
+                                  <Avatar
+                                    src={u.photos[0].url}
+                                    name={displayName}
+                                    size="md"
+                                    online={isOnline}
+                                    className="border border-[var(--border)] shrink-0"
+                                  />
+                                </button>
+                              ) : (
+                                <Avatar
+                                  src=""
+                                  name={displayName}
+                                  size="md"
+                                  online={isOnline}
+                                  className="border border-[var(--border)] shrink-0"
+                                />
+                              )}
                               <div className="min-w-0">
                                 <div className="flex items-center gap-1.5">
                                   <span className="font-bold text-[var(--foreground)] truncate max-w-[160px]">
@@ -619,15 +670,16 @@ export function RmUserDirectory() {
                           <td className="p-3.5 sm:p-4">{renderStatusBadge(u)}</td>
 
                           <td className="p-3.5 sm:p-4 text-right">
-                            <Button
-                              size="xs"
-                              variant="outline"
-                              onClick={() => setSelectedUserId(u.id)}
-                              className="inline-flex items-center gap-1.5 font-semibold"
-                            >
-                              <IconEye className="h-3.5 w-3.5" />
-                              View Profile
-                            </Button>
+                            <Link href={`/rm/users/${u.id}`}>
+                              <Button
+                                size="xs"
+                                variant="outline"
+                                className="inline-flex items-center gap-1.5 font-semibold"
+                              >
+                                <IconEye className="h-3.5 w-3.5" />
+                                View Profile
+                              </Button>
+                            </Link>
                           </td>
                         </tr>
                       );

@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback, useRef } from 'react';
+import Link from 'next/link';
 import {
   IconBug,
   IconBulb,
@@ -22,7 +23,6 @@ import { Button } from '@/components/ui/button';
 import { Modal } from '@/components/ui/modal';
 import { Avatar } from '@/components/ui/avatar';
 import { ModernSelect, type ModernSelectOption } from '@/components/ui/modern-select';
-import { RmUserDetailModal } from '@/components/rm/rm-user-detail-modal';
 import { rmService } from '@/services/rm.service';
 import { toast } from '@/lib/toast';
 import type {
@@ -180,8 +180,6 @@ export function RmFeedbackTracker({ onOpenCountChange }: RmFeedbackTrackerProps)
   const [draftNotes, setDraftNotes] = useState('');
   const [isSaving, setIsSaving] = useState(false);
 
-  const [inspectUserId, setInspectUserId] = useState<string | null>(null);
-
   const searchTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const abortRef = useRef<AbortController | null>(null);
 
@@ -300,12 +298,6 @@ export function RmFeedbackTracker({ onOpenCountChange }: RmFeedbackTrackerProps)
 
   return (
     <>
-      <RmUserDetailModal
-        userId={inspectUserId}
-        isOpen={Boolean(inspectUserId)}
-        onClose={() => setInspectUserId(null)}
-      />
-
       {/* Triage Modal */}
       <Modal
         isOpen={Boolean(triageItem)}
@@ -687,14 +679,13 @@ export function RmFeedbackTracker({ onOpenCountChange }: RmFeedbackTrackerProps)
                                   ({item.user.profileId})
                                 </span>
                               )}
-                              <button
-                                type="button"
-                                onClick={() => setInspectUserId(item.user!.id)}
-                                className="inline-flex items-center gap-1 text-[11px] font-bold text-[var(--primary)] hover:underline cursor-pointer ml-1"
+                              <Link
+                                href={`/rm/users/${item.user.id}`}
+                                className="inline-flex items-center gap-1 text-[11px] font-bold text-[var(--primary)] hover:underline ml-1"
                               >
                                 <IconUser className="h-3 w-3" />
                                 View Profile
-                              </button>
+                              </Link>
                             </>
                           ) : (
                             <span>Anonymous submission</span>

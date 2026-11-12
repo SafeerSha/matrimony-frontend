@@ -295,9 +295,6 @@ function CreateUserModal({ isOpen, onClose, onUserCreated }: CreateUserModalProp
                 <IconUserCheck className="h-4 w-4 text-[var(--primary)]" />
                 <span>Normal User</span>
               </div>
-              <p className="text-[11px] text-[var(--muted)] mt-1 leading-snug">
-                Starts in Draft status; enters profile onboarding on login.
-              </p>
             </button>
 
             <button
@@ -314,9 +311,6 @@ function CreateUserModal({ isOpen, onClose, onUserCreated }: CreateUserModalProp
                 <IconShieldCheck className="h-4 w-4 text-amber-600" />
                 <span>Relationship Manager</span>
               </div>
-              <p className="text-[11px] text-[var(--muted)] mt-1 leading-snug">
-                Active immediately; enters the RM Portal directly on login.
-              </p>
             </button>
           </div>
         </div>

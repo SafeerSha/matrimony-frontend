@@ -1,7 +1,7 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import { useState, useEffect, Suspense } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import {
   IconUsers,
   IconMessageReport,
@@ -20,13 +20,22 @@ import { toast } from '@/lib/toast';
 
 type RmTab = 'users' | 'feedback';
 
-export default function RMDashboard() {
+function RMDashboardContent() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const initialTab = searchParams.get('tab') === 'feedback' ? 'feedback' : 'users';
   const [isAuthorized, setIsAuthorized] = useState<boolean | null>(null);
   const [currentRmName, setCurrentRmName] = useState<string>('Relationship Manager');
-  const [tab, setTab] = useState<RmTab>('users');
+  const [tab, setTab] = useState<RmTab>(initialTab);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [openIssuesCount, setOpenIssuesCount] = useState<number>(0);
+
+  useEffect(() => {
+    const paramTab = searchParams.get('tab');
+    if (paramTab === 'feedback' || paramTab === 'users') {
+      setTab(paramTab);
+    }
+  }, [searchParams]);
 
   useEffect(() => {
     let isMounted = true;
@@ -275,5 +284,19 @@ export default function RMDashboard() {
         {tab === 'feedback' && <RmFeedbackTracker onOpenCountChange={setOpenIssuesCount} />}
       </main>
     </div>
+  );
+}
+
+export default function RMDashboard() {
+  return (
+    <Suspense
+      fallback={
+        <div className="min-h-screen bg-[#2A0711] flex items-center justify-center">
+          <IconLoader2 className="h-8 w-8 animate-spin text-[#F29CA3]" />
+        </div>
+      }
+    >
+      <RMDashboardContent />
+    </Suspense>
   );
 }
