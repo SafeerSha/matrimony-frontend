@@ -496,9 +496,30 @@ export function ProfileDetail({
       setIsInterestSent(true);
       setIsInterestReceived(false);
       toast.success("Interest Accepted!", `You and ${profile.name} are now mutually connected!`);
-    } catch {
-      setIsMatched(true);
-      toast.success("Connected!", `You and ${profile.name} are now connected.`);
+    } catch (err: any) {
+      toast.error('Action Failed', {
+        description: err?.message || `Could not accept interest from ${profile.name}.`,
+      });
+    }
+  };
+
+  // Decline incoming interest handler
+  const handleRejectInterest = async () => {
+    if (isPreview) {
+      toast.info('Preview Mode', 'This button appears when a candidate expresses interest in your profile.');
+      return;
+    }
+    if (!profile) return;
+    try {
+      await matchesService.rejectInterest(profile.id);
+      setIsDeclined(true);
+      setIsInterestReceived(false);
+      setIsInterestSent(false);
+      toast.info('Interest Declined', `You have declined the request from ${profile.name}.`);
+    } catch (err: any) {
+      toast.error('Decline Failed', {
+        description: err?.message || `Could not decline request from ${profile.name}.`,
+      });
     }
   };
 
@@ -1006,6 +1027,16 @@ export function ProfileDetail({
                 </>
               ) : isInterestReceived ? (
                 <div className="flex items-center gap-2.5 sm:gap-3">
+                  <Button
+                    variant="secondary"
+                    size="icon"
+                    onClick={handleRejectInterest}
+                    title="Decline Interest"
+                    aria-label="Decline Interest"
+                    className="h-12 sm:h-13 w-12 sm:w-13 p-0 rounded-2xl shrink-0 active-press border border-rose-200 bg-rose-50 hover:bg-rose-100 text-rose-600 flex items-center justify-center transition-all"
+                  >
+                    <IconX className="h-5 w-5 stroke-[2.3]" />
+                  </Button>
                   <Button
                     variant="primary"
                     size="lg"
@@ -1695,14 +1726,25 @@ export function ProfileDetail({
                 <span className="truncate">Chat with {profile.name.split(' ')[0]}</span>
               </button>
             ) : isInterestReceived ? (
-              <button
-                type="button"
-                onClick={handleAcceptInterest}
-                className="flex-1 min-w-0 font-bold rounded-full text-xs sm:text-sm h-11 shadow-sm active:scale-[0.985] bg-emerald-600 hover:bg-emerald-700 text-white px-4 flex items-center justify-center gap-2 transition-all"
-              >
-                <IconCheck className="h-4.5 w-4.5 stroke-[2.5] shrink-0" />
-                <span className="truncate">Accept Interest</span>
-              </button>
+              <div className="flex items-center gap-2 flex-1 min-w-0">
+                <button
+                  type="button"
+                  onClick={handleRejectInterest}
+                  title="Decline Interest"
+                  aria-label="Decline Interest"
+                  className="h-11 w-11 rounded-full shrink-0 active:scale-95 flex items-center justify-center transition-all border border-rose-200 bg-rose-50 hover:bg-rose-100 text-rose-600"
+                >
+                  <IconX className="h-5 w-5 stroke-[2.3]" />
+                </button>
+                <button
+                  type="button"
+                  onClick={handleAcceptInterest}
+                  className="flex-1 min-w-0 font-bold rounded-full text-xs sm:text-sm h-11 shadow-sm active:scale-[0.985] bg-emerald-600 hover:bg-emerald-700 text-white px-4 flex items-center justify-center gap-2 transition-all"
+                >
+                  <IconCheck className="h-4.5 w-4.5 stroke-[2.5] shrink-0" />
+                  <span className="truncate">Accept Interest</span>
+                </button>
+              </div>
             ) : isDeclined ? (
               <button
                 type="button"

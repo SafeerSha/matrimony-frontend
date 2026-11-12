@@ -112,6 +112,13 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(function Button
   );
 
   if (href && !disabled && !loading) {
+    if (href.startsWith("#")) {
+      return (
+        <a href={href} className={baseClasses} {...(props as any)}>
+          {content}
+        </a>
+      );
+    }
     return (
       <Link href={href} className={baseClasses} {...(props as any)}>
         {content}

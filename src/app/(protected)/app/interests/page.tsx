@@ -180,14 +180,11 @@ function InterestsContent() {
           `You and ${item.name} are now connected. You can view them in Mutual Matches anytime.`
         );
       }
-    } catch {
-      setReceivedItems((prev) => prev.filter((p) => p.id !== id));
-      if (item) {
-        toast.success(
-          'Interest Accepted!',
-          `You and ${item.name} are now connected. You can view them in Mutual Matches anytime.`
-        );
-      }
+    } catch (err: any) {
+      toast.error(
+        'Action Failed',
+        err?.message || `Could not accept interest from ${item?.name || 'member'}.`
+      );
     }
   };
 
@@ -203,14 +200,11 @@ function InterestsContent() {
           `You have respectfully declined the request from ${item.name}.`
         );
       }
-    } catch {
-      setReceivedItems((prev) => prev.filter((p) => p.id !== id));
-      if (item) {
-        toast.info(
-          'Interest Declined',
-          `You have respectfully declined the request from ${item.name}.`
-        );
-      }
+    } catch (err: any) {
+      toast.error(
+        'Decline Failed',
+        err?.message || `Could not decline request from ${item?.name || 'member'}.`
+      );
     }
   };
 

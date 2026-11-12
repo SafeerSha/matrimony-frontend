@@ -19,6 +19,7 @@ import {
   IconCheck,
   IconX,
   IconSparkles,
+  IconMessageCircle,
 } from '@tabler/icons-react';
 import { Avatar } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
@@ -103,6 +104,8 @@ export default function DashboardPage() {
   const [shortlistedCount, setShortlistedCount] = useState<number>(0);
   const [shortlistedIds, setShortlistedIds] = useState<Set<string>>(new Set());
   const [sentInterestIds, setSentInterestIds] = useState<Set<string>>(new Set());
+  const [receivedInterestIds, setReceivedInterestIds] = useState<Set<string>>(new Set());
+  const [matchedIds, setMatchedIds] = useState<Set<string>>(new Set());
   const [isLoading, setIsLoading] = useState(true);
 
   const newProfilesScrollRef = useRef<HTMLDivElement>(null);
@@ -141,10 +144,11 @@ export default function DashboardPage() {
           } catch { }
         }
 
-        // 2. Fetch recommendations, received interests, matches, and shortcuts in parallel
-        const [recRes, receivedRes, matchesRes, shortlistedRes, searchRes] = await Promise.allSettled([
+        // 2. Fetch recommendations, received interests, sent interests, matches, and shortcuts in parallel
+        const [recRes, receivedRes, sentRes, matchesRes, shortlistedRes, searchRes] = await Promise.allSettled([
           matchesService.getRecommendations(),
           matchesService.getConnections('received'),
+          matchesService.getConnections('sent'),
           matchesService.getConnections('matches'),
           matchesService.getConnections('shortlisted_by_me'),
           matchesService.searchProfiles({
@@ -153,12 +157,29 @@ export default function DashboardPage() {
           }),
         ]);
 
+        const initialSentIds = new Set<string>();
+        const initialReceivedIds = new Set<string>();
+        const initialMatchedIds = new Set<string>();
+
+        const collectConnectionFlags = (u: any) => {
+          const uid = u?.id;
+          if (!uid) return;
+          if (u.isMatched || u.connectionStatus === 'MATCHED') {
+            initialMatchedIds.add(uid);
+          } else if (u.isInterestSent || u.connectionStatus === 'SENT') {
+            initialSentIds.add(uid);
+          } else if (u.isInterestReceived || u.connectionStatus === 'RECEIVED') {
+            initialReceivedIds.add(uid);
+          }
+        };
+
         let mappedRecommendations: Profile[] = [];
         // Recommendations mapping
         if (recRes.status === 'fulfilled' && recRes.value) {
           const raw = recRes.value;
           const list = Array.isArray(raw) ? raw : (raw as any)?.data || [];
           if (list.length > 0) {
+            list.forEach(collectConnectionFlags);
             mappedRecommendations = list.map((u: any, idx: number) => {
               const prof = u.profile || {};
               const photos = u.photos || prof.photos || [];
@@ -190,9 +211,19 @@ export default function DashboardPage() {
                 lifestyle: prof.diet ? [prof.diet] : [],
                 interests: Array.isArray(prof.interests) ? prof.interests : [],
                 lookingFor: prof.partnerExpectations || '',
+                category: prof.category || u.category || prof.profileFor || u.profileFor || '',
               };
             });
-            setRecommendations(mappedRecommendations);
+            const recPool = resolvedCategory
+              ? mappedRecommendations.filter((p) => {
+                  const pCat = ((p as any).category || '').toLowerCase().trim();
+                  if (!pCat) return true;
+                  if (resolvedCategory === 'Friendship') return pCat.includes('friend');
+                  if (resolvedCategory === 'Live-In') return pCat.includes('live') || pCat.includes('living');
+                  return !pCat.includes('friend') && !pCat.includes('live') && !pCat.includes('living');
+                })
+              : mappedRecommendations;
+            setRecommendations(recPool);
           }
         }
 
@@ -204,14 +235,35 @@ export default function DashboardPage() {
           const raw = receivedRes.value;
           const list = Array.isArray(raw) ? raw : (raw as any)?.data || [];
           const mapped = list.map((item: any, idx: number) => mapConnectionToProfile(item, idx));
+          mapped.forEach((p: Profile) => {
+            if (p.id) initialReceivedIds.add(p.id);
+          });
           setPendingReceived(mapped);
         }
 
-        // Mutual matches count
+        // Sent interests mapping
+        if (sentRes.status === 'fulfilled' && sentRes.value) {
+          const raw = sentRes.value;
+          const list = Array.isArray(raw) ? raw : (raw as any)?.data || [];
+          list.forEach((item: any) => {
+            const partnerId = item?.partner?.id || item?.receiver?.id || item?.receiverId;
+            if (partnerId) initialSentIds.add(partnerId);
+          });
+        }
+
+        // Mutual matches count & IDs
         if (matchesRes.status === 'fulfilled' && matchesRes.value) {
           const raw = matchesRes.value;
           const list = Array.isArray(raw) ? raw : (raw as any)?.data || [];
           setMutualMatchesCount(list.length);
+          list.forEach((item: any) => {
+            const partnerId = item?.partner?.id || item?.sender?.id || item?.receiver?.id;
+            if (partnerId) {
+              initialMatchedIds.add(partnerId);
+              initialSentIds.delete(partnerId);
+              initialReceivedIds.delete(partnerId);
+            }
+          });
         }
 
         // Shortlisted count & IDs
@@ -232,6 +284,7 @@ export default function DashboardPage() {
           const raw = searchRes.value;
           const searchList = Array.isArray(raw) ? raw : (raw as any)?.data || [];
           if (searchList.length > 0) {
+            searchList.forEach(collectConnectionFlags);
             const mappedSearch: Profile[] = searchList.map((u: any, idx: number): Profile => {
               const prof = u.profile || {};
               const photos = u.photos || prof.photos || [];
@@ -263,18 +316,29 @@ export default function DashboardPage() {
                 lifestyle: prof.diet ? [prof.diet] : [],
                 interests: Array.isArray(prof.interests) ? prof.interests : [],
                 lookingFor: prof.partnerExpectations || '',
+                category: prof.category || u.category || prof.profileFor || u.profileFor || '',
               };
             });
 
+            const categoryFilteredSearch = resolvedCategory
+              ? mappedSearch.filter((p) => {
+                  const pCat = ((p as any).category || '').toLowerCase().trim();
+                  if (!pCat) return true;
+                  if (resolvedCategory === 'Friendship') return pCat.includes('friend');
+                  if (resolvedCategory === 'Live-In') return pCat.includes('live') || pCat.includes('living');
+                  return !pCat.includes('friend') && !pCat.includes('live') && !pCat.includes('living');
+                })
+              : mappedSearch;
+
             // 1. Deduplicate Recently Joined rail:
             // Exclude the top 3 recommended profiles so users see distinct, fresh members
-            const nonRecProfiles = mappedSearch.filter((p) => !topRecIds.has(p.id));
-            setNewProfiles(nonRecProfiles.length >= 3 ? nonRecProfiles : mappedSearch);
+            const nonRecProfiles = categoryFilteredSearch.filter((p) => !topRecIds.has(p.id));
+            setNewProfiles(nonRecProfiles.length >= 3 ? nonRecProfiles : categoryFilteredSearch);
 
             // 2. Location Proximity for "Near You":
             // Filter candidates excluding profiles already in top recommendations
-            const candidates = mappedSearch.filter((p) => !topRecIds.has(p.id));
-            const pool = candidates.length >= 3 ? candidates : mappedSearch;
+            const candidates = categoryFilteredSearch.filter((p) => !topRecIds.has(p.id));
+            const pool = candidates.length >= 3 ? candidates : categoryFilteredSearch;
             const cleanCity = (resolvedCity || '').trim().toLowerCase();
 
             if (cleanCity) {
@@ -303,6 +367,10 @@ export default function DashboardPage() {
             }
           }
         }
+
+        setMatchedIds(initialMatchedIds);
+        setSentInterestIds(initialSentIds);
+        setReceivedInterestIds(initialReceivedIds);
       } catch (err) {
         console.error('Error loading dashboard:', err);
       } finally {
@@ -314,13 +382,29 @@ export default function DashboardPage() {
   }, []);
 
   const handleSendInterest = async (id: string, name: string) => {
+    if (matchedIds.has(id) || sentInterestIds.has(id)) return;
+    if (receivedInterestIds.has(id)) {
+      await handleAcceptInterest(id, name);
+      return;
+    }
     try {
-      await matchesService.sendInterest(id);
-      setSentInterestIds((prev) => new Set(prev).add(id));
-      toast.success('Interest Sent!', `We've notified ${name} of your interest.`);
-    } catch {
-      setSentInterestIds((prev) => new Set(prev).add(id));
-      toast.success('Interest Sent!', `We've notified ${name} of your interest.`);
+      const res: any = await matchesService.sendInterest(id);
+      if (res?.isMutualMatch || res?.isMatch || res?.status === 'ACCEPTED') {
+        setMatchedIds((prev) => new Set(prev).add(id));
+        setMutualMatchesCount((c) => c + 1);
+        toast.success("It's a Match!", `You and ${name} are now connected. Start chatting anytime!`);
+      } else {
+        setSentInterestIds((prev) => new Set(prev).add(id));
+        toast.success('Interest Sent!', `We've notified ${name} of your interest.`);
+      }
+    } catch (err: any) {
+      const msg = String(err?.message || '');
+      if (msg.toLowerCase().includes('already sent') || msg.toLowerCase().includes('already exists')) {
+        setSentInterestIds((prev) => new Set(prev).add(id));
+        toast.info('Interest Already Sent', `Your connection request to ${name} is already pending.`);
+        return;
+      }
+      toast.error('Could Not Send Interest', msg || `Failed to send interest to ${name}. Please try again.`);
     }
   };
 
@@ -328,12 +412,16 @@ export default function DashboardPage() {
     try {
       await matchesService.acceptInterest(id);
       setPendingReceived((prev) => prev.filter((p) => p.id !== id));
+      setReceivedInterestIds((prev) => {
+        const next = new Set(prev);
+        next.delete(id);
+        return next;
+      });
+      setMatchedIds((prev) => new Set(prev).add(id));
       setMutualMatchesCount((c) => c + 1);
       toast.success('Interest Accepted!', `You and ${name} are now connected. You can start messaging!`);
-    } catch {
-      setPendingReceived((prev) => prev.filter((p) => p.id !== id));
-      setMutualMatchesCount((c) => c + 1);
-      toast.success('Interest Accepted!', `You and ${name} are now connected.`);
+    } catch (err: any) {
+      toast.error('Action Failed', err?.message || `Could not accept interest from ${name}.`);
     }
   };
 
@@ -341,9 +429,14 @@ export default function DashboardPage() {
     try {
       await matchesService.rejectInterest(id);
       setPendingReceived((prev) => prev.filter((p) => p.id !== id));
+      setReceivedInterestIds((prev) => {
+        const next = new Set(prev);
+        next.delete(id);
+        return next;
+      });
       toast.info('Interest Declined', `Declined request from ${name}.`);
-    } catch {
-      setPendingReceived((prev) => prev.filter((p) => p.id !== id));
+    } catch (err: any) {
+      toast.error('Decline Failed', err?.message || `Could not decline request from ${name}.`);
     }
   };
 
@@ -675,7 +768,9 @@ export default function DashboardPage() {
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {recommendations.slice(0, 3).map((profile) => {
               const isShortlisted = shortlistedIds.has(profile.id);
-              const isInterestSent = sentInterestIds.has(profile.id);
+              const isMatched = matchedIds.has(profile.id);
+              const isInterestSent = sentInterestIds.has(profile.id) && !isMatched;
+              const isInterestReceived = receivedInterestIds.has(profile.id) && !isMatched;
 
               return (
                 <Card
@@ -780,23 +875,49 @@ export default function DashboardPage() {
                         View Profile
                       </button>
 
-                      <button
-                        type="button"
-                        disabled={isInterestSent}
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleSendInterest(profile.id, profile.name);
-                        }}
-                        className={cn(
-                          'flex-1 h-10 rounded-full text-xs font-bold transition shadow-sm flex items-center justify-center gap-1.5 active-press',
-                          isInterestSent
-                            ? 'bg-white/20 backdrop-blur-md text-white/80 cursor-not-allowed border border-white/25'
-                            : 'bg-gradient-to-r from-[var(--primary)] to-[var(--primary-deep)] text-white hover:opacity-95 shadow-[0_4px_14px_rgba(125,22,51,0.4)]'
-                        )}
-                      >
-                        <IconHeart className={cn('h-3.5 w-3.5', isInterestSent && 'fill-current')} />
-                        <span>{isInterestSent ? 'Interest Sent' : 'Send Interest'}</span>
-                      </button>
+                      {isMatched ? (
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            router.push(`/app/messages?user=${profile.id}`);
+                          }}
+                          className="flex-1 h-10 rounded-full text-xs font-bold transition shadow-sm flex items-center justify-center gap-1.5 active-press bg-emerald-600 hover:bg-emerald-700 text-white"
+                        >
+                          <IconMessageCircle className="h-3.5 w-3.5" />
+                          <span>Chat</span>
+                        </button>
+                      ) : isInterestReceived ? (
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleAcceptInterest(profile.id, profile.name);
+                          }}
+                          className="flex-1 h-10 rounded-full text-xs font-bold transition shadow-sm flex items-center justify-center gap-1.5 active-press bg-emerald-600 hover:bg-emerald-700 text-white"
+                        >
+                          <IconCheck className="h-3.5 w-3.5" />
+                          <span>Accept Interest</span>
+                        </button>
+                      ) : (
+                        <button
+                          type="button"
+                          disabled={isInterestSent}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleSendInterest(profile.id, profile.name);
+                          }}
+                          className={cn(
+                            'flex-1 h-10 rounded-full text-xs font-bold transition shadow-sm flex items-center justify-center gap-1.5 active-press',
+                            isInterestSent
+                              ? 'bg-white/20 backdrop-blur-md text-white/80 cursor-not-allowed border border-white/25'
+                              : 'bg-gradient-to-r from-[var(--primary)] to-[var(--primary-deep)] text-white hover:opacity-95 shadow-[0_4px_14px_rgba(125,22,51,0.4)]'
+                          )}
+                        >
+                          <IconHeart className={cn('h-3.5 w-3.5', isInterestSent && 'fill-current')} />
+                          <span>{isInterestSent ? 'Interest Sent' : 'Send Interest'}</span>
+                        </button>
+                      )}
                     </div>
                   </div>
                 </Card>
@@ -932,7 +1053,11 @@ export default function DashboardPage() {
               <p className="mt-0.5 text-[10px] text-[var(--muted)]">Explore all members across districts on Discover.</p>
             </Card>
           ) : (
-            nearbyProfiles.map((p) => (
+            nearbyProfiles.map((p) => {
+              const isMatched = matchedIds.has(p.id);
+              const isInterestSent = sentInterestIds.has(p.id) && !isMatched;
+              const isInterestReceived = receivedInterestIds.has(p.id) && !isMatched;
+              return (
               <Card
                 key={p.id}
                 variant="interactive"
@@ -988,17 +1113,42 @@ export default function DashboardPage() {
                   >
                     View
                   </Button>
-                  <Button
-                    variant="primary"
-                    size="sm"
-                    onClick={() => handleSendInterest(p.id, p.name)}
-                    className="flex-1 h-8 text-xs font-bold rounded-lg"
-                  >
-                    Connect
-                  </Button>
+                  {isMatched ? (
+                    <Button
+                      href={`/app/messages?user=${p.id}`}
+                      variant="primary"
+                      size="sm"
+                      className="flex-1 h-8 text-xs font-bold rounded-lg bg-emerald-600 hover:bg-emerald-700"
+                    >
+                      Chat
+                    </Button>
+                  ) : isInterestReceived ? (
+                    <Button
+                      variant="primary"
+                      size="sm"
+                      onClick={() => handleAcceptInterest(p.id, p.name)}
+                      className="flex-1 h-8 text-xs font-bold rounded-lg bg-emerald-600 hover:bg-emerald-700"
+                    >
+                      Accept
+                    </Button>
+                  ) : (
+                    <Button
+                      variant={isInterestSent ? 'secondary' : 'primary'}
+                      size="sm"
+                      disabled={isInterestSent}
+                      onClick={() => handleSendInterest(p.id, p.name)}
+                      className={cn(
+                        'flex-1 h-8 text-xs font-bold rounded-lg',
+                        isInterestSent && 'opacity-75 cursor-not-allowed'
+                      )}
+                    >
+                      {isInterestSent ? 'Interest Sent' : 'Connect'}
+                    </Button>
+                  )}
                 </div>
               </Card>
-            ))
+              );
+            })
           )}
         </div>
       </section>
