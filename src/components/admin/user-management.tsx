@@ -821,6 +821,24 @@ interface PendingConfirm {
 
 const PAGE_SIZE = 15;
 
+const ROLE_FILTER_OPTIONS: ModernSelectOption[] = [
+  {
+    value: 'ALL',
+    label: 'All Roles',
+    icon: <span className="h-2 w-2 rounded-full bg-slate-400 inline-block" />,
+  },
+  {
+    value: 'USER',
+    label: 'Normal Users',
+    icon: <IconUserCheck className="h-3.5 w-3.5 text-[var(--primary)] shrink-0" />,
+  },
+  {
+    value: 'RM',
+    label: 'Relationship Managers (RM)',
+    icon: <IconShieldCheck className="h-3.5 w-3.5 text-amber-600 shrink-0" />,
+  },
+];
+
 const PLAN_FILTER_OPTIONS: ModernSelectOption[] = [
   {
     value: 'ALL',
@@ -921,6 +939,7 @@ export function UserManagement() {
   // Filters
   const [search, setSearch] = useState('');
   const [location, setLocation] = useState('');
+  const [roleFilter, setRoleFilter] = useState<'ALL' | 'USER' | 'RM'>('ALL');
   const [plan, setPlan] = useState<'ALL' | 'BASIC' | 'PAID'>('ALL');
   const [status, setStatus] = useState<'ALL' | 'ACTIVE' | 'BLOCKED' | 'SUSPENDED' | 'DEACTIVATED' | 'DELETED'>('ALL');
   const [page, setPage] = useState(1);
@@ -998,8 +1017,8 @@ export function UserManagement() {
 
   // Derived state
   const hasActiveFilters = useMemo(
-    () => Boolean(search || location || plan !== 'ALL' || status !== 'ALL'),
-    [search, location, plan, status],
+    () => Boolean(search || location || roleFilter !== 'ALL' || plan !== 'ALL' || status !== 'ALL'),
+    [search, location, roleFilter, plan, status],
   );
 
   // ── Data Fetching ────────────────────────────────────────────────────────────
@@ -1014,6 +1033,7 @@ export function UserManagement() {
           limit: PAGE_SIZE,
           search: search.trim() || undefined,
           location: location.trim() || undefined,
+          role: roleFilter,
           plan,
           status,
         };
@@ -1040,7 +1060,7 @@ export function UserManagement() {
         if (!signal?.aborted) setLoading(false);
       }
     },
-    [page, search, location, plan, status],
+    [page, search, location, roleFilter, plan, status],
   );
 
   useEffect(() => {
@@ -1116,6 +1136,7 @@ export function UserManagement() {
   const resetFilters = () => {
     setSearch('');
     setLocation('');
+    setRoleFilter('ALL');
     setPlan('ALL');
     setStatus('ALL');
     setPage(1);
@@ -1203,9 +1224,9 @@ export function UserManagement() {
         <Card className="relative z-10 p-4 sm:p-5 border border-[var(--border)] shadow-xs bg-[var(--surface)]">
           <fieldset>
             <legend className="sr-only">Filter users</legend>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-12 gap-3">
               {/* Search */}
-              <div className="relative">
+              <div className="relative lg:col-span-3">
                 <label htmlFor="um-search" className="sr-only">
                   Search users
                 </label>
@@ -1222,7 +1243,7 @@ export function UserManagement() {
               </div>
 
               {/* Location */}
-              <div className="relative">
+              <div className="relative lg:col-span-3">
                 <label htmlFor="um-location" className="sr-only">
                   Filter by location
                 </label>
@@ -1238,8 +1259,23 @@ export function UserManagement() {
                 />
               </div>
 
+              {/* Role */}
+              <div className="lg:col-span-2">
+                <ModernSelect
+                  value={roleFilter}
+                  onChange={(val) => {
+                    setRoleFilter(val as 'ALL' | 'USER' | 'RM');
+                    setPage(1);
+                  }}
+                  options={ROLE_FILTER_OPTIONS}
+                  size="sm"
+                  ariaLabel="Filter by role"
+                  triggerClassName="border-[var(--border)] bg-[var(--background)] hover:border-[var(--primary)]/50 text-xs sm:text-sm font-medium"
+                />
+              </div>
+
               {/* Plan */}
-              <div>
+              <div className="lg:col-span-2">
                 <ModernSelect
                   value={plan}
                   onChange={(val) => {
@@ -1254,7 +1290,7 @@ export function UserManagement() {
               </div>
 
               {/* Status */}
-              <div>
+              <div className="lg:col-span-2">
                 <ModernSelect
                   value={status}
                   onChange={(val) => {

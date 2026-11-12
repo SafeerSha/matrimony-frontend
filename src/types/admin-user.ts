@@ -54,6 +54,7 @@ export interface AdminUserQueryFilters {
   limit?: number;
   search?: string;
   location?: string;
+  role?: 'ALL' | 'USER' | 'RM';
   plan?: 'ALL' | 'BASIC' | 'PAID';
   status?: 'ALL' | 'ACTIVE' | 'BLOCKED' | 'SUSPENDED' | 'DEACTIVATED' | 'DELETED';
 }

@@ -1,4 +1,5 @@
 export type RmUserCategory = 'ALL' | 'Marriage' | 'Friendship' | 'Live-In';
+export type RmMarriageSubCategory = 'Kerala' | 'Telugu' | 'Bharat';
 export type RmUserPlan = 'ALL' | 'BASIC' | 'PAID';
 export type RmUserStatus = 'ALL' | 'ACTIVE' | 'BLOCKED' | 'SUSPENDED' | 'DEACTIVATED' | 'DELETED';
 export type RmUserVerified = 'ALL' | 'VERIFIED' | 'UNVERIFIED';
@@ -125,6 +126,7 @@ export interface RmUserQueryFilters {
   search?: string;
   location?: string;
   category?: RmUserCategory;
+  subCategories?: RmMarriageSubCategory[];
   plan?: RmUserPlan;
   status?: RmUserStatus;
   verified?: RmUserVerified;
@@ -147,6 +149,11 @@ export interface RmUserStats {
     Marriage: number;
     Friendship: number;
     'Live-In': number;
+  };
+  marriageSubCategories?: {
+    Kerala: number;
+    Telugu: number;
+    Bharat: number;
   };
   active: number;
   paid: number;
