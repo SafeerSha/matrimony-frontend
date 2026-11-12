@@ -206,7 +206,7 @@ export function MutualMatchCard({
               className="w-full rounded-2xl text-xs font-bold h-11 shadow-md active-press"
               leftIcon={<IconMessageCircle className="h-4 w-4" />}
             >
-              Start Chat
+              {match.hasChat ? 'Continue Chat' : 'Start Chat'}
             </Button>
           </Link>
         </div>

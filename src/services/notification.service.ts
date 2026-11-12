@@ -68,10 +68,17 @@ export function parseNotificationText(raw: string): string {
 }
 
 export const notificationService = {
-  getNotifications: () => {
-    return apiFetch<NotificationItem[]>("/notifications", {
-      method: "GET",
-    });
+  getNotifications: async (params?: { cursor?: string; limit?: number; direction?: "before" | "after" }) => {
+    const query = new URLSearchParams();
+    if (params?.cursor) query.set("cursor", params.cursor);
+    if (params?.limit !== undefined) query.set("limit", String(params.limit));
+    if (params?.direction) query.set("direction", params.direction);
+    const qs = query.toString();
+    const res = await apiFetch<NotificationItem[] | { data?: NotificationItem[] }>(
+      qs ? `/notifications?${qs}` : "/notifications",
+      { method: "GET" }
+    );
+    return Array.isArray(res) ? res : res?.data || [];
   },
 
   markAllAsRead: () => {

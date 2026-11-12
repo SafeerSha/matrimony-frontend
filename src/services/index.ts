@@ -7,3 +7,4 @@ export * from "./chat.service";
 export * from "./notification.service";
 export * from "./subscription.service";
 export * from "./support.service";
+export * from "./rm.service";

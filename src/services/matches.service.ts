@@ -109,6 +109,14 @@ export function mapConnectionToProfile(u: any, idx = 0): Profile {
     lookingFor: profile?.lookingFor || partner.lookingFor || "A kind, emotionally mature partner.",
     isShortlisted: Boolean(partner.isShortlisted || u.isShortlisted || u.status === 'SHORTLISTED'),
     isMatched: Boolean(partner.isMatched || u.isMatched || u.status === 'ACCEPTED' || u.connectionStatus === 'MATCHED'),
+    hasChat:
+      typeof u.hasChat === "boolean"
+        ? u.hasChat
+        : typeof partner.hasChat === "boolean"
+          ? partner.hasChat
+          : typeof u.hasInitiatedChat === "boolean"
+            ? u.hasInitiatedChat
+            : undefined,
     isInterestSent: Boolean(
       (partner.isInterestSent || u.isInterestSent || u.status === 'PENDING') &&
         u.status !== 'ACCEPTED' &&

@@ -39,7 +39,22 @@ import type { AnalyticsOverview, DateRangeInput } from "@/types/analytics";
 import type { AdminUserListItem, AdminUserListResponse, AdminUserQueryFilters } from "@/types/admin-user";
 import { analyticsOverviewSchema, analyticsTimeSeriesResponseSchema } from "@/lib/validation/analytics";
 
+export interface CreateAdminUserInput {
+  firstName: string;
+  lastName?: string;
+  email: string;
+  password: string;
+  role: 'USER' | 'RM';
+  phone?: string;
+}
+
 export const adminService = {
+  createUser: (data: CreateAdminUserInput) => {
+    return apiFetch<AdminUserListItem>('/admin/users', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  },
   getUsers: (filters: AdminUserQueryFilters = {}, signal?: AbortSignal) => {
     const searchParams = new URLSearchParams();
     if (filters.page) searchParams.set("page", String(filters.page));

@@ -20,6 +20,11 @@ import {
   IconCheck,
   IconLoader2,
   IconSettings,
+  IconUserPlus,
+  IconEye,
+  IconEyeOff,
+  IconShieldCheck,
+  IconKey,
 } from '@tabler/icons-react';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -147,6 +152,305 @@ interface AssignPlanModalProps {
   onClose: () => void;
   onPlanAssigned: (updatedUser: AdminUserListItem) => void;
   isOnline?: boolean;
+}
+
+interface CreateUserModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  onUserCreated: (createdUser: AdminUserListItem) => void;
+}
+
+function generateStrongPassword(length = 12): string {
+  const upper = 'ABCDEFGHJKLMNPQRSTUVWXYZ';
+  const lower = 'abcdefghijkmnopqrstuvwxyz';
+  const digits = '23456789';
+  const symbols = '!@#$%&*';
+  const all = upper + lower + digits + symbols;
+  const pick = (pool: string) => {
+    const arr = new Uint32Array(1);
+    crypto.getRandomValues(arr);
+    return pool[arr[0] % pool.length];
+  };
+  const chars = [pick(upper), pick(lower), pick(digits), pick(symbols)];
+  while (chars.length < length) {
+    chars.push(pick(all));
+  }
+  // Fisher-Yates shuffle using crypto RNG
+  for (let i = chars.length - 1; i > 0; i--) {
+    const arr = new Uint32Array(1);
+    crypto.getRandomValues(arr);
+    const j = arr[0] % (i + 1);
+    [chars[i], chars[j]] = [chars[j], chars[i]];
+  }
+  return chars.join('');
+}
+
+function CreateUserModal({ isOpen, onClose, onUserCreated }: CreateUserModalProps) {
+  const [role, setRole] = useState<'USER' | 'RM'>('USER');
+  const [firstName, setFirstName] = useState('');
+  const [lastName, setLastName] = useState('');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [phone, setPhone] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [formError, setFormError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!isOpen) return;
+    setRole('USER');
+    setFirstName('');
+    setLastName('');
+    setEmail('');
+    setPassword('');
+    setPhone('');
+    setShowPassword(false);
+    setFormError(null);
+  }, [isOpen]);
+
+  if (!isOpen) return null;
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setFormError(null);
+
+    const cleanFirst = firstName.trim();
+    const cleanLast = lastName.trim();
+    const cleanEmail = email.trim().toLowerCase();
+    const cleanPhone = phone.trim();
+
+    if (!cleanFirst) {
+      setFormError('First name is required.');
+      return;
+    }
+    if (!cleanEmail || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(cleanEmail)) {
+      setFormError('Please enter a valid email address.');
+      return;
+    }
+    if (password.length < 8) {
+      setFormError('Password must be at least 8 characters.');
+      return;
+    }
+
+    setIsSubmitting(true);
+    try {
+      const created = await adminService.createUser({
+        firstName: cleanFirst,
+        ...(cleanLast ? { lastName: cleanLast } : {}),
+        email: cleanEmail,
+        password,
+        role,
+        ...(cleanPhone ? { phone: cleanPhone } : {}),
+      });
+      toast.success(
+        role === 'RM' ? 'RM Account Created' : 'Member Account Created',
+        role === 'RM'
+          ? `${cleanFirst} can now sign in directly to the RM Portal.`
+          : `${cleanFirst} can now sign in and complete the onboarding flow.`,
+      );
+      onUserCreated(created);
+      onClose();
+    } catch (err: any) {
+      const msg = err?.message || 'Failed to create user account.';
+      setFormError(msg);
+      toast.error('User Creation Failed', msg);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  return (
+    <Modal
+      isOpen={isOpen}
+      onClose={() => !isSubmitting && onClose()}
+      size="md"
+      title="Create New User"
+      description="Provision an account with email and password credentials."
+    >
+      <form onSubmit={handleSubmit} className="space-y-4">
+        {formError && (
+          <div className="p-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-800 text-xs flex items-start gap-2">
+            <IconAlertCircle className="h-4 w-4 text-rose-600 shrink-0 mt-0.5" />
+            <span>{formError}</span>
+          </div>
+        )}
+
+        {/* Role Selection */}
+        <div>
+          <span className="block text-xs font-bold uppercase tracking-wider text-[var(--muted-strong)] mb-2">
+            Account Role
+          </span>
+          <div className="grid grid-cols-2 gap-2.5">
+            <button
+              type="button"
+              onClick={() => setRole('USER')}
+              className={cn(
+                'text-left p-3 rounded-xl border transition-all cursor-pointer',
+                role === 'USER'
+                  ? 'bg-[#FAF3EC] border-[var(--primary)] ring-2 ring-[var(--primary)]/15'
+                  : 'bg-[var(--surface)] border-[var(--border)] hover:border-[var(--primary)]/50',
+              )}
+            >
+              <div className="flex items-center gap-2 font-bold text-xs text-[var(--foreground)]">
+                <IconUserCheck className="h-4 w-4 text-[var(--primary)]" />
+                <span>Normal User</span>
+              </div>
+              <p className="text-[11px] text-[var(--muted)] mt-1 leading-snug">
+                Starts in Draft status; enters profile onboarding on login.
+              </p>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setRole('RM')}
+              className={cn(
+                'text-left p-3 rounded-xl border transition-all cursor-pointer',
+                role === 'RM'
+                  ? 'bg-[#FAF3EC] border-[var(--primary)] ring-2 ring-[var(--primary)]/15'
+                  : 'bg-[var(--surface)] border-[var(--border)] hover:border-[var(--primary)]/50',
+              )}
+            >
+              <div className="flex items-center gap-2 font-bold text-xs text-[var(--foreground)]">
+                <IconShieldCheck className="h-4 w-4 text-amber-600" />
+                <span>Relationship Manager</span>
+              </div>
+              <p className="text-[11px] text-[var(--muted)] mt-1 leading-snug">
+                Active immediately; enters the RM Portal directly on login.
+              </p>
+            </button>
+          </div>
+        </div>
+
+        {/* Name Fields */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div>
+            <label htmlFor="cu-first-name" className="block text-xs font-bold text-[var(--muted-strong)] mb-1">
+              First Name <span className="text-rose-500">*</span>
+            </label>
+            <input
+              id="cu-first-name"
+              type="text"
+              required
+              maxLength={100}
+              value={firstName}
+              onChange={(e) => setFirstName(e.target.value)}
+              placeholder="e.g. Ananya"
+              className="w-full h-10 px-3 rounded-xl border border-[var(--border)] bg-[var(--background)] text-xs sm:text-sm outline-none focus:border-[var(--primary)]"
+            />
+          </div>
+
+          <div>
+            <label htmlFor="cu-last-name" className="block text-xs font-bold text-[var(--muted-strong)] mb-1">
+              Last Name <span className="text-[var(--muted)] font-normal">(Optional)</span>
+            </label>
+            <input
+              id="cu-last-name"
+              type="text"
+              maxLength={100}
+              value={lastName}
+              onChange={(e) => setLastName(e.target.value)}
+              placeholder="e.g. Nair"
+              className="w-full h-10 px-3 rounded-xl border border-[var(--border)] bg-[var(--background)] text-xs sm:text-sm outline-none focus:border-[var(--primary)]"
+            />
+          </div>
+        </div>
+
+        {/* Email & Optional Phone */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div>
+            <label htmlFor="cu-email" className="block text-xs font-bold text-[var(--muted-strong)] mb-1">
+              Email Address <span className="text-rose-500">*</span>
+            </label>
+            <input
+              id="cu-email"
+              type="email"
+              required
+              maxLength={255}
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder="user@example.com"
+              className="w-full h-10 px-3 rounded-xl border border-[var(--border)] bg-[var(--background)] text-xs sm:text-sm outline-none focus:border-[var(--primary)]"
+            />
+          </div>
+
+          <div>
+            <label htmlFor="cu-phone" className="block text-xs font-bold text-[var(--muted-strong)] mb-1">
+              Phone <span className="text-[var(--muted)] font-normal">(Optional)</span>
+            </label>
+            <input
+              id="cu-phone"
+              type="tel"
+              maxLength={20}
+              value={phone}
+              onChange={(e) => setPhone(e.target.value)}
+              placeholder="+91 9876543210"
+              className="w-full h-10 px-3 rounded-xl border border-[var(--border)] bg-[var(--background)] text-xs sm:text-sm outline-none focus:border-[var(--primary)]"
+            />
+          </div>
+        </div>
+
+        {/* Initial Password */}
+        <div>
+          <div className="flex items-center justify-between mb-1">
+            <label htmlFor="cu-password" className="block text-xs font-bold text-[var(--muted-strong)]">
+              Initial Password <span className="text-rose-500">*</span>
+            </label>
+            <button
+              type="button"
+              onClick={() => {
+                setPassword(generateStrongPassword());
+                setShowPassword(true);
+              }}
+              className="inline-flex items-center gap-1 text-[11px] font-bold text-[var(--primary)] hover:underline cursor-pointer"
+            >
+              <IconKey className="h-3 w-3" />
+              Generate password
+            </button>
+          </div>
+          <div className="relative">
+            <input
+              id="cu-password"
+              type={showPassword ? 'text' : 'password'}
+              required
+              minLength={8}
+              maxLength={128}
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              placeholder="Minimum 8 characters"
+              className="w-full h-10 pl-3 pr-10 rounded-xl border border-[var(--border)] bg-[var(--background)] text-xs sm:text-sm outline-none focus:border-[var(--primary)]"
+            />
+            <button
+              type="button"
+              onClick={() => setShowPassword((prev) => !prev)}
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-[var(--muted)] hover:text-[var(--foreground)] cursor-pointer"
+              aria-label={showPassword ? 'Hide password' : 'Show password'}
+            >
+              {showPassword ? <IconEyeOff className="h-4 w-4" /> : <IconEye className="h-4 w-4" />}
+            </button>
+          </div>
+        </div>
+
+        <div className="flex items-center justify-end gap-2 pt-2">
+          <Button type="button" variant="outline" size="sm" disabled={isSubmitting} onClick={onClose}>
+            Cancel
+          </Button>
+          <Button type="submit" variant="primary" size="sm" disabled={isSubmitting} className="gap-1.5">
+            {isSubmitting ? (
+              <>
+                <IconLoader2 className="h-3.5 w-3.5 animate-spin" />
+                Creating…
+              </>
+            ) : (
+              <>
+                <IconUserPlus className="h-3.5 w-3.5" />
+                Create {role === 'RM' ? 'RM User' : 'Normal User'}
+              </>
+            )}
+          </Button>
+        </div>
+      </form>
+    </Modal>
+  );
 }
 
 function AssignPlanModal({
@@ -653,6 +957,7 @@ export function UserManagement() {
   // Manual Subscription Plan Assignment state
   const [availablePlans, setAvailablePlans] = useState<AdminPlanItem[]>([]);
   const [selectedUserForPlan, setSelectedUserForPlan] = useState<AdminUserListItem | null>(null);
+  const [isCreateUserOpen, setIsCreateUserOpen] = useState(false);
 
   // Real-time count of active online users in current list
   const onlineCount = useMemo(() => {
@@ -686,6 +991,11 @@ export function UserManagement() {
     setUsers((prev) =>
       prev.map((u) => (u.id === updatedUser.id ? { ...u, ...updatedUser } : u)),
     );
+  };
+
+  const handleUserCreated = (createdUser: AdminUserListItem) => {
+    setUsers((prev) => [createdUser, ...prev]);
+    setTotalCount((prev) => prev + 1);
   };
 
   // Debounce refs for text inputs (avoid fetching on every keystroke)
@@ -836,6 +1146,13 @@ export function UserManagement() {
         onCancel={() => setPendingConfirm(null)}
       />
 
+      {/* Create User Modal */}
+      <CreateUserModal
+        isOpen={isCreateUserOpen}
+        onClose={() => setIsCreateUserOpen(false)}
+        onUserCreated={handleUserCreated}
+      />
+
       {/* Manual Subscription Plan Assignment Modal */}
       <AssignPlanModal
         user={selectedUserForPlan}
@@ -855,7 +1172,7 @@ export function UserManagement() {
               Browse registered profiles, filter by location or plan, and manage access restrictions.
             </p>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             {onlineCount > 0 && (
               <Badge tone="default" size="md" className="px-2.5 py-1 font-semibold text-xs bg-emerald-50 text-emerald-800 border-emerald-200/80 flex items-center gap-1.5">
                 <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
@@ -865,6 +1182,15 @@ export function UserManagement() {
             <Badge tone="default" size="md" className="px-3 py-1 font-semibold text-xs">
               {totalCount} Total
             </Badge>
+            <Button
+              variant="primary"
+              size="sm"
+              onClick={() => setIsCreateUserOpen(true)}
+              className="flex items-center gap-1.5"
+            >
+              <IconUserPlus className="h-4 w-4" aria-hidden="true" />
+              Create User
+            </Button>
             <Button
               variant="outline"
               size="sm"

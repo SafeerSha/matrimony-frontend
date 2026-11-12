@@ -683,6 +683,11 @@ function MessagesContent() {
               onBack={handleBack}
               onOpenProfile={() => setIsMobileProfileOpen(true)}
               onMarkRead={() => markConversationAsRead(selected.participantId || selected.id)}
+              isPartnerDeleted={
+                selected.participant?.status === 'DELETED' ||
+                Boolean(selected.participant?.deletedAt) ||
+                Boolean(selected.participant?.deactivatedAt)
+              }
             />
           ) : (
             <div className="flex-1 flex flex-col items-center justify-center p-8 text-center bg-[#FFF9F6]/40">

@@ -127,7 +127,7 @@ export function resolvePostAuthRoute(
     if (typeof window !== "undefined") {
       const searchParams = new URLSearchParams(window.location.search);
       const next = searchParams.get("next");
-      if (next && next.startsWith("/rm")) {
+      if (next && next.startsWith("/rm") && !next.includes("/rm/login")) {
         rmTarget = next;
       }
     }
