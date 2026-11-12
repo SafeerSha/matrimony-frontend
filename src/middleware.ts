@@ -87,7 +87,7 @@ export default async function middleware(request: NextRequest) {
   if (pathname === "/rm/login") {
     const session = await getSessionPayload(request);
     const normalizedRole = typeof session?.role === "string" ? session.role.toUpperCase() : "";
-    if (normalizedRole === "RM" || normalizedRole === "ADMIN") {
+    if (normalizedRole === "RM") {
       return NextResponse.redirect(new URL("/rm", request.url));
     }
     return response;
@@ -98,7 +98,7 @@ export default async function middleware(request: NextRequest) {
     const session = await getSessionPayload(request);
     const normalizedRole = typeof session?.role === "string" ? session.role.toUpperCase() : "";
 
-    if (!session || (normalizedRole !== "RM" && normalizedRole !== "ADMIN")) {
+    if (!session || normalizedRole !== "RM") {
       const login = new URL("/rm/login", request.url);
       login.searchParams.set("next", pathname);
       return NextResponse.redirect(login);

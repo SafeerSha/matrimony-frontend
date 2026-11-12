@@ -47,6 +47,7 @@ import { FeatureGate } from '@/components/ui/under-development';
 import { authService, UserDevice } from '@/services/auth.service';
 import { profileService } from '@/services/profile.service';
 import { notificationService } from '@/services/notification.service';
+import { reportService } from '@/services/report.service';
 import { IconMail } from '@tabler/icons-react';
 import { toast } from '@/lib/toast';
 import { cn } from '@/lib/cn';
@@ -67,6 +68,20 @@ function SettingsContent() {
   const [passwordModalMode, setPasswordModalMode] = useState<'enable' | 'change'>('change');
   const [isDisableConfirmOpen, setIsDisableConfirmOpen] = useState(false);
   const [isBlockedModalOpen, setIsBlockedModalOpen] = useState(false);
+  const [blockedCount, setBlockedCount] = useState<number>(0);
+
+  useEffect(() => {
+    let mounted = true;
+    reportService
+      .getBlockedUsers()
+      .then((list) => {
+        if (mounted) setBlockedCount(list.length);
+      })
+      .catch(() => {});
+    return () => {
+      mounted = false;
+    };
+  }, []);
 
   // Account Lifecycle (Deactivate / Delete)
   const [accountActionModal, setAccountActionModal] = useState(false);
@@ -1082,7 +1097,7 @@ function SettingsContent() {
                       onClick={() => setIsBlockedModalOpen(true)}
                       className="rounded-xl border-[#E9DDE0] text-xs font-bold self-start sm:self-auto shrink-0"
                     >
-                      <span>Manage (2)</span>
+                      <span>Manage ({blockedCount})</span>
                     </Button>
                   </div>
                 </div>
@@ -2158,6 +2173,7 @@ function SettingsContent() {
       <BlockedUsersModal
         isOpen={isBlockedModalOpen}
         onClose={() => setIsBlockedModalOpen(false)}
+        onCountChange={setBlockedCount}
       />
     </div>
   );

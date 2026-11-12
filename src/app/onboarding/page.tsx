@@ -552,6 +552,30 @@ export default function OnboardingPage() {
       const sistersCountVal = rawSistersCount !== null ? Number(rawSistersCount) : (profileData.sistersCount ?? 0);
       const sistersMarriedVal = rawSistersMarried !== null ? Number(rawSistersMarried) : (profileData.sistersMarried ?? 0);
 
+      const catLower = String(
+        draftInfo?.category ||
+          draftInfo?.profileFor ||
+          profileData?.category ||
+          profileData?.profileFor ||
+          ""
+      ).toLowerCase();
+      const isMarriageCat =
+        !catLower.includes("friend") &&
+        !catLower.includes("live") &&
+        !catLower.includes("living");
+      const existingLf = String(profileData?.lookingFor || draftInfo?.lookingFor || "").trim().toLowerCase();
+      const isBareGenderLf =
+        !existingLf ||
+        ["male", "female", "man", "woman", "men", "women", "bride", "groom"].includes(existingLf);
+      const syncedLookingFor =
+        isMarriageCat && isBareGenderLf
+          ? genderVal === "female"
+            ? "Male"
+            : genderVal === "male"
+              ? "Female"
+              : undefined
+          : undefined;
+
       updatedProfile = {
         ...updatedProfile,
         firstName: firstNameVal,
@@ -576,6 +600,7 @@ export default function OnboardingPage() {
         occupation: profVal || employmentStatusVal,
         profession: profVal || employmentStatusVal,
         gender: genderVal,
+        ...(syncedLookingFor ? { lookingFor: syncedLookingFor } : {}),
         maritalStatus: maritalStatusVal,
         dateOfBirth: new Date(dobVal).toISOString(),
         fatherAlive: fatherAliveVal,
@@ -916,6 +941,7 @@ export default function OnboardingPage() {
         caste: profileData.caste,
         dateOfBirth: profileData.dateOfBirth,
         gender: profileData.gender,
+        ...(profileData.lookingFor ? { lookingFor: profileData.lookingFor } : {}),
         height: profileData.height,
         education: profileData.education,
         occupation: profileData.occupation,

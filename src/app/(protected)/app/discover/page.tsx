@@ -369,6 +369,14 @@ export default function DiscoverPage() {
 
   const handleChatClick = (profileId: string) => (e: React.MouseEvent) => {
     e.stopPropagation();
+    if (!matchedIds.has(profileId)) {
+      e.preventDefault();
+      toast.info(
+        'Mutual Connection Required',
+        'You can only chat with profiles you are mutually connected with.'
+      );
+      return;
+    }
     if (!isSubscribed) {
       e.preventDefault();
       openChatPrompt();
@@ -649,6 +657,7 @@ export default function DiscoverPage() {
   const [shortlistedIds, setShortlistedIds] = useState<Set<string>>(new Set());
   const [sentInterestIds, setSentInterestIds] = useState<Set<string>>(new Set());
   const [receivedInterestIds, setReceivedInterestIds] = useState<Set<string>>(new Set());
+  const [matchedIds, setMatchedIds] = useState<Set<string>>(new Set());
   const [passedIds, setPassedIds] = useState<Set<string>>(new Set());
 
   // Profiles data & loading
@@ -822,15 +831,20 @@ export default function DiscoverPage() {
         if (rawList.length > 0) {
           const initialSent = new Set<string>();
           const initialReceived = new Set<string>();
+          const initialMatched = new Set<string>();
           const initialShortlisted = new Set<string>();
           const initialPassed = new Set<string>();
 
           const mapped: Profile[] = rawList.map((u: any, idx: number) => {
-            const isSent = (u.isInterestSent || u.connectionStatus === 'SENT') && u.connectionStatus !== 'MATCHED' && !u.isMatched;
+            const isMatched = Boolean(u.isMatched || u.connectionStatus === 'MATCHED');
+            if (isMatched) {
+              initialMatched.add(u.id);
+            }
+            const isSent = (u.isInterestSent || u.connectionStatus === 'SENT') && !isMatched;
             if (isSent) {
               initialSent.add(u.id);
             }
-            if (u.isInterestReceived || u.connectionStatus === 'RECEIVED') {
+            if ((u.isInterestReceived || u.connectionStatus === 'RECEIVED') && !isMatched) {
               initialReceived.add(u.id);
             }
             if (u.isShortlisted || u.connectionStatus === 'SHORTLISTED') {
@@ -897,6 +911,7 @@ export default function DiscoverPage() {
           });
           setSentInterestIds(initialSent);
           setReceivedInterestIds(initialReceived);
+          setMatchedIds(initialMatched);
           setShortlistedIds(initialShortlisted);
           setPassedIds(initialPassed);
           setProfiles(mapped);
@@ -971,18 +986,22 @@ export default function DiscoverPage() {
           }
         }
 
-        // Foundation Matchmaking Gender match (All genders for friendship by default)
+        // Foundation Matchmaking Gender match (Marriage strictly opposite gender; Friendship all genders by default)
         const pGender = (p.gender || (p as any).sex || '').toLowerCase();
+        const oppositeMyGender =
+          myGender === 'male' || myGender === 'man'
+            ? 'women'
+            : myGender === 'female' || myGender === 'woman'
+              ? 'men'
+              : 'any';
         const effectiveGender =
           selectedCategory === 'Friendship'
             ? (selectedGender === 'women' || selectedGender === 'men' ? selectedGender : 'any')
-            : selectedGender !== 'any'
-              ? selectedGender
-              : myGender === 'male' || myGender === 'man'
-                ? 'women'
-                : myGender === 'female' || myGender === 'woman'
-                  ? 'men'
-                  : 'any';
+            : selectedCategory === 'Marriage'
+              ? oppositeMyGender
+              : selectedGender !== 'any'
+                ? selectedGender
+                : oppositeMyGender;
 
         const matchesGender =
           effectiveGender === 'any' ||
@@ -1260,8 +1279,10 @@ export default function DiscoverPage() {
         next.delete(id);
         return next;
       });
+      setMatchedIds((prev) => new Set(prev).add(id));
+    } else {
+      setSentInterestIds((prev) => new Set(prev).add(id));
     }
-    setSentInterestIds((prev) => new Set(prev).add(id));
 
     if (!isMobileSwipe && !isIncoming) {
       toast.success('Interest Sent!', `We have notified ${name} of your interest.`);
@@ -1276,7 +1297,15 @@ export default function DiscoverPage() {
       }
     } catch (err: any) {
       console.warn('Failed sending interest in background:', err);
-      if (err?.message?.includes('Daily interest limit') || err?.message?.includes('quota') || err?.message?.includes('upgrade')) {
+      if (isIncoming) {
+        setMatchedIds((prev) => {
+          const next = new Set(prev);
+          next.delete(id);
+          return next;
+        });
+        setReceivedInterestIds((prev) => new Set(prev).add(id));
+        toast.error('Action Failed', err?.message || `Could not accept interest from ${name}.`);
+      } else if (err?.message?.includes('Daily interest limit') || err?.message?.includes('quota') || err?.message?.includes('upgrade')) {
         setSentInterestIds((prev) => {
           const next = new Set(prev);
           next.delete(id);
@@ -1376,12 +1405,16 @@ export default function DiscoverPage() {
     }
   };
 
-  // Swipe mode profiles: Only show profiles that have NOT had interest sent, NOT received interest, and NOT passed
+  // Swipe mode profiles: Only show profiles that have NOT had interest sent, NOT received interest, NOT matched, and NOT passed
   const swipeProfiles = useMemo(() => {
     return filteredProfiles.filter(
-      (p) => !sentInterestIds.has(p.id) && !passedIds.has(p.id) && !receivedInterestIds.has(p.id)
+      (p) =>
+        !matchedIds.has(p.id) &&
+        !sentInterestIds.has(p.id) &&
+        !passedIds.has(p.id) &&
+        !receivedInterestIds.has(p.id)
     );
-  }, [filteredProfiles, sentInterestIds, passedIds, receivedInterestIds]);
+  }, [filteredProfiles, matchedIds, sentInterestIds, passedIds, receivedInterestIds]);
 
   const sentInterestCount = useMemo(() => {
     return filteredProfiles.filter((p) => sentInterestIds.has(p.id)).length;
@@ -1418,27 +1451,36 @@ export default function DiscoverPage() {
 
   const renderCardOverlay = (profile: Profile, triggerSwipe?: (dir: 'left' | 'right') => void) => {
     const formattedId = getProfileUniqueId(profile);
+    const isMatched = matchedIds.has(profile.id);
 
     return (
       <>
         {/* Top Badges */}
         <div className="absolute top-4 left-4 right-4 flex items-start justify-between gap-2 z-10 pointer-events-auto">
-          <div className="flex flex-wrap items-center gap-2 min-w-0">
-            {sentInterestIds.has(profile.id) ? (
+          <div className="flex items-center gap-2 min-w-0 flex-1 overflow-hidden">
+            {isMatched ? (
               <Badge
                 tone="accent"
                 size="sm"
-                className="bg-emerald-600/90 text-white font-bold backdrop-blur-md border-emerald-400/50 shadow-sm"
+                className="max-w-full overflow-hidden bg-emerald-600/95 text-white font-bold backdrop-blur-md border-emerald-400/50 shadow-sm"
               >
-                ✓ Interest Sent
+                <span className="truncate">✓ Connected</span>
+              </Badge>
+            ) : sentInterestIds.has(profile.id) ? (
+              <Badge
+                tone="accent"
+                size="sm"
+                className="max-w-full overflow-hidden bg-emerald-600/90 text-white font-bold backdrop-blur-md border-emerald-400/50 shadow-sm"
+              >
+                <span className="truncate">✓ Interest Sent</span>
               </Badge>
             ) : receivedInterestIds.has(profile.id) ? (
               <Badge
                 tone="accent"
                 size="sm"
-                className="bg-gradient-to-r from-rose-600 to-pink-600 text-white font-bold backdrop-blur-md border-rose-400/50 shadow-sm"
+                className="max-w-full overflow-hidden bg-gradient-to-r from-rose-600 to-pink-600 text-white font-bold backdrop-blur-md border-rose-400/50 shadow-sm"
               >
-                ♥ Sent You an Interest
+                <span className="truncate">♥ Sent You an Interest</span>
               </Badge>
             ) : profile.online ? (
               <Badge
@@ -1446,17 +1488,17 @@ export default function DiscoverPage() {
                 size="sm"
                 dot
                 dotColor="bg-emerald-500"
-                className="bg-white/90 backdrop-blur-md text-[var(--foreground)] border-white/80 font-medium"
+                className="max-w-full overflow-hidden bg-white/90 backdrop-blur-md text-[var(--foreground)] border-white/80 font-medium"
               >
-                Online now
+                <span className="truncate">Online now</span>
               </Badge>
             ) : profile.lastActiveAt ? (
               <Badge
                 tone="neutral"
                 size="sm"
-                className="bg-black/50 text-white/95 backdrop-blur-md border-white/20 text-[10px] font-medium"
+                className="max-w-full overflow-hidden bg-black/50 text-white/95 backdrop-blur-md border-white/20 text-[10px] font-medium"
               >
-                {formatLastActive(profile.lastActiveAt)}
+                <span className="truncate">{formatLastActive(profile.lastActiveAt)}</span>
               </Badge>
             ) : null}
           </div>
@@ -1530,16 +1572,31 @@ export default function DiscoverPage() {
                 <IconX className="h-5.5 w-5.5 sm:h-6 sm:w-6 stroke-[2.3]" />
               </Button>
 
-              {/* Chat button: Round icon button */}
+              {/* Chat button: Round icon button (visually disabled unless mutually connected) */}
               <Button
                 variant="secondary"
                 size="icon"
+                aria-disabled={!isMatched}
                 onClick={handleChatClick(profile.id)}
-                className="rounded-full aspect-square h-10 w-10 sm:h-11 sm:w-11 shrink-0 p-0 bg-white/95 backdrop-blur-md text-[var(--foreground)] border border-white/60 shadow-md hover:bg-white hover:scale-105 active-press flex items-center justify-center transition-all"
-                title={`Chat with ${profile.name}`}
-                aria-label="Chat"
+                className={cn(
+                  'rounded-full aspect-square h-10 w-10 sm:h-11 sm:w-11 shrink-0 p-0 backdrop-blur-md border flex items-center justify-center transition-all',
+                  isMatched
+                    ? 'bg-white/95 text-[var(--foreground)] border-white/60 shadow-md hover:bg-white hover:scale-105 active-press'
+                    : 'bg-white/75 text-slate-400 border-white/40 opacity-55 shadow-none cursor-not-allowed hover:bg-white/75'
+                )}
+                title={
+                  isMatched
+                    ? `Chat with ${profile.name}`
+                    : 'You can only chat with profiles you are mutually connected with.'
+                }
+                aria-label={isMatched ? 'Chat' : 'Chat unavailable until mutually connected'}
               >
-                <IconMessageCircleFilled className="h-4.5 w-4.5 sm:h-5 sm:w-5 text-[var(--primary)] shrink-0" />
+                <IconMessageCircleFilled
+                  className={cn(
+                    'h-4.5 w-4.5 sm:h-5 sm:w-5 shrink-0',
+                    isMatched ? 'text-[var(--primary)]' : 'text-slate-400'
+                  )}
+                />
               </Button>
 
               {/* Favorite button: Round icon button */}
@@ -2124,8 +2181,9 @@ export default function DiscoverPage() {
           >
             {filteredProfiles.map((profile) => {
               const isShortlisted = shortlistedIds.has(profile.id);
-              const isInterestSent = sentInterestIds.has(profile.id);
-              const isInterestReceived = receivedInterestIds.has(profile.id);
+              const isMatched = matchedIds.has(profile.id);
+              const isInterestSent = sentInterestIds.has(profile.id) && !isMatched;
+              const isInterestReceived = receivedInterestIds.has(profile.id) && !isMatched;
               const formattedId = getProfileUniqueId(profile);
 
               return (
@@ -2152,23 +2210,32 @@ export default function DiscoverPage() {
                     {profile.image && <div className="absolute inset-0 photo-overlay-warm" aria-hidden="true" />}
 
                     {/* Top Badges */}
-                    <div className="absolute top-3 left-3 right-3 flex items-start justify-between gap-1.5 z-10 pointer-events-none">
-                      <div className="flex flex-wrap items-center gap-1.5 min-w-0">
-                        {isInterestSent ? (
+                    <div className="absolute top-3 left-3 right-3 flex items-center justify-between gap-1.5 z-10 pointer-events-none">
+                      <div className="flex items-center gap-1.5 min-w-0 flex-1 overflow-hidden">
+                        {isMatched ? (
                           <Badge
                             tone="accent"
                             size="sm"
-                            className="bg-emerald-600/95 text-white font-bold backdrop-blur-md border-emerald-400/50 shadow-xs"
+                            className="max-w-full overflow-hidden bg-emerald-600/95 text-white font-bold backdrop-blur-md border-emerald-400/50 shadow-xs"
                           >
-                            ✓ Interest Sent
+                            <span className="truncate">✓ Connected</span>
+                          </Badge>
+                        ) : isInterestSent ? (
+                          <Badge
+                            tone="accent"
+                            size="sm"
+                            className="max-w-full overflow-hidden bg-emerald-600/95 text-white font-bold backdrop-blur-md border-emerald-400/50 shadow-xs"
+                          >
+                            <span className="truncate">✓ Interest Sent</span>
                           </Badge>
                         ) : isInterestReceived ? (
                           <Badge
                             tone="accent"
                             size="sm"
-                            className="bg-gradient-to-r from-rose-600 to-pink-600 text-white font-bold backdrop-blur-md border-rose-400/50 shadow-xs"
+                            className="max-w-full overflow-hidden bg-gradient-to-r from-rose-600 to-pink-600 text-white font-bold backdrop-blur-md border-rose-400/50 shadow-xs"
                           >
-                            ♥ Sent You an Interest
+                            <span className="hidden @[345px]:inline truncate">♥ Sent You an Interest</span>
+                            <span className="@[345px]:hidden truncate">♥ Interest Received</span>
                           </Badge>
                         ) : profile.online ? (
                           <Badge
@@ -2176,30 +2243,30 @@ export default function DiscoverPage() {
                             size="sm"
                             dot
                             dotColor="bg-emerald-500"
-                            className="bg-white/90 backdrop-blur-md text-[var(--foreground)] border-white/80 font-medium"
+                            className="max-w-full overflow-hidden bg-white/90 backdrop-blur-md text-[var(--foreground)] border-white/80 font-medium"
                           >
-                            Online now
+                            <span className="truncate">Online now</span>
                           </Badge>
                         ) : profile.lastActiveAt ? (
                           <Badge
                             tone="neutral"
                             size="sm"
-                            className="bg-black/50 text-white/95 backdrop-blur-md border-white/20 text-[10px] font-medium"
+                            className="max-w-full overflow-hidden bg-black/50 text-white/95 backdrop-blur-md border-white/20 text-[10px] font-medium"
                           >
-                            {formatLastActive(profile.lastActiveAt)}
+                            <span className="truncate">{formatLastActive(profile.lastActiveAt)}</span>
                           </Badge>
                         ) : null}
                       </div>
 
                       {formattedId && (
-                        <span className="shrink-0 rounded-full bg-black/45 backdrop-blur-md text-white/90 border border-white/15 text-[10px] font-semibold px-2.5 py-1 tracking-wider uppercase shadow-xs whitespace-nowrap">
+                        <span className="shrink-0 rounded-full bg-black/45 backdrop-blur-md text-white/90 border border-white/15 text-[10px] font-semibold px-2 py-0.5 tracking-wider uppercase shadow-xs whitespace-nowrap">
                           ID: {formattedId}
                         </span>
                       )}
                     </div>
 
                     {/* Identity & Action Overlay on Photo */}
-                    <div className="absolute inset-x-0 bottom-0 p-3.5 @[295px]:p-5 text-white z-10 space-y-1.5">
+                    <div className="absolute inset-x-0 bottom-0 p-3.5 @[340px]:p-4.5 text-white z-10 space-y-1.5">
                       <div className="flex items-center gap-2">
                         <h3 className="font-editorial-title text-xl font-bold tracking-tight text-white drop-shadow-sm truncate group-hover:text-[var(--accent-light)] transition-colors">
                           {profile.name}, {profile.age}
@@ -2223,9 +2290,9 @@ export default function DiscoverPage() {
                       )}
 
                       {/* Matrimonial Discovery Actions: Option 1 Hero Connect Pill + Left Quick-Actions */}
-                      <div className="w-full pt-2.5 sm:pt-3 flex items-center gap-1.5 @[295px]:gap-2 max-w-full">
+                      <div className="w-full pt-2.5 flex items-center gap-1.5 @[340px]:gap-2 max-w-full">
                         {/* Left Quick Actions: Pass, Chat, Star */}
-                        <div className="flex items-center gap-1.5 @[295px]:gap-2 shrink-0">
+                        <div className="flex items-center gap-1 @[340px]:gap-1.5 shrink-0">
                           {/* Pass button: Round icon button */}
                           <Button
                             variant="secondary"
@@ -2234,23 +2301,38 @@ export default function DiscoverPage() {
                               e.stopPropagation();
                               handlePass(profile.id);
                             }}
-                            className="rounded-full aspect-square h-9.5 w-9.5 @[295px]:h-11 @[295px]:w-11 shrink-0 p-0 flex items-center justify-center bg-white/95 backdrop-blur-md text-rose-600 border border-white/70 hover:bg-white hover:scale-105 active-press shadow-md hover:shadow-lg transition-all"
+                            className="rounded-full aspect-square h-9 w-9 @[340px]:h-10 @[340px]:w-10 shrink-0 p-0 flex items-center justify-center bg-white/95 backdrop-blur-md text-rose-600 border border-white/70 hover:bg-white hover:scale-105 active-press shadow-md hover:shadow-lg transition-all"
                             title="Pass"
                             aria-label="Pass"
                           >
-                            <IconX className="h-4.5 w-4.5 @[295px]:h-5.5 @[295px]:w-5.5 stroke-[2.3]" />
+                            <IconX className="h-4.5 w-4.5 @[340px]:h-5 @[340px]:w-5 stroke-[2.3]" />
                           </Button>
 
-                          {/* Chat button: Round icon button */}
+                          {/* Chat button: Round icon button (visually disabled unless mutually connected) */}
                           <Button
                             variant="secondary"
                             size="icon"
+                            aria-disabled={!isMatched}
                             onClick={handleChatClick(profile.id)}
-                            className="rounded-full aspect-square h-9 w-9 @[295px]:h-9.5 @[295px]:w-9.5 shrink-0 p-0 bg-white/95 backdrop-blur-md text-[var(--foreground)] border border-white/60 shadow-sm hover:bg-white hover:scale-105 active-press flex items-center justify-center transition-all"
-                            title={`Chat with ${profile.name}`}
-                            aria-label="Chat"
+                            className={cn(
+                              'rounded-full aspect-square h-8.5 w-8.5 @[340px]:h-9.5 @[340px]:w-9.5 shrink-0 p-0 backdrop-blur-md border flex items-center justify-center transition-all',
+                              isMatched
+                                ? 'bg-white/95 text-[var(--foreground)] border-white/60 shadow-sm hover:bg-white hover:scale-105 active-press'
+                                : 'bg-white/75 text-slate-400 border-white/40 opacity-55 shadow-none cursor-not-allowed hover:bg-white/75'
+                            )}
+                            title={
+                              isMatched
+                                ? `Chat with ${profile.name}`
+                                : 'You can only chat with profiles you are mutually connected with.'
+                            }
+                            aria-label={isMatched ? 'Chat' : 'Chat unavailable until mutually connected'}
                           >
-                            <IconMessageCircleFilled className="h-4 w-4 @[295px]:h-4.5 @[295px]:w-4.5 text-[var(--primary)] shrink-0" />
+                            <IconMessageCircleFilled
+                              className={cn(
+                                'h-4 w-4 shrink-0',
+                                isMatched ? 'text-[var(--primary)]' : 'text-slate-400'
+                              )}
+                            />
                           </Button>
 
                           {/* Favorite button: Round icon button */}
@@ -2262,7 +2344,7 @@ export default function DiscoverPage() {
                               handleShortlist(profile.id, profile.name);
                             }}
                             className={cn(
-                              'rounded-full aspect-square h-9 w-9 @[295px]:h-9.5 @[295px]:w-9.5 shrink-0 p-0 border shadow-sm active-press transition-all flex items-center justify-center',
+                              'rounded-full aspect-square h-8.5 w-8.5 @[340px]:h-9.5 @[340px]:w-9.5 shrink-0 p-0 border shadow-sm active-press transition-all flex items-center justify-center',
                               isShortlisted
                                 ? 'bg-gradient-to-tr from-[#D8B28C] via-[#C99757] to-[#9B6C2E] text-white border-[#EEDCC8]/60 hover:brightness-110 hover:scale-105 shadow-amber-950/20'
                                 : 'bg-white/95 backdrop-blur-md text-[var(--foreground)] border border-white/60 hover:bg-white hover:scale-105'
@@ -2272,15 +2354,28 @@ export default function DiscoverPage() {
                           >
                             <IconStarFilled
                               className={cn(
-                                'h-4 w-4 @[295px]:h-4.5 @[295px]:w-4.5 shrink-0',
+                                'h-4 w-4 shrink-0',
                                 isShortlisted ? 'text-white' : 'text-[#C99757]'
                               )}
                             />
                           </Button>
                         </div>
 
-                        {/* Right Hero Action: "Cancel Interest" if sent, or 3D "Send Interest" / "Accept" in Luxury Burgundy */}
-                        {isInterestSent ? (
+                        {/* Right Hero Action: Chat if Matched, "Cancel Interest" if sent, or 3D "Send Interest" / "Accept" */}
+                        {isMatched ? (
+                          <Button
+                            variant="primary"
+                            onClick={handleChatClick(profile.id)}
+                            className="flex-1 min-w-0 h-9.5 @[340px]:h-10.5 rounded-full px-2.5 @[340px]:px-3.5 font-bold text-xs @[340px]:text-sm flex items-center justify-center gap-1.5 transition-all duration-150 select-none bg-gradient-to-b from-emerald-500 via-emerald-600 to-teal-700 text-white border-t border-t-white/40 border-x border-x-emerald-600/50 border-b-[3px] border-b-teal-950 shadow-[0_4px_12px_rgba(16,185,129,0.45),inset_0_1.5px_1px_rgba(255,255,255,0.4)] hover:brightness-105 active:scale-100 active:translate-y-[2px] active:border-b-[1px]"
+                            title={`Chat with ${profile.name}`}
+                            aria-label="Chat"
+                          >
+                            <IconMessageCircleFilled className="h-4 w-4 shrink-0 text-white" />
+                            <span className="hidden @[250px]:inline truncate tracking-wide">
+                              Chat
+                            </span>
+                          </Button>
+                        ) : isInterestSent ? (
                           <Button
                             variant="secondary"
                             disabled={cancellingInterestId === profile.id}
@@ -2288,19 +2383,21 @@ export default function DiscoverPage() {
                               e.stopPropagation();
                               handleCancelInterest(profile.id, profile.name);
                             }}
-                            className="flex-1 min-w-0 h-9.5 @[295px]:h-11 rounded-full px-2 @[295px]:px-3 font-bold text-xs sm:text-sm flex items-center justify-center gap-1.5 transition-all duration-150 select-none truncate bg-white/95 hover:bg-rose-50/90 backdrop-blur-md border border-rose-200/90 hover:border-rose-300 text-rose-700 hover:text-rose-800 shadow-sm active:scale-95 cursor-pointer"
+                            className="flex-1 min-w-0 h-9.5 @[340px]:h-10.5 rounded-full px-2.5 @[340px]:px-3.5 font-bold text-xs @[340px]:text-sm flex items-center justify-center gap-1.5 transition-all duration-150 select-none bg-white/95 hover:bg-rose-50/90 backdrop-blur-md border border-rose-200/90 hover:border-rose-300 text-rose-700 hover:text-rose-800 shadow-sm active:scale-95 cursor-pointer"
                             title={`Cancel interest sent to ${profile.name}`}
                             aria-label="Cancel Interest"
                           >
                             {cancellingInterestId === profile.id ? (
                               <>
                                 <IconLoader2 className="h-4 w-4 animate-spin text-rose-600 shrink-0" />
-                                <span className="hidden @[295px]:inline truncate text-rose-700 font-bold">Cancelling...</span>
+                                <span className="hidden @[250px]:inline truncate text-rose-700 font-bold">Cancelling...</span>
                               </>
                             ) : (
                               <>
                                 <IconX className="h-4 w-4 shrink-0 stroke-[2.4] text-rose-600" />
-                                <span className="hidden @[295px]:inline truncate text-rose-700 font-bold">Cancel Interest</span>
+                                <span className="hidden @[250px]:inline truncate text-rose-700 font-bold">
+                                  Cancel<span className="hidden @[340px]:inline"> Interest</span>
+                                </span>
                               </>
                             )}
                           </Button>
@@ -2312,7 +2409,7 @@ export default function DiscoverPage() {
                               handleSendInterest(profile.id, profile.name);
                             }}
                             className={cn(
-                              "flex-1 min-w-0 h-9.5 @[295px]:h-11 rounded-full px-2 @[295px]:px-3 font-bold text-xs sm:text-sm flex items-center justify-center gap-1.5 transition-all duration-150 select-none truncate",
+                              "flex-1 min-w-0 h-9.5 @[340px]:h-10.5 rounded-full px-2.5 @[340px]:px-3.5 font-bold text-xs @[340px]:text-sm flex items-center justify-center gap-1.5 transition-all duration-150 select-none",
                               isInterestReceived
                                 ? "bg-gradient-to-b from-emerald-500 via-emerald-600 to-teal-700 text-white border-t border-t-white/40 border-x border-x-emerald-600/50 border-b-[3px] border-b-teal-950 shadow-[0_4px_12px_rgba(16,185,129,0.45),inset_0_1.5px_1px_rgba(255,255,255,0.4)] hover:brightness-105 active:scale-100 active:translate-y-[2px] active:border-b-[1px] active:shadow-[0_2px_5px_rgba(16,185,129,0.35)]"
                                 : "bg-gradient-to-b from-[#9E1D3B] via-[#801835] to-[#5E0E24] text-white border-t border-t-white/35 border-x border-x-[#72122B]/60 border-b-[3px] sm:border-b-[3.5px] border-b-[#420816] shadow-[0_4px_12px_rgba(94,14,36,0.5),inset_0_1.5px_1px_rgba(255,255,255,0.35)] hover:brightness-110 hover:-translate-y-0.5 hover:shadow-[0_5px_16px_rgba(94,14,36,0.6),inset_0_1.5px_1px_rgba(255,255,255,0.35)] active:scale-100 active:translate-y-[2px] active:border-b-[1px] active:shadow-[0_2px_5px_rgba(94,14,36,0.3)]"
@@ -2321,11 +2418,11 @@ export default function DiscoverPage() {
                             aria-label={isInterestReceived ? "Accept Interest" : "Send Interest"}
                           >
                             {isFriendshipProfile(profile) ? (
-                              renderHandshakeIcon('h-5 w-5 @[295px]:h-4.5 @[295px]:w-4.5 shrink-0 text-white drop-shadow-[0_1px_1.5px_rgba(0,0,0,0.35)]')
+                              renderHandshakeIcon('h-4 w-4 @[340px]:h-4.5 @[340px]:w-4.5 shrink-0 text-white drop-shadow-[0_1px_1.5px_rgba(0,0,0,0.35)]')
                             ) : (
-                              <IconHeartFilled className="h-4.5 w-4.5 @[295px]:h-4 @[295px]:w-4 shrink-0 text-white drop-shadow-[0_1px_1.5px_rgba(0,0,0,0.35)]" />
+                              <IconHeartFilled className="h-4 w-4 @[340px]:h-4.5 @[340px]:w-4.5 shrink-0 text-white drop-shadow-[0_1px_1.5px_rgba(0,0,0,0.35)]" />
                             )}
-                            <span className="hidden @[295px]:inline truncate tracking-wide drop-shadow-[0_1px_1.5px_rgba(0,0,0,0.35)]">
+                            <span className="hidden @[250px]:inline truncate tracking-wide drop-shadow-[0_1px_1.5px_rgba(0,0,0,0.35)]">
                               {isInterestReceived ? 'Accept' : 'Connect'}
                             </span>
                           </Button>
