@@ -51,7 +51,7 @@ function RMDashboardContent() {
         const user = await authService.getCurrentUser();
         const role = typeof user?.role === 'string' ? user.role.toUpperCase() : '';
 
-        if (role !== 'RM' && role !== 'ADMIN') {
+        if (role !== 'RM') {
           if (isMounted) setIsAuthorized(false);
           toast.dismissAll();
           toast.flash(
