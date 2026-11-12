@@ -83,15 +83,24 @@ export default async function middleware(request: NextRequest) {
     return response;
   }
 
+  // Dedicated RM Login Page: allow unauthenticated visitors, but redirect existing RM/ADMINs directly to /rm
+  if (pathname === "/rm/login") {
+    const session = await getSessionPayload(request);
+    const normalizedRole = typeof session?.role === "string" ? session.role.toUpperCase() : "";
+    if (normalizedRole === "RM" || normalizedRole === "ADMIN") {
+      return NextResponse.redirect(new URL("/rm", request.url));
+    }
+    return response;
+  }
+
   // Protected RM Portal routes (/rm/*)
   if (pathname.startsWith("/rm")) {
     const session = await getSessionPayload(request);
     const normalizedRole = typeof session?.role === "string" ? session.role.toUpperCase() : "";
 
     if (!session || (normalizedRole !== "RM" && normalizedRole !== "ADMIN")) {
-      const login = new URL("/login", request.url);
+      const login = new URL("/rm/login", request.url);
       login.searchParams.set("next", pathname);
-      login.searchParams.set("error", "unauthorized");
       return NextResponse.redirect(login);
     }
     return response;

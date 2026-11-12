@@ -4,21 +4,29 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import {
   IconUsers,
-  IconHeart,
-  IconCalendar,
-  IconSearch,
-  IconShield,
+  IconMessageReport,
+  IconHeartHandshake,
+  IconMenu2,
+  IconX,
+  IconUserCheck,
   IconLoader2,
+  IconLogout,
 } from '@tabler/icons-react';
-import { Card } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
+import { RmUserDirectory } from '@/components/rm/rm-user-directory';
+import { RmFeedbackTracker } from '@/components/rm/rm-feedback-tracker';
 import { authService } from '@/services/auth.service';
+import { rmService } from '@/services/rm.service';
 import { toast } from '@/lib/toast';
+
+type RmTab = 'users' | 'feedback';
 
 export default function RMDashboard() {
   const router = useRouter();
   const [isAuthorized, setIsAuthorized] = useState<boolean | null>(null);
-  const [tab, setTab] = useState<'clients' | 'followups' | 'shortlists'>('clients');
+  const [currentRmName, setCurrentRmName] = useState<string>('Relationship Manager');
+  const [tab, setTab] = useState<RmTab>('users');
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [openIssuesCount, setOpenIssuesCount] = useState<number>(0);
 
   useEffect(() => {
     let isMounted = true;
@@ -27,13 +35,7 @@ export default function RMDashboard() {
       const token = authService.getAccessToken();
       if (!token) {
         if (isMounted) setIsAuthorized(false);
-        toast.dismissAll();
-        toast.flash(
-          'error',
-          'Access Denied',
-          'Please sign in with an authorized account to access the RM Portal.'
-        );
-        router.replace('/login?next=/rm&error=unauthorized');
+        router.replace('/rm/login?next=/rm');
         return;
       }
 
@@ -49,22 +51,22 @@ export default function RMDashboard() {
             'Access Denied',
             'You do not have permission to access the RM Portal. Please sign in with an authorized account.'
           );
-          router.replace('/login?next=/rm&error=unauthorized');
+          router.replace('/rm/login?next=/rm');
           return;
         }
 
         if (isMounted) {
+          const rawUser = user as { firstName?: string; lastName?: string; email?: string } | null;
+          const fullName =
+            [rawUser?.firstName, rawUser?.lastName].filter(Boolean).join(' ').trim() ||
+            rawUser?.email?.split('@')[0] ||
+            'Relationship Manager';
+          setCurrentRmName(fullName);
           setIsAuthorized(true);
         }
       } catch {
         if (isMounted) setIsAuthorized(false);
-        toast.dismissAll();
-        toast.flash(
-          'error',
-          'Access Denied',
-          'You do not have permission to access this resource. Please sign in with an authorized account.'
-        );
-        router.replace('/login?next=/rm&error=unauthorized');
+        router.replace('/rm/login?next=/rm');
       }
     }
 
@@ -75,16 +77,40 @@ export default function RMDashboard() {
     };
   }, [router]);
 
+  useEffect(() => {
+    if (isAuthorized !== true) return;
+    const controller = new AbortController();
+    rmService
+      .getFeedbackStats(controller.signal)
+      .then((res) => setOpenIssuesCount(res.openCount || 0))
+      .catch(() => {});
+    return () => controller.abort();
+  }, [isAuthorized]);
+
+  const handleSelectTab = (newTab: RmTab) => {
+    setTab(newTab);
+    setMobileMenuOpen(false);
+  };
+
+  const handleLogout = async () => {
+    try {
+      await authService.logout();
+    } catch {}
+    toast.dismissAll();
+    toast.flash('info', 'Logged Out', 'You have been signed out of the RM Portal.');
+    window.location.href = '/rm/login';
+  };
+
   if (isAuthorized !== true) {
     return (
-      <div className="min-h-screen bg-[var(--background)] flex flex-col items-center justify-center p-6 text-center select-none">
+      <div className="min-h-screen bg-[#2A0711] flex flex-col items-center justify-center p-6 text-center select-none">
         <div className="flex flex-col items-center gap-4 max-w-sm">
-          <div className="h-12 w-12 rounded-2xl bg-[var(--surface-muted)] border border-[var(--border)] grid place-items-center text-[var(--primary)] shadow-xs">
+          <div className="h-12 w-12 rounded-2xl bg-[#4A1024] border border-[#5E142E] grid place-items-center text-rose-300 shadow-inner">
             <IconLoader2 className="h-6 w-6 animate-spin" />
           </div>
           <div>
-            <h3 className="text-base font-bold text-[var(--foreground)] tracking-tight">Verifying RM Authorization</h3>
-            <p className="text-xs text-[var(--muted)] mt-1">
+            <h3 className="text-base font-bold text-white tracking-tight">Verifying RM Authorization</h3>
+            <p className="text-xs text-white/60 mt-1">
               Checking access permissions for the RM Portal…
             </p>
           </div>
@@ -94,113 +120,159 @@ export default function RMDashboard() {
   }
 
   return (
-    <div className="min-h-screen bg-[var(--background)] flex">
-      {/* RM Sidebar */}
-      <aside className="w-64 border-r border-[var(--border)] bg-[var(--surface)] flex flex-col">
-        <div className="p-6 border-b border-[var(--border)] flex items-center gap-3">
-          <div className="h-10 w-10 rounded-full bg-amber-100 flex items-center justify-center text-amber-600">
-            <IconShield className="h-5 w-5" />
-          </div>
-          <div>
-            <div className="flex items-center gap-1.5">
-              <h2 className="text-sm font-bold text-[var(--foreground)] tracking-tight">RM Portal</h2>
-              <Badge tone="default" size="sm" className="bg-amber-100 text-amber-800 text-[9px] py-0 px-1">Mock</Badge>
-            </div>
-            <p className="text-xs text-[var(--muted)]">Sarah Jenkins</p>
+    <div className="min-h-screen bg-[var(--background)] flex flex-col lg:flex-row">
+      {/* 1. MOBILE TOP HEADER (< lg) */}
+      <div className="lg:hidden flex items-center justify-between bg-[#2A0711] text-white px-4 py-3 border-b border-[#3A0A18] sticky top-0 z-40 shadow-sm">
+        <div className="flex items-center gap-2.5">
+          <button
+            onClick={() => setMobileMenuOpen((prev) => !prev)}
+            className="grid h-9 w-9 place-items-center rounded-lg text-white/80 hover:text-white hover:bg-[#3A0A18] transition-colors"
+            aria-label="Toggle RM menu"
+          >
+            {mobileMenuOpen ? <IconX className="h-5 w-5" /> : <IconMenu2 className="h-5 w-5" />}
+          </button>
+          <div className="flex flex-col">
+            <h2 className="text-sm font-bold text-white tracking-tight leading-none">
+              RM Portal
+            </h2>
+            <span className="text-[10px] font-semibold text-[#F29CA3] tracking-wide mt-0.5">
+              IshtamChat
+            </span>
           </div>
         </div>
-        <nav className="flex-1 p-4 space-y-2">
-          <button onClick={() => setTab('clients')} className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-colors ${tab === 'clients' ? 'bg-[var(--primary)] text-white shadow-sm' : 'text-[var(--muted-strong)] hover:bg-[var(--surface-muted)]'}`}>
-            <IconUsers className="h-5 w-5" /> Assigned Clients
+
+        <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1.5 text-xs font-semibold bg-[#4A1024] px-2.5 py-1 rounded-lg text-white border border-[#5E142E]">
+            <IconUserCheck className="h-3.5 w-3.5 text-emerald-400" />
+            <span>RM</span>
+          </div>
+          <button
+            onClick={handleLogout}
+            title="Log out of RM Portal"
+            className="flex items-center gap-1 text-xs font-semibold bg-rose-950/70 hover:bg-rose-900 text-rose-200 border border-rose-800/80 px-2.5 py-1 rounded-lg transition-colors cursor-pointer"
+          >
+            <IconLogout className="h-3.5 w-3.5" />
+            <span>Logout</span>
           </button>
-          <button onClick={() => setTab('shortlists')} className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-colors ${tab === 'shortlists' ? 'bg-[var(--primary)] text-white shadow-sm' : 'text-[var(--muted-strong)] hover:bg-[var(--surface-muted)]'}`}>
-            <IconHeart className="h-5 w-5" /> Manage Shortlists
+        </div>
+      </div>
+
+      {/* 2. MOBILE SIDEBAR BACKDROP */}
+      {mobileMenuOpen && (
+        <div
+          className="fixed inset-0 bg-black/60 backdrop-blur-xs z-40 lg:hidden animate-in fade-in duration-200"
+          onClick={() => setMobileMenuOpen(false)}
+        />
+      )}
+
+      {/* 3. SIDEBAR (Mirrors Admin Portal Theme) */}
+      <aside
+        className={`
+          fixed inset-y-0 left-0 z-50 w-72 bg-[#2A0711] text-white/80 border-r border-[#3A0A18] flex flex-col transition-transform duration-300 ease-in-out
+          lg:static lg:w-64 lg:translate-x-0 lg:z-auto lg:shrink-0
+          ${mobileMenuOpen ? 'translate-x-0 shadow-2xl' : '-translate-x-full lg:translate-x-0'}
+        `}
+      >
+        <div className="p-5 sm:p-6 border-b border-[#3A0A18] flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-[#80132E] to-[#A22749] border border-[#C23B60]/40 flex items-center justify-center shadow-md shadow-[#80132E]/30 text-white shrink-0">
+              <IconHeartHandshake className="h-5 w-5" />
+            </div>
+            <div>
+              <h2 className="text-lg font-bold text-white tracking-tight leading-none">
+                RM Portal
+              </h2>
+              <p className="text-xs font-semibold text-[#F29CA3] mt-1 tracking-wide">
+                IshtamChat
+              </p>
+            </div>
+          </div>
+          <button
+            onClick={() => setMobileMenuOpen(false)}
+            className="lg:hidden grid h-8 w-8 place-items-center rounded-lg text-white/60 hover:text-white hover:bg-[#3A0A18]"
+            aria-label="Close sidebar"
+          >
+            <IconX className="h-4 w-4" />
           </button>
-          <button onClick={() => setTab('followups')} className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-colors ${tab === 'followups' ? 'bg-[var(--primary)] text-white shadow-sm' : 'text-[var(--muted-strong)] hover:bg-[var(--surface-muted)]'}`}>
-            <IconCalendar className="h-5 w-5" /> Follow-ups & Calls
+        </div>
+
+        {/* Navigation Links */}
+        <nav className="flex-1 p-4 space-y-1.5 overflow-y-auto" aria-label="RM Navigation">
+          <button
+            onClick={() => handleSelectTab('users')}
+            className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs sm:text-sm font-medium transition-all cursor-pointer ${
+              tab === 'users'
+                ? 'bg-[var(--primary)] text-white shadow-sm font-semibold'
+                : 'hover:bg-[#3A0A18] text-white/80'
+            }`}
+          >
+            <IconUsers className="h-4.5 w-4.5 shrink-0" />
+            <span>User Directory</span>
+          </button>
+
+          <button
+            onClick={() => handleSelectTab('feedback')}
+            className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs sm:text-sm font-medium transition-all cursor-pointer ${
+              tab === 'feedback'
+                ? 'bg-[var(--primary)] text-white shadow-sm font-semibold'
+                : 'hover:bg-[#3A0A18] text-white/80'
+            }`}
+          >
+            <div className="flex items-center gap-3">
+              <IconMessageReport className="h-4.5 w-4.5 shrink-0" />
+              <span>Feedback &amp; Issues</span>
+            </div>
+            {openIssuesCount > 0 && (
+              <span className="rounded-full bg-white/15 px-2 py-0.5 text-[10px] font-bold text-white">
+                {openIssuesCount}
+              </span>
+            )}
           </button>
         </nav>
+
+        {/* Sidebar Footer */}
+        <div className="p-4 border-t border-[#3A0A18] mt-auto">
+          <button
+            onClick={handleLogout}
+            className="w-full flex items-center justify-center gap-2 px-3.5 py-2.5 rounded-xl text-xs font-bold text-rose-200 bg-rose-950/60 hover:bg-rose-900 border border-rose-800/70 transition-all cursor-pointer shadow-sm hover:shadow-rose-950/40"
+          >
+            <IconLogout className="h-4 w-4" />
+            <span>Logout from RM Portal</span>
+          </button>
+        </div>
       </aside>
 
-      {/* Main Content */}
-      <main className="flex-1 overflow-y-auto p-8">
+      {/* 4. MAIN CONTENT AREA */}
+      <main className="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8 min-w-0">
+        {/* Desktop Top Header Bar */}
+        <header className="hidden lg:flex items-center justify-between pb-6 mb-6 border-b border-[var(--border)]">
+          <div>
+            <h1 className="text-xl font-bold text-[var(--foreground)] tracking-tight leading-tight">
+              RM Portal
+            </h1>
+            <p className="text-xs font-semibold text-[var(--primary)] tracking-wide">
+              IshtamChat Platform
+            </p>
+          </div>
 
-        {tab === 'clients' && (
-          <div className="space-y-6">
-            <header className="mb-8 flex items-center justify-between">
-              <div>
-                <h1 className="text-2xl font-bold text-[var(--foreground)]">My VIP Clients</h1>
-                <p className="text-[var(--muted)] mt-1">Manage your assigned high-tier clients.</p>
-              </div>
-              <div className="relative w-72">
-                <IconSearch className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-[var(--muted)]" />
-                <input placeholder="Search clients by name or ID" className="w-full h-10 pl-9 pr-4 rounded-xl border border-[var(--border)] bg-[var(--surface)] text-sm outline-none focus:border-[var(--primary)]" />
-              </div>
-            </header>
-
-            <div className="rounded-2xl border border-dashed border-[var(--border)] bg-white p-12 text-center shadow-xs">
-              <div className="mx-auto grid h-12 w-12 place-items-center rounded-2xl bg-[var(--surface-muted)] text-[var(--muted)] mb-3 border border-[var(--border)]">
-                <IconUsers className="h-6 w-6 text-[var(--primary)]" />
-              </div>
-              <h3 className="text-base font-bold text-[var(--foreground)]">No VIP Clients Assigned</h3>
-              <p className="mt-1 text-xs sm:text-sm text-[var(--muted)] max-w-sm mx-auto">
-                Assigned Platinum and VIP accounts will appear in this workspace once allocated by management.
-              </p>
+          <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-[#FAF3EC] border border-[#EAD8C7] text-xs font-semibold text-[#80132E]">
+              <IconUserCheck className="h-4 w-4 text-emerald-600" />
+              <span>{currentRmName}</span>
             </div>
+
+            <button
+              onClick={handleLogout}
+              className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-bold text-rose-700 bg-rose-50 hover:bg-rose-100 border border-rose-200 transition-colors cursor-pointer shadow-xs"
+            >
+              <IconLogout className="h-3.5 w-3.5" />
+              <span>Logout</span>
+            </button>
           </div>
-        )}
+        </header>
 
-        {tab === 'shortlists' && (
-          <div className="space-y-6">
-            <header className="mb-8 flex items-center justify-between">
-              <div>
-                <h1 className="text-2xl font-bold text-[var(--foreground)]">Curate Shortlists</h1>
-                <p className="text-[var(--muted)] mt-1">Review profiles and shortlist them on behalf of your clients.</p>
-              </div>
-            </header>
-
-            <div className="rounded-2xl border border-dashed border-[var(--border)] bg-white p-12 text-center shadow-xs">
-              <div className="mx-auto grid h-12 w-12 place-items-center rounded-2xl bg-[var(--surface-muted)] text-[var(--muted)] mb-3 border border-[var(--border)]">
-                <IconHeart className="h-6 w-6 text-[var(--primary)]" />
-              </div>
-              <h3 className="text-base font-bold text-[var(--foreground)]">No Client Selected</h3>
-              <p className="mt-1 text-xs sm:text-sm text-[var(--muted)] max-w-sm mx-auto">
-                Select an active VIP client to curate candidate matches and shortlists.
-              </p>
-            </div>
-          </div>
-        )}
-
-        {tab === 'followups' && (
-          <div className="space-y-6">
-            <header className="mb-8">
-              <h1 className="text-2xl font-bold text-[var(--foreground)]">Follow-ups & Calls</h1>
-              <p className="text-[var(--muted)] mt-1">Track interaction status and schedule meetings.</p>
-            </header>
-
-            <Card className="p-0 border-[var(--border)] shadow-sm overflow-hidden">
-              <table className="w-full text-left text-sm">
-                <thead className="bg-[var(--surface-muted)] border-b border-[var(--border)] text-[var(--muted-strong)]">
-                  <tr>
-                    <th className="p-4 font-semibold">Time</th>
-                    <th className="p-4 font-semibold">Client</th>
-                    <th className="p-4 font-semibold">Task / Goal</th>
-                    <th className="p-4 font-semibold">Status</th>
-                    <th className="p-4 font-semibold">Action</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-[var(--border)]">
-                  <tr>
-                    <td colSpan={5} className="p-8 text-center text-xs text-[var(--muted)]">
-                      No scheduled RM calls or pending tasks for today.
-                    </td>
-                  </tr>
-                </tbody>
-              </table>
-            </Card>
-          </div>
-        )}
-
+        {tab === 'users' && <RmUserDirectory />}
+        {tab === 'feedback' && <RmFeedbackTracker onOpenCountChange={setOpenIssuesCount} />}
       </main>
     </div>
   );
