@@ -139,6 +139,19 @@ export function HeroSection({ className = "" }: HeroSectionProps) {
     return () => window.removeEventListener("open-looking-for-community", handleCommunityOpen);
   }, []);
 
+  const handleScrollToContact = (e?: React.MouseEvent) => {
+    e?.preventDefault();
+    const el = document.getElementById("contact");
+    if (el) {
+      el.scrollIntoView({ behavior: "smooth", block: "start" });
+      if (typeof window !== "undefined" && window.location.hash !== "#contact") {
+        window.history.replaceState(null, "", "#contact");
+      }
+    } else if (typeof window !== "undefined") {
+      window.location.href = "/contact";
+    }
+  };
+
   return (
     <section
       aria-labelledby="hero-heading"
@@ -267,6 +280,7 @@ export function HeroSection({ className = "" }: HeroSectionProps) {
 
                   <Button
                     href="#contact"
+                    onClick={handleScrollToContact}
                     variant="secondary"
                     className="w-full min-h-11 h-11 px-3 text-sm sm:text-base font-bold rounded-xl !bg-[#FAF7F2] !bg-none hover:!bg-white active:!bg-[#F2ECE4] !text-[#801835] hover:!text-[#5E0E24] border border-[#EDE4DC] shadow-[0_4px_14px_rgba(0,0,0,0.22)] active:scale-[0.985] transition-all duration-150"
                   >
@@ -329,6 +343,7 @@ export function HeroSection({ className = "" }: HeroSectionProps) {
 
                 <Button
                   href="#contact"
+                  onClick={handleScrollToContact}
                   variant="secondary"
                   className="w-full sm:w-auto min-h-12 px-5 sm:px-7 text-sm sm:text-base font-bold text-[#801835] hover:text-[#5E0E24]"
                 >

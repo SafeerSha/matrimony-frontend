@@ -1285,7 +1285,7 @@ export default function DiscoverPage() {
     }
 
     if (!isMobileSwipe && !isIncoming) {
-      toast.success('Interest Sent!', `We have notified ${name} of your interest.`);
+      // Wait for server persistence before confirming success toast
     }
 
     try {
@@ -1293,10 +1293,22 @@ export default function DiscoverPage() {
         await matchesService.acceptInterest(id);
         toast.success('Connected & Matched! 🎉', `You and ${name} liked each other! Start chatting now.`);
       } else {
-        await matchesService.sendInterest(id);
+        const res: any = await matchesService.sendInterest(id);
+        if (res?.isMutualMatch || res?.isMatch || res?.status === 'ACCEPTED') {
+          setSentInterestIds((prev) => {
+            const next = new Set(prev);
+            next.delete(id);
+            return next;
+          });
+          setMatchedIds((prev) => new Set(prev).add(id));
+          toast.success('Connected & Matched! 🎉', `You and ${name} are now connected!`);
+        } else if (!isMobileSwipe) {
+          toast.success('Interest Sent!', `We have notified ${name} of your interest.`);
+        }
       }
     } catch (err: any) {
       console.warn('Failed sending interest in background:', err);
+      const errMsg = String(err?.message || '');
       if (isIncoming) {
         setMatchedIds((prev) => {
           const next = new Set(prev);
@@ -1304,8 +1316,11 @@ export default function DiscoverPage() {
           return next;
         });
         setReceivedInterestIds((prev) => new Set(prev).add(id));
-        toast.error('Action Failed', err?.message || `Could not accept interest from ${name}.`);
-      } else if (err?.message?.includes('Daily interest limit') || err?.message?.includes('quota') || err?.message?.includes('upgrade')) {
+        toast.error('Action Failed', errMsg || `Could not accept interest from ${name}.`);
+      } else if (errMsg.toLowerCase().includes('already sent') || errMsg.toLowerCase().includes('already exists')) {
+        setSentInterestIds((prev) => new Set(prev).add(id));
+        toast.info('Interest Already Sent', `Your connection request to ${name} is already pending.`);
+      } else if (errMsg.includes('Daily interest limit') || errMsg.includes('quota') || errMsg.includes('upgrade')) {
         setSentInterestIds((prev) => {
           const next = new Set(prev);
           next.delete(id);
@@ -1316,6 +1331,13 @@ export default function DiscoverPage() {
           title: 'Daily Limit Reached',
           description: 'You have used your free daily interest requests. Choose a subscription plan for unlimited requests, priority matchmaking, and direct chat.',
         });
+      } else {
+        setSentInterestIds((prev) => {
+          const next = new Set(prev);
+          next.delete(id);
+          return next;
+        });
+        toast.error('Could Not Send Interest', errMsg || `Failed to send interest to ${name}. Please try again.`);
       }
     }
   };
@@ -1350,7 +1372,46 @@ export default function DiscoverPage() {
     }
   };
 
-  const handlePass = (id: string) => {
+  const handlePass = async (id: string, name?: string) => {
+    const isIncoming = receivedInterestIds.has(id);
+
+    if (isIncoming) {
+      setReceivedInterestIds((prev) => {
+        const next = new Set(prev);
+        next.delete(id);
+        return next;
+      });
+      setPassedIds((prev) => {
+        const next = new Set(prev).add(id);
+        try {
+          sessionStorage.setItem('matrimony_passed_ids', JSON.stringify(Array.from(next)));
+        } catch { }
+        return next;
+      });
+
+      try {
+        await matchesService.rejectInterest(id);
+        setProfiles((prev) =>
+          prev.map((p) =>
+            p.id === id ? { ...p, isInterestReceived: false, isPassed: true, connectionStatus: 'REJECTED' } : p
+          )
+        );
+        toast.info('Interest Declined', name ? `Declined interest request from ${name}.` : 'Interest request declined.');
+      } catch (err: any) {
+        setReceivedInterestIds((prev) => new Set(prev).add(id));
+        setPassedIds((prev) => {
+          const next = new Set(prev);
+          next.delete(id);
+          try {
+            sessionStorage.setItem('matrimony_passed_ids', JSON.stringify(Array.from(next)));
+          } catch { }
+          return next;
+        });
+        toast.error('Decline Failed', err?.message || `Could not decline request${name ? ` from ${name}` : ''}.`);
+      }
+      return;
+    }
+
     setPassedIds((prev) => {
       const next = new Set(prev).add(id);
       try {
@@ -1553,7 +1614,7 @@ export default function DiscoverPage() {
           >
             {/* Left Quick Actions: Pass, Chat, Star */}
             <div className="flex items-center gap-2 sm:gap-2.5 shrink-0">
-              {/* Pass button: Large round icon button */}
+              {/* Pass / Decline button: Large round icon button */}
               <Button
                 variant="secondary"
                 size="icon"
@@ -1562,12 +1623,12 @@ export default function DiscoverPage() {
                   if (triggerSwipe) {
                     triggerSwipe('left');
                   } else {
-                    handlePass(profile.id);
+                    handlePass(profile.id, profile.name);
                   }
                 }}
                 className="rounded-full aspect-square h-11 w-11 sm:h-12 sm:w-12 shrink-0 p-0 flex items-center justify-center bg-white/95 backdrop-blur-md text-rose-600 border border-white/70 hover:bg-white hover:scale-105 active-press shadow-md hover:shadow-lg transition-all"
-                title="Pass"
-                aria-label="Pass"
+                title={receivedInterestIds.has(profile.id) ? 'Decline Interest' : 'Pass'}
+                aria-label={receivedInterestIds.has(profile.id) ? 'Decline Interest' : 'Pass'}
               >
                 <IconX className="h-5.5 w-5.5 sm:h-6 sm:w-6 stroke-[2.3]" />
               </Button>
@@ -1629,8 +1690,19 @@ export default function DiscoverPage() {
               </Button>
             </div>
 
-            {/* Right Hero Action: "Cancel Interest" if sent, or 3D "Send Interest" in Luxury Burgundy */}
-            {sentInterestIds.has(profile.id) ? (
+            {/* Right Hero Action: Chat if Matched, "Cancel Interest" if sent, "Accept" if received, or 3D "Send Interest" */}
+            {isMatched ? (
+              <Button
+                variant="primary"
+                onClick={handleChatClick(profile.id)}
+                className="flex-1 min-w-0 h-11 sm:h-12 rounded-full px-3 sm:px-4 font-bold text-xs sm:text-sm flex items-center justify-center gap-1.5 sm:gap-2 transition-all duration-150 select-none truncate bg-gradient-to-b from-emerald-500 via-emerald-600 to-teal-700 text-white border-t border-t-white/40 border-x border-x-emerald-600/50 border-b-[3.5px] border-b-teal-950 shadow-[0_4px_14px_rgba(16,185,129,0.45)] hover:brightness-105"
+                title={`Chat with ${profile.name}`}
+                aria-label="Chat"
+              >
+                <IconMessageCircleFilled className="h-4 w-4 sm:h-4.5 sm:w-4.5 shrink-0 text-white" />
+                <span className="truncate tracking-wide">Chat</span>
+              </Button>
+            ) : sentInterestIds.has(profile.id) ? (
               <Button
                 variant="secondary"
                 disabled={cancellingInterestId === profile.id}
@@ -1653,6 +1725,24 @@ export default function DiscoverPage() {
                     <span className="truncate text-rose-700 font-bold">Cancel Interest</span>
                   </>
                 )}
+              </Button>
+            ) : receivedInterestIds.has(profile.id) ? (
+              <Button
+                variant="secondary"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleSendInterest(profile.id, profile.name, { silentToast: true });
+                }}
+                className="flex-1 min-w-0 h-11 sm:h-12 rounded-full px-3 sm:px-4 font-bold text-xs sm:text-sm flex items-center justify-center gap-1.5 sm:gap-2 transition-all duration-150 select-none truncate bg-gradient-to-b from-emerald-500 via-emerald-600 to-teal-700 text-white border-t border-t-white/40 border-x border-x-emerald-600/50 border-b-[3.5px] border-b-teal-950 shadow-[0_4px_14px_rgba(16,185,129,0.45)] hover:brightness-105"
+                title="Accept Interest & Connect"
+                aria-label="Accept Interest"
+              >
+                {isFriendshipProfile(profile) ? (
+                  renderHandshakeIcon('h-4.5 w-4.5 sm:h-5 sm:w-5 shrink-0 text-white drop-shadow-[0_1px_1.5px_rgba(0,0,0,0.35)]')
+                ) : (
+                  <IconHeartFilled className="h-4 w-4 sm:h-4.5 sm:w-4.5 shrink-0 text-white drop-shadow-[0_1px_1.5px_rgba(0,0,0,0.35)]" />
+                )}
+                <span className="truncate tracking-wide drop-shadow-[0_1px_1.5px_rgba(0,0,0,0.35)]">Accept</span>
               </Button>
             ) : (
               <Button
@@ -2083,7 +2173,7 @@ export default function DiscoverPage() {
                           }}
                           onSwipeLeft={() => {
                             if (!isNext) {
-                              handlePass(p.id);
+                              handlePass(p.id, p.name);
                             }
                           }}
                           onSwipeRight={() => {
@@ -2293,17 +2383,17 @@ export default function DiscoverPage() {
                       <div className="w-full pt-2.5 flex items-center gap-1.5 @[340px]:gap-2 max-w-full">
                         {/* Left Quick Actions: Pass, Chat, Star */}
                         <div className="flex items-center gap-1 @[340px]:gap-1.5 shrink-0">
-                          {/* Pass button: Round icon button */}
+                          {/* Pass / Decline button: Round icon button */}
                           <Button
                             variant="secondary"
                             size="icon"
                             onClick={(e) => {
                               e.stopPropagation();
-                              handlePass(profile.id);
+                              handlePass(profile.id, profile.name);
                             }}
                             className="rounded-full aspect-square h-9 w-9 @[340px]:h-10 @[340px]:w-10 shrink-0 p-0 flex items-center justify-center bg-white/95 backdrop-blur-md text-rose-600 border border-white/70 hover:bg-white hover:scale-105 active-press shadow-md hover:shadow-lg transition-all"
-                            title="Pass"
-                            aria-label="Pass"
+                            title={isInterestReceived ? 'Decline Interest' : 'Pass'}
+                            aria-label={isInterestReceived ? 'Decline Interest' : 'Pass'}
                           >
                             <IconX className="h-4.5 w-4.5 @[340px]:h-5 @[340px]:w-5 stroke-[2.3]" />
                           </Button>
