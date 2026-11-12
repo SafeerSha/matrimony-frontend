@@ -32,6 +32,8 @@ import type { RmUserDetail } from '@/types/rm';
 
 interface RmUserDetailViewProps {
   userId: string;
+  onBack?: () => void;
+  backLabel?: string;
 }
 
 function formatDate(iso?: string | null): string {
@@ -61,7 +63,11 @@ function MetaTile({ label, value }: { label: string; value?: string | number | n
   );
 }
 
-export function RmUserDetailView({ userId }: RmUserDetailViewProps) {
+export function RmUserDetailView({
+  userId,
+  onBack,
+  backLabel = 'Back to Directory',
+}: RmUserDetailViewProps) {
   const [detail, setDetail] = useState<RmUserDetail | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -126,12 +132,25 @@ export function RmUserDetailView({ userId }: RmUserDetailViewProps) {
         {/* Top Breadcrumb / Back Navigation */}
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div className="flex items-center gap-3">
-            <Link href="/rm">
-              <Button variant="outline" size="sm" className="gap-1.5 font-semibold">
+            {onBack ? (
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={onBack}
+                className="gap-1.5 font-semibold"
+              >
                 <IconArrowLeft className="h-4 w-4" />
-                Back to Directory
+                {backLabel}
               </Button>
-            </Link>
+            ) : (
+              <Link href="/rm">
+                <Button variant="outline" size="sm" className="gap-1.5 font-semibold">
+                  <IconArrowLeft className="h-4 w-4" />
+                  {backLabel}
+                </Button>
+              </Link>
+            )}
             <div>
               <div className="flex items-center gap-2">
                 <h1 className="text-xl sm:text-2xl font-bold text-[var(--foreground)] tracking-tight">
@@ -162,11 +181,17 @@ export function RmUserDetailView({ userId }: RmUserDetailViewProps) {
               <Button size="sm" variant="outline" onClick={() => loadDetail(userId)}>
                 Retry
               </Button>
-              <Link href="/rm">
-                <Button size="sm" variant="primary">
-                  Return to Directory
+              {onBack ? (
+                <Button size="sm" variant="primary" onClick={onBack}>
+                  {backLabel}
                 </Button>
-              </Link>
+              ) : (
+                <Link href="/rm">
+                  <Button size="sm" variant="primary">
+                    Return to Directory
+                  </Button>
+                </Link>
+              )}
             </div>
           </Card>
         ) : detail ? (

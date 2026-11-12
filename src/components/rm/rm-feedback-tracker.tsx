@@ -35,6 +35,7 @@ import type {
 
 interface RmFeedbackTrackerProps {
   onOpenCountChange?: (openCount: number) => void;
+  onViewUserProfile?: (userId: string) => void;
 }
 
 const STATUS_FILTER_OPTIONS: ModernSelectOption[] = [
@@ -159,7 +160,7 @@ function renderPriorityBadge(priority: string) {
   }
 }
 
-export function RmFeedbackTracker({ onOpenCountChange }: RmFeedbackTrackerProps) {
+export function RmFeedbackTracker({ onOpenCountChange, onViewUserProfile }: RmFeedbackTrackerProps) {
   const [items, setItems] = useState<RmFeedbackItem[]>([]);
   const [stats, setStats] = useState<RmFeedbackStats | null>(null);
   const [totalCount, setTotalCount] = useState(0);
@@ -679,13 +680,24 @@ export function RmFeedbackTracker({ onOpenCountChange }: RmFeedbackTrackerProps)
                                   ({item.user.profileId})
                                 </span>
                               )}
-                              <Link
-                                href={`/rm/users/${item.user.id}`}
-                                className="inline-flex items-center gap-1 text-[11px] font-bold text-[var(--primary)] hover:underline ml-1"
-                              >
-                                <IconUser className="h-3 w-3" />
-                                View Profile
-                              </Link>
+                              {onViewUserProfile ? (
+                                <button
+                                  type="button"
+                                  onClick={() => onViewUserProfile(item.user!.id)}
+                                  className="inline-flex items-center gap-1 text-[11px] font-bold text-[var(--primary)] hover:underline cursor-pointer ml-1"
+                                >
+                                  <IconUser className="h-3 w-3" />
+                                  View Profile
+                                </button>
+                              ) : (
+                                <Link
+                                  href={`/rm/users/${item.user.id}`}
+                                  className="inline-flex items-center gap-1 text-[11px] font-bold text-[var(--primary)] hover:underline ml-1"
+                                >
+                                  <IconUser className="h-3 w-3" />
+                                  View Profile
+                                </Link>
+                              )}
                             </>
                           ) : (
                             <span>Anonymous submission</span>
