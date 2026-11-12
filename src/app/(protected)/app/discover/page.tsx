@@ -333,6 +333,94 @@ export function heightToInches(h?: string): number {
   return 0;
 }
 
+export const DISCOVER_FILTER_MODE_KEY = 'ishtam_discover_filter_mode';
+export const DISCOVER_SESSION_FILTERS_KEY = 'ishtam_discover_session_filters';
+
+export interface DiscoverFilterSessionState {
+  city?: string;
+  minAge?: number;
+  maxAge?: number;
+  minHeight?: string;
+  maxHeight?: string;
+  selectedGender?: 'any' | 'women' | 'men';
+  selectedReligion?: string;
+  selectedCaste?: string;
+  selectedEducation?: string;
+  selectedProfession?: string;
+  selectedIncome?: string;
+  selectedMaritalStatus?: string;
+  selectedLanguage?: string;
+  selectedIntent?: string;
+  selectedDiet?: string;
+  selectedCategory?: DiscoveryCategory;
+  selectedMarriageSubCategory?: MarriageSubCategory;
+}
+
+export function getSessionFilterMode(): 'reset' | 'custom' | null {
+  if (typeof window === 'undefined') return null;
+  try {
+    const mode = sessionStorage.getItem(DISCOVER_FILTER_MODE_KEY);
+    if (mode === 'reset' || mode === 'custom') return mode;
+  } catch { }
+  return null;
+}
+
+export function getSessionCustomFilters(): DiscoverFilterSessionState | null {
+  if (typeof window === 'undefined') return null;
+  try {
+    const raw = sessionStorage.getItem(DISCOVER_SESSION_FILTERS_KEY);
+    if (raw) return JSON.parse(raw);
+  } catch { }
+  return null;
+}
+
+export function getInitialFilterValues(): DiscoverFilterSessionState {
+  const mode = getSessionFilterMode();
+  if (mode === 'reset') {
+    return {
+      city: 'All locations',
+      minAge: 21,
+      maxAge: 35,
+      minHeight: "4'10\"",
+      maxHeight: "6'4\"",
+      selectedReligion: 'Any',
+      selectedCaste: 'Any',
+      selectedEducation: 'Any',
+      selectedProfession: 'Any',
+      selectedIncome: 'Any',
+      selectedMaritalStatus: 'Any',
+      selectedLanguage: 'Any',
+      selectedIntent: 'Any',
+      selectedDiet: "Doesn't Matter",
+    };
+  }
+
+  if (mode === 'custom') {
+    const custom = getSessionCustomFilters();
+    if (custom) return custom;
+  }
+
+  const parsed = parsePreferencesToFilters(getStoredPreferences());
+  return {
+    city: parsed?.city || 'All locations',
+    minAge: parsed?.minAge || 21,
+    maxAge: parsed?.maxAge || 35,
+    minHeight: parsed?.minHeight || "4'10\"",
+    maxHeight: parsed?.maxHeight || "6'4\"",
+    selectedReligion: parsed?.selectedReligion || 'Any',
+    selectedCaste: parsed?.selectedCaste || 'Any',
+    selectedEducation: parsed?.selectedEducation || 'Any',
+    selectedProfession: parsed?.selectedProfession || 'Any',
+    selectedIncome: parsed?.selectedIncome || 'Any',
+    selectedMaritalStatus: parsed?.selectedMaritalStatus || 'Any',
+    selectedLanguage: parsed?.selectedLanguage || 'Any',
+    selectedIntent: parsed?.selectedIntent || 'Any',
+    selectedDiet: parsed?.selectedDiet || "Doesn't Matter",
+    selectedGender: parsed?.selectedGender,
+    selectedMarriageSubCategory: parsed?.selectedMarriageSubCategory,
+  };
+}
+
 function SafeDiscoverImage({ profile }: { profile: Profile }) {
   const [error, setError] = useState(false);
   if (!profile.image || error) {
@@ -544,24 +632,19 @@ export default function DiscoverPage() {
   };
 
   const [city, setCity] = useState(() => {
-    const parsed = parsePreferencesToFilters(getStoredPreferences());
-    return parsed?.city || 'All locations';
+    return getInitialFilterValues().city || 'All locations';
   });
   const [minAge, setMinAge] = useState(() => {
-    const parsed = parsePreferencesToFilters(getStoredPreferences());
-    return parsed?.minAge || 21;
+    return getInitialFilterValues().minAge ?? 21;
   });
   const [maxAge, setMaxAge] = useState(() => {
-    const parsed = parsePreferencesToFilters(getStoredPreferences());
-    return parsed?.maxAge || 35;
+    return getInitialFilterValues().maxAge ?? 35;
   });
   const [minHeight, setMinHeight] = useState<string>(() => {
-    const parsed = parsePreferencesToFilters(getStoredPreferences());
-    return parsed?.minHeight || "4'10\"";
+    return getInitialFilterValues().minHeight || "4'10\"";
   });
   const [maxHeight, setMaxHeight] = useState<string>(() => {
-    const parsed = parsePreferencesToFilters(getStoredPreferences());
-    return parsed?.maxHeight || "6'4\"";
+    return getInitialFilterValues().maxHeight || "6'4\"";
   });
   const [registeredCategory, setRegisteredCategory] = useState<DiscoveryCategory>(() => {
     if (typeof window !== 'undefined') {
@@ -604,6 +687,10 @@ export default function DiscoverPage() {
           if (lower.includes('bharat') || lower.includes('india')) return 'Bharat';
           if (lower.includes('kerala')) return 'Kerala';
         }
+        const custom = getSessionCustomFilters();
+        if (custom?.selectedMarriageSubCategory) {
+          return custom.selectedMarriageSubCategory;
+        }
         const cached = localStorage.getItem('ishtam_marriage_sub_category');
         if (cached === 'Kerala' || cached === 'Telugu' || cached === 'Bharat') {
           return cached as MarriageSubCategory;
@@ -613,44 +700,39 @@ export default function DiscoverPage() {
     return 'Kerala';
   });
   const [isCategoryMenuOpen, setIsCategoryMenuOpen] = useState<boolean>(false);
-  const [selectedGender, setSelectedGender] = useState<'any' | 'women' | 'men'>('any');
+  const [selectedGender, setSelectedGender] = useState<'any' | 'women' | 'men'>(() => {
+    const custom = getSessionCustomFilters();
+    if (custom?.selectedGender) return custom.selectedGender;
+    return 'any';
+  });
   const [myGender, setMyGender] = useState<string>('');
   const [isFriendshipUser, setIsFriendshipUser] = useState<boolean>(false);
   const [selectedReligion, setSelectedReligion] = useState<string>(() => {
-    const parsed = parsePreferencesToFilters(getStoredPreferences());
-    return parsed?.selectedReligion || 'Any';
+    return getInitialFilterValues().selectedReligion || 'Any';
   });
   const [selectedCaste, setSelectedCaste] = useState<string>(() => {
-    const parsed = parsePreferencesToFilters(getStoredPreferences());
-    return parsed?.selectedCaste || 'Any';
+    return getInitialFilterValues().selectedCaste || 'Any';
   });
   const [selectedEducation, setSelectedEducation] = useState<string>(() => {
-    const parsed = parsePreferencesToFilters(getStoredPreferences());
-    return parsed?.selectedEducation || 'Any';
+    return getInitialFilterValues().selectedEducation || 'Any';
   });
   const [selectedProfession, setSelectedProfession] = useState<string>(() => {
-    const parsed = parsePreferencesToFilters(getStoredPreferences());
-    return parsed?.selectedProfession || 'Any';
+    return getInitialFilterValues().selectedProfession || 'Any';
   });
   const [selectedIncome, setSelectedIncome] = useState<string>(() => {
-    const parsed = parsePreferencesToFilters(getStoredPreferences());
-    return parsed?.selectedIncome || 'Any';
+    return getInitialFilterValues().selectedIncome || 'Any';
   });
   const [selectedMaritalStatus, setSelectedMaritalStatus] = useState<string>(() => {
-    const parsed = parsePreferencesToFilters(getStoredPreferences());
-    return parsed?.selectedMaritalStatus || 'Any';
+    return getInitialFilterValues().selectedMaritalStatus || 'Any';
   });
   const [selectedLanguage, setSelectedLanguage] = useState<string>(() => {
-    const parsed = parsePreferencesToFilters(getStoredPreferences());
-    return parsed?.selectedLanguage || 'Any';
+    return getInitialFilterValues().selectedLanguage || 'Any';
   });
   const [selectedIntent, setSelectedIntent] = useState<string>(() => {
-    const parsed = parsePreferencesToFilters(getStoredPreferences());
-    return parsed?.selectedIntent || 'Any';
+    return getInitialFilterValues().selectedIntent || 'Any';
   });
   const [selectedDiet, setSelectedDiet] = useState<string>(() => {
-    const parsed = parsePreferencesToFilters(getStoredPreferences());
-    return parsed?.selectedDiet || "Doesn't Matter";
+    return getInitialFilterValues().selectedDiet || "Doesn't Matter";
   });
 
   // Shortlist and Interest tracking sets
@@ -690,6 +772,12 @@ export default function DiscoverPage() {
     const prefs = savedPreferencesRef.current || getStoredPreferences();
     if (prefs) {
       applyPreferencesToState(prefs);
+      if (typeof window !== 'undefined') {
+        try {
+          sessionStorage.removeItem(DISCOVER_FILTER_MODE_KEY);
+          sessionStorage.removeItem(DISCOVER_SESSION_FILTERS_KEY);
+        } catch { }
+      }
       toast.success('Default Preferences Applied', 'Your default partner preferences are now active in Discover.');
     } else {
       toast.info('No Default Preferences', 'Configure your preferences in Partner Preferences settings.');
@@ -734,14 +822,18 @@ export default function DiscoverPage() {
         const userCat: DiscoveryCategory = badge.category;
         setRegisteredCategory(userCat);
 
-        // Auto-apply user's saved partner preferences to Discover filters
+        // Auto-apply user's saved partner preferences to Discover filters ONLY IF no session override
         const serverPrefs = profile.preferences || profile.profile?.preferences;
         if (serverPrefs && typeof serverPrefs === 'object') {
           savedPreferencesRef.current = serverPrefs;
-          applyPreferencesToState(serverPrefs);
           try {
             localStorage.setItem('ishtam_partner_preferences', JSON.stringify(serverPrefs));
           } catch { }
+
+          const sessionMode = getSessionFilterMode();
+          if (!sessionMode) {
+            applyPreferencesToState(serverPrefs);
+          }
         }
 
         const userCommunity = (profile.profile?.community || profile.community || '').trim();
@@ -779,27 +871,54 @@ export default function DiscoverPage() {
 
         const hasUrlSub = Boolean(urlParams?.has('subCategory') || urlParams?.has('community'));
         if (!hasUrlSub) {
-          try {
-            const cached = localStorage.getItem('ishtam_marriage_sub_category');
-            if (cached === 'Kerala' || cached === 'Telugu' || cached === 'Bharat') {
-              setSelectedMarriageSubCategory(cached as MarriageSubCategory);
-            } else {
+          const sessionCustom = getSessionCustomFilters();
+          if (sessionCustom?.selectedMarriageSubCategory) {
+            setSelectedMarriageSubCategory(sessionCustom.selectedMarriageSubCategory);
+          } else {
+            try {
+              const cached = localStorage.getItem('ishtam_marriage_sub_category');
+              if (cached === 'Kerala' || cached === 'Telugu' || cached === 'Bharat') {
+                setSelectedMarriageSubCategory(cached as MarriageSubCategory);
+              } else {
+                setSelectedMarriageSubCategory(detectedSub);
+              }
+            } catch {
               setSelectedMarriageSubCategory(detectedSub);
             }
-          } catch {
-            setSelectedMarriageSubCategory(detectedSub);
           }
         }
 
-        if (activeCat === 'Friendship') {
-          // Friendship users see all genders by default
-          setSelectedGender('any');
-        } else if (g === 'male' || g === 'man') {
-          setSelectedGender('women');
-        } else if (g === 'female' || g === 'woman') {
-          setSelectedGender('men');
+        const sessionMode = getSessionFilterMode();
+        if (sessionMode === 'custom') {
+          const custom = getSessionCustomFilters();
+          if (custom?.selectedGender) {
+            setSelectedGender(custom.selectedGender);
+          }
+        } else if (sessionMode === 'reset') {
+          if (activeCat === 'Friendship') {
+            setSelectedGender('any');
+          } else if (g === 'male' || g === 'man') {
+            setSelectedGender('women');
+          } else if (g === 'female' || g === 'woman') {
+            setSelectedGender('men');
+          } else {
+            setSelectedGender('any');
+          }
         } else {
-          setSelectedGender('any');
+          if (serverPrefs?.gender) {
+            const sg = String(serverPrefs.gender).toLowerCase();
+            if (sg === 'women' || sg === 'woman' || sg === 'female') setSelectedGender('women');
+            else if (sg === 'men' || sg === 'man' || sg === 'male') setSelectedGender('men');
+            else setSelectedGender('any');
+          } else if (activeCat === 'Friendship') {
+            setSelectedGender('any');
+          } else if (g === 'male' || g === 'man') {
+            setSelectedGender('women');
+          } else if (g === 'female' || g === 'woman') {
+            setSelectedGender('men');
+          } else {
+            setSelectedGender('any');
+          }
         }
       })
       .catch(() => { });
@@ -1177,6 +1296,15 @@ export default function DiscoverPage() {
     if (typeof window !== 'undefined') {
       try {
         localStorage.setItem('ishtam_marriage_sub_category', sub);
+        const mode = sessionStorage.getItem(DISCOVER_FILTER_MODE_KEY);
+        if (mode === 'custom') {
+          const raw = sessionStorage.getItem(DISCOVER_SESSION_FILTERS_KEY);
+          if (raw) {
+            const parsed = JSON.parse(raw);
+            parsed.selectedMarriageSubCategory = sub;
+            sessionStorage.setItem(DISCOVER_SESSION_FILTERS_KEY, JSON.stringify(parsed));
+          }
+        }
       } catch { }
     }
   };
@@ -1187,16 +1315,37 @@ export default function DiscoverPage() {
     if (sub) {
       handleMarriageSubCategoryChange(sub);
     }
+    let nextGender: 'any' | 'women' | 'men' = selectedGender;
     if (cat === 'Friendship') {
+      nextGender = 'any';
       setSelectedGender('any');
     } else if (cat === 'Marriage' || cat === 'Live-In' || cat === 'Living Together') {
       if (myGender === 'male' || myGender === 'man') {
+        nextGender = 'women';
         setSelectedGender('women');
       } else if (myGender === 'female' || myGender === 'woman') {
+        nextGender = 'men';
         setSelectedGender('men');
       } else {
+        nextGender = 'any';
         setSelectedGender('any');
       }
+    }
+
+    if (typeof window !== 'undefined') {
+      try {
+        const mode = sessionStorage.getItem(DISCOVER_FILTER_MODE_KEY);
+        if (mode === 'custom') {
+          const raw = sessionStorage.getItem(DISCOVER_SESSION_FILTERS_KEY);
+          if (raw) {
+            const parsed = JSON.parse(raw);
+            parsed.selectedCategory = cat;
+            if (sub) parsed.selectedMarriageSubCategory = sub;
+            parsed.selectedGender = nextGender;
+            sessionStorage.setItem(DISCOVER_SESSION_FILTERS_KEY, JSON.stringify(parsed));
+          }
+        }
+      } catch { }
     }
   };
 
@@ -1227,12 +1376,47 @@ export default function DiscoverPage() {
     setSelectedCategory(registeredCategory);
     setSelectedMarriageSubCategory('Kerala');
     setIsFilterOpen(false);
+
+    if (typeof window !== 'undefined') {
+      try {
+        sessionStorage.setItem(DISCOVER_FILTER_MODE_KEY, 'reset');
+        sessionStorage.removeItem(DISCOVER_SESSION_FILTERS_KEY);
+      } catch { }
+    }
+
     toast.info('Filters Reset', `Showing all available ${registeredCategory.toLowerCase()} recommendations.`);
   };
 
   const handleApplyFilters = async () => {
     setIsFilterOpen(false);
     toast.success('Filters Applied', `Showing ${filteredProfiles.length} matching profiles.`);
+
+    const currentFilters: DiscoverFilterSessionState = {
+      city,
+      minAge,
+      maxAge,
+      minHeight,
+      maxHeight,
+      selectedGender,
+      selectedReligion,
+      selectedCaste,
+      selectedEducation,
+      selectedProfession,
+      selectedIncome,
+      selectedMaritalStatus,
+      selectedLanguage,
+      selectedIntent,
+      selectedDiet,
+      selectedCategory,
+      selectedMarriageSubCategory,
+    };
+
+    if (typeof window !== 'undefined') {
+      try {
+        sessionStorage.setItem(DISCOVER_FILTER_MODE_KEY, 'custom');
+        sessionStorage.setItem(DISCOVER_SESSION_FILTERS_KEY, JSON.stringify(currentFilters));
+      } catch { }
+    }
 
     // Persist to backend preferences so user's partner preferences are safely saved
     try {

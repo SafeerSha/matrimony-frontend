@@ -88,6 +88,8 @@ export const authService = {
       sessionStorage.removeItem("refreshToken");
       localStorage.removeItem("refreshToken");
       sessionStorage.removeItem("auth_token_set_at");
+      sessionStorage.removeItem("ishtam_discover_filter_mode");
+      sessionStorage.removeItem("ishtam_discover_session_filters");
       document.cookie = "matrimony_session=; path=/; max-age=0; SameSite=Lax";
       document.cookie = "__Host-matrimony_session=; path=/; max-age=0; SameSite=Lax; Secure";
       document.cookie = "refreshToken=; path=/; max-age=0; SameSite=Lax";
