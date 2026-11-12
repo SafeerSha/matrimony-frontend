@@ -14,22 +14,28 @@ import {
   IconLoader2,
   IconLogout,
   IconCreditCard,
+  IconMessageReport,
 } from '@tabler/icons-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { PlatformOverview } from '@/components/admin/platform-overview';
 import { UserManagement } from '@/components/admin/user-management';
 import { PlanManagement } from '@/components/admin/plan-management';
+import { RmFeedbackTracker } from '@/components/rm/rm-feedback-tracker';
+import { RmUserDetailView } from '@/components/rm/rm-user-detail-view';
 import { authService } from '@/services/auth.service';
+import { rmService } from '@/services/rm.service';
 import { toast } from '@/lib/toast';
 
-type AdminTab = 'analytics' | 'users' | 'plans' | 'moderation' | 'rm-management';
+type AdminTab = 'analytics' | 'users' | 'plans' | 'feedback' | 'moderation' | 'rm-management';
 
 export default function AdminDashboard() {
   const router = useRouter();
   const [isAuthorized, setIsAuthorized] = useState<boolean | null>(null);
   const [tab, setTab] = useState<AdminTab>('analytics');
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [openIssuesCount, setOpenIssuesCount] = useState<number>(0);
+  const [inspectedFeedbackUserId, setInspectedFeedbackUserId] = useState<string | null>(null);
 
   useEffect(() => {
     let isMounted = true;
@@ -74,8 +80,19 @@ export default function AdminDashboard() {
     };
   }, [router]);
 
+  useEffect(() => {
+    if (isAuthorized !== true) return;
+    const controller = new AbortController();
+    rmService
+      .getFeedbackStats(controller.signal)
+      .then((res) => setOpenIssuesCount(res.openCount || 0))
+      .catch(() => {});
+    return () => controller.abort();
+  }, [isAuthorized]);
+
   const handleSelectTab = (newTab: AdminTab) => {
     setTab(newTab);
+    setInspectedFeedbackUserId(null);
     setMobileMenuOpen(false);
   };
 
@@ -231,6 +248,24 @@ export default function AdminDashboard() {
             <span>Plan Configuration</span>
           </button>
 
+          <button
+            onClick={() => handleSelectTab('feedback')}
+            className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs sm:text-sm font-medium transition-all ${tab === 'feedback'
+              ? 'bg-[var(--primary)] text-white shadow-sm font-semibold'
+              : 'hover:bg-[#3A0A18] text-white/80'
+              }`}
+          >
+            <div className="flex items-center gap-3">
+              <IconMessageReport className="h-4.5 w-4.5 shrink-0" />
+              <span>Feedback &amp; Issues</span>
+            </div>
+            {openIssuesCount > 0 && (
+              <span className="rounded-full bg-white/15 px-2 py-0.5 text-[10px] font-bold text-white">
+                {openIssuesCount}
+              </span>
+            )}
+          </button>
+
           {/* <button
             onClick={() => handleSelectTab('moderation')}
             className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs sm:text-sm font-medium transition-all ${tab === 'moderation'
@@ -324,6 +359,21 @@ export default function AdminDashboard() {
 
         {/* TAB: PLAN CONFIGURATION */}
         {tab === 'plans' && <PlanManagement />}
+
+        {/* TAB: FEEDBACK & ISSUES */}
+        {tab === 'feedback' &&
+          (inspectedFeedbackUserId ? (
+            <RmUserDetailView
+              userId={inspectedFeedbackUserId}
+              onBack={() => setInspectedFeedbackUserId(null)}
+              backLabel="Back to Feedback & Issues"
+            />
+          ) : (
+            <RmFeedbackTracker
+              onOpenCountChange={setOpenIssuesCount}
+              onViewUserProfile={(uid) => setInspectedFeedbackUserId(uid)}
+            />
+          ))}
 
         {/* TAB 3: PROFILE MODERATION QUEUE (Labeled Mock Prototype) */}
         {tab === 'moderation' && (
