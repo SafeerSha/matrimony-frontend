@@ -152,6 +152,8 @@ export function PartnerPreferencesEditor({
         try {
           localStorage.setItem('ishtam_partner_preferences', JSON.stringify(payload));
           localStorage.setItem('ishtam_partner_preferences_updated_at', String(Date.now()));
+          sessionStorage.removeItem('ishtam_discover_filter_mode');
+          sessionStorage.removeItem('ishtam_discover_session_filters');
         } catch { }
       }
 
@@ -164,6 +166,8 @@ export function PartnerPreferencesEditor({
       if (typeof window !== 'undefined') {
         try {
           localStorage.setItem('ishtam_partner_preferences', JSON.stringify(preferences));
+          sessionStorage.removeItem('ishtam_discover_filter_mode');
+          sessionStorage.removeItem('ishtam_discover_session_filters');
         } catch { }
       }
       toast.success('Preferences Saved Locally', {
