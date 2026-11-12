@@ -237,6 +237,13 @@ export function ProfileDetail({
       return;
     }
     if (!profile) return;
+    if (!isMatched) {
+      toast.info(
+        'Mutual Connection Required',
+        'You can only chat with profiles you are mutually connected with.'
+      );
+      return;
+    }
     if (!isSubscribed) {
       openChatPrompt();
       return;
@@ -1105,21 +1112,19 @@ export function ProfileDetail({
                     </button>
                   </div>
 
-                  {/* Chat action with Premium link */}
-                  <Link
-                    href={`/app/messages?user=${(profile as any).userId || profile.id}`}
+                  {/* Chat action (disabled until mutually connected) */}
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    size="md"
+                    aria-disabled="true"
                     onClick={handleChatClick}
-                    className="focus-ring block w-full"
+                    title="You can only chat with profiles you are mutually connected with."
+                    className="w-full rounded-2xl text-xs sm:text-sm font-bold h-11 sm:h-12 bg-stone-100/90 text-stone-400 border border-stone-200 opacity-75 cursor-not-allowed hover:bg-stone-100/90 hover:border-stone-200 shadow-none"
+                    leftIcon={<IconMessageCircle className="h-4 w-4 text-stone-400 shrink-0" />}
                   >
-                    <Button
-                      variant="secondary"
-                      size="md"
-                      className="w-full rounded-2xl text-xs sm:text-sm font-bold h-11 sm:h-12 text-[var(--foreground)] hover:border-[var(--primary)]"
-                      leftIcon={<IconMessageCircle className="h-4 w-4 text-[var(--primary)] shrink-0" />}
-                    >
-                      <span className="truncate">Chat with {profile.name.split(' ')[0]}</span>
-                    </Button>
-                  </Link>
+                    <span className="truncate">Chat with {profile.name.split(' ')[0]}</span>
+                  </Button>
                 </>
               )}
             </div>
@@ -1504,7 +1509,18 @@ export function ProfileDetail({
                 What I'm Looking For
               </p>
               <p className="mt-1.5 text-sm leading-relaxed text-[var(--foreground)] italic">
-                "{profile.lookingFor}"
+                &ldquo;{(() => {
+                  const catLower = String(profile.category || (profile as any).profileFor || '').toLowerCase();
+                  const isMarriage = !catLower.includes('friend') && !catLower.includes('live') && !catLower.includes('living');
+                  const rawLf = (profile.lookingFor || '').trim();
+                  const rawGender = (profile.gender || '').toLowerCase().trim();
+                  const bareGenderTokens = new Set(['male', 'female', 'man', 'woman', 'men', 'women', 'bride', 'groom']);
+                  if (isMarriage && (!rawLf || bareGenderTokens.has(rawLf.toLowerCase()))) {
+                    if (rawGender === 'female' || rawGender === 'woman') return 'Male';
+                    if (rawGender === 'male' || rawGender === 'man') return 'Female';
+                  }
+                  return profile.lookingFor;
+                })()}&rdquo;
               </p>
             </div>
 
@@ -1746,15 +1762,16 @@ export function ProfileDetail({
                   )}
                 </button>
 
-                {/* Chat Action (Clean Centered Circular Button) */}
+                {/* Chat Action (visually disabled until mutually connected) */}
                 <button
                   type="button"
+                  aria-disabled="true"
                   onClick={handleChatClick}
-                  className="h-11 w-11 rounded-full border border-[var(--champagne-border)] bg-white text-[var(--primary)] hover:border-[var(--primary)] hover:bg-[#FAF3EC] shrink-0 flex items-center justify-center active:scale-95 transition-all shadow-2xs"
-                  aria-label="Chat"
-                  title="Chat"
+                  className="h-11 w-11 rounded-full border border-stone-200 bg-stone-100/90 text-stone-400 opacity-70 cursor-not-allowed shrink-0 flex items-center justify-center shadow-none"
+                  aria-label="Chat unavailable until mutually connected"
+                  title="You can only chat with profiles you are mutually connected with."
                 >
-                  <IconMessageCircle className="h-5 w-5 text-[var(--primary)] shrink-0" />
+                  <IconMessageCircle className="h-5 w-5 text-stone-400 shrink-0" />
                 </button>
               </>
             )}

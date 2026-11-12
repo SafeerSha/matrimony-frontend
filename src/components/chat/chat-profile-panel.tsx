@@ -15,14 +15,26 @@ import {
   IconChevronRight,
   IconCheck,
   IconUsers,
+  IconLoader2,
 } from '@tabler/icons-react';
 import { Avatar } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { Modal } from '@/components/ui/modal';
+import { ModernSelect, type ModernSelectOption } from '@/components/ui/modern-select';
 import { VerificationBadge } from '@/components/ui/verification-badge';
 import { toast } from '@/lib/toast';
 import { cn } from '@/lib/cn';
 import { matchesService } from '@/services/matches.service';
+import { reportService, type ReportReason } from '@/services/report.service';
+
+const REPORT_REASON_OPTIONS: ModernSelectOption[] = [
+  { value: 'spam', label: 'Spam' },
+  { value: 'harassment', label: 'Harassment' },
+  { value: 'fake_profile', label: 'Fake profile' },
+  { value: 'inappropriate_content', label: 'Inappropriate content' },
+  { value: 'other', label: 'Other' },
+];
 
 interface ChatProfilePanelProps {
   participant?: {
@@ -44,15 +56,23 @@ interface ChatProfilePanelProps {
   };
   className?: string;
   onClose?: () => void;
+  onBlocked?: (blockedUserId: string) => void;
 }
 
 export function ChatProfilePanel({
   participant,
   className,
   onClose,
+  onBlocked,
 }: ChatProfilePanelProps) {
   const [isShortlisted, setIsShortlisted] = useState(false);
   const [isBlocked, setIsBlocked] = useState(false);
+  const [isBlockConfirmOpen, setIsBlockConfirmOpen] = useState(false);
+  const [isBlocking, setIsBlocking] = useState(false);
+  const [isReportModalOpen, setIsReportModalOpen] = useState(false);
+  const [reportReason, setReportReason] = useState<ReportReason>('spam');
+  const [reportDescription, setReportDescription] = useState('');
+  const [isReporting, setIsReporting] = useState(false);
 
   // Derive profile data cleanly from participant
   const name =
@@ -77,7 +97,7 @@ export function ChatProfilePanel({
     'Looking forward to meaningful conversations and building a life based on mutual respect and shared values.';
   const compatibility = (participant as any)?.compatibility || 92;
   const isVerified = participant?.isVerified ?? true;
-  const profileId = participant?.id || '';
+  const profileId = (participant as any)?.userId || participant?.id || '';
 
   const handleShortlistToggle = async () => {
     if (!profileId) return;
@@ -100,20 +120,46 @@ export function ChatProfilePanel({
     }
   };
 
-  const handleBlock = () => {
-    if (confirm(`Are you sure you want to block ${name}? You will no longer receive messages.`)) {
+  const handleBlock = async (targetId: string) => {
+    if (!targetId) return;
+    setIsBlocking(true);
+    try {
+      await reportService.blockUser(targetId);
       setIsBlocked(true);
-      toast.warning('Contact Blocked', {
+      setIsBlockConfirmOpen(false);
+      toast.warning('Member Blocked', {
         description: `${name} has been blocked and removed from your active chats.`,
       });
-      if (onClose) onClose();
+      onBlocked?.(targetId);
+      onClose?.();
+    } catch (err: any) {
+      toast.error('Block Failed', {
+        description: err?.message || 'Could not block this member right now.',
+      });
+    } finally {
+      setIsBlocking(false);
     }
   };
 
-  const handleReport = () => {
-    toast.info('Report Submitted', {
-      description: 'Our trust & safety team has received your report for review.',
-    });
+  const handleReportSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!profileId) return;
+    setIsReporting(true);
+    try {
+      await reportService.reportUser(profileId, reportReason, reportDescription);
+      setIsReportModalOpen(false);
+      setReportReason('spam');
+      setReportDescription('');
+      toast.success('Report Submitted', {
+        description: 'Our trust & safety team has received your report for review.',
+      });
+    } catch (err: any) {
+      toast.error('Report Failed', {
+        description: err?.message || 'Could not submit your report right now.',
+      });
+    } finally {
+      setIsReporting(false);
+    }
   };
 
   return (
@@ -197,7 +243,11 @@ export function ChatProfilePanel({
 
         {/* Primary Action: View Full Profile */}
         <div className="space-y-2 pt-1">
-          <Link href={`/app/discover?view=${profileId}`} className="block">
+          <Link
+            href={profileId ? `/app/profile?user=${encodeURIComponent(profileId)}` : '/app/discover'}
+            onClick={() => onClose?.()}
+            className="block"
+          >
             <Button
               variant="outline"
               size="md"
@@ -241,22 +291,140 @@ export function ChatProfilePanel({
         {/* Moderation Actions (Block / Report) */}
         <div className="pt-2 border-t border-[#E9DDE0] flex items-center justify-between text-xs text-[#766B6F]">
           <button
-            onClick={handleBlock}
-            className="inline-flex items-center gap-1.5 hover:text-red-700 transition-colors py-1 px-2 rounded-lg hover:bg-red-50 text-[11px] font-semibold"
+            type="button"
+            disabled={isBlocked || isBlocking || !profileId}
+            onClick={() => setIsBlockConfirmOpen(true)}
+            className="inline-flex items-center gap-1.5 hover:text-red-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors py-1 px-2 rounded-lg hover:bg-red-50 text-[11px] font-semibold cursor-pointer"
           >
             <IconBan className="h-3 w-3 text-red-500" />
-            <span>Block</span>
+            <span>{isBlocked ? 'Blocked' : 'Block'}</span>
           </button>
 
           <button
-            onClick={handleReport}
-            className="inline-flex items-center gap-1.5 hover:text-amber-800 transition-colors py-1 px-2 rounded-lg hover:bg-amber-50 text-[11px] font-semibold"
+            type="button"
+            disabled={!profileId}
+            onClick={() => setIsReportModalOpen(true)}
+            className="inline-flex items-center gap-1.5 hover:text-amber-800 disabled:opacity-50 transition-colors py-1 px-2 rounded-lg hover:bg-amber-50 text-[11px] font-semibold cursor-pointer"
           >
             <IconFlag className="h-3 w-3 text-amber-600" />
             <span>Report Member</span>
           </button>
         </div>
       </div>
+
+      {/* Block Member Confirmation Modal */}
+      <Modal
+        isOpen={isBlockConfirmOpen}
+        onClose={() => !isBlocking && setIsBlockConfirmOpen(false)}
+        size="sm"
+        title={`Block ${name}?`}
+        description="Blocked members cannot message you or appear in your active conversations. You can unblock them anytime from Settings."
+      >
+        <div className="flex items-center justify-end gap-2 pt-2">
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            disabled={isBlocking}
+            onClick={() => setIsBlockConfirmOpen(false)}
+          >
+            Cancel
+          </Button>
+          <Button
+            type="button"
+            variant="danger"
+            size="sm"
+            disabled={isBlocking}
+            onClick={() => handleBlock(profileId)}
+            className="gap-1.5"
+          >
+            {isBlocking ? (
+              <>
+                <IconLoader2 className="h-3.5 w-3.5 animate-spin" />
+                Blocking…
+              </>
+            ) : (
+              <>
+                <IconBan className="h-3.5 w-3.5" />
+                Confirm Block
+              </>
+            )}
+          </Button>
+        </div>
+      </Modal>
+
+      {/* Report Member Modal */}
+      <Modal
+        isOpen={isReportModalOpen}
+        onClose={() => !isReporting && setIsReportModalOpen(false)}
+        size="md"
+        title={`Report ${name}`}
+        description="Let our trust & safety team know what happened. Reports remain strictly confidential."
+      >
+        <form onSubmit={handleReportSubmit} className="space-y-4">
+          <div>
+            <label className="block text-xs font-bold text-[#3B1520] mb-1.5">
+              Reason for reporting
+            </label>
+            <ModernSelect
+              value={reportReason}
+              onChange={(val) => setReportReason(val as ReportReason)}
+              options={REPORT_REASON_OPTIONS}
+              size="sm"
+              ariaLabel="Reason for reporting"
+            />
+          </div>
+
+          <div>
+            <label
+              htmlFor="report-member-description"
+              className="block text-xs font-bold text-[#3B1520] mb-1.5"
+            >
+              Additional details (optional)
+            </label>
+            <textarea
+              id="report-member-description"
+              rows={4}
+              maxLength={2000}
+              value={reportDescription}
+              onChange={(e) => setReportDescription(e.target.value)}
+              placeholder="Provide any relevant context or specific incidents…"
+              className="w-full rounded-xl border border-[#E9DDE0] bg-white p-3 text-xs sm:text-sm text-[#211B1E] outline-none focus:border-[#7A1835] transition-colors"
+            />
+          </div>
+
+          <div className="flex items-center justify-end gap-2 pt-1">
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              disabled={isReporting}
+              onClick={() => setIsReportModalOpen(false)}
+            >
+              Cancel
+            </Button>
+            <Button
+              type="submit"
+              variant="primary"
+              size="sm"
+              disabled={isReporting}
+              className="gap-1.5"
+            >
+              {isReporting ? (
+                <>
+                  <IconLoader2 className="h-3.5 w-3.5 animate-spin" />
+                  Submitting…
+                </>
+              ) : (
+                <>
+                  <IconFlag className="h-3.5 w-3.5" />
+                  Submit Report
+                </>
+              )}
+            </Button>
+          </div>
+        </form>
+      </Modal>
     </div>
   );
 }

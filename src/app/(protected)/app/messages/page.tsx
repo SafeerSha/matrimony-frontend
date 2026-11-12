@@ -297,14 +297,14 @@ function MessagesContent() {
               markConversationAsRead(targetUserId);
             }
           } else {
-            // Target user not in list yet; load profile to initiate new chat
+            // Check if targetUserId was a profile/member ID that resolves to an existing mutual conversation
+            let matchedConversation: Conversation | undefined;
             try {
               const prof = await profileService.getProfile(targetUserId);
               const pUser = (prof as any)?.user;
               const participantId = pUser?.id || prof?.userId || prof?.id || targetUserId;
 
-              // Check if conversation already exists under resolved participantId
-              const existingResolved = list.find(
+              matchedConversation = list.find(
                 (c) =>
                   c.participantId === participantId ||
                   c.id === participantId ||
@@ -312,87 +312,29 @@ function MessagesContent() {
                   c.participant?.id === participantId ||
                   (prof?.profileId && c.participant?.profileId === prof.profileId)
               );
+            } catch {
+              matchedConversation = undefined;
+            }
 
-              if (existingResolved) {
-                setSelected(existingResolved);
-                const isMobile = typeof window !== 'undefined' && window.innerWidth < 768;
-                if (isMobile) {
-                  setMobileView('chat');
-                }
-                if (typeof document !== 'undefined' && document.hasFocus() && document.visibilityState === 'visible') {
-                  markConversationAsRead(participantId);
-                }
-                return;
-              }
-
-              const fullName =
-                prof?.name ||
-                `${prof?.firstName || pUser?.firstName || ''} ${prof?.lastName || pUser?.lastName || ''}`.trim() ||
-                'Member';
-
-              const photos = prof?.photos || (pUser?.photos ? pUser.photos : []);
-              const avatarUrl = photos?.[0]?.url || (prof as any)?.image;
-              const formattedPhotos = photos.length
-                ? photos
-                : avatarUrl
-                  ? [{ id: 'p1', url: avatarUrl }]
-                  : [];
-
-              const provisionalConv: Conversation = {
-                id: participantId,
-                participantId,
-                participant: {
-                  id: participantId,
-                  userId: participantId,
-                  profileId: prof?.profileId || pUser?.profileId,
-                  name: fullName,
-                  firstName: prof?.firstName || pUser?.firstName || fullName.split(' ')[0],
-                  lastName: prof?.lastName || pUser?.lastName || '',
-                  city: prof?.city || '',
-                  country: prof?.country || prof?.state || '',
-                  occupation: prof?.occupation || prof?.profession || '',
-                  education: prof?.education || '',
-                  bio: prof?.bio || '',
-                  isVerified: Boolean(prof?.isVerified ?? true),
-                  photos: formattedPhotos,
-                },
-                unreadCount: 0,
-                updatedAt: new Date().toISOString(),
-                online: Boolean((prof as any).isOnline),
-                isOnline: Boolean((prof as any).isOnline),
-                lastActiveAt: (prof as any).lastActiveAt,
-                isProvisional: true,
-              } as any;
-
-              setConversations([provisionalConv, ...list.filter((c) => c.participantId !== participantId)]);
-              setSelected(provisionalConv);
+            if (matchedConversation) {
+              setSelected(matchedConversation);
               const isMobile = typeof window !== 'undefined' && window.innerWidth < 768;
               if (isMobile) {
                 setMobileView('chat');
               }
-            } catch (err) {
-              console.warn('Could not fetch target profile, creating provisional conversation:', err);
-              const fallbackConv: Conversation = {
-                id: targetUserId,
-                participantId: targetUserId,
-                participant: {
-                  id: targetUserId,
-                  userId: targetUserId,
-                  name: 'Member',
-                  firstName: 'Member',
-                  lastName: '',
-                  photos: [],
-                  isVerified: true,
-                },
-                unreadCount: 0,
-                updatedAt: new Date().toISOString(),
-                isProvisional: true,
-              };
-              setConversations([fallbackConv, ...list.filter((c) => c.participantId !== targetUserId)]);
-              setSelected(fallbackConv);
-              const isMobile = typeof window !== 'undefined' && window.innerWidth < 768;
-              if (isMobile) {
-                setMobileView('chat');
+              if (typeof document !== 'undefined' && document.hasFocus() && document.visibilityState === 'visible') {
+                markConversationAsRead(matchedConversation.participantId || matchedConversation.id);
+              }
+            } else {
+              // Do not open a provisional chat window if the profiles are not mutually connected
+              toast.info(
+                'Mutual Connection Required',
+                'You can only chat with profiles you are mutually connected with.'
+              );
+              setMobileView('list');
+              setSelected(list.length > 0 ? list[0] : null);
+              if (typeof window !== 'undefined') {
+                window.history.replaceState({ view: 'list' }, '', '/app/messages');
               }
             }
           }
@@ -725,6 +667,21 @@ function MessagesContent() {
           <ChatProfilePanel
             participant={selected.participant}
             onClose={() => setIsMobileProfileOpen(false)}
+            onBlocked={(blockedUserId) => {
+              setConversations((prev) => {
+                const next = prev.filter(
+                  (c) => c.participantId !== blockedUserId && c.id !== blockedUserId,
+                );
+                setSelected((cur) => {
+                  if (cur && (cur.participantId === blockedUserId || cur.id === blockedUserId)) {
+                    return next[0] || null;
+                  }
+                  return cur;
+                });
+                return next;
+              });
+              setMobileView('list');
+            }}
           />
         </BottomSheet>
       )}

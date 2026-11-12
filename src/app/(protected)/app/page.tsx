@@ -126,6 +126,7 @@ export default function DashboardPage() {
         ]);
 
         let resolvedCity = '';
+        let resolvedCategory: string | undefined;
         if (userRes.status === 'fulfilled' && userRes.value) {
           setCurrentUser(userRes.value);
         }
@@ -134,7 +135,8 @@ export default function DashboardPage() {
           setUserProfile(prof);
           resolvedCity = prof.profile?.city || prof.city || '';
           try {
-            const badge = getRegistrationBadge(prof);
+            const badge = getRegistrationBadge(prof.profile || prof);
+            resolvedCategory = badge.category;
             localStorage.setItem('ishtam_user_category', badge.category);
           } catch { }
         }
@@ -145,7 +147,10 @@ export default function DashboardPage() {
           matchesService.getConnections('received'),
           matchesService.getConnections('matches'),
           matchesService.getConnections('shortlisted_by_me'),
-          matchesService.searchProfiles({ limit: 30 }),
+          matchesService.searchProfiles({
+            limit: 30,
+            ...(resolvedCategory ? { category: resolvedCategory } : {}),
+          }),
         ]);
 
         let mappedRecommendations: Profile[] = [];
