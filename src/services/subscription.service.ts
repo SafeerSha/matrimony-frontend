@@ -99,10 +99,16 @@ export const subscriptionService = {
     });
   },
 
-  getMyUnlockedContacts: () => {
-    return apiFetch<any[]>('/subscription/contacts/my-unlocked', {
-      method: 'GET',
-    });
+  getMyUnlockedContacts: async (params?: { page?: number; limit?: number }) => {
+    const query = new URLSearchParams();
+    if (params?.page !== undefined) query.set('page', String(params.page));
+    if (params?.limit !== undefined) query.set('limit', String(params.limit));
+    const qs = query.toString();
+    const res = await apiFetch<any[] | { data?: any[] }>(
+      qs ? `/subscription/contacts/my-unlocked?${qs}` : '/subscription/contacts/my-unlocked',
+      { method: 'GET' }
+    );
+    return Array.isArray(res) ? res : res?.data || [];
   },
 
   activatePermit: (tier: string, paymentId?: string) => {

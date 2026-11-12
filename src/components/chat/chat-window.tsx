@@ -43,6 +43,7 @@ interface ChatWindowProps {
   onBack?: () => void;
   onOpenProfile?: () => void;
   onMarkRead?: () => void;
+  isPartnerDeleted?: boolean;
   className?: string;
 }
 
@@ -55,6 +56,7 @@ export function ChatWindow({
   onBack,
   onOpenProfile,
   onMarkRead,
+  isPartnerDeleted = false,
   className,
 }: ChatWindowProps) {
   const [text, setText] = useState('');
@@ -1095,72 +1097,86 @@ export function ChatWindow({
               </div>
             )}
 
-            {/* Floating Island Input Bar */}
-            <div className="flex items-end gap-1.5 sm:gap-2 rounded-2xl border border-[#EAD8C7] bg-[#FFF9F6] p-1.5 focus-within:border-[#7A1835] focus-within:bg-white focus-within:ring-2 focus-within:ring-[#7A1835]/15 shadow-2xs transition-all">
-              {/* Text Input */}
-              <textarea
-                ref={textareaRef}
-                value={text}
-                onChange={handleTextareaChange}
-                onKeyDown={handleKeyDown}
-                onFocus={() => onMarkRead?.()}
-                onClick={() => onMarkRead?.()}
-                placeholder={`Message ${firstName}...`}
-                rows={1}
-                className="w-full resize-none bg-transparent py-2 pl-3 sm:pl-3.5 pr-1 text-xs sm:text-sm text-[#211B1E] placeholder:text-[#766B6F]/70 outline-none max-h-28 scrollbar-none font-sans"
-              />
+            {/* Floating Island Input Bar / Account Deleted Notice */}
+            {isPartnerDeleted ? (
+              <div className="flex flex-col items-center justify-center py-10 text-center">
+                <div className="h-14 w-14 rounded-full bg-rose-50 flex items-center justify-center mb-3 shadow-xs">
+                  <IconBan className="h-7 w-7 text-rose-600" />
+                </div>
+                <h4 className="font-editorial-title text-base sm:text-lg font-bold text-[#211B1E] mb-1">
+                  Account No Longer Exists
+                </h4>
+                <p className="text-xs sm:text-sm text-[#766B6F] max-w-xs leading-relaxed">
+                  {participantName}'s account has been deleted and is no longer available.
+                </p>
+              </div>
+            ) : (
+              <div className="flex items-end gap-1.5 sm:gap-2 rounded-2xl border border-[#EAD8C7] bg-[#FFF9F6] p-1.5 focus-within:border-[#7A1835] focus-within:bg-white focus-within:ring-2 focus-within:ring-[#7A1835]/15 shadow-2xs transition-all">
+                {/* Text Input */}
+                <textarea
+                  ref={textareaRef}
+                  value={text}
+                  onChange={handleTextareaChange}
+                  onKeyDown={handleKeyDown}
+                  onFocus={() => onMarkRead?.()}
+                  onClick={() => onMarkRead?.()}
+                  placeholder={`Message ${firstName}...`}
+                  rows={1}
+                  className="w-full resize-none bg-transparent py-2 pl-3 sm:pl-3.5 pr-1 text-xs sm:text-sm text-[#211B1E] placeholder:text-[#766B6F]/70 outline-none max-h-28 scrollbar-none font-sans"
+                />
 
-              {/* Icebreaker Prompts Toggle Button */}
-              <button
-                type="button"
-                onClick={() => setShowHooks((prev) => !prev)}
-                className={cn(
-                  'grid h-9 w-9 shrink-0 place-items-center rounded-xl transition-all active:scale-95',
-                  showHooks
-                    ? 'bg-[#7A1835] text-white shadow-xs'
-                    : 'text-[#766B6F] hover:bg-white hover:text-[#7A1835]'
-                )}
-                aria-label="Icebreaker Prompts"
-                title={showHooks ? 'Hide Icebreakers' : 'Show Icebreakers'}
-              >
-                <IconSparkles className="h-4.5 w-4.5" />
-              </button>
+                {/* Icebreaker Prompts Toggle Button */}
+                <button
+                  type="button"
+                  onClick={() => setShowHooks((prev) => !prev)}
+                  className={cn(
+                    'grid h-9 w-9 shrink-0 place-items-center rounded-xl transition-all active:scale-95',
+                    showHooks
+                      ? 'bg-[#7A1835] text-white shadow-xs'
+                      : 'text-[#766B6F] hover:bg-white hover:text-[#7A1835]'
+                  )}
+                  aria-label="Icebreaker Prompts"
+                  title={showHooks ? 'Hide Icebreakers' : 'Show Icebreakers'}
+                >
+                  <IconSparkles className="h-4.5 w-4.5" />
+                </button>
 
-              {/* Emoji Picker Button */}
-              <button
-                type="button"
-                onClick={() => setShowEmojiPicker((prev) => !prev)}
-                className={cn(
-                  'grid h-9 w-9 shrink-0 place-items-center rounded-xl transition-all active:scale-95',
-                  showEmojiPicker
-                    ? 'bg-[#FAF3EC] text-[#7A1835] border border-[#EAD8C7]'
-                    : 'text-[#766B6F] hover:bg-white hover:text-[#211B1E]'
-                )}
-                aria-label="Insert Emoji"
-              >
-                <IconMoodSmile className="h-4.5 w-4.5" />
-              </button>
+                {/* Emoji Picker Button */}
+                <button
+                  type="button"
+                  onClick={() => setShowEmojiPicker((prev) => !prev)}
+                  className={cn(
+                    'grid h-9 w-9 shrink-0 place-items-center rounded-xl transition-all active:scale-95',
+                    showEmojiPicker
+                      ? 'bg-[#FAF3EC] text-[#7A1835] border border-[#EAD8C7]'
+                      : 'text-[#766B6F] hover:bg-white hover:text-[#211B1E]'
+                  )}
+                  aria-label="Insert Emoji"
+                >
+                  <IconMoodSmile className="h-4.5 w-4.5" />
+                </button>
 
-              {/* Send Button */}
-              <Button
-                size="sm"
-                onClick={handleSend}
-                disabled={!text.trim() || isSending}
-                className={cn(
-                  'h-9 w-9 shrink-0 rounded-xl p-0 transition-all',
-                  text.trim()
-                    ? 'bg-gradient-to-br from-[#7A1835] to-[#9E2045] text-white hover:brightness-110 shadow-sm active:scale-95 cursor-pointer'
-                    : 'bg-[#EAD8C7]/50 text-[#766B6F] cursor-not-allowed opacity-60'
-                )}
-                aria-label="Send message"
-              >
-                {isSending ? (
-                  <IconLoader2 className="h-4 w-4 animate-spin" />
-                ) : (
-                  <IconSend className="h-4 w-4 ml-0.5" />
-                )}
-              </Button>
-            </div>
+                {/* Send Button */}
+                <Button
+                  size="sm"
+                  onClick={handleSend}
+                  disabled={!text.trim() || isSending}
+                  className={cn(
+                    'h-9 w-9 shrink-0 rounded-xl p-0 transition-all',
+                    text.trim()
+                      ? 'bg-gradient-to-br from-[#7A1835] to-[#9E2045] text-white hover:brightness-110 shadow-sm active:scale-95 cursor-pointer'
+                      : 'bg-[#EAD8C7]/50 text-[#766B6F] cursor-not-allowed opacity-60'
+                  )}
+                  aria-label="Send message"
+                >
+                  {isSending ? (
+                    <IconLoader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <IconSend className="h-4 w-4 ml-0.5" />
+                  )}
+                </Button>
+              </div>
+            )}
           </div>
         </div>
       )}

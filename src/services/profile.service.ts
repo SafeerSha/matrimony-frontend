@@ -22,6 +22,8 @@ export interface UserProfile {
   lastName?: string;
   name?: string;
   status?: "DRAFT" | "ACTIVE" | string;
+  deletedAt?: string | null;
+  deactivatedAt?: string | null;
   onboardingStep?: number;
   isVerified?: boolean;
   user?: {
