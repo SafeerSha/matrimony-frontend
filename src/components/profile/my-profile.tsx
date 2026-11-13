@@ -420,6 +420,7 @@ export function MyProfile({ initialPreview = false }: { initialPreview?: boolean
     religion: string;
     caste: string;
     nakshatra: string;
+    habits: string;
     lifestyle: string[];
     customLifestyleInput: string;
     customInterestInput: string;
@@ -452,6 +453,7 @@ export function MyProfile({ initialPreview = false }: { initialPreview?: boolean
     religion: '',
     caste: '',
     nakshatra: '',
+    habits: '',
     lifestyle: [],
     customLifestyleInput: '',
     customInterestInput: '',
@@ -556,6 +558,7 @@ export function MyProfile({ initialPreview = false }: { initialPreview?: boolean
         religion: combined.religion || '',
         caste: combined.caste || '',
         nakshatra: (combined as any).nakshatra || (combined as any).star || '',
+        habits: (combined as any).habits || '',
         lifestyle: Array.isArray(combined.lifestyle) ? combined.lifestyle : [],
         interests: Array.isArray(combined.interests) ? combined.interests : [],
         customLifestyleInput: '',
@@ -740,6 +743,7 @@ export function MyProfile({ initialPreview = false }: { initialPreview?: boolean
           religion: editDraft.religion,
           caste: editDraft.caste,
           nakshatra: editDraft.nakshatra,
+          habits: editDraft.habits,
           lifestyle: editDraft.lifestyle,
         } : {}),
       };
@@ -1470,6 +1474,16 @@ export function MyProfile({ initialPreview = false }: { initialPreview?: boolean
                       <p className="text-xs text-[var(--muted)]">No lifestyle tags added yet.</p>
                     )}
                   </div>
+                  {Boolean((profile as any).habits) && (
+                    <div className="mt-4 pt-3.5 border-t border-[var(--border)]/60">
+                      <p className="text-xs font-bold uppercase tracking-wider text-[var(--muted-strong)] mb-1">
+                        Everyday Habits & Routine
+                      </p>
+                      <p className="text-xs text-[var(--foreground)] leading-relaxed whitespace-pre-wrap">
+                        {(profile as any).habits}
+                      </p>
+                    </div>
+                  )}
                 </Card>
 
                 <Card className="p-6 rounded-3xl border border-[var(--border)] shadow-sm">
@@ -2434,6 +2448,26 @@ export function MyProfile({ initialPreview = false }: { initialPreview?: boolean
               value={editDraft.lookingFor}
               onChange={(e) => setEditDraft({ ...editDraft, lookingFor: e.target.value })}
               placeholder="Describe your ideal partner's nature, compatibility factors, and expectations..."
+              className="w-full rounded-xl border border-[var(--border)] bg-white p-3 text-xs text-[var(--foreground)] focus:outline-none focus:ring-2 focus:ring-[var(--primary)] leading-relaxed"
+            />
+          </div>
+
+          {/* Habits & Routines */}
+          <div>
+            <div className="flex justify-between items-center mb-1.5">
+              <label className="text-xs font-bold uppercase tracking-wider text-[var(--foreground)]">
+                Habits & Everyday Routine
+              </label>
+              <span className="text-[10px] text-[var(--muted)]">
+                {editDraft.habits.length} / 1000 characters
+              </span>
+            </div>
+            <textarea
+              rows={3}
+              maxLength={1000}
+              value={editDraft.habits}
+              onChange={(e) => setEditDraft({ ...editDraft, habits: e.target.value })}
+              placeholder="Daily routine, sleep schedule, smoking/drinking habits, pet friendliness, dietary or living preferences..."
               className="w-full rounded-xl border border-[var(--border)] bg-white p-3 text-xs text-[var(--foreground)] focus:outline-none focus:ring-2 focus:ring-[var(--primary)] leading-relaxed"
             />
           </div>
