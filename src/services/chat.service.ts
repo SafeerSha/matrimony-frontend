@@ -14,6 +14,21 @@ import { apiFetch } from "@/lib/http/api-client";
 import type { UserProfile } from "./profile.service";
 import { authService } from "./auth.service";
 
+export interface MessageReactionItem {
+  id?: string;
+  userId: string;
+  emoji: string;
+  createdAt?: string;
+}
+
+export interface ReactionPayload {
+  messageId: string;
+  userId: string;
+  emoji: string | null;
+  action: 'ADDED' | 'UPDATED' | 'REMOVED';
+  reactions: MessageReactionItem[];
+}
+
 export interface Message {
   id: string;
   conversationId?: string;
@@ -23,6 +38,7 @@ export interface Message {
   createdAt: string;
   updatedAt?: string;
   isRead: boolean;
+  reactions?: MessageReactionItem[];
 }
 
 export interface MessageReplyMetadata {
@@ -79,6 +95,7 @@ class ChatService {
   private messageHandlers: Set<(msg: Message) => void> = new Set();
   private readReceiptHandlers: Set<(data: { readerId: string; contactId: string }) => void> = new Set();
   private typingHandlers: Set<(data: { senderId: string; isTyping: boolean }) => void> = new Set();
+  private reactionHandlers: Set<(payload: ReactionPayload) => void> = new Set();
 
   /**
    * Connect to backend WebSocket gateway
@@ -132,6 +149,11 @@ class ChatService {
     // Backend ChatGateway emits 'user_typing' when opposite user types
     this.socket.on("user_typing", (data: { senderId: string; isTyping: boolean }) => {
       this.typingHandlers.forEach((handler) => handler(data));
+    });
+
+    // Backend ChatGateway emits 'message_reaction' when an emoji reaction is toggled
+    this.socket.on("message_reaction", (data: ReactionPayload) => {
+      this.reactionHandlers.forEach((handler) => handler(data));
     });
 
     this.socket.on("disconnect", (reason) => {
@@ -431,6 +453,46 @@ class ChatService {
     return apiFetch(`/chat/initiate/${contactId}`, {
       method: "POST",
     });
+  }
+
+  onReaction(handler: (payload: ReactionPayload) => void) {
+    if (!this.socket) {
+      this.connect();
+    }
+    this.reactionHandlers.add(handler);
+    return () => {
+      this.reactionHandlers.delete(handler);
+    };
+  }
+
+  async reactToMessage(messageId: string, emoji: string): Promise<ReactionPayload | null> {
+    if (this.socket && this.socket.connected) {
+      return new Promise<ReactionPayload | null>((resolve) => {
+        const timeout = setTimeout(() => {
+          this.socket?.off("react_message_ack", onAck);
+          // Fallback to REST on timeout
+          apiFetch<ReactionPayload>(`/chat/messages/${encodeURIComponent(messageId)}/reactions`, {
+            method: "POST",
+            body: JSON.stringify({ emoji }),
+          }).then(resolve).catch(() => resolve(null));
+        }, 1500);
+
+        const onAck = (res: any) => {
+          clearTimeout(timeout);
+          this.socket?.off("react_message_ack", onAck);
+          resolve(res?.data || res);
+        };
+
+        this.socket?.once("react_message_ack", onAck);
+        this.socket?.emit("react_message", { messageId, emoji });
+      });
+    }
+
+    // Socket not connected fallback to REST
+    return apiFetch<ReactionPayload>(`/chat/messages/${encodeURIComponent(messageId)}/reactions`, {
+      method: "POST",
+      body: JSON.stringify({ emoji }),
+    }).catch(() => null);
   }
 }
 

@@ -29,7 +29,8 @@ import { Avatar } from '@/components/ui/avatar';
 import { VerificationBadge } from '@/components/ui/verification-badge';
 import { toast } from '@/lib/toast';
 import { cn } from '@/lib/cn';
-import { chatService, parseMessageContent, formatReplyContent, type Conversation, type Message, type MessageReplyMetadata } from '@/services/chat.service';
+import { chatService, parseMessageContent, formatReplyContent, type Conversation, type Message, type MessageReplyMetadata, type MessageReactionItem } from '@/services/chat.service';
+import { authService } from '@/services/auth.service';
 import { matchesService } from '@/services/matches.service';
 import { formatLastActive } from '@/lib/demo-data';
 import { isFreeTrialMode } from '@/config/feature-flags';
@@ -84,7 +85,8 @@ export function ChatWindow({
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const [showHooks, setShowHooks] = useState(false);
   const [activeCategory, setActiveCategory] = useState<'all' | 'roots' | 'family' | 'career'>('all');
-  const [messageReactions, setMessageReactions] = useState<Record<string, string>>({});
+  const [messageReactions, setMessageReactions] = useState<Record<string, MessageReactionItem[]>>({});
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [hoveredMessageId, setHoveredMessageId] = useState<string | null>(null);
 
   // Real-time typing states
@@ -230,15 +232,77 @@ export function ChatWindow({
     }
   };
 
-  const handleReaction = (messageId: string, emoji: string) => {
-    setMessageReactions((prev) => {
-      if (prev[messageId] === emoji) {
-        const next = { ...prev };
-        delete next[messageId];
-        return next;
+
+  // Load current user ID for personal reaction indicators
+  useEffect(() => {
+    authService.getCurrentUser().then((u) => {
+      if (u?.id) setCurrentUserId(u.id);
+    }).catch(() => {});
+  }, []);
+
+  // Sync initial reactions from messages prop
+  useEffect(() => {
+    if (Array.isArray(messages)) {
+      const initialMap: Record<string, MessageReactionItem[]> = {};
+      messages.forEach((m) => {
+        if (m.id && Array.isArray(m.reactions) && m.reactions.length > 0) {
+          initialMap[m.id] = m.reactions;
+        }
+      });
+      setMessageReactions((prev) => ({
+        ...initialMap,
+        ...prev,
+      }));
+    }
+  }, [messages]);
+
+  // Subscribe to real-time incoming message reactions from partner
+  useEffect(() => {
+    const cleanup = chatService.onReaction((data) => {
+      if (data?.messageId) {
+        setMessageReactions((prev) => ({
+          ...prev,
+          [data.messageId]: data.reactions || [],
+        }));
       }
-      return { ...prev, [messageId]: emoji };
     });
+    return cleanup;
+  }, []);
+
+  const handleReaction = async (messageId: string, emoji: string) => {
+    if (!messageId) return;
+
+    // Optimistic local update
+    setMessageReactions((prev) => {
+      const current = prev[messageId] || [];
+      const myId = currentUserId || 'me';
+      const existingIndex = current.findIndex(
+        (r) => r.userId === myId || (currentUserId && r.userId === currentUserId)
+      );
+      let next: MessageReactionItem[];
+      if (existingIndex >= 0) {
+        if (current[existingIndex].emoji === emoji) {
+          next = current.filter((_, idx) => idx !== existingIndex);
+        } else {
+          next = current.map((r, idx) => (idx === existingIndex ? { ...r, emoji } : r));
+        }
+      } else {
+        next = [...current, { userId: myId, emoji }];
+      }
+      return { ...prev, [messageId]: next };
+    });
+
+    try {
+      const res = await chatService.reactToMessage(messageId, emoji);
+      if (res?.reactions) {
+        setMessageReactions((prev) => ({
+          ...prev,
+          [messageId]: res.reactions,
+        }));
+      }
+    } catch (err) {
+      console.warn('[ChatWindow] Error reacting to message:', err);
+    }
   };
 
   // Reliable scroll-to-bottom helper that controls both the container and end anchor
@@ -801,8 +865,21 @@ export function ChatWindow({
               messages.map((m, idx) => {
                 const isOurs = m.senderId !== conversation.participantId;
                 const timeString = formatMessageTime(m.createdAt);
-                const reaction = messageReactions[m.id || `msg-${idx}`];
                 const msgKey = m.id || `msg-${idx}`;
+                const msgReactions = messageReactions[m.id] || messageReactions[msgKey] || m.reactions || [];
+                const groupedReactions: { emoji: string; count: number; hasMine: boolean }[] = [];
+                const emojiMap = new Map<string, { count: number; hasMine: boolean }>();
+                msgReactions.forEach((r) => {
+                  const current = emojiMap.get(r.emoji) || { count: 0, hasMine: false };
+                  current.count += 1;
+                  if ((currentUserId && r.userId === currentUserId) || (!currentUserId && r.userId === 'me')) {
+                    current.hasMine = true;
+                  }
+                  emojiMap.set(r.emoji, current);
+                });
+                emojiMap.forEach((val, emojiKey) => {
+                  groupedReactions.push({ emoji: emojiKey, count: val.count, hasMine: val.hasMine });
+                });
                 const isHovered = hoveredMessageId === msgKey;
 
                 const parsed = parseMessageContent(m.content);
@@ -851,7 +928,7 @@ export function ChatWindow({
                         <button
                           key={emoji}
                           type="button"
-                          onClick={() => handleReaction(msgKey, emoji)}
+                          onClick={() => handleReaction(m.id || msgKey, emoji)}
                           className="h-6 w-6 rounded-full hover:bg-[#FAF3EC] hover:scale-125 transition-transform flex items-center justify-center text-xs active:scale-95"
                           title={`React with ${emoji}`}
                         >
@@ -924,16 +1001,33 @@ export function ChatWindow({
                           <p className="whitespace-pre-wrap break-words">{parsed.text}</p>
                         </div>
 
-                        {/* Floating Reaction Badge */}
-                        {reaction && (
+                        {/* Floating Reaction Badges */}
+                        {groupedReactions.length > 0 && (
                           <div
-                            onClick={() => handleReaction(msgKey, reaction)}
                             className={cn(
-                              'absolute -bottom-2 cursor-pointer rounded-full border border-[#EAD8C7] bg-white px-1.5 py-0.2 text-xs shadow-xs transition-transform hover:scale-110 active:scale-95 flex items-center z-10',
+                              'absolute -bottom-2.5 z-10 flex items-center gap-1 flex-wrap',
                               isOurs ? 'right-2' : 'left-2'
                             )}
                           >
-                            <span>{reaction}</span>
+                            {groupedReactions.map((gr) => (
+                              <button
+                                key={gr.emoji}
+                                type="button"
+                                onClick={() => handleReaction(m.id || msgKey, gr.emoji)}
+                                className={cn(
+                                  'cursor-pointer rounded-full border px-1.5 py-0.5 text-xs shadow-xs transition-all hover:scale-110 active:scale-95 flex items-center gap-1',
+                                  gr.hasMine
+                                    ? 'bg-[#FAF3EC] border-[#7A1835] text-[#7A1835] font-semibold ring-1 ring-[#7A1835]/30'
+                                    : 'bg-white/95 border-[#EAD8C7] text-[#211B1E]'
+                                )}
+                                title={gr.hasMine ? `You reacted ${gr.emoji}. Click to remove.` : `Reacted with ${gr.emoji}`}
+                              >
+                                <span>{gr.emoji}</span>
+                                {gr.count > 1 && (
+                                  <span className="text-[10px] font-medium opacity-80">{gr.count}</span>
+                                )}
+                              </button>
+                            ))}
                           </div>
                         )}
                       </div>
