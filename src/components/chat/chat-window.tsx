@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useMemo } from 'react';
 import Link from 'next/link';
 import {
   IconArrowLeft,
@@ -23,15 +23,19 @@ import {
   IconHome,
   IconX,
   IconArrowBackUp,
+  IconMusic,
+  IconCompass,
 } from '@tabler/icons-react';
 import { Button } from '@/components/ui/button';
 import { Avatar } from '@/components/ui/avatar';
 import { VerificationBadge } from '@/components/ui/verification-badge';
+import { RegistrationCategoryBadge } from '@/components/ui/registration-badge';
 import { toast } from '@/lib/toast';
 import { cn } from '@/lib/cn';
 import { chatService, parseMessageContent, formatReplyContent, type Conversation, type Message, type MessageReplyMetadata, type MessageReactionItem } from '@/services/chat.service';
 import { authService } from '@/services/auth.service';
 import { matchesService } from '@/services/matches.service';
+import { profileService } from '@/services/profile.service';
 import { formatLastActive } from '@/lib/demo-data';
 import { isFreeTrialMode } from '@/config/feature-flags';
 
@@ -84,7 +88,43 @@ export function ChatWindow({
   const [showMenu, setShowMenu] = useState(false);
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const [showHooks, setShowHooks] = useState(false);
-  const [activeCategory, setActiveCategory] = useState<'all' | 'roots' | 'family' | 'career'>('all');
+  const [activeCategory, setActiveCategory] = useState<string>('all');
+  const [participantCategory, setParticipantCategory] = useState<string>(() => {
+    const raw = (conversation.participant?.category || conversation.participant?.profileFor || '').toLowerCase().trim();
+    if (raw.includes('friend')) return 'Friendship';
+    if (raw.includes('live') || raw.includes('living')) return 'Live-In';
+    return conversation.participant?.category || 'Marriage';
+  });
+
+  useEffect(() => {
+    setActiveCategory('all');
+    const raw = (conversation.participant?.category || conversation.participant?.profileFor || '').toLowerCase().trim();
+    if (raw.includes('friend')) {
+      setParticipantCategory('Friendship');
+      return;
+    }
+    if (raw.includes('live') || raw.includes('living')) {
+      setParticipantCategory('Live-In');
+      return;
+    }
+    if (conversation.participant?.category) {
+      setParticipantCategory(conversation.participant.category);
+      return;
+    }
+    const contactId = conversation.participantId || conversation.id;
+    if (contactId) {
+      profileService.getProfile(contactId).then((prof) => {
+        const cat = (prof?.category || (prof as any)?.profile?.category || prof?.profileFor || '').toLowerCase().trim();
+        if (cat.includes('friend')) {
+          setParticipantCategory('Friendship');
+        } else if (cat.includes('live') || cat.includes('living')) {
+          setParticipantCategory('Live-In');
+        } else {
+          setParticipantCategory('Marriage');
+        }
+      }).catch(() => {});
+    }
+  }, [conversation.participantId, conversation.id, conversation.participant?.category, conversation.participant?.profileFor]);
   const [messageReactions, setMessageReactions] = useState<Record<string, MessageReactionItem[]>>({});
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [hoveredMessageId, setHoveredMessageId] = useState<string | null>(null);
@@ -183,44 +223,153 @@ export function ChatWindow({
     };
   }, [conversation.participantId, conversation.id]);
 
-  // Categorized Kerala matrimonial initiator hook sentences
-  const categorizedHooks = [
-    {
-      category: 'roots',
-      tag: 'Roots',
-      icon: IconHome,
-      text: `Namaskaram ${firstName}! Profile kandu, really liked it. Nattil evideya sthalam?`,
-    },
-    {
-      category: 'roots',
-      tag: 'Location',
-      icon: IconHome,
-      text: `Namaskaram ${firstName}! Are you currently based in Kerala or working elsewhere?`,
-    },
-    {
-      category: 'family',
-      tag: 'Family',
-      icon: IconHeart,
-      text: `Hello ${firstName}! Family-yodu samsarichu, we really liked your values and profile.`,
-    },
-    {
-      category: 'career',
-      tag: 'Career',
-      icon: IconBriefcase,
-      text: `Hi ${firstName}! I noticed we share mutual professional interests. What are your future settlement plans?`,
-    },
-    {
-      category: 'family',
-      tag: 'Values',
-      icon: IconCoffee,
-      text: `Namaskaram ${firstName}! Liked your bio. Free aayirikumbo oru quick call cheyyaamo?`,
-    },
-  ];
+  // Dynamically tailor initiator hook sentences to the specific profile category (Friendship vs Live-In vs Marriage)
+  const isFriendship = participantCategory === 'Friendship';
+  const isLiveIn = participantCategory === 'Live-In';
 
-  const filteredHooks =
-    activeCategory === 'all'
+  const icebreakerSubtitle = isFriendship
+    ? 'Tap a friendly starter to break the ice and begin your conversation:'
+    : isLiveIn
+    ? 'Tap a thoughtful starter to begin getting to know each other:'
+    : 'Tap a warm Kerala matrimonial starter to begin your conversation:';
+
+  const hookFilterTabs = useMemo(() => {
+    if (isFriendship) {
+      return [
+        { key: 'all', label: 'All' },
+        { key: 'vibes', label: '✨ Vibes' },
+        { key: 'interests', label: '🎵 Interests' },
+        { key: 'hangout', label: '☕ Hangout' },
+        { key: 'explore', label: '✈️ Explore' },
+      ];
+    }
+    if (isLiveIn) {
+      return [
+        { key: 'all', label: 'All' },
+        { key: 'lifestyle', label: '🏡 Lifestyle' },
+        { key: 'mindset', label: '💡 Mindset' },
+        { key: 'interests', label: '🌱 Interests' },
+      ];
+    }
+    return [
+      { key: 'all', label: 'All' },
+      { key: 'roots', label: '🏡 Roots' },
+      { key: 'family', label: '👨‍👩‍👧 Family' },
+      { key: 'career', label: '💼 Career' },
+    ];
+  }, [isFriendship, isLiveIn]);
+
+  const categorizedHooks = useMemo(() => {
+    if (isFriendship) {
+      return [
+        {
+          category: 'vibes',
+          tag: 'Vibes',
+          icon: IconSparkles,
+          text: `Hey ${firstName}! Profile kandu, vibe nannayitundu. How's your week going?`,
+        },
+        {
+          category: 'interests',
+          tag: 'Interests',
+          icon: IconMusic,
+          text: `Hi ${firstName}! Noticed we share some common interests. What kind of movies or music do you enjoy?`,
+        },
+        {
+          category: 'hangout',
+          tag: 'Hangout',
+          icon: IconCoffee,
+          text: `Hello ${firstName}! Free time-il what do you usually love doing? Any favorite weekend spots in Kerala?`,
+        },
+        {
+          category: 'vibes',
+          tag: 'Chat',
+          icon: IconHeart,
+          text: `Hey ${firstName}! Great connecting with you here. Let's catch up and get to know each other!`,
+        },
+        {
+          category: 'explore',
+          tag: 'Explore',
+          icon: IconCompass,
+          text: `Hi ${firstName}! Liked your profile. Are you a foodie or travel enthusiast? Any good cafe recommendations?`,
+        },
+      ];
+    }
+
+    if (isLiveIn) {
+      return [
+        {
+          category: 'lifestyle',
+          tag: 'Lifestyle',
+          icon: IconHome,
+          text: `Hi ${firstName}! Really liked your profile. How would you describe your everyday lifestyle and routines?`,
+        },
+        {
+          category: 'mindset',
+          tag: 'Mindset',
+          icon: IconSparkles,
+          text: `Hello ${firstName}! Great connecting. I value open communication and mutual understanding. How is your day going?`,
+        },
+        {
+          category: 'interests',
+          tag: 'Interests',
+          icon: IconCoffee,
+          text: `Hey ${firstName}! Noticed our shared hobbies. What do you enjoy doing during your downtime?`,
+        },
+        {
+          category: 'lifestyle',
+          tag: 'City & Living',
+          icon: IconHome,
+          text: `Hi ${firstName}! Are you currently based in Kerala or planning to relocate elsewhere?`,
+        },
+        {
+          category: 'mindset',
+          tag: 'Connection',
+          icon: IconHeart,
+          text: `Hello ${firstName}! Appreciated your perspective on life. Would love to have a friendly conversation.`,
+        },
+      ];
+    }
+
+    // Default: Kerala Matrimonial Hooks
+    return [
+      {
+        category: 'roots',
+        tag: 'Roots',
+        icon: IconHome,
+        text: `Namaskaram ${firstName}! Profile kandu, really liked it. Nattil evideya sthalam?`,
+      },
+      {
+        category: 'roots',
+        tag: 'Location',
+        icon: IconHome,
+        text: `Namaskaram ${firstName}! Are you currently based in Kerala or working elsewhere?`,
+      },
+      {
+        category: 'family',
+        tag: 'Family',
+        icon: IconHeart,
+        text: `Hello ${firstName}! Family-yodu samsarichu, we really liked your values and profile.`,
+      },
+      {
+        category: 'career',
+        tag: 'Career',
+        icon: IconBriefcase,
+        text: `Hi ${firstName}! I noticed we share mutual professional interests. What are your future settlement plans?`,
+      },
+      {
+        category: 'family',
+        tag: 'Values',
+        icon: IconCoffee,
+        text: `Namaskaram ${firstName}! Liked your bio. Free aayirikumbo oru quick call cheyyaamo?`,
+      },
+    ];
+  }, [isFriendship, isLiveIn, firstName]);
+
+  const filteredHooks = useMemo(() => {
+    return activeCategory === 'all'
       ? categorizedHooks
       : categorizedHooks.filter((h) => h.category === activeCategory);
+  }, [categorizedHooks, activeCategory]);
 
   const handleSelectHook = (hookText: string) => {
     setText(hookText);
@@ -584,7 +733,7 @@ export function ChatWindow({
             onClick={onOpenProfile}
             className="min-w-0 cursor-pointer group flex-1"
           >
-            <div className="flex items-center gap-1.5 min-w-0">
+            <div className="flex items-center gap-1.5 min-w-0 flex-wrap">
               <span className="text-sm sm:text-base font-bold text-[#211B1E] group-hover:text-[#7A1835] transition-colors truncate">
                 {participantName}
               </span>
@@ -592,6 +741,9 @@ export function ChatWindow({
                 <span title="Verified Profile" className="shrink-0 inline-flex items-center">
                   <VerificationBadge showIconOnly size="sm" />
                 </span>
+              )}
+              {participantCategory && (
+                <RegistrationCategoryBadge profile={{ category: participantCategory }} size="sm" className="py-0 px-2 text-[10px]" />
               )}
             </div>
             <div className="flex items-center gap-1.5 sm:gap-2 text-[11px] sm:text-xs text-[#766B6F] font-medium truncate mt-0.5">
@@ -838,7 +990,7 @@ export function ChatWindow({
                 <div>
                   <h4 className="font-editorial-title text-base font-bold text-[#211B1E]">Break the Ice with {firstName}</h4>
                   <p className="text-xs text-[#766B6F] mt-1">
-                    Tap a warm Kerala matrimonial starter to begin your conversation:
+                    {icebreakerSubtitle}
                   </p>
                 </div>
                 <div className="space-y-2 text-left pt-1">
@@ -1097,14 +1249,7 @@ export function ChatWindow({
                       <IconSparkles className="h-3 w-3 text-[#7A1835]" />
                       <span>Icebreakers</span>
                     </span>
-                    {(
-                      [
-                        { key: 'all', label: 'All' },
-                        { key: 'roots', label: '🏡 Roots' },
-                        { key: 'family', label: '👨‍👩‍👧 Family' },
-                        { key: 'career', label: '💼 Career' },
-                      ] as const
-                    ).map(({ key, label }) => (
+                    {hookFilterTabs.map(({ key, label }) => (
                       <button
                         key={key}
                         type="button"
