@@ -151,3 +151,4 @@ export interface RevenueTransactionQueryFilters {
   sortBy?: 'createdAt' | 'amount';
   sortOrder?: 'asc' | 'desc';
 }
+
