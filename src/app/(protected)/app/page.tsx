@@ -20,6 +20,7 @@ import {
   IconX,
   IconSparkles,
   IconMessageCircle,
+  IconEye,
 } from '@tabler/icons-react';
 import { Avatar } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
@@ -28,7 +29,7 @@ import { Card } from '@/components/ui/card';
 import { SectionHeader } from '@/components/ui/section-header';
 import { VerificationBadge } from '@/components/ui/verification-badge';
 import { ProfileCardSkeleton } from '@/components/ui/skeleton';
-import { matchesService, authService, profileService } from '@/services';
+import { matchesService, authService, profileService, type ProfileVisitor } from '@/services';
 import { mapConnectionToProfile } from '@/services/matches.service';
 import { toast } from '@/lib/toast';
 import { useSubscription } from '@/context/subscription-context';
@@ -106,6 +107,8 @@ export default function DashboardPage() {
   const [sentInterestIds, setSentInterestIds] = useState<Set<string>>(new Set());
   const [receivedInterestIds, setReceivedInterestIds] = useState<Set<string>>(new Set());
   const [matchedIds, setMatchedIds] = useState<Set<string>>(new Set());
+  const [visitors, setVisitors] = useState<ProfileVisitor[]>([]);
+  const [isLoadingVisitors, setIsLoadingVisitors] = useState(true);
   const [isLoading, setIsLoading] = useState(true);
 
   const newProfilesScrollRef = useRef<HTMLDivElement>(null);
@@ -144,8 +147,8 @@ export default function DashboardPage() {
           } catch { }
         }
 
-        // 2. Fetch recommendations, received interests, sent interests, matches, and shortcuts in parallel
-        const [recRes, receivedRes, sentRes, matchesRes, shortlistedRes, searchRes] = await Promise.allSettled([
+        // 2. Fetch recommendations, received interests, sent interests, matches, shortcuts, and visitors in parallel
+        const [recRes, receivedRes, sentRes, matchesRes, shortlistedRes, searchRes, visitorsRes] = await Promise.allSettled([
           matchesService.getRecommendations(),
           matchesService.getConnections('received'),
           matchesService.getConnections('sent'),
@@ -155,6 +158,7 @@ export default function DashboardPage() {
             limit: 30,
             ...(resolvedCategory ? { category: resolvedCategory } : {}),
           }),
+          profileService.getRecentVisitors(20),
         ]);
 
         const initialSentIds = new Set<string>();
@@ -368,6 +372,10 @@ export default function DashboardPage() {
           }
         }
 
+        if (visitorsRes.status === 'fulfilled' && Array.isArray(visitorsRes.value)) {
+          setVisitors(visitorsRes.value);
+        }
+
         setMatchedIds(initialMatchedIds);
         setSentInterestIds(initialSentIds);
         setReceivedInterestIds(initialReceivedIds);
@@ -375,6 +383,7 @@ export default function DashboardPage() {
         console.error('Error loading dashboard:', err);
       } finally {
         setIsLoading(false);
+        setIsLoadingVisitors(false);
       }
     }
 
@@ -722,6 +731,112 @@ export default function DashboardPage() {
           })()}
         </section>
       )}
+
+      {/* ======================================================== */}
+      {/* 3.5. WHO VISITED MY PROFILE (RECENT PROFILE VISITORS)    */}
+      {/* ======================================================== */}
+      <section className="space-y-3">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <div className="flex items-center justify-center w-7 h-7 rounded-lg bg-[var(--primary)]/10 text-[var(--primary)]">
+              <IconEye className="w-4 h-4" />
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <h2 className="text-base sm:text-lg font-bold text-[var(--foreground)] tracking-tight">
+                  Who Visited My Profile
+                </h2>
+                {visitors.length > 0 && (
+                  <span className="px-2 py-0.5 text-[11px] font-bold rounded-full bg-rose-50 text-[var(--primary)] border border-rose-200/80">
+                    {visitors.length} {visitors.length === 1 ? 'visitor' : 'visitors'}
+                  </span>
+                )}
+              </div>
+              <p className="text-xs text-[var(--muted)]">
+                Members who recently viewed your profile
+              </p>
+            </div>
+          </div>
+
+          {visitors.length > 0 && (
+            <Link
+              href="/app/discover"
+              className="focus-ring inline-flex items-center gap-1 text-xs font-bold text-[var(--primary)] hover:text-[var(--primary-deep)] rounded-lg p-0.5"
+            >
+              <span>Explore all</span>
+              <IconArrowRight className="h-3.5 w-3.5" />
+            </Link>
+          )}
+        </div>
+
+        {isLoadingVisitors ? (
+          <div className="flex items-center gap-4 sm:gap-5 overflow-hidden py-1">
+            {[1, 2, 3, 4, 5].map((i) => (
+              <div key={i} className="flex flex-col items-center gap-2 shrink-0 animate-pulse">
+                <div className="w-16 h-16 sm:w-[70px] sm:h-[70px] rounded-full bg-slate-200 border-2 border-white shadow-2xs" />
+                <div className="w-12 h-2.5 rounded bg-slate-200" />
+              </div>
+            ))}
+          </div>
+        ) : visitors.length === 0 ? (
+          <div className="p-4 rounded-2xl border border-dashed border-[var(--border)] bg-[var(--surface-muted)]/50 flex items-center gap-3.5 text-xs text-[var(--muted)]">
+            <div className="w-11 h-11 rounded-full bg-white border border-[var(--border)] flex items-center justify-center shrink-0 text-[var(--primary)] shadow-2xs">
+              <IconEye className="w-5 h-5 opacity-75" />
+            </div>
+            <div className="min-w-0">
+              <p className="font-semibold text-[var(--foreground)] text-xs sm:text-sm">No recent visitors yet</p>
+              <p className="text-[11px] text-[var(--muted)] mt-0.5">
+                When other members view your profile, their circular profile cards will appear here in real-time.
+              </p>
+            </div>
+          </div>
+        ) : (
+          <div className="relative">
+            <div className="flex items-center gap-4 sm:gap-5 overflow-x-auto py-2 px-1 scrollbar-none no-scrollbar touch-pan-x">
+              {visitors.map((visitor) => (
+                <div
+                  key={visitor.id}
+                  role="button"
+                  tabIndex={0}
+                  onClick={() => router.push(`/app/profile?user=${visitor.id}`)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                      e.preventDefault();
+                      router.push(`/app/profile?user=${visitor.id}`);
+                    }
+                  }}
+                  className="flex flex-col items-center gap-1.5 shrink-0 group cursor-pointer focus:outline-none select-none transition-transform active:scale-95"
+                  title={`View ${visitor.fullName || visitor.name}'s profile`}
+                >
+                  {/* Circle Avatar Container - Not too large, not too small */}
+                  <div className="relative">
+                    <div className="w-16 h-16 sm:w-[70px] sm:h-[70px] rounded-full p-[2.5px] bg-gradient-to-tr from-[#80132E] via-[#C94A6E] to-[#E59866] group-hover:scale-105 group-hover:shadow-md transition-all duration-200">
+                      <div className="w-full h-full rounded-full overflow-hidden bg-white border-2 border-white relative shadow-inner">
+                        <SafeCardImage
+                          src={visitor.avatar || visitor.image}
+                          alt={visitor.name}
+                          name={visitor.name}
+                        />
+                      </div>
+                    </div>
+                    {visitor.online && (
+                      <span
+                        title="Online now"
+                        className="absolute bottom-0.5 right-0.5 h-3.5 w-3.5 rounded-full bg-emerald-500 border-2 border-white shadow-xs"
+                      />
+                    )}
+                  </div>
+
+                  {/* Name only under the circle */}
+                  <span className="text-xs font-semibold text-[var(--foreground)] group-hover:text-[var(--primary)] transition-colors text-center max-w-[76px] truncate leading-tight">
+                    {visitor.firstName || visitor.name}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+      </section>
 
       {/* ======================================================== */}
       {/* 4. TODAY'S TOP RECOMMENDATIONS (CURATED MATCHES)         */}

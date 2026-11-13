@@ -93,7 +93,37 @@ export interface UserProfile {
   isDeclinedByMe?: boolean;
 }
 
+export interface ProfileVisitor {
+  id: string;
+  profileId?: string;
+  name: string;
+  firstName: string;
+  fullName?: string;
+  avatar?: string | null;
+  image?: string | null;
+  gender?: string | null;
+  age?: number | null;
+  city?: string | null;
+  occupation?: string | null;
+  category?: string | null;
+  online?: boolean;
+  verified?: boolean;
+  visitedAt: string;
+}
+
 export const profileService = {
+  getRecentVisitors: (limit = 20) => {
+    return apiFetch<ProfileVisitor[]>(`/profiles/me/visitors?limit=${limit}`, {
+      method: "GET",
+    });
+  },
+
+  recordVisit: (targetId: string) => {
+    return apiFetch<{ success: boolean }>(`/profiles/${encodeURIComponent(targetId)}/visit`, {
+      method: "POST",
+    });
+  },
+
   getProfile: (userId: string | "me", options?: { excludeSelf?: boolean }) => {
     const encodedId = userId === "me" ? "me" : encodeURIComponent(userId);
     const qs = options?.excludeSelf ? "?excludeSelf=true" : "";
