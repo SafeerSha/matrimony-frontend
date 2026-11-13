@@ -38,6 +38,7 @@ import {
   IconEdit,
   IconX,
   IconArrowsMaximize,
+  IconSparkles,
 } from '@tabler/icons-react';
 import { getProfileUniqueId, formatLastActive, getRegistrationBadge } from '@/lib/demo-data';
 import { PageLoader } from '@/components/ui/page-loader';
@@ -123,9 +124,12 @@ function mapApiProfileToDetail(res: any, targetId: string = 'me'): Profile {
     caste: res.caste || '',
     gender: res.gender || '',
     profileFor: res.profileFor || 'Self',
+    category: res.category || res.profileFor || '',
     nationality: res.nationality || 'Indian',
     country: res.country || 'India',
     diet: res.diet || '',
+    friendshipGoals: res.friendshipGoals || '',
+    genderPreference: res.genderPreference || '',
     phone: res.phone || res.user?.phone,
     hasPhone: Boolean(res.hasPhone ?? (res.phone || res.user?.phone || res.isPhoneVerified)),
     isContactUnlocked: Boolean(res.isContactUnlocked),
@@ -146,6 +150,9 @@ export function ProfileDetail({
     return null;
   });
   const [relatedProfiles, setRelatedProfiles] = useState<Profile[]>([]);
+  const isFriendProfile = Boolean(
+    (profile?.category || (profile as any)?.profileFor || '').toLowerCase().includes('friend')
+  );
   const [activePhotoIdx, setActivePhotoIdx] = useState(0);
   const [isViewerOpen, setIsViewerOpen] = useState(false);
   const [brokenPhotos, setBrokenPhotos] = useState<Record<number, boolean>>({});
@@ -911,30 +918,61 @@ export function ProfileDetail({
 
               {/* Quick Key Attributes Grid */}
               <div className="grid grid-cols-[0.9fr_1.25fr_0.9fr] divide-x divide-[var(--border)]/80 rounded-2xl bg-[var(--surface-muted)]/70 p-3 sm:p-3.5 border border-[var(--border)]/80 shadow-[0_2px_8px_rgba(0,0,0,0.02)]">
-                <div className="flex flex-col items-center justify-center px-1.5 text-center">
-                  <p className="text-[10px] sm:text-[11px] font-bold uppercase tracking-wider text-[var(--muted)] whitespace-nowrap">
-                    Height
-                  </p>
-                  <p className="mt-1 text-xs sm:text-sm font-bold text-[var(--foreground)] whitespace-nowrap">
-                    {profile.height}
-                  </p>
-                </div>
-                <div className="flex flex-col items-center justify-center px-1.5 text-center">
-                  <p className="text-[10px] sm:text-[11px] font-bold uppercase tracking-wider text-[var(--muted)] whitespace-nowrap">
-                    Marital Status
-                  </p>
-                  <p className="mt-1 text-xs sm:text-sm font-bold text-[var(--foreground)] whitespace-nowrap">
-                    {profile.maritalStatus}
-                  </p>
-                </div>
-                <div className="flex flex-col items-center justify-center px-1.5 text-center">
-                  <p className="text-[10px] sm:text-[11px] font-bold uppercase tracking-wider text-[var(--muted)] whitespace-nowrap">
-                    Language
-                  </p>
-                  <p className="mt-1 text-xs sm:text-sm font-bold text-[var(--foreground)] truncate max-w-full">
-                    {profile.motherTongue}
-                  </p>
-                </div>
+                {isFriendProfile ? (
+                  <>
+                    <div className="flex flex-col items-center justify-center px-1.5 text-center">
+                      <p className="text-[10px] sm:text-[11px] font-bold uppercase tracking-wider text-[var(--muted)] whitespace-nowrap">
+                        Friendship Goal
+                      </p>
+                      <p className="mt-1 text-xs sm:text-sm font-bold text-[var(--foreground)] truncate max-w-full" title={profile.friendshipGoals || undefined}>
+                        {profile.friendshipGoals || 'Casual Chat'}
+                      </p>
+                    </div>
+                    <div className="flex flex-col items-center justify-center px-1.5 text-center">
+                      <p className="text-[10px] sm:text-[11px] font-bold uppercase tracking-wider text-[var(--muted)] whitespace-nowrap">
+                        Preference
+                      </p>
+                      <p className="mt-1 text-xs sm:text-sm font-bold text-[var(--foreground)] whitespace-nowrap">
+                        {profile.genderPreference || 'Open to All'}
+                      </p>
+                    </div>
+                    <div className="flex flex-col items-center justify-center px-1.5 text-center">
+                      <p className="text-[10px] sm:text-[11px] font-bold uppercase tracking-wider text-[var(--muted)] whitespace-nowrap">
+                        Language
+                      </p>
+                      <p className="mt-1 text-xs sm:text-sm font-bold text-[var(--foreground)] truncate max-w-full">
+                        {profile.motherTongue || 'Malayalam'}
+                      </p>
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    <div className="flex flex-col items-center justify-center px-1.5 text-center">
+                      <p className="text-[10px] sm:text-[11px] font-bold uppercase tracking-wider text-[var(--muted)] whitespace-nowrap">
+                        Height
+                      </p>
+                      <p className="mt-1 text-xs sm:text-sm font-bold text-[var(--foreground)] whitespace-nowrap">
+                        {profile.height}
+                      </p>
+                    </div>
+                    <div className="flex flex-col items-center justify-center px-1.5 text-center">
+                      <p className="text-[10px] sm:text-[11px] font-bold uppercase tracking-wider text-[var(--muted)] whitespace-nowrap">
+                        Marital Status
+                      </p>
+                      <p className="mt-1 text-xs sm:text-sm font-bold text-[var(--foreground)] whitespace-nowrap">
+                        {profile.maritalStatus}
+                      </p>
+                    </div>
+                    <div className="flex flex-col items-center justify-center px-1.5 text-center">
+                      <p className="text-[10px] sm:text-[11px] font-bold uppercase tracking-wider text-[var(--muted)] whitespace-nowrap">
+                        Language
+                      </p>
+                      <p className="mt-1 text-xs sm:text-sm font-bold text-[var(--foreground)] truncate max-w-full">
+                        {profile.motherTongue}
+                      </p>
+                    </div>
+                  </>
+                )}
               </div>
 
               {/* Introduction Excerpt */}
@@ -1178,7 +1216,9 @@ export function ProfileDetail({
                   : `Why you may connect with ${profile.name.split(' ')[0]}`}
               </h2>
               <p className="text-xs text-[var(--muted)]">
-                Key alignment based on your partner and lifestyle preferences
+                {isFriendProfile
+                  ? 'Key alignment based on your friendship goals and shared interests'
+                  : 'Key alignment based on your partner and lifestyle preferences'}
               </p>
             </div>
           </div>
@@ -1228,72 +1268,130 @@ export function ProfileDetail({
               </h2>
             </div>
 
-            <div className="mt-4 grid grid-cols-2 sm:grid-cols-3 gap-4">
-              <div>
-                <p className="text-xs font-semibold uppercase tracking-wider text-[var(--muted)]">
-                  Age
-                </p>
-                <p className="mt-0.5 text-sm font-bold text-[var(--foreground)]">
-                  {profile.age} years
-                </p>
-              </div>
-
-              <div>
-                <p className="text-xs font-semibold uppercase tracking-wider text-[var(--muted)]">
-                  Gender
-                </p>
-                <p className="mt-0.5 text-sm font-bold text-[var(--foreground)]">
-                  {profile.gender || 'Not specified'}
-                </p>
-              </div>
-
-              <div>
-                <p className="text-xs font-semibold uppercase tracking-wider text-[var(--muted)]">
-                  Profile Created By
-                </p>
-                <p className="mt-0.5 text-sm font-bold text-[var(--foreground)]">
-                  {profile.profileFor || 'Self'}
-                </p>
-              </div>
-
-              <div>
-                <p className="text-xs font-semibold uppercase tracking-wider text-[var(--muted)]">
-                  Current City
-                </p>
-                <p className="mt-0.5 text-sm font-bold text-[var(--foreground)]">
-                  {profile.city || 'Not specified'}
-                </p>
-              </div>
-
-              <div>
-                <p className="text-xs font-semibold uppercase tracking-wider text-[var(--muted)]">
-                  State / Country
-                </p>
-                <p className="mt-0.5 text-sm font-bold text-[var(--foreground)]">
-                  {[profile.state, profile.country || 'India'].filter(Boolean).join(', ')}
-                </p>
-              </div>
-
-              <div>
-                <p className="text-xs font-semibold uppercase tracking-wider text-[var(--muted)]">
-                  Citizenship
-                </p>
-                <p className="mt-0.5 text-sm font-bold text-[var(--foreground)]">
-                  {profile.nationality || 'Indian'}
-                </p>
-              </div>
-
-              {profile.diet && (
+            {isFriendProfile ? (
+              <div className="mt-4 grid grid-cols-2 sm:grid-cols-3 gap-4">
                 <div>
                   <p className="text-xs font-semibold uppercase tracking-wider text-[var(--muted)]">
-                    Diet
+                    Age
                   </p>
                   <p className="mt-0.5 text-sm font-bold text-[var(--foreground)]">
-                    {profile.diet}
+                    {profile.age} years
                   </p>
                 </div>
-              )}
-            </div>
+
+                <div>
+                  <p className="text-xs font-semibold uppercase tracking-wider text-[var(--muted)]">
+                    Gender
+                  </p>
+                  <p className="mt-0.5 text-sm font-bold text-[var(--foreground)]">
+                    {profile.gender || 'Not specified'}
+                  </p>
+                </div>
+
+                <div>
+                  <p className="text-xs font-semibold uppercase tracking-wider text-[var(--muted)]">
+                    Citizenship
+                  </p>
+                  <p className="mt-0.5 text-sm font-bold text-[var(--foreground)]">
+                    {profile.nationality || 'Indian'}
+                  </p>
+                </div>
+
+                <div>
+                  <p className="text-xs font-semibold uppercase tracking-wider text-[var(--muted)]">
+                    District / City
+                  </p>
+                  <p className="mt-0.5 text-sm font-bold text-[var(--foreground)]">
+                    {profile.city || 'Not specified'}
+                  </p>
+                </div>
+
+                <div>
+                  <p className="text-xs font-semibold uppercase tracking-wider text-[var(--muted)]">
+                    State
+                  </p>
+                  <p className="mt-0.5 text-sm font-bold text-[var(--foreground)]">
+                    {profile.state || 'Kerala'}
+                  </p>
+                </div>
+
+                <div>
+                  <p className="text-xs font-semibold uppercase tracking-wider text-[var(--muted)]">
+                    Language Spoken
+                  </p>
+                  <p className="mt-0.5 text-sm font-bold text-[var(--foreground)]">
+                    {profile.motherTongue || 'Malayalam'}
+                  </p>
+                </div>
+              </div>
+            ) : (
+              <div className="mt-4 grid grid-cols-2 sm:grid-cols-3 gap-4">
+                <div>
+                  <p className="text-xs font-semibold uppercase tracking-wider text-[var(--muted)]">
+                    Age
+                  </p>
+                  <p className="mt-0.5 text-sm font-bold text-[var(--foreground)]">
+                    {profile.age} years
+                  </p>
+                </div>
+
+                <div>
+                  <p className="text-xs font-semibold uppercase tracking-wider text-[var(--muted)]">
+                    Gender
+                  </p>
+                  <p className="mt-0.5 text-sm font-bold text-[var(--foreground)]">
+                    {profile.gender || 'Not specified'}
+                  </p>
+                </div>
+
+                <div>
+                  <p className="text-xs font-semibold uppercase tracking-wider text-[var(--muted)]">
+                    Profile Created By
+                  </p>
+                  <p className="mt-0.5 text-sm font-bold text-[var(--foreground)]">
+                    {profile.profileFor || 'Self'}
+                  </p>
+                </div>
+
+                <div>
+                  <p className="text-xs font-semibold uppercase tracking-wider text-[var(--muted)]">
+                    Current City
+                  </p>
+                  <p className="mt-0.5 text-sm font-bold text-[var(--foreground)]">
+                    {profile.city || 'Not specified'}
+                  </p>
+                </div>
+
+                <div>
+                  <p className="text-xs font-semibold uppercase tracking-wider text-[var(--muted)]">
+                    State / Country
+                  </p>
+                  <p className="mt-0.5 text-sm font-bold text-[var(--foreground)]">
+                    {[profile.state, profile.country || 'India'].filter(Boolean).join(', ')}
+                  </p>
+                </div>
+
+                <div>
+                  <p className="text-xs font-semibold uppercase tracking-wider text-[var(--muted)]">
+                    Citizenship
+                  </p>
+                  <p className="mt-0.5 text-sm font-bold text-[var(--foreground)]">
+                    {profile.nationality || 'Indian'}
+                  </p>
+                </div>
+
+                {profile.diet && (
+                  <div>
+                    <p className="text-xs font-semibold uppercase tracking-wider text-[var(--muted)]">
+                      Diet
+                    </p>
+                    <p className="mt-0.5 text-sm font-bold text-[var(--foreground)]">
+                      {profile.diet}
+                    </p>
+                  </div>
+                )}
+              </div>
+            )}
 
             {/* Verified Mobile Number Row (Only rendered if candidate has registered a mobile number) */}
             {Boolean(profile.hasPhone || profile.phone || (unlockedPhone && unlockedPhone !== 'Not provided')) && (
@@ -1350,137 +1448,224 @@ export function ProfileDetail({
               </h2>
             </div>
 
-            <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div className="p-4 rounded-2xl bg-[var(--surface-muted)]/70 border border-[var(--border)]/70">
-                <p className="text-xs font-bold uppercase tracking-wider text-[var(--muted)]">
-                  Highest Qualification
-                </p>
-                <p className="mt-1 text-sm font-bold text-[var(--foreground)]">
-                  {profile.education || 'Graduate'}
-                </p>
-              </div>
-
-              <div className="p-4 rounded-2xl bg-[var(--surface-muted)]/70 border border-[var(--border)]/70">
-                <p className="text-xs font-bold uppercase tracking-wider text-[var(--muted)]">
-                  Current Occupation
-                </p>
-                <p className="mt-1 text-sm font-bold text-[var(--foreground)]">
-                  {profile.profession || 'Professional'}
-                </p>
-                {profile.employmentStatus && (
-                  <p className="mt-0.5 text-xs text-[var(--muted)]">
-                    {profile.employmentStatus}
+            {isFriendProfile ? (
+              <div className="mt-4 grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <div className="p-4 rounded-2xl bg-[var(--surface-muted)]/70 border border-[var(--border)]/70">
+                  <p className="text-xs font-bold uppercase tracking-wider text-[var(--muted)]">
+                    Highest Qualification
                   </p>
-                )}
-              </div>
+                  <p className="mt-1 text-sm font-bold text-[var(--foreground)]">
+                    {profile.education || 'Graduate'}
+                  </p>
+                </div>
 
-              <div className="p-4 rounded-2xl bg-[var(--surface-muted)]/70 border border-[var(--border)]/70">
-                <p className="text-xs font-bold uppercase tracking-wider text-[var(--muted)]">
-                  Working Location
-                </p>
-                <p className="mt-1 text-sm font-bold text-[var(--foreground)]">
-                  {profile.workingPlace || (profile as any).workLocation || [profile.city, profile.state].filter(Boolean).join(', ') || 'Not specified'}
-                </p>
-              </div>
+                <div className="p-4 rounded-2xl bg-[var(--surface-muted)]/70 border border-[var(--border)]/70">
+                  <p className="text-xs font-bold uppercase tracking-wider text-[var(--muted)]">
+                    Current Occupation
+                  </p>
+                  <p className="mt-1 text-sm font-bold text-[var(--foreground)]">
+                    {profile.profession || 'Professional'}
+                  </p>
+                  {profile.employmentStatus && (
+                    <p className="mt-0.5 text-xs text-[var(--muted)]">
+                      {profile.employmentStatus}
+                    </p>
+                  )}
+                </div>
 
-              <div className="p-4 rounded-2xl bg-[var(--surface-muted)]/70 border border-[var(--border)]/70">
-                <p className="text-xs font-bold uppercase tracking-wider text-[var(--muted)]">
-                  Annual Income
-                </p>
-                <p className="mt-1 text-sm font-bold text-[var(--primary)]">
-                  {profile.annualIncome || 'Available on request'}
-                </p>
+                <div className="p-4 rounded-2xl bg-[var(--surface-muted)]/70 border border-[var(--border)]/70">
+                  <p className="text-xs font-bold uppercase tracking-wider text-[var(--muted)]">
+                    Working Location
+                  </p>
+                  <p className="mt-1 text-sm font-bold text-[var(--foreground)]">
+                    {profile.workingPlace || (profile as any).workLocation || [profile.city, profile.state].filter(Boolean).join(', ') || 'Not specified'}
+                  </p>
+                </div>
               </div>
-            </div>
+            ) : (
+              <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="p-4 rounded-2xl bg-[var(--surface-muted)]/70 border border-[var(--border)]/70">
+                  <p className="text-xs font-bold uppercase tracking-wider text-[var(--muted)]">
+                    Highest Qualification
+                  </p>
+                  <p className="mt-1 text-sm font-bold text-[var(--foreground)]">
+                    {profile.education || 'Graduate'}
+                  </p>
+                </div>
+
+                <div className="p-4 rounded-2xl bg-[var(--surface-muted)]/70 border border-[var(--border)]/70">
+                  <p className="text-xs font-bold uppercase tracking-wider text-[var(--muted)]">
+                    Current Occupation
+                  </p>
+                  <p className="mt-1 text-sm font-bold text-[var(--foreground)]">
+                    {profile.profession || 'Professional'}
+                  </p>
+                  {profile.employmentStatus && (
+                    <p className="mt-0.5 text-xs text-[var(--muted)]">
+                      {profile.employmentStatus}
+                    </p>
+                  )}
+                </div>
+
+                <div className="p-4 rounded-2xl bg-[var(--surface-muted)]/70 border border-[var(--border)]/70">
+                  <p className="text-xs font-bold uppercase tracking-wider text-[var(--muted)]">
+                    Working Location
+                  </p>
+                  <p className="mt-1 text-sm font-bold text-[var(--foreground)]">
+                    {profile.workingPlace || (profile as any).workLocation || [profile.city, profile.state].filter(Boolean).join(', ') || 'Not specified'}
+                  </p>
+                </div>
+
+                <div className="p-4 rounded-2xl bg-[var(--surface-muted)]/70 border border-[var(--border)]/70">
+                  <p className="text-xs font-bold uppercase tracking-wider text-[var(--muted)]">
+                    Annual Income
+                  </p>
+                  <p className="mt-1 text-sm font-bold text-[var(--primary)]">
+                    {profile.annualIncome || 'Available on request'}
+                  </p>
+                </div>
+              </div>
+            )}
           </Card>
 
-          {/* Section 3: Family Details */}
-          <Card className="p-5 sm:p-6 rounded-3xl">
-            <div className="flex items-center gap-2.5 pb-4 border-b border-[var(--border)]">
-              <IconHome className="h-5 w-5 text-[var(--primary)]" />
-              <h2 className="font-editorial-title text-xl font-bold text-[var(--foreground)]">
-                Family Background
-              </h2>
-            </div>
+          {/* Section 3: Friendship Goals & Details (Friendship) OR Family Details (Matrimonial) */}
+          {isFriendProfile ? (
+            <Card className="p-5 sm:p-6 rounded-3xl border-purple-100/80 bg-gradient-to-br from-white via-purple-50/20 to-pink-50/20">
+              <div className="flex items-center gap-2.5 pb-4 border-b border-[var(--border)]">
+                <IconSparkles className="h-5 w-5 text-[#7E22CE]" />
+                <h2 className="font-editorial-title text-xl font-bold text-[var(--foreground)]">
+                  Friendship Goals & Details
+                </h2>
+              </div>
 
-            <div className="mt-4 space-y-4">
-              <p className="text-sm leading-relaxed text-[var(--muted-strong)] bg-[#FFFDFB] p-4 rounded-2xl border border-[var(--border)]">
-                {profile.family || 'Family background shared with mutual matches.'}
-              </p>
+              <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="p-4 rounded-2xl bg-white/80 border border-purple-100 shadow-2xs">
+                  <p className="text-xs font-bold uppercase tracking-wider text-purple-700">
+                    Friendship Goal
+                  </p>
+                  <p className="mt-1 text-sm font-bold text-[var(--foreground)]">
+                    {profile.friendshipGoals || 'Casual Chat & Coffee'}
+                  </p>
+                </div>
 
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                <div className="p-3 rounded-xl bg-[var(--surface-muted)] text-center">
-                  <p className="text-[11px] font-semibold text-[var(--muted)]">Father</p>
-                  <p className="text-xs font-bold text-[var(--foreground)] mt-0.5 truncate" title={profile.fatherName || undefined}>
-                    {profile.fatherName
-                      ? `${profile.fatherName} (${profile.fatherAlive !== false ? 'Alive' : 'Late'})`
-                      : profile.fatherAlive !== false ? 'Father alive' : 'Father late'}
+                <div className="p-4 rounded-2xl bg-white/80 border border-purple-100 shadow-2xs">
+                  <p className="text-xs font-bold uppercase tracking-wider text-purple-700">
+                    Gender Preference
+                  </p>
+                  <p className="mt-1 text-sm font-bold text-[var(--foreground)]">
+                    {profile.genderPreference || profile.lookingFor || 'Any / Open to Both'}
                   </p>
                 </div>
-                <div className="p-3 rounded-xl bg-[var(--surface-muted)] text-center">
-                  <p className="text-[11px] font-semibold text-[var(--muted)]">Mother</p>
-                  <p className="text-xs font-bold text-[var(--foreground)] mt-0.5">
-                    {profile.motherAlive !== false ? 'Mother alive' : 'Mother late'}
+
+                <div className="p-4 rounded-2xl bg-white/80 border border-purple-100 shadow-2xs">
+                  <p className="text-xs font-bold uppercase tracking-wider text-purple-700">
+                    Spoken Languages
+                  </p>
+                  <p className="mt-1 text-sm font-bold text-[var(--foreground)]">
+                    {profile.motherTongue || 'Malayalam, English'}
                   </p>
                 </div>
-                <div className="p-3 rounded-xl bg-[var(--surface-muted)] text-center">
-                  <p className="text-[11px] font-semibold text-[var(--muted)]">Brothers</p>
-                  <p className="text-xs font-bold text-[var(--foreground)] mt-0.5">
-                    {profile.brothersCount !== undefined
-                      ? `${profile.brothersCount} (${profile.brothersMarried || 0} mrd)`
-                      : '0'}
+
+                <div className="p-4 rounded-2xl bg-white/80 border border-purple-100 shadow-2xs">
+                  <p className="text-xs font-bold uppercase tracking-wider text-purple-700">
+                    Location / Region
                   </p>
-                </div>
-                <div className="p-3 rounded-xl bg-[var(--surface-muted)] text-center">
-                  <p className="text-[11px] font-semibold text-[var(--muted)]">Sisters</p>
-                  <p className="text-xs font-bold text-[var(--foreground)] mt-0.5">
-                    {profile.sistersCount !== undefined
-                      ? `${profile.sistersCount} (${profile.sistersMarried || 0} mrd)`
-                      : '0'}
+                  <p className="mt-1 text-sm font-bold text-[var(--foreground)]">
+                    {[profile.city, profile.state, profile.country || 'India'].filter(Boolean).join(', ')}
                   </p>
                 </div>
               </div>
-            </div>
-          </Card>
-
-          {/* Section 4: Religion & Community */}
-          <Card className="p-5 sm:p-6 rounded-3xl">
-            <div className="flex items-center gap-2.5 pb-4 border-b border-[var(--border)]">
-              <IconCompass className="h-5 w-5 text-[var(--primary)]" />
-              <h2 className="font-editorial-title text-xl font-bold text-[var(--foreground)]">
-                Religion & Community
-              </h2>
-            </div>
-
-            <div className="mt-4 grid grid-cols-2 sm:grid-cols-3 gap-4">
-              <div>
-                <p className="text-xs font-semibold uppercase tracking-wider text-[var(--muted)]">
-                  Religion
-                </p>
-                <p className="mt-0.5 text-sm font-bold text-[var(--foreground)]">
-                  {profile.religion || 'Not specified'}
-                </p>
+            </Card>
+          ) : (
+            <Card className="p-5 sm:p-6 rounded-3xl">
+              <div className="flex items-center gap-2.5 pb-4 border-b border-[var(--border)]">
+                <IconHome className="h-5 w-5 text-[var(--primary)]" />
+                <h2 className="font-editorial-title text-xl font-bold text-[var(--foreground)]">
+                  Family Background
+                </h2>
               </div>
 
-              <div>
-                <p className="text-xs font-semibold uppercase tracking-wider text-[var(--muted)]">
-                  Caste / Community
+              <div className="mt-4 space-y-4">
+                <p className="text-sm leading-relaxed text-[var(--muted-strong)] bg-[#FFFDFB] p-4 rounded-2xl border border-[var(--border)]">
+                  {profile.family || 'Family background shared with mutual matches.'}
                 </p>
-                <p className="mt-0.5 text-sm font-bold text-[var(--foreground)]">
-                  {profile.caste || 'Open to all communities'}
-                </p>
+
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                  <div className="p-3 rounded-xl bg-[var(--surface-muted)] text-center">
+                    <p className="text-[11px] font-semibold text-[var(--muted)]">Father</p>
+                    <p className="text-xs font-bold text-[var(--foreground)] mt-0.5 truncate" title={profile.fatherName || undefined}>
+                      {profile.fatherName
+                        ? `${profile.fatherName} (${profile.fatherAlive !== false ? 'Alive' : 'Late'})`
+                        : profile.fatherAlive !== false ? 'Father alive' : 'Father late'}
+                    </p>
+                  </div>
+                  <div className="p-3 rounded-xl bg-[var(--surface-muted)] text-center">
+                    <p className="text-[11px] font-semibold text-[var(--muted)]">Mother</p>
+                    <p className="text-xs font-bold text-[var(--foreground)] mt-0.5">
+                      {profile.motherAlive !== false ? 'Mother alive' : 'Mother late'}
+                    </p>
+                  </div>
+                  <div className="p-3 rounded-xl bg-[var(--surface-muted)] text-center">
+                    <p className="text-[11px] font-semibold text-[var(--muted)]">Brothers</p>
+                    <p className="text-xs font-bold text-[var(--foreground)] mt-0.5">
+                      {profile.brothersCount !== undefined
+                        ? `${profile.brothersCount} (${profile.brothersMarried || 0} mrd)`
+                        : '0'}
+                    </p>
+                  </div>
+                  <div className="p-3 rounded-xl bg-[var(--surface-muted)] text-center">
+                    <p className="text-[11px] font-semibold text-[var(--muted)]">Sisters</p>
+                    <p className="text-xs font-bold text-[var(--foreground)] mt-0.5">
+                      {profile.sistersCount !== undefined
+                        ? `${profile.sistersCount} (${profile.sistersMarried || 0} mrd)`
+                        : '0'}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </Card>
+          )}
+
+          {/* Section 4: Religion & Community (Hidden for Friendship profiles) */}
+          {!isFriendProfile && (
+            <Card className="p-5 sm:p-6 rounded-3xl">
+              <div className="flex items-center gap-2.5 pb-4 border-b border-[var(--border)]">
+                <IconCompass className="h-5 w-5 text-[var(--primary)]" />
+                <h2 className="font-editorial-title text-xl font-bold text-[var(--foreground)]">
+                  Religion & Community
+                </h2>
               </div>
 
-              <div>
-                <p className="text-xs font-semibold uppercase tracking-wider text-[var(--muted)]">
-                  Mother Tongue
-                </p>
-                <p className="mt-0.5 text-sm font-bold text-[var(--foreground)]">
-                  {profile.motherTongue || 'Not specified'}
-                </p>
+              <div className="mt-4 grid grid-cols-2 sm:grid-cols-3 gap-4">
+                <div>
+                  <p className="text-xs font-semibold uppercase tracking-wider text-[var(--muted)]">
+                    Religion
+                  </p>
+                  <p className="mt-0.5 text-sm font-bold text-[var(--foreground)]">
+                    {profile.religion || 'Not specified'}
+                  </p>
+                </div>
+
+                <div>
+                  <p className="text-xs font-semibold uppercase tracking-wider text-[var(--muted)]">
+                    Caste / Community
+                  </p>
+                  <p className="mt-0.5 text-sm font-bold text-[var(--foreground)]">
+                    {profile.caste || 'Open to all communities'}
+                  </p>
+                </div>
+
+                <div>
+                  <p className="text-xs font-semibold uppercase tracking-wider text-[var(--muted)]">
+                    Mother Tongue
+                  </p>
+                  <p className="mt-0.5 text-sm font-bold text-[var(--foreground)]">
+                    {profile.motherTongue || 'Not specified'}
+                  </p>
+                </div>
               </div>
-            </div>
-          </Card>
+            </Card>
+          )}
 
           {/* Section 5: Lifestyle & Interests */}
           <Card className="p-5 sm:p-6 rounded-3xl">
@@ -1526,21 +1711,35 @@ export function ProfileDetail({
 
         {/* Right Column (4 cols): Partner Preferences & Privacy Callout */}
         <div className="lg:col-span-4 space-y-6">
-          {/* Partner Preferences Card */}
+          {/* Partner Preferences Card / Friendship Preferences Card */}
           <Card className="p-5 sm:p-6 rounded-3xl space-y-4">
             <div className="flex items-center gap-2.5 pb-4 border-b border-[var(--border)]">
-              <IconHeart className="h-5 w-5 text-[var(--primary)]" />
-              <h2 className="font-editorial-title text-xl font-bold text-[var(--foreground)]">
-                Partner Preferences
-              </h2>
+              {isFriendProfile ? (
+                <>
+                  <IconSparkles className="h-5 w-5 text-[#7E22CE]" />
+                  <h2 className="font-editorial-title text-xl font-bold text-[var(--foreground)]">
+                    Friendship Preferences
+                  </h2>
+                </>
+              ) : (
+                <>
+                  <IconHeart className="h-5 w-5 text-[var(--primary)]" />
+                  <h2 className="font-editorial-title text-xl font-bold text-[var(--foreground)]">
+                    Partner Preferences
+                  </h2>
+                </>
+              )}
             </div>
 
             <div className="rounded-2xl bg-gradient-to-br from-[#FAF3EC] to-[#FFF9F6] p-4 border border-[#EAD8C7]">
               <p className="text-xs font-bold uppercase tracking-wider text-[var(--primary)]">
-                What I'm Looking For
+                {isFriendProfile ? "Friendship Goals & Bio" : "What I'm Looking For"}
               </p>
               <p className="mt-1.5 text-sm leading-relaxed text-[var(--foreground)] italic">
                 &ldquo;{(() => {
+                  if (isFriendProfile) {
+                    return profile.lookingFor || profile.friendshipGoals || 'Looking for genuine connections and interesting conversations.';
+                  }
                   const catLower = String(profile.category || (profile as any).profileFor || '').toLowerCase();
                   const isMarriage = !catLower.includes('friend') && !catLower.includes('live') && !catLower.includes('living');
                   const rawLf = (profile.lookingFor || '').trim();
@@ -1556,52 +1755,99 @@ export function ProfileDetail({
             </div>
 
             <div className="space-y-3 pt-2">
-              <div className="flex items-center justify-between text-xs py-1.5 border-b border-[var(--border)]">
-                <span className="text-[var(--muted)] font-medium">Preferred Age</span>
-                <span className="font-bold text-[var(--foreground)]">
-                  {profile.preferences?.minAge && profile.preferences?.maxAge
-                    ? `${profile.preferences.minAge} – ${profile.preferences.maxAge} years`
-                    : profile.preferences?.minAge
-                      ? `${profile.preferences.minAge}+ years`
-                      : 'Open to all'}
-                </span>
-              </div>
+              {isFriendProfile ? (
+                <>
+                  <div className="flex items-center justify-between text-xs py-1.5 border-b border-[var(--border)]">
+                    <span className="text-[var(--muted)] font-medium">Gender Preference</span>
+                    <span className="font-bold text-[var(--foreground)]">
+                      {profile.genderPreference || profile.lookingFor || 'Any / Open to Both'}
+                    </span>
+                  </div>
 
-              <div className="flex items-center justify-between text-xs py-1.5 border-b border-[var(--border)]">
-                <span className="text-[var(--muted)] font-medium">Preferred Height</span>
-                <span className="font-bold text-[var(--foreground)]">
-                  {profile.preferences?.minHeight && profile.preferences?.maxHeight
-                    ? `${profile.preferences.minHeight} – ${profile.preferences.maxHeight}`
-                    : 'Open to all'}
-                </span>
-              </div>
+                  <div className="flex items-center justify-between text-xs py-1.5 border-b border-[var(--border)]">
+                    <span className="text-[var(--muted)] font-medium">Friendship Goal</span>
+                    <span className="font-bold text-[var(--foreground)]">
+                      {profile.friendshipGoals || 'Casual Chat & Coffee'}
+                    </span>
+                  </div>
 
-              <div className="flex items-center justify-between text-xs py-1.5 border-b border-[var(--border)]">
-                <span className="text-[var(--muted)] font-medium">Education</span>
-                <span className="font-bold text-[var(--foreground)] truncate max-w-[180px] text-right" title={Array.isArray(profile.preferences?.education) ? profile.preferences.education.join(', ') : undefined}>
-                  {Array.isArray(profile.preferences?.education) && profile.preferences.education.length > 0
-                    ? profile.preferences.education.join(', ')
-                    : 'Open to all'}
-                </span>
-              </div>
+                  <div className="flex items-center justify-between text-xs py-1.5 border-b border-[var(--border)]">
+                    <span className="text-[var(--muted)] font-medium">Preferred Age</span>
+                    <span className="font-bold text-[var(--foreground)]">
+                      {profile.preferences?.minAge && profile.preferences?.maxAge
+                        ? `${profile.preferences.minAge} – ${profile.preferences.maxAge} years`
+                        : profile.preferences?.minAge
+                          ? `${profile.preferences.minAge}+ years`
+                          : 'Open to all'}
+                    </span>
+                  </div>
 
-              <div className="flex items-center justify-between text-xs py-1.5 border-b border-[var(--border)]">
-                <span className="text-[var(--muted)] font-medium">Profession</span>
-                <span className="font-bold text-[var(--foreground)] truncate max-w-[180px] text-right" title={Array.isArray(profile.preferences?.professions) ? profile.preferences.professions.join(', ') : undefined}>
-                  {Array.isArray(profile.preferences?.professions) && profile.preferences.professions.length > 0
-                    ? profile.preferences.professions.join(', ')
-                    : 'Open to all'}
-                </span>
-              </div>
+                  <div className="flex items-center justify-between text-xs py-1.5 border-b border-[var(--border)]">
+                    <span className="text-[var(--muted)] font-medium">Language</span>
+                    <span className="font-bold text-[var(--foreground)]">
+                      {profile.motherTongue || 'Malayalam, English'}
+                    </span>
+                  </div>
 
-              <div className="flex items-center justify-between text-xs py-1.5">
-                <span className="text-[var(--muted)] font-medium">Preferred Locations</span>
-                <span className="font-bold text-[var(--foreground)] truncate max-w-[180px] text-right" title={Array.isArray(profile.preferences?.locations) ? profile.preferences.locations.join(', ') : undefined}>
-                  {Array.isArray(profile.preferences?.locations) && profile.preferences.locations.length > 0
-                    ? profile.preferences.locations.join(', ')
-                    : 'Open to any location'}
-                </span>
-              </div>
+                  <div className="flex items-center justify-between text-xs py-1.5">
+                    <span className="text-[var(--muted)] font-medium">Preferred Locations</span>
+                    <span className="font-bold text-[var(--foreground)] truncate max-w-[180px] text-right" title={Array.isArray(profile.preferences?.locations) ? profile.preferences.locations.join(', ') : undefined}>
+                      {Array.isArray(profile.preferences?.locations) && profile.preferences.locations.length > 0
+                        ? profile.preferences.locations.join(', ')
+                        : 'Open to any location'}
+                    </span>
+                  </div>
+                </>
+              ) : (
+                <>
+                  <div className="flex items-center justify-between text-xs py-1.5 border-b border-[var(--border)]">
+                    <span className="text-[var(--muted)] font-medium">Preferred Age</span>
+                    <span className="font-bold text-[var(--foreground)]">
+                      {profile.preferences?.minAge && profile.preferences?.maxAge
+                        ? `${profile.preferences.minAge} – ${profile.preferences.maxAge} years`
+                        : profile.preferences?.minAge
+                          ? `${profile.preferences.minAge}+ years`
+                          : 'Open to all'}
+                    </span>
+                  </div>
+
+                  <div className="flex items-center justify-between text-xs py-1.5 border-b border-[var(--border)]">
+                    <span className="text-[var(--muted)] font-medium">Preferred Height</span>
+                    <span className="font-bold text-[var(--foreground)]">
+                      {profile.preferences?.minHeight && profile.preferences?.maxHeight
+                        ? `${profile.preferences.minHeight} – ${profile.preferences.maxHeight}`
+                        : 'Open to all'}
+                    </span>
+                  </div>
+
+                  <div className="flex items-center justify-between text-xs py-1.5 border-b border-[var(--border)]">
+                    <span className="text-[var(--muted)] font-medium">Education</span>
+                    <span className="font-bold text-[var(--foreground)] truncate max-w-[180px] text-right" title={Array.isArray(profile.preferences?.education) ? profile.preferences.education.join(', ') : undefined}>
+                      {Array.isArray(profile.preferences?.education) && profile.preferences.education.length > 0
+                        ? profile.preferences.education.join(', ')
+                        : 'Open to all'}
+                    </span>
+                  </div>
+
+                  <div className="flex items-center justify-between text-xs py-1.5 border-b border-[var(--border)]">
+                    <span className="text-[var(--muted)] font-medium">Profession</span>
+                    <span className="font-bold text-[var(--foreground)] truncate max-w-[180px] text-right" title={Array.isArray(profile.preferences?.professions) ? profile.preferences.professions.join(', ') : undefined}>
+                      {Array.isArray(profile.preferences?.professions) && profile.preferences.professions.length > 0
+                        ? profile.preferences.professions.join(', ')
+                        : 'Open to all'}
+                    </span>
+                  </div>
+
+                  <div className="flex items-center justify-between text-xs py-1.5">
+                    <span className="text-[var(--muted)] font-medium">Preferred Locations</span>
+                    <span className="font-bold text-[var(--foreground)] truncate max-w-[180px] text-right" title={Array.isArray(profile.preferences?.locations) ? profile.preferences.locations.join(', ') : undefined}>
+                      {Array.isArray(profile.preferences?.locations) && profile.preferences.locations.length > 0
+                        ? profile.preferences.locations.join(', ')
+                        : 'Open to any location'}
+                    </span>
+                  </div>
+                </>
+              )}
             </div>
           </Card>
         </div>

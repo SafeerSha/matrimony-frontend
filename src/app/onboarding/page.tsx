@@ -59,6 +59,10 @@ import {
   KERALA_DISTRICTS,
   MOTHER_TONGUE_OPTIONS,
   PROFESSION_OPTIONS,
+  FRIENDSHIP_GOAL_OPTIONS,
+  GENDER_PREFERENCE_OPTIONS,
+  POPULAR_FRIENDSHIP_INTERESTS,
+  FRIENDSHIP_EMPLOYMENT_OPTIONS,
 } from "@/lib/data/education-profession-data";
 
 const STEPS = [
@@ -80,6 +84,7 @@ export default function OnboardingPage() {
   const [selectedCategories, setSelectedCategories] = useState<string[]>(["marriage"]);
   const [profileData, setProfileData] = useState<any>({});
   const [preferencesData, setPreferencesData] = useState<any>({});
+  const [customFriendshipInterest, setCustomFriendshipInterest] = useState<string>("");
 
   // Progressive Onboarding & Auto-Save State
   const [autoSaveStatus, setAutoSaveStatus] = useState<"idle" | "saving" | "saved" | "offline">("idle");
@@ -185,6 +190,17 @@ export default function OnboardingPage() {
   // Validation helper for Step 1 mandatory fields
   const validateStep1Basic = (dataToValidate?: any) => {
     const data = dataToValidate || profileData;
+    const catLower = String(
+      draftInfo?.category ||
+      draftInfo?.profileFor ||
+      profileData?.category ||
+      profileData?.profileFor ||
+      data?.category ||
+      data?.profileFor ||
+      ""
+    ).toLowerCase();
+    const isFriendship = catLower.includes("friend");
+
     const firstNameVal = (data.firstName || draftInfo?.firstName || "").trim();
     if (!firstNameVal) {
       setError("Please enter your name.");
@@ -192,7 +208,7 @@ export default function OnboardingPage() {
     }
     const permanentAddressVal = (data.permanentAddress || "").trim();
     if (!permanentAddressVal) {
-      setError("Permanent Address is mandatory. (Note: It will remain confidential and hidden from other users).");
+      setError("Address is mandatory. (Note: It will remain confidential and hidden from other users).");
       return false;
     }
     const isEmailAuth = isEmailAuthMode();
@@ -221,10 +237,12 @@ export default function OnboardingPage() {
       setError("Please select gender.");
       return false;
     }
-    const maritalVal = (data.maritalStatus || profileData.maritalStatus || "").trim();
-    if (!maritalVal) {
-      setError("Please select your marital status.");
-      return false;
+    if (!isFriendship) {
+      const maritalVal = (data.maritalStatus || profileData.maritalStatus || "").trim();
+      if (!maritalVal) {
+        setError("Please select your marital status.");
+        return false;
+      }
     }
     return true;
   };
@@ -447,6 +465,115 @@ export default function OnboardingPage() {
     if (step === 1) {
       setError(null);
 
+      const catLower = String(
+        draftInfo?.category ||
+          draftInfo?.profileFor ||
+          profileData?.category ||
+          profileData?.profileFor ||
+          ""
+      ).toLowerCase();
+      const isFriendship = catLower.includes("friend");
+
+      if (isFriendship) {
+        const firstNameVal = (formData.get("firstName") as string || profileData.firstName || "").trim();
+        const lastNameVal = (formData.get("lastName") as string || profileData.lastName || "").trim();
+        if (!firstNameVal) {
+          setError("Please enter your name.");
+          return;
+        }
+
+        const nationalityVal = (formData.get("nationality") as string || profileData.nationality || "Indian").trim();
+        const stateVal = (formData.get("state") as string || profileData.state || "Kerala").trim();
+        const cityVal = (formData.get("city") as string || profileData.city || "").trim();
+
+        const genderVal = (formData.get("gender") as string || profileData.gender || "").trim();
+        if (!genderVal) {
+          setError("Please select gender.");
+          return;
+        }
+
+        const dobVal = formData.get("dob") as string || profileData.dateOfBirth;
+        if (!dobVal) {
+          setError("Please select your date of birth.");
+          return;
+        }
+
+        const permanentAddressVal = (formData.get("permanentAddress") as string || profileData.permanentAddress || "").trim();
+        if (!permanentAddressVal) {
+          setError("Address is mandatory. (Note: It will remain confidential and hidden from other users).");
+          return;
+        }
+
+        const isEmailAuth = isEmailAuthMode();
+        const phoneVal = (formData.get("phone") as string || profileData.phone || draftInfo?.phone || "").trim();
+        if (!isEmailAuth && !phoneVal) {
+          setError("Cell number is mandatory. (Note: It will remain confidential and hidden from other users).");
+          return;
+        }
+
+        const emailVal = (formData.get("email") as string || profileData.email || "").trim();
+        if (!emailVal || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailVal)) {
+          setError("A valid Email ID is mandatory. (Note: It will remain confidential and hidden from other users).");
+          return;
+        }
+
+        const eduVal = (formData.get("education") as string || profileData.education || "").trim();
+        if (!eduVal) {
+          setError("Please specify your educational qualification.");
+          return;
+        }
+
+        const employmentStatusVal = (formData.get("employmentStatus") as string || profileData.employmentStatus || "").trim();
+        const genderPreferenceVal = (formData.get("genderPreference") as string || profileData.genderPreference || profileData.lookingFor || "Any / Open to Both").trim();
+        const friendshipGoalsVal = (formData.get("friendshipGoals") as string || profileData.friendshipGoals || "Casual Chat & Coffee").trim();
+        const motherTongueVal = (formData.get("motherTongue") as string || profileData.motherTongue || "Malayalam").trim();
+        const bioVal = (formData.get("bio") as string || profileData.bio || "").trim();
+        const interestsVal = Array.isArray(profileData.interests) ? profileData.interests : [];
+
+        updatedProfile = {
+          ...updatedProfile,
+          firstName: firstNameVal,
+          lastName: lastNameVal,
+          name: `${firstNameVal} ${lastNameVal}`.trim(),
+          nationality: nationalityVal,
+          state: stateVal,
+          city: cityVal,
+          gender: genderVal,
+          dateOfBirth: new Date(dobVal).toISOString(),
+          permanentAddress: permanentAddressVal,
+          phone: phoneVal,
+          email: emailVal,
+          education: eduVal,
+          employmentStatus: employmentStatusVal,
+          occupation: employmentStatusVal,
+          genderPreference: genderPreferenceVal,
+          lookingFor: genderPreferenceVal,
+          friendshipGoals: friendshipGoalsVal,
+          interests: interestsVal,
+          motherTongue: motherTongueVal,
+          bio: bioVal,
+        };
+        setProfileData(updatedProfile);
+
+        setIsLoading(true);
+        try {
+          await profileService.updateProfile("me", {
+            ...updatedProfile,
+            onboardingStep: 2,
+          });
+          setAutoSaveStatus("saved");
+          setMaxStepReached((prev) => Math.max(prev, 2));
+          setStep(2);
+          window.scrollTo({ top: 0, behavior: "smooth" });
+        } catch (err: any) {
+          console.error("Step 1 friendship auto-persist error:", err);
+          setError(err?.message || "Failed to save profile. Please verify your details.");
+        } finally {
+          setIsLoading(false);
+        }
+        return;
+      }
+
       // 1. Name
       const firstNameVal = (formData.get("firstName") as string || profileData.firstName || "").trim();
       const lastNameVal = (formData.get("lastName") as string || profileData.lastName || "").trim();
@@ -552,13 +679,6 @@ export default function OnboardingPage() {
       const sistersCountVal = rawSistersCount !== null ? Number(rawSistersCount) : (profileData.sistersCount ?? 0);
       const sistersMarriedVal = rawSistersMarried !== null ? Number(rawSistersMarried) : (profileData.sistersMarried ?? 0);
 
-      const catLower = String(
-        draftInfo?.category ||
-          draftInfo?.profileFor ||
-          profileData?.category ||
-          profileData?.profileFor ||
-          ""
-      ).toLowerCase();
       const isMarriageCat =
         !catLower.includes("friend") &&
         !catLower.includes("live") &&
@@ -1270,6 +1390,10 @@ export default function OnboardingPage() {
 
   const regBadge = getRegistrationBadge();
   const RegIcon = regBadge.icon;
+  const isFriendship =
+    regBadge.label === "Friendship" ||
+    String(draftInfo?.category || profileData?.category || "").toLowerCase().includes("friend") ||
+    String(draftInfo?.profileFor || profileData?.profileFor || "").toLowerCase().includes("friend");
 
   return (
     <main className="relative min-h-screen w-full bg-[var(--background)] flex flex-col">
@@ -1496,27 +1620,602 @@ export default function OnboardingPage() {
                     </div>
                   </div>
                   <h1 className="text-2xl sm:text-3xl font-bold text-[var(--foreground)] tracking-tight">
-                    Personal & Contact Details
+                    {isFriendship ? "Friendship Profile Details" : "Personal & Contact Details"}
                   </h1>
                   <p className="mt-1.5 text-sm text-[var(--muted)] leading-relaxed">
-                    Please complete your{" "}
-                    <span className="font-bold text-[#80132E]">
-                      {regBadge.label}
-                    </span>{" "}
-                    profile and confirm your core profile information.
+                    {isFriendship ? (
+                      <>
+                        Please complete your{" "}
+                        <span className="font-bold text-[#7E22CE]">Friendship</span>{" "}
+                        profile to connect with genuine companions, activity partners, and friends.
+                      </>
+                    ) : (
+                      <>
+                        Please complete your{" "}
+                        <span className="font-bold text-[#80132E]">
+                          {regBadge.label}
+                        </span>{" "}
+                        profile and confirm your core profile information.
+                      </>
+                    )}
                   </p>
                 </div>
 
                 {/* Helpful Information Notice: Highlighting required baseline steps */}
-                <div className="mb-6 p-3.5 rounded-2xl bg-[#FAF3EC]/80 border border-[#D89B65]/35 flex items-start gap-3">
-                  <div className="text-xs text-amber-950 leading-relaxed">
-                    <span className="font-bold text-[#8C5D2C]">Essential Profile Setup: </span>
+                <div className={cn(
+                  "mb-6 p-3.5 rounded-2xl border flex items-start gap-3",
+                  isFriendship
+                    ? "bg-[#FAF5FF]/80 border-[#E9D5FF] text-purple-950"
+                    : "bg-[#FAF3EC]/80 border-[#D89B65]/35 text-amber-950"
+                )}>
+                  <div className="text-xs leading-relaxed">
+                    <span className={cn("font-bold", isFriendship ? "text-[#7E22CE]" : "text-[#8C5D2C]")}>
+                      {isFriendship ? "Friendship Profile Setup: " : "Essential Profile Setup: "}
+                    </span>
                     <span className="text-slate-700">
-                      Personal Details (Step 1) and Album Photos (Step 4) are required to activate your account and discover compatible matches. Profile photo and password can be completed now or updated later in your profile. Partner preferences can be customized anytime directly on the Discover page.
+                      {isFriendship
+                        ? "Personal Details (Step 1) and Photos (Step 4) are required to activate your account. Your address, mobile number, and email ID remain strictly confidential and hidden from other users."
+                        : "Personal Details (Step 1) and Album Photos (Step 4) are required to activate your account and discover compatible matches. Profile photo and password can be completed now or updated later in your profile. Partner preferences can be customized anytime directly on the Discover page."}
                     </span>
                   </div>
                 </div>
 
+                {isFriendship ? (
+                  <form onSubmit={handleNext} className="space-y-6">
+                    {/* Two-Column Responsive Layout for Desktop Mode */}
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 lg:gap-6 items-start">
+                      {/* LEFT COLUMN: Identity & Confidential Contact */}
+                      <div className="space-y-5">
+                        {/* Card 1: Personal Identity */}
+                        <div className="p-5 sm:p-6 rounded-2xl bg-white border border-[var(--border)] shadow-xs space-y-4">
+                          <div className="flex items-center gap-2 pb-2 border-b border-[var(--border)]/60">
+                            <IconUser className="w-5 h-5 text-[#7E22CE]" />
+                            <h2 className="text-sm font-bold uppercase tracking-wider text-[var(--foreground)]">
+                              1. Personal Identity
+                            </h2>
+                          </div>
+
+                          {/* 1. First Name & 2. Last Name */}
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <div>
+                              <label className="block text-xs font-semibold uppercase tracking-wider text-[var(--muted-strong)] mb-1.5">
+                                First Name <span className="text-rose-500">*</span>
+                              </label>
+                              <div className="relative">
+                                <input
+                                  name="firstName"
+                                  type="text"
+                                  required
+                                  value={profileData.firstName ?? draftInfo?.firstName ?? ""}
+                                  onChange={(e) =>
+                                    setProfileData((prev: any) => ({ ...prev, firstName: e.target.value }))
+                                  }
+                                  placeholder="e.g. Rahul"
+                                  className="h-12 w-full rounded-xl border border-[var(--border)] bg-white px-4 pl-10 text-sm text-[var(--foreground)] outline-none focus:border-[#7E22CE] focus:ring-4 focus:ring-purple-500/10 transition"
+                                />
+                                <IconUser className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-[var(--muted)]" />
+                              </div>
+                            </div>
+
+                            <div>
+                              <label className="block text-xs font-semibold uppercase tracking-wider text-[var(--muted-strong)] mb-1.5">
+                                Last Name
+                              </label>
+                              <div className="relative">
+                                <input
+                                  name="lastName"
+                                  type="text"
+                                  value={profileData.lastName ?? draftInfo?.lastName ?? ""}
+                                  onChange={(e) =>
+                                    setProfileData((prev: any) => ({ ...prev, lastName: e.target.value }))
+                                  }
+                                  placeholder="e.g. Varma"
+                                  className="h-12 w-full rounded-xl border border-[var(--border)] bg-white px-4 pl-10 text-sm text-[var(--foreground)] outline-none focus:border-[#7E22CE] focus:ring-4 focus:ring-purple-500/10 transition"
+                                />
+                                <IconUser className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-[var(--muted)]" />
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* 3. Nationality, 4. State & 5. District */}
+                          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                            <div>
+                              <ModernSelect
+                                label="Nationality"
+                                required
+                                name="nationality"
+                                value={profileData.nationality ?? "Indian"}
+                                options={(() => {
+                                  const opts = NATIONALITY_OPTIONS.map((n) => ({ value: n, label: n }));
+                                  if (profileData.nationality && !opts.some((o) => o.value.toLowerCase() === profileData.nationality.toLowerCase())) {
+                                    opts.unshift({ value: profileData.nationality, label: profileData.nationality });
+                                  }
+                                  return opts;
+                                })()}
+                                onChange={(val) =>
+                                  setProfileData((prev: any) => ({ ...prev, nationality: val }))
+                                }
+                                placeholder="Select Nationality"
+                                searchable
+                                maxHeight="max-h-[220px]"
+                              />
+                            </div>
+
+                            <div>
+                              <ModernSelect
+                                label="State"
+                                required
+                                name="state"
+                                value={profileData.state ?? "Kerala"}
+                                options={(() => {
+                                  const opts = POPULAR_INDIAN_STATES.map((s) => ({ value: s, label: s }));
+                                  if (profileData.state && !opts.some((o) => o.value.toLowerCase() === profileData.state.toLowerCase())) {
+                                    opts.unshift({ value: profileData.state, label: profileData.state });
+                                  }
+                                  return opts;
+                                })()}
+                                onChange={(val) =>
+                                  setProfileData((prev: any) => ({ ...prev, state: val }))
+                                }
+                                placeholder="Select State"
+                                searchable
+                                maxHeight="max-h-[220px]"
+                              />
+                            </div>
+
+                            <div>
+                              {(profileData.state ?? "Kerala").toLowerCase() === "kerala" ? (
+                                <ModernSelect
+                                  label="District"
+                                  required
+                                  name="city"
+                                  value={profileData.city ?? ""}
+                                  options={(() => {
+                                    const opts = KERALA_DISTRICTS.map((d) => ({ value: d, label: d }));
+                                    if (profileData.city && !opts.some((o) => o.value.toLowerCase() === profileData.city.toLowerCase())) {
+                                      opts.unshift({ value: profileData.city, label: profileData.city });
+                                    }
+                                    return opts;
+                                  })()}
+                                  onChange={(val) =>
+                                    setProfileData((prev: any) => ({ ...prev, city: val }))
+                                  }
+                                  placeholder="Select District"
+                                  searchable
+                                  maxHeight="max-h-[220px]"
+                                />
+                              ) : (
+                                <div>
+                                  <label className="block text-xs font-semibold uppercase tracking-wider text-[var(--muted-strong)] mb-1.5">
+                                    District / City <span className="text-rose-500">*</span>
+                                  </label>
+                                  <div className="relative">
+                                    <input
+                                      name="city"
+                                      type="text"
+                                      required
+                                      value={profileData.city ?? ""}
+                                      onChange={(e) =>
+                                        setProfileData((prev: any) => ({ ...prev, city: e.target.value }))
+                                      }
+                                      placeholder="e.g. Ernakulam"
+                                      className="h-12 w-full rounded-xl border border-[var(--border)] bg-white px-4 pl-10 text-sm text-[var(--foreground)] outline-none focus:border-[#7E22CE] focus:ring-4 focus:ring-purple-500/10 transition"
+                                    />
+                                    <IconMapPin className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-[var(--muted)]" />
+                                  </div>
+                                </div>
+                              )}
+                            </div>
+                          </div>
+
+                          {/* 6. Gender & 7. Age / DOB */}
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <div>
+                              <ModernSelect
+                                label="Gender"
+                                required
+                                name="gender"
+                                value={profileData.gender || ""}
+                                onChange={(val) =>
+                                  setProfileData((prev: any) => ({ ...prev, gender: val }))
+                                }
+                                options={[
+                                  { value: "female", label: "Female" },
+                                  { value: "male", label: "Male" },
+                                  { value: "other", label: "Other" },
+                                ]}
+                                placeholder="Select Gender"
+                              />
+                            </div>
+
+                            <div>
+                              <div className="flex justify-between items-center mb-1.5">
+                                <label className="block text-xs font-semibold uppercase tracking-wider text-[var(--muted-strong)]">
+                                  Date of Birth <span className="text-rose-500">*</span>
+                                </label>
+                                {profileData.dateOfBirth && (() => {
+                                  const birth = new Date(profileData.dateOfBirth);
+                                  if (!isNaN(birth.getTime())) {
+                                    const today = new Date();
+                                    let a = today.getFullYear() - birth.getFullYear();
+                                    const m = today.getMonth() - birth.getMonth();
+                                    if (m < 0 || (m === 0 && today.getDate() < birth.getDate())) a--;
+                                    return (
+                                      <span className="text-[11px] font-bold text-purple-700 bg-purple-50 px-2 py-0.5 rounded-md border border-purple-200">
+                                        Age: {a} yrs
+                                      </span>
+                                    );
+                                  }
+                                  return null;
+                                })()}
+                              </div>
+                              <DatePicker
+                                name="dob"
+                                required
+                                defaultValue={profileData.dateOfBirth}
+                                onChange={(d) => {
+                                  if (d) {
+                                    setProfileData((prev: any) => ({
+                                      ...prev,
+                                      dateOfBirth: d.toISOString(),
+                                    }));
+                                  }
+                                }}
+                                placeholder="Select Date of Birth"
+                                minAge={18}
+                                maxAge={70}
+                              />
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Card 2: Confidential Contact & Address */}
+                        <div className="p-5 sm:p-6 rounded-2xl bg-white border border-[var(--border)] shadow-xs space-y-4">
+                          <div className="flex items-center justify-between pb-2 border-b border-[var(--border)]/60">
+                            <div className="flex items-center gap-2">
+                              <IconShieldCheck className="w-5 h-5 text-emerald-600" />
+                              <h2 className="text-sm font-bold uppercase tracking-wider text-[var(--foreground)]">
+                                2. Contact & Address
+                              </h2>
+                            </div>
+                            <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-md bg-emerald-50 text-emerald-700 border border-emerald-200">
+                              Strictly Confidential
+                            </span>
+                          </div>
+
+                          <p className="text-xs text-[var(--muted)] leading-relaxed">
+                            Your address, mobile number, and email ID are kept strictly private and hidden from other profiles.
+                          </p>
+
+                          {/* 8. Address */}
+                          <div>
+                            <label className="block text-xs font-semibold uppercase tracking-wider text-[var(--muted-strong)] mb-1.5">
+                              Address (Confidential) <span className="text-rose-500">*</span>
+                            </label>
+                            <div className="relative">
+                              <textarea
+                                name="permanentAddress"
+                                required
+                                rows={2}
+                                value={profileData.permanentAddress ?? ""}
+                                onChange={(e) =>
+                                  setProfileData((prev: any) => ({ ...prev, permanentAddress: e.target.value }))
+                                }
+                                placeholder="House name, street, locality, postal code"
+                                className="w-full rounded-xl border border-[var(--border)] bg-white p-3 pl-10 text-sm text-[var(--foreground)] outline-none focus:border-[#7E22CE] focus:ring-4 focus:ring-purple-500/10 transition leading-relaxed resize-none"
+                              />
+                              <IconHome className="pointer-events-none absolute left-3.5 top-3.5 h-4 w-4 text-[var(--muted)]" />
+                            </div>
+                          </div>
+
+                          {/* 9. Mob no & 10. Mail Id */}
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <div>
+                              <label className="block text-xs font-semibold uppercase tracking-wider text-[var(--muted-strong)] mb-1.5">
+                                Mobile Number <span className="text-rose-500">*</span>
+                              </label>
+                              <div className="relative">
+                                <input
+                                  name="phone"
+                                  type="tel"
+                                  required={!isEmailAuthMode()}
+                                  value={profileData.phone ?? draftInfo?.phone ?? ""}
+                                  onChange={(e) =>
+                                    setProfileData((prev: any) => ({ ...prev, phone: e.target.value }))
+                                  }
+                                  placeholder="10-digit mobile number"
+                                  className="h-12 w-full rounded-xl border border-[var(--border)] bg-white px-4 pl-10 text-sm text-[var(--foreground)] outline-none focus:border-[#7E22CE] focus:ring-4 focus:ring-purple-500/10 transition"
+                                />
+                                <IconPhone className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-[var(--muted)]" />
+                              </div>
+                            </div>
+
+                            <div>
+                              <label className="block text-xs font-semibold uppercase tracking-wider text-[var(--muted-strong)] mb-1.5">
+                                Email ID <span className="text-rose-500">*</span>
+                              </label>
+                              <div className="relative">
+                                <input
+                                  name="email"
+                                  type="email"
+                                  required
+                                  value={profileData.email ?? draftInfo?.email ?? ""}
+                                  onChange={(e) =>
+                                    setProfileData((prev: any) => ({ ...prev, email: e.target.value }))
+                                  }
+                                  placeholder="your.email@example.com"
+                                  className="h-12 w-full rounded-xl border border-[var(--border)] bg-white px-4 pl-10 text-sm text-[var(--foreground)] outline-none focus:border-[#7E22CE] focus:ring-4 focus:ring-purple-500/10 transition"
+                                />
+                                <IconMail className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-[var(--muted)]" />
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* RIGHT COLUMN: Education, Employment, Friendship Goals, Hobbies & Bio */}
+                      <div className="space-y-5">
+                        {/* Card 3: Education & Employment */}
+                        <div className="p-5 sm:p-6 rounded-2xl bg-white border border-[var(--border)] shadow-xs space-y-4">
+                          <div className="flex items-center gap-2 pb-2 border-b border-[var(--border)]/60">
+                            <IconSchool className="w-5 h-5 text-[#7E22CE]" />
+                            <h2 className="text-sm font-bold uppercase tracking-wider text-[var(--foreground)]">
+                              3. Education & Employment
+                            </h2>
+                          </div>
+
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            {/* 11. Education */}
+                            <div>
+                              <ModernSelect
+                                label="Education"
+                                required
+                                name="education"
+                                value={profileData.education ?? ""}
+                                options={(() => {
+                                  const opts = POPULAR_EDUCATION_OPTIONS.map((e) => ({ value: e.value, label: e.label }));
+                                  if (profileData.education && !opts.some((o) => o.value.toLowerCase() === profileData.education.toLowerCase())) {
+                                    opts.unshift({ value: profileData.education, label: profileData.education });
+                                  }
+                                  return opts;
+                                })()}
+                                onChange={(val) =>
+                                  setProfileData((prev: any) => ({ ...prev, education: val }))
+                                }
+                                placeholder="Select Education"
+                                searchable
+                                maxHeight="max-h-[220px]"
+                              />
+                            </div>
+
+                            {/* 12. Employment */}
+                            <div>
+                              <ModernSelect
+                                label="Employment"
+                                required
+                                name="employmentStatus"
+                                value={profileData.employmentStatus ?? "Private Sector"}
+                                options={(() => {
+                                  const opts = FRIENDSHIP_EMPLOYMENT_OPTIONS.map((em) => ({ value: em, label: em }));
+                                  if (profileData.employmentStatus && !opts.some((o) => o.value.toLowerCase() === profileData.employmentStatus.toLowerCase())) {
+                                    opts.unshift({ value: profileData.employmentStatus, label: profileData.employmentStatus });
+                                  }
+                                  return opts;
+                                })()}
+                                onChange={(val) =>
+                                  setProfileData((prev: any) => ({ ...prev, employmentStatus: val }))
+                                }
+                                placeholder="Select Employment"
+                                maxHeight="max-h-[220px]"
+                              />
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Card 4: Friendship Preferences & Connection Goals */}
+                        <div className="p-5 sm:p-6 rounded-2xl bg-white border border-[var(--border)] shadow-xs space-y-4">
+                          <div className="flex items-center gap-2 pb-2 border-b border-[var(--border)]/60">
+                            <IconSparkles className="w-5 h-5 text-[#7E22CE]" />
+                            <h2 className="text-sm font-bold uppercase tracking-wider text-[var(--foreground)]">
+                              4. Friendship Goals & Preferences
+                            </h2>
+                          </div>
+
+                          {/* 13. Gender Preference */}
+                          <div>
+                            <label className="block text-xs font-semibold uppercase tracking-wider text-[var(--muted-strong)] mb-1.5">
+                              Gender Preference <span className="text-[11px] font-normal text-slate-500">(Even though we show all profiles, what do you prefer?)</span>
+                            </label>
+                            <ModernSelect
+                              name="genderPreference"
+                              value={profileData.genderPreference ?? profileData.lookingFor ?? "Any / Open to Both"}
+                              options={GENDER_PREFERENCE_OPTIONS.map((g) => ({ value: g, label: g }))}
+                              onChange={(val) =>
+                                setProfileData((prev: any) => ({ ...prev, genderPreference: val, lookingFor: val }))
+                              }
+                              placeholder="Select Gender Preference"
+                            />
+                          </div>
+
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            {/* 14. Friendship Goals */}
+                            <div>
+                              <ModernSelect
+                                label="Friendship Goals"
+                                name="friendshipGoals"
+                                value={profileData.friendshipGoals ?? "Casual Chat & Coffee"}
+                                options={FRIENDSHIP_GOAL_OPTIONS.map((goal) => ({ value: goal, label: goal }))}
+                                onChange={(val) =>
+                                  setProfileData((prev: any) => ({ ...prev, friendshipGoals: val }))
+                                }
+                                placeholder="Select Friendship Goal"
+                                maxHeight="max-h-[220px]"
+                              />
+                            </div>
+
+                            {/* 16. Language Spoken */}
+                            <div>
+                              <ModernSelect
+                                label="Language Spoken"
+                                name="motherTongue"
+                                value={profileData.motherTongue ?? "Malayalam"}
+                                options={(() => {
+                                  const opts = MOTHER_TONGUE_OPTIONS.map((lang) => ({ value: lang, label: lang }));
+                                  if (profileData.motherTongue && !opts.some((o) => o.value.toLowerCase() === profileData.motherTongue.toLowerCase())) {
+                                    opts.unshift({ value: profileData.motherTongue, label: profileData.motherTongue });
+                                  }
+                                  return opts;
+                                })()}
+                                onChange={(val) =>
+                                  setProfileData((prev: any) => ({ ...prev, motherTongue: val }))
+                                }
+                                placeholder="Select Language"
+                                searchable
+                                maxHeight="max-h-[220px]"
+                              />
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Card 5: Hobbies, Interests & About Me */}
+                        <div className="p-5 sm:p-6 rounded-2xl bg-white border border-[var(--border)] shadow-xs space-y-4">
+                          <div className="flex items-center gap-2 pb-2 border-b border-[var(--border)]/60">
+                            <IconHeart className="w-5 h-5 text-[#7E22CE]" />
+                            <h2 className="text-sm font-bold uppercase tracking-wider text-[var(--foreground)]">
+                              5. Hobbies, Interests & Bio
+                            </h2>
+                          </div>
+
+                          {/* 15. Hobbies / Interests */}
+                          <div>
+                            <div className="flex items-center justify-between mb-2">
+                              <label className="text-xs font-semibold uppercase tracking-wider text-[var(--muted-strong)]">
+                                Hobbies / Interests
+                              </label>
+                              <span className="text-[11px] text-slate-500 font-medium">
+                                {(profileData.interests || []).length} selected
+                              </span>
+                            </div>
+                            <div className="flex flex-wrap gap-1.5 mb-3">
+                              {POPULAR_FRIENDSHIP_INTERESTS.map((interest) => {
+                                const currentInterests: string[] = Array.isArray(profileData.interests) ? profileData.interests : [];
+                                const isSelected = currentInterests.includes(interest);
+                                return (
+                                  <button
+                                    key={interest}
+                                    type="button"
+                                    onClick={() => {
+                                      const next = isSelected
+                                        ? currentInterests.filter((i) => i !== interest)
+                                        : [...currentInterests, interest];
+                                      setProfileData((prev: any) => ({ ...prev, interests: next }));
+                                    }}
+                                    className={cn(
+                                      "inline-flex items-center gap-1 px-3 py-1.5 rounded-full text-xs font-semibold transition-all border",
+                                      isSelected
+                                        ? "bg-[#7E22CE] text-white border-[#7E22CE] shadow-2xs"
+                                        : "bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100 hover:border-slate-300"
+                                    )}
+                                  >
+                                    {isSelected && <IconCheck className="w-3 h-3" />}
+                                    <span>{interest}</span>
+                                  </button>
+                                );
+                              })}
+                            </div>
+
+                            {/* Custom interest tag input */}
+                            <div className="flex items-center gap-2">
+                              <input
+                                type="text"
+                                value={customFriendshipInterest}
+                                onChange={(e) => setCustomFriendshipInterest(e.target.value)}
+                                onKeyDown={(e) => {
+                                  if (e.key === "Enter") {
+                                    e.preventDefault();
+                                    const trimmed = customFriendshipInterest.trim();
+                                    if (!trimmed) return;
+                                    const currentInterests: string[] = Array.isArray(profileData.interests) ? profileData.interests : [];
+                                    if (!currentInterests.includes(trimmed)) {
+                                      setProfileData((prev: any) => ({ ...prev, interests: [...currentInterests, trimmed] }));
+                                    }
+                                    setCustomFriendshipInterest("");
+                                  }
+                                }}
+                                placeholder="Add other hobby/interest (press Enter)..."
+                                className="h-9 flex-1 rounded-xl border border-[var(--border)] bg-white px-3 text-xs text-[var(--foreground)] outline-none focus:border-[#7E22CE] focus:ring-2 focus:ring-purple-500/10 transition"
+                              />
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  const trimmed = customFriendshipInterest.trim();
+                                  if (!trimmed) return;
+                                  const currentInterests: string[] = Array.isArray(profileData.interests) ? profileData.interests : [];
+                                  if (!currentInterests.includes(trimmed)) {
+                                    setProfileData((prev: any) => ({ ...prev, interests: [...currentInterests, trimmed] }));
+                                  }
+                                  setCustomFriendshipInterest("");
+                                }}
+                                className="h-9 px-3 rounded-xl bg-purple-50 hover:bg-purple-100 border border-purple-200 text-purple-700 text-xs font-bold transition"
+                              >
+                                + Add
+                              </button>
+                            </div>
+                          </div>
+
+                          {/* 17. About Me / Profile Bio */}
+                          <div>
+                            <div className="flex items-center justify-between mb-1.5">
+                              <label className="text-xs font-semibold uppercase tracking-wider text-[var(--muted-strong)]">
+                                About Me / Profile Bio
+                              </label>
+                              <span className="text-[10px] text-slate-400">
+                                {(profileData.bio || "").length} / 1500
+                              </span>
+                            </div>
+                            <textarea
+                              name="bio"
+                              rows={4}
+                              maxLength={1500}
+                              value={profileData.bio ?? ""}
+                              onChange={(e) =>
+                                setProfileData((prev: any) => ({ ...prev, bio: e.target.value }))
+                              }
+                              placeholder="Tell prospective friends about yourself, your hobbies, favorite weekend activities, and what conversations you enjoy..."
+                              className="w-full rounded-xl border border-[var(--border)] bg-white p-3 text-sm text-[var(--foreground)] outline-none focus:border-[#7E22CE] focus:ring-4 focus:ring-purple-500/10 transition leading-relaxed resize-none"
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Form Submit & Navigation Bar */}
+                    <div className="pt-4 flex items-center justify-between border-t border-[var(--border)]/60">
+                      <div className="flex items-center gap-2 text-xs text-[var(--muted)]">
+                        <IconShieldCheck className="w-4 h-4 text-emerald-600" />
+                        <span>Your data is encrypted & secured</span>
+                      </div>
+
+                      <button
+                        type="submit"
+                        disabled={isLoading}
+                        className="inline-flex items-center gap-2 h-12 px-7 rounded-2xl bg-gradient-to-r from-[#7E22CE] to-[#A855F7] text-white font-bold text-sm shadow-md hover:shadow-lg transition-all active:scale-[0.98] disabled:opacity-50"
+                      >
+                        {isLoading ? (
+                          <>
+                            <IconLoader2 className="h-4 w-4 animate-spin" />
+                            <span>Saving Profile...</span>
+                          </>
+                        ) : (
+                          <>
+                            <span>Continue to Profile Photo</span>
+                            <IconArrowRight className="h-4 w-4" />
+                          </>
+                        )}
+                      </button>
+                    </div>
+                  </form>
+                ) : (
                 <form onSubmit={handleNext} className="space-y-6">
                   {/* Two-Column Responsive Layout for Desktop Mode */}
                   <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 lg:gap-6 items-start">
@@ -2213,6 +2912,7 @@ export default function OnboardingPage() {
                     </button>
                   </div>
                 </form>
+                )}
               </div>
             )}
 

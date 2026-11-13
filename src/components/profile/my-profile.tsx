@@ -28,6 +28,10 @@ import {
   IconMapPin,
   IconLanguage,
   IconCoins,
+  IconHome,
+  IconUser,
+  IconPhone,
+  IconMail,
 } from '@tabler/icons-react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -41,6 +45,7 @@ import type { UserProfile, ProfilePhoto } from '@/services/profile.service';
 import { ProfileDetail } from '@/components/profile/profile-detail';
 import { PartnerPreferencesEditor } from '@/components/preferences/partner-preferences-editor';
 import { ModernSelect } from '@/components/ui/modern-select';
+import { DatePicker } from '@/components/ui/date-picker';
 import { RegistrationCategoryBadge } from '@/components/ui/registration-badge';
 import {
   POPULAR_EDUCATION_OPTIONS,
@@ -51,6 +56,11 @@ import {
   KERALA_DISTRICTS,
   MOTHER_TONGUE_OPTIONS,
   PROFESSION_OPTIONS,
+  NATIONALITY_OPTIONS,
+  FRIENDSHIP_GOAL_OPTIONS,
+  GENDER_PREFERENCE_OPTIONS,
+  POPULAR_FRIENDSHIP_INTERESTS,
+  FRIENDSHIP_EMPLOYMENT_OPTIONS,
 } from '@/lib/data/education-profession-data';
 import { PageLoader } from '@/components/ui/page-loader';
 import { toast } from '@/lib/toast';
@@ -334,6 +344,7 @@ function SafeAlbumPhotoCard({
 
 export function MyProfile({ initialPreview = false }: { initialPreview?: boolean } = {}) {
   const [profile, setProfile] = useState<UserProfile | null>(null);
+  const isFriendship = (profile?.category || profile?.profileFor || '').toLowerCase().includes('friend');
   const [isLoading, setIsLoading] = useState(true);
   const [tab, setTab] = useState<'overview' | 'about' | 'preferences' | 'album'>('overview');
   const [isPreviewOpen, setIsPreviewOpen] = useState(initialPreview);
@@ -380,47 +391,65 @@ export function MyProfile({ initialPreview = false }: { initialPreview?: boolean
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isSavingDetails, setIsSavingDetails] = useState(false);
   const [editDraft, setEditDraft] = useState<{
+    firstName: string;
+    lastName: string;
+    nationality: string;
+    gender: string;
+    dateOfBirth: string;
+    permanentAddress: string;
+    phone: string;
     email: string;
+    education: string;
+    employmentStatus: string;
+    genderPreference: string;
+    friendshipGoals: string;
+    interests: string[];
+    motherTongue: string;
     bio: string;
     family: string;
     lookingFor: string;
     state: string;
     city: string;
-    motherTongue: string;
     annualIncome: string;
     height: string;
-    education: string;
     occupation: string;
-    employmentStatus: string;
     workingPlace: string;
     workLocation: string;
     maritalStatus: string;
     religion: string;
     caste: string;
     lifestyle: string[];
-    interests: string[];
     customLifestyleInput: string;
     customInterestInput: string;
   }>({
+    firstName: '',
+    lastName: '',
+    nationality: 'Indian',
+    gender: '',
+    dateOfBirth: '',
+    permanentAddress: '',
+    phone: '',
     email: '',
+    education: '',
+    employmentStatus: '',
+    genderPreference: '',
+    friendshipGoals: '',
+    interests: [],
+    motherTongue: '',
     bio: '',
     family: '',
     lookingFor: '',
     state: '',
     city: '',
-    motherTongue: '',
     annualIncome: '',
     height: '',
-    education: '',
     occupation: '',
-    employmentStatus: '',
     workingPlace: '',
     workLocation: '',
     maritalStatus: '',
     religion: '',
     caste: '',
     lifestyle: [],
-    interests: [],
     customLifestyleInput: '',
     customInterestInput: '',
   });
@@ -497,10 +526,19 @@ export function MyProfile({ initialPreview = false }: { initialPreview?: boolean
 
       // Pre-fill edit draft
       setEditDraft({
+        firstName: combined.firstName || (combined as any)?.user?.firstName || '',
+        lastName: combined.lastName || (combined as any)?.user?.lastName || '',
+        nationality: combined.nationality || 'Indian',
+        gender: combined.gender || '',
+        dateOfBirth: combined.dateOfBirth || '',
+        permanentAddress: combined.permanentAddress || '',
+        phone: combined.phone || (combined as any)?.user?.phone || '',
         email: combined.email || (combined as any)?.user?.email || '',
         bio: combined.bio || '',
         family: combined.family || '',
         lookingFor: combined.lookingFor || '',
+        genderPreference: (combined as any).genderPreference || combined.lookingFor || 'Any / Open to Both',
+        friendshipGoals: (combined as any).friendshipGoals || 'Casual Chat & Coffee',
         state: combined.state || '',
         city: combined.city || '',
         motherTongue: combined.motherTongue || '',
@@ -670,29 +708,42 @@ export function MyProfile({ initialPreview = false }: { initialPreview?: boolean
     setIsSavingDetails(true);
     try {
       const payload: Partial<UserProfile> = {
-        bio: editDraft.bio,
-        family: editDraft.family,
-        lookingFor: editDraft.lookingFor,
+        firstName: editDraft.firstName,
+        lastName: editDraft.lastName,
+        name: `${editDraft.firstName} ${editDraft.lastName}`.trim(),
+        nationality: editDraft.nationality,
         state: editDraft.state,
         city: editDraft.city,
-        motherTongue: editDraft.motherTongue,
-        annualIncome: editDraft.annualIncome,
-        height: editDraft.height as any,
+        gender: editDraft.gender,
+        dateOfBirth: editDraft.dateOfBirth,
+        permanentAddress: editDraft.permanentAddress,
         education: editDraft.education,
-        occupation: editDraft.occupation,
         employmentStatus: editDraft.employmentStatus,
-        workingPlace: editDraft.workingPlace,
-        workLocation: editDraft.workingPlace,
-        maritalStatus: editDraft.maritalStatus,
-        religion: editDraft.religion,
-        caste: editDraft.caste,
-        lifestyle: editDraft.lifestyle,
+        occupation: editDraft.occupation || editDraft.employmentStatus,
+        motherTongue: editDraft.motherTongue,
+        bio: editDraft.bio,
         interests: editDraft.interests,
+        friendshipGoals: editDraft.friendshipGoals,
+        genderPreference: editDraft.genderPreference,
+        lookingFor: isFriendship ? editDraft.genderPreference : editDraft.lookingFor,
+        ...(!isFriendship ? {
+          family: editDraft.family,
+          annualIncome: editDraft.annualIncome,
+          height: editDraft.height as any,
+          workingPlace: editDraft.workingPlace,
+          workLocation: editDraft.workingPlace,
+          maritalStatus: editDraft.maritalStatus,
+          religion: editDraft.religion,
+          caste: editDraft.caste,
+          lifestyle: editDraft.lifestyle,
+        } : {}),
       };
 
       await profileService.updateProfile('me', payload);
       toast.success('Profile Updated', {
-        description: 'Your background, lifestyle, and values have been saved.',
+        description: isFriendship
+          ? 'Your friendship profile details have been saved.'
+          : 'Your background, lifestyle, and values have been saved.',
       });
       setIsEditModalOpen(false);
       await fetchProfile();
@@ -923,11 +974,11 @@ export function MyProfile({ initialPreview = false }: { initialPreview?: boolean
           const isActive = tab === t;
           const label =
             t === 'about'
-              ? 'Bio & Background'
+              ? (isFriendship ? 'Bio & Interests' : 'Bio & Background')
               : t === 'album'
                 ? `Photo Gallery (${photosCount}/3)`
                 : t === 'preferences'
-                  ? 'Partner Preferences'
+                  ? (isFriendship ? 'Friendship Preferences' : 'Partner Preferences')
                   : 'Overview';
           return (
             <button
@@ -984,6 +1035,14 @@ export function MyProfile({ initialPreview = false }: { initialPreview?: boolean
                 </div>
                 <div className="p-3 rounded-2xl bg-[var(--surface)] border border-[var(--border)]">
                   <span className="text-[11px] font-semibold text-[var(--muted)] block mb-1">
+                    Gender
+                  </span>
+                  <span className="font-bold text-[var(--foreground)] text-sm capitalize">
+                    {profile.gender || 'Not specified'}
+                  </span>
+                </div>
+                <div className="p-3 rounded-2xl bg-[var(--surface)] border border-[var(--border)]">
+                  <span className="text-[11px] font-semibold text-[var(--muted)] block mb-1">
                     Location (City & State)
                   </span>
                   <span className="font-bold text-[var(--foreground)] text-sm">
@@ -993,7 +1052,7 @@ export function MyProfile({ initialPreview = false }: { initialPreview?: boolean
                 </div>
                 <div className="p-3 rounded-2xl bg-[var(--surface)] border border-[var(--border)]">
                   <span className="text-[11px] font-semibold text-[var(--muted)] block mb-1">
-                    Mother Tongue
+                    Languages Spoken
                   </span>
                   <span className="font-bold text-[var(--foreground)] text-sm">
                     {profile.motherTongue || 'Not specified'}
@@ -1001,21 +1060,42 @@ export function MyProfile({ initialPreview = false }: { initialPreview?: boolean
                 </div>
                 <div className="p-3 rounded-2xl bg-[var(--surface)] border border-[var(--border)]">
                   <span className="text-[11px] font-semibold text-[var(--muted)] block mb-1">
-                    Profession & Education
+                    Education & Employment
                   </span>
                   <span className="font-bold text-[var(--foreground)] text-sm">
-                    {profile.occupation || profile.profession || 'Professional'} •{' '}
-                    {profile.education || 'Graduate'}
+                    {profile.education || 'Graduate'} •{' '}
+                    {profile.employmentStatus || profile.occupation || profile.profession || 'Professional'}
                   </span>
                 </div>
-                <div className="p-3 rounded-2xl bg-[var(--surface)] border border-[var(--border)]">
-                  <span className="text-[11px] font-semibold text-[var(--muted)] block mb-1">
-                    Annual Income
-                  </span>
-                  <span className="font-bold text-[var(--foreground)] text-sm">
-                    {profile.annualIncome || (profile as any).income || 'Not specified'}
-                  </span>
-                </div>
+                {isFriendship ? (
+                  <>
+                    <div className="p-3 rounded-2xl bg-[var(--surface)] border border-[var(--border)]">
+                      <span className="text-[11px] font-semibold text-[var(--muted)] block mb-1">
+                        Friendship Goals
+                      </span>
+                      <span className="font-bold text-[#7E22CE] text-sm">
+                        {(profile as any).friendshipGoals || 'Casual Chat & Coffee'}
+                      </span>
+                    </div>
+                    <div className="p-3 rounded-2xl bg-[var(--surface)] border border-[var(--border)]">
+                      <span className="text-[11px] font-semibold text-[var(--muted)] block mb-1">
+                        Gender Preference
+                      </span>
+                      <span className="font-bold text-[var(--foreground)] text-sm">
+                        {(profile as any).genderPreference || profile.lookingFor || 'Any / Open to Both'}
+                      </span>
+                    </div>
+                  </>
+                ) : (
+                  <div className="p-3 rounded-2xl bg-[var(--surface)] border border-[var(--border)] sm:col-span-2">
+                    <span className="text-[11px] font-semibold text-[var(--muted)] block mb-1">
+                      Annual Income
+                    </span>
+                    <span className="font-bold text-[var(--foreground)] text-sm">
+                      {profile.annualIncome || (profile as any).income || 'Not specified'}
+                    </span>
+                  </div>
+                )}
               </div>
             </Card>
 
@@ -1037,32 +1117,68 @@ export function MyProfile({ initialPreview = false }: { initialPreview?: boolean
               </div>
               <p className="text-sm leading-relaxed text-[var(--muted-strong)] bg-[#FFFDFB] p-4 rounded-2xl border border-[var(--border)]">
                 {profile.bio ||
-                  'No bio written yet. Click "Edit Details" to share a thoughtful overview of your background, values, and life aspirations.'}
+                  (isFriendship
+                    ? 'No bio written yet. Click "Edit Bio" to share your hobbies, favorite weekend plans, and what kind of friends you want to meet.'
+                    : 'No bio written yet. Click "Edit Details" to share a thoughtful overview of your background, values, and life aspirations.')}
               </p>
             </Card>
 
-            {/* Family & Partner Expectations Highlight */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <Card className="p-5 rounded-3xl border border-[var(--border)] shadow-sm">
-                <h4 className="font-bold text-sm text-[var(--foreground)] mb-2 flex items-center gap-1.5">
-                  <IconUsers className="h-4 w-4 text-[var(--primary)]" />
-                  Family Background
-                </h4>
-                <p className="text-xs text-[var(--muted-strong)] leading-relaxed">
-                  {profile.family || 'No family background added yet.'}
-                </p>
-              </Card>
+            {/* Preferences or Family Highlights */}
+            {isFriendship ? (
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <Card className="p-5 rounded-3xl border border-[var(--border)] shadow-sm">
+                  <h4 className="font-bold text-sm text-[var(--foreground)] mb-2 flex items-center gap-1.5">
+                    <IconSparkles className="h-4 w-4 text-[#7E22CE]" />
+                    Friendship Goals & Preferences
+                  </h4>
+                  <div className="space-y-1.5 text-xs text-[var(--muted-strong)]">
+                    <p><span className="font-semibold text-slate-800">Goals: </span>{(profile as any).friendshipGoals || 'Casual Chat & Coffee'}</p>
+                    <p><span className="font-semibold text-slate-800">Looking to meet: </span>{(profile as any).genderPreference || profile.lookingFor || 'Any / Open to Both'}</p>
+                    <p><span className="font-semibold text-slate-800">Languages: </span>{profile.motherTongue || 'Malayalam'}</p>
+                  </div>
+                </Card>
 
-              <Card className="p-5 rounded-3xl border border-[var(--border)] shadow-sm">
-                <h4 className="font-bold text-sm text-[var(--foreground)] mb-2 flex items-center gap-1.5">
-                  <IconHeart className="h-4 w-4 text-[var(--primary)]" />
-                  Partner Expectations
-                </h4>
-                <p className="text-xs text-[var(--muted-strong)] leading-relaxed">
-                  {profile.lookingFor || 'Looking for an understanding partner who values mutual respect.'}
-                </p>
-              </Card>
-            </div>
+                <Card className="p-5 rounded-3xl border border-[var(--border)] shadow-sm">
+                  <h4 className="font-bold text-sm text-[var(--foreground)] mb-2 flex items-center gap-1.5">
+                    <IconHeart className="h-4 w-4 text-[#7E22CE]" />
+                    Hobbies & Interests
+                  </h4>
+                  <div className="flex flex-wrap gap-1.5 mt-2">
+                    {profile.interests && profile.interests.length > 0 ? (
+                      profile.interests.map((it: string) => (
+                        <span key={it} className="text-xs font-semibold px-2.5 py-1 rounded-full bg-purple-50 text-purple-700 border border-purple-200">
+                          {it}
+                        </span>
+                      ))
+                    ) : (
+                      <p className="text-xs text-[var(--muted)]">No hobbies added yet. Click &ldquo;Edit Details&rdquo; to add your hobbies.</p>
+                    )}
+                  </div>
+                </Card>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <Card className="p-5 rounded-3xl border border-[var(--border)] shadow-sm">
+                  <h4 className="font-bold text-sm text-[var(--foreground)] mb-2 flex items-center gap-1.5">
+                    <IconUsers className="h-4 w-4 text-[var(--primary)]" />
+                    Family Background
+                  </h4>
+                  <p className="text-xs text-[var(--muted-strong)] leading-relaxed">
+                    {profile.family || 'No family background added yet.'}
+                  </p>
+                </Card>
+
+                <Card className="p-5 rounded-3xl border border-[var(--border)] shadow-sm">
+                  <h4 className="font-bold text-sm text-[var(--foreground)] mb-2 flex items-center gap-1.5">
+                    <IconHeart className="h-4 w-4 text-[var(--primary)]" />
+                    Partner Expectations
+                  </h4>
+                  <p className="text-xs text-[var(--muted-strong)] leading-relaxed">
+                    {profile.lookingFor || 'Looking for an understanding partner who values mutual respect.'}
+                  </p>
+                </Card>
+              </div>
+            )}
           </div>
 
           {/* Right Column: Privacy & Verification */}
@@ -1151,10 +1267,12 @@ export function MyProfile({ initialPreview = false }: { initialPreview?: boolean
             <div className="flex items-center justify-between border-b border-[var(--border)] pb-4 mb-4">
               <div>
                 <h3 className="font-editorial-title text-xl sm:text-2xl font-bold text-[var(--foreground)]">
-                  About You & Personal Bio
+                  {isFriendship ? 'About You & Friendship Bio' : 'About You & Personal Bio'}
                 </h3>
                 <p className="text-xs text-[var(--muted)]">
-                  Introduce yourself authentically to potential partners.
+                  {isFriendship
+                    ? 'Introduce yourself authentically to prospective friends and companions.'
+                    : 'Introduce yourself authentically to potential partners.'}
                 </p>
               </div>
               <Button
@@ -1169,124 +1287,196 @@ export function MyProfile({ initialPreview = false }: { initialPreview?: boolean
             </div>
             <p className="leading-relaxed text-sm text-[var(--muted-strong)] bg-[#FFFDFB] p-5 rounded-2xl border border-[var(--border)]">
               {profile.bio ||
-                'No bio added yet. Write a thoughtful summary of yourself, your family values, and what you seek in a life partner.'}
+                (isFriendship
+                  ? 'No bio added yet. Write a friendly summary of your hobbies, favorite weekend hangouts, and the conversations you enjoy.'
+                  : 'No bio added yet. Write a thoughtful summary of yourself, your family values, and what you seek in a life partner.')}
             </p>
           </Card>
 
-          {/* Family Background */}
-          <Card className="p-6 rounded-3xl border border-[var(--border)] shadow-sm">
-            <div className="flex items-center justify-between border-b border-[var(--border)] pb-4 mb-4">
-              <div>
-                <h3 className="font-editorial-title text-xl font-bold text-[var(--foreground)]">
-                  Family Background & Values
-                </h3>
-                <p className="text-xs text-[var(--muted)]">
-                  Share your family structure, hometown, and shared core values.
-                </p>
-              </div>
-              <Button
-                variant="secondary"
-                size="xs"
-                className="rounded-xl text-xs font-bold gap-1"
-                onClick={() => setIsEditModalOpen(true)}
-              >
-                <IconEdit className="h-3.5 w-3.5 text-[var(--primary)]" />
-                Edit Family
-              </Button>
+          {isFriendship ? (
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+              {/* Friendship Goals & Preferences */}
+              <Card className="p-6 rounded-3xl border border-[var(--border)] shadow-sm">
+                <div className="flex items-center justify-between mb-4 border-b border-[var(--border)] pb-3">
+                  <h4 className="font-bold text-sm text-[var(--foreground)] flex items-center gap-1.5">
+                    <IconSparkles className="h-4 w-4 text-[#7E22CE]" />
+                    Friendship Goals & Preferences
+                  </h4>
+                  <Button
+                    variant="secondary"
+                    size="xs"
+                    onClick={() => setIsEditModalOpen(true)}
+                    className="rounded-xl text-xs font-bold"
+                  >
+                    <IconEdit className="h-3.5 w-3.5 text-[var(--primary)]" />
+                  </Button>
+                </div>
+                <div className="space-y-3 text-xs text-[var(--muted-strong)]">
+                  <div>
+                    <span className="font-semibold text-slate-700 block text-[11px] uppercase tracking-wider mb-0.5">Connection Goals</span>
+                    <span className="font-bold text-[#7E22CE] text-sm">{(profile as any).friendshipGoals || 'Casual Chat & Coffee'}</span>
+                  </div>
+                  <div>
+                    <span className="font-semibold text-slate-700 block text-[11px] uppercase tracking-wider mb-0.5">Gender Preference</span>
+                    <span className="font-bold text-slate-900 text-sm">{(profile as any).genderPreference || profile.lookingFor || 'Any / Open to Both'}</span>
+                  </div>
+                  <div>
+                    <span className="font-semibold text-slate-700 block text-[11px] uppercase tracking-wider mb-0.5">Languages Spoken</span>
+                    <span className="font-bold text-slate-900 text-sm">{profile.motherTongue || 'Malayalam'}</span>
+                  </div>
+                </div>
+              </Card>
+
+              {/* Hobbies & Interests */}
+              <Card className="p-6 rounded-3xl border border-[var(--border)] shadow-sm">
+                <div className="flex items-center justify-between mb-4 border-b border-[var(--border)] pb-3">
+                  <h4 className="font-bold text-sm text-[var(--foreground)] flex items-center gap-1.5">
+                    <IconHeart className="h-4 w-4 text-[#7E22CE]" />
+                    Hobbies & Interests
+                  </h4>
+                  <Button
+                    variant="secondary"
+                    size="xs"
+                    onClick={() => setIsEditModalOpen(true)}
+                    className="rounded-xl text-xs font-bold"
+                  >
+                    <IconEdit className="h-3.5 w-3.5 text-[var(--primary)]" />
+                  </Button>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  {profile.interests && profile.interests.length > 0 ? (
+                    profile.interests.map((tag) => (
+                      <span
+                        key={tag}
+                        className="px-3 py-1.5 rounded-full text-xs font-semibold bg-purple-50 text-purple-700 border border-purple-200"
+                      >
+                        {tag}
+                      </span>
+                    ))
+                  ) : (
+                    <p className="text-xs text-[var(--muted)]">No interest tags added yet. Click edit to choose your favorite activities.</p>
+                  )}
+                </div>
+              </Card>
             </div>
-            <p className="leading-relaxed text-sm text-[var(--muted-strong)] bg-[#FFFDFB] p-5 rounded-2xl border border-[var(--border)]">
-              {profile.family ||
-                'No family background provided yet. Detail your family values and background to help prospective families connect.'}
-            </p>
-          </Card>
-
-          {/* Partner Expectations */}
-          <Card className="p-6 rounded-3xl border border-[var(--border)] shadow-sm">
-            <div className="flex items-center justify-between border-b border-[var(--border)] pb-4 mb-4">
-              <div>
-                <h3 className="font-editorial-title text-xl font-bold text-[var(--foreground)]">
-                  Partner Expectations (Looking For)
-                </h3>
-                <p className="text-xs text-[var(--muted)]">
-                  What kind of person are you hoping to build a future with?
+          ) : (
+            <>
+              {/* Family Background */}
+              <Card className="p-6 rounded-3xl border border-[var(--border)] shadow-sm">
+                <div className="flex items-center justify-between border-b border-[var(--border)] pb-4 mb-4">
+                  <div>
+                    <h3 className="font-editorial-title text-xl font-bold text-[var(--foreground)]">
+                      Family Background & Values
+                    </h3>
+                    <p className="text-xs text-[var(--muted)]">
+                      Share your family structure, hometown, and shared core values.
+                    </p>
+                  </div>
+                  <Button
+                    variant="secondary"
+                    size="xs"
+                    className="rounded-xl text-xs font-bold gap-1"
+                    onClick={() => setIsEditModalOpen(true)}
+                  >
+                    <IconEdit className="h-3.5 w-3.5 text-[var(--primary)]" />
+                    Edit Family
+                  </Button>
+                </div>
+                <p className="leading-relaxed text-sm text-[var(--muted-strong)] bg-[#FFFDFB] p-5 rounded-2xl border border-[var(--border)]">
+                  {profile.family ||
+                    'No family background provided yet. Detail your family values and background to help prospective families connect.'}
                 </p>
-              </div>
-              <Button
-                variant="secondary"
-                size="xs"
-                className="rounded-xl text-xs font-bold gap-1"
-                onClick={() => setIsEditModalOpen(true)}
-              >
-                <IconEdit className="h-3.5 w-3.5 text-[var(--primary)]" />
-                Edit Expectations
-              </Button>
-            </div>
-            <p className="leading-relaxed text-sm text-[var(--muted-strong)] bg-[#FFFDFB] p-5 rounded-2xl border border-[var(--border)]">
-              {profile.lookingFor ||
-                'Describe the values, personality, and aspirations you appreciate in a life partner.'}
-            </p>
-          </Card>
+              </Card>
 
-          {/* Lifestyle & Interests Chips */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-            <Card className="p-6 rounded-3xl border border-[var(--border)] shadow-sm">
-              <div className="flex items-center justify-between mb-4">
-                <h4 className="font-bold text-sm text-[var(--foreground)]">
-                  Lifestyle & Dietary Habits
-                </h4>
-                <Button
-                  variant="secondary"
-                  size="xs"
-                  onClick={() => setIsEditModalOpen(true)}
-                  className="rounded-xl text-xs font-bold"
-                >
-                  <IconEdit className="h-3.5 w-3.5 text-[var(--primary)]" />
-                </Button>
-              </div>
-              <div className="flex flex-wrap gap-2">
-                {profile.lifestyle && profile.lifestyle.length > 0 ? (
-                  profile.lifestyle.map((tag) => (
-                    <span
-                      key={tag}
-                      className="px-3 py-1.5 rounded-full text-xs font-medium bg-[#FAF3EC] text-[#5C1027] border border-[#EAD8C7]"
-                    >
-                      {tag}
-                    </span>
-                  ))
-                ) : (
-                  <p className="text-xs text-[var(--muted)]">No lifestyle tags added yet.</p>
-                )}
-              </div>
-            </Card>
+              {/* Partner Expectations */}
+              <Card className="p-6 rounded-3xl border border-[var(--border)] shadow-sm">
+                <div className="flex items-center justify-between border-b border-[var(--border)] pb-4 mb-4">
+                  <div>
+                    <h3 className="font-editorial-title text-xl font-bold text-[var(--foreground)]">
+                      Partner Expectations (Looking For)
+                    </h3>
+                    <p className="text-xs text-[var(--muted)]">
+                      What kind of person are you hoping to build a future with?
+                    </p>
+                  </div>
+                  <Button
+                    variant="secondary"
+                    size="xs"
+                    className="rounded-xl text-xs font-bold gap-1"
+                    onClick={() => setIsEditModalOpen(true)}
+                  >
+                    <IconEdit className="h-3.5 w-3.5 text-[var(--primary)]" />
+                    Edit Expectations
+                  </Button>
+                </div>
+                <p className="leading-relaxed text-sm text-[var(--muted-strong)] bg-[#FFFDFB] p-5 rounded-2xl border border-[var(--border)]">
+                  {profile.lookingFor ||
+                    'Describe the values, personality, and aspirations you appreciate in a life partner.'}
+                </p>
+              </Card>
 
-            <Card className="p-6 rounded-3xl border border-[var(--border)] shadow-sm">
-              <div className="flex items-center justify-between mb-4">
-                <h4 className="font-bold text-sm text-[var(--foreground)]">Interests & Hobbies</h4>
-                <Button
-                  variant="secondary"
-                  size="xs"
-                  onClick={() => setIsEditModalOpen(true)}
-                  className="rounded-xl text-xs font-bold"
-                >
-                  <IconEdit className="h-3.5 w-3.5 text-[var(--primary)]" />
-                </Button>
-              </div>
-              <div className="flex flex-wrap gap-2">
-                {profile.interests && profile.interests.length > 0 ? (
-                  profile.interests.map((tag) => (
-                    <span
-                      key={tag}
-                      className="px-3 py-1.5 rounded-full text-xs font-medium bg-[var(--surface-muted)] text-[var(--foreground)] border border-[var(--border)]"
+              {/* Lifestyle & Interests Chips */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                <Card className="p-6 rounded-3xl border border-[var(--border)] shadow-sm">
+                  <div className="flex items-center justify-between mb-4">
+                    <h4 className="font-bold text-sm text-[var(--foreground)]">
+                      Lifestyle & Dietary Habits
+                    </h4>
+                    <Button
+                      variant="secondary"
+                      size="xs"
+                      onClick={() => setIsEditModalOpen(true)}
+                      className="rounded-xl text-xs font-bold"
                     >
-                      {tag}
-                    </span>
-                  ))
-                ) : (
-                  <p className="text-xs text-[var(--muted)]">No interest tags added yet.</p>
-                )}
+                      <IconEdit className="h-3.5 w-3.5 text-[var(--primary)]" />
+                    </Button>
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    {profile.lifestyle && profile.lifestyle.length > 0 ? (
+                      profile.lifestyle.map((tag) => (
+                        <span
+                          key={tag}
+                          className="px-3 py-1.5 rounded-full text-xs font-medium bg-[#FAF3EC] text-[#5C1027] border border-[#EAD8C7]"
+                        >
+                          {tag}
+                        </span>
+                      ))
+                    ) : (
+                      <p className="text-xs text-[var(--muted)]">No lifestyle tags added yet.</p>
+                    )}
+                  </div>
+                </Card>
+
+                <Card className="p-6 rounded-3xl border border-[var(--border)] shadow-sm">
+                  <div className="flex items-center justify-between mb-4">
+                    <h4 className="font-bold text-sm text-[var(--foreground)]">Interests & Hobbies</h4>
+                    <Button
+                      variant="secondary"
+                      size="xs"
+                      onClick={() => setIsEditModalOpen(true)}
+                      className="rounded-xl text-xs font-bold"
+                    >
+                      <IconEdit className="h-3.5 w-3.5 text-[var(--primary)]" />
+                    </Button>
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    {profile.interests && profile.interests.length > 0 ? (
+                      profile.interests.map((tag) => (
+                        <span
+                          key={tag}
+                          className="px-3 py-1.5 rounded-full text-xs font-medium bg-[var(--surface-muted)] text-[var(--foreground)] border border-[var(--border)]"
+                        >
+                          {tag}
+                        </span>
+                      ))
+                    ) : (
+                      <p className="text-xs text-[var(--muted)]">No interest tags added yet.</p>
+                    )}
+                  </div>
+                </Card>
               </div>
-            </Card>
-          </div>
+            </>
+          )}
         </div>
       )}
 
@@ -1468,10 +1658,441 @@ export function MyProfile({ initialPreview = false }: { initialPreview?: boolean
       <Modal
         isOpen={isEditModalOpen}
         onClose={() => setIsEditModalOpen(false)}
-        title="Edit Profile Details"
-        description="Update your personal details, location, family background, and lifestyle."
+        title={isFriendship ? 'Edit Friendship Profile Details' : 'Edit Profile Details'}
+        description={
+          isFriendship
+            ? 'Update your personal details, connection goals, and hobbies.'
+            : 'Update your personal details, location, family background, and lifestyle.'
+        }
         size="lg"
       >
+        {isFriendship ? (
+          <div className="space-y-5 max-h-[72vh] overflow-y-auto px-1 pr-2">
+            {/* Contact Account Notice */}
+            <div className="p-3.5 rounded-2xl bg-gradient-to-r from-purple-50 via-fuchsia-50 to-pink-50 border border-purple-200 flex items-center justify-between gap-3">
+              <div className="min-w-0 flex-1">
+                <label className="block text-xs font-bold uppercase tracking-wider text-purple-800 mb-0.5">
+                  Contact Account
+                </label>
+                <div className="text-xs font-bold text-slate-800 truncate">
+                  {profile?.email || (profile as any)?.user?.email || 'Not specified'} • {profile?.phone || (profile as any)?.user?.phone || 'Not specified'}
+                </div>
+                <p className="mt-1 text-[11px] text-purple-900/80 leading-relaxed">
+                  🔒 Confidential identifiers. Address, phone, and email are kept private from other profiles.
+                </p>
+              </div>
+            </div>
+
+            {/* 1. Personal Identity */}
+            <div className="p-4 rounded-2xl bg-slate-50/60 border border-slate-200 space-y-4">
+              <h4 className="text-xs font-bold uppercase tracking-wider text-purple-700 flex items-center gap-1.5">
+                <IconUser className="w-4 h-4" />
+                <span>1. Personal Identity</span>
+              </h4>
+
+              {/* 1. First Name & 2. Last Name */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs font-bold uppercase tracking-wider text-[var(--foreground)] mb-1.5">
+                    First Name <span className="text-rose-500">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    value={editDraft.firstName}
+                    onChange={(e) => setEditDraft({ ...editDraft, firstName: e.target.value })}
+                    placeholder="First Name"
+                    className="w-full rounded-xl border border-[var(--border)] bg-white px-3.5 py-2.5 text-xs text-[var(--foreground)] focus:outline-none focus:ring-2 focus:ring-[#7E22CE]"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold uppercase tracking-wider text-[var(--foreground)] mb-1.5">
+                    Last Name
+                  </label>
+                  <input
+                    type="text"
+                    value={editDraft.lastName}
+                    onChange={(e) => setEditDraft({ ...editDraft, lastName: e.target.value })}
+                    placeholder="Last Name"
+                    className="w-full rounded-xl border border-[var(--border)] bg-white px-3.5 py-2.5 text-xs text-[var(--foreground)] focus:outline-none focus:ring-2 focus:ring-[#7E22CE]"
+                  />
+                </div>
+              </div>
+
+              {/* 3. Nationality, 4. State & 5. District */}
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <div>
+                  <ModernSelect
+                    label="Nationality"
+                    value={editDraft.nationality || 'Indian'}
+                    options={(() => {
+                      const opts = NATIONALITY_OPTIONS.map((n) => ({ value: n, label: n }));
+                      if (editDraft.nationality && !opts.some((o) => o.value.toLowerCase() === editDraft.nationality.toLowerCase())) {
+                        opts.unshift({ value: editDraft.nationality, label: editDraft.nationality });
+                      }
+                      return opts;
+                    })()}
+                    onChange={(val) => setEditDraft({ ...editDraft, nationality: val })}
+                    placeholder="Select Nationality"
+                    searchable
+                    maxHeight="max-h-[220px]"
+                  />
+                </div>
+
+                <div>
+                  <ModernSelect
+                    label="State"
+                    value={editDraft.state || 'Kerala'}
+                    options={(() => {
+                      const opts = POPULAR_INDIAN_STATES.map((s) => ({ value: s, label: s }));
+                      if (editDraft.state && !opts.some((o) => o.value.toLowerCase() === editDraft.state.toLowerCase())) {
+                        opts.unshift({ value: editDraft.state, label: editDraft.state });
+                      }
+                      return opts;
+                    })()}
+                    onChange={(val) => setEditDraft({ ...editDraft, state: val })}
+                    placeholder="Select State"
+                    searchable
+                    maxHeight="max-h-[220px]"
+                  />
+                </div>
+
+                <div>
+                  {(editDraft.state || 'Kerala').toLowerCase().includes('kerala') ? (
+                    <ModernSelect
+                      label="District"
+                      value={editDraft.city}
+                      options={(() => {
+                        const opts = KERALA_DISTRICTS.map((d) => ({ value: d, label: d }));
+                        if (editDraft.city && !opts.some((o) => o.value.toLowerCase() === editDraft.city.toLowerCase())) {
+                          opts.unshift({ value: editDraft.city, label: editDraft.city });
+                        }
+                        return opts;
+                      })()}
+                      onChange={(val) => setEditDraft({ ...editDraft, city: val })}
+                      placeholder="Select District"
+                      searchable
+                      maxHeight="max-h-[220px]"
+                    />
+                  ) : (
+                    <div>
+                      <label className="block text-xs font-bold uppercase tracking-wider text-[var(--foreground)] mb-1.5">
+                        District / City
+                      </label>
+                      <input
+                        type="text"
+                        value={editDraft.city}
+                        onChange={(e) => setEditDraft({ ...editDraft, city: e.target.value })}
+                        placeholder="e.g. Ernakulam"
+                        className="w-full rounded-xl border border-[var(--border)] bg-white px-3.5 py-2.5 text-xs text-[var(--foreground)] focus:outline-none focus:ring-2 focus:ring-[#7E22CE]"
+                      />
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* 6. Gender & 7. Age / DOB */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <ModernSelect
+                    label="Gender"
+                    value={editDraft.gender}
+                    options={[
+                      { value: 'female', label: 'Female' },
+                      { value: 'male', label: 'Male' },
+                      { value: 'other', label: 'Other' },
+                    ]}
+                    onChange={(val) => setEditDraft({ ...editDraft, gender: val })}
+                    placeholder="Select Gender"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold uppercase tracking-wider text-[var(--foreground)] mb-1.5">
+                    Date of Birth
+                  </label>
+                  <DatePicker
+                    defaultValue={editDraft.dateOfBirth}
+                    onChange={(d) => {
+                      if (d) {
+                        setEditDraft((prev) => ({ ...prev, dateOfBirth: d.toISOString() }));
+                      }
+                    }}
+                    placeholder="Select Date of Birth"
+                    minAge={18}
+                    maxAge={70}
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* 2. Confidential Contact & Address */}
+            <div className="p-4 rounded-2xl bg-slate-50/60 border border-slate-200 space-y-4">
+              <div className="flex items-center justify-between">
+                <h4 className="text-xs font-bold uppercase tracking-wider text-emerald-700 flex items-center gap-1.5">
+                  <IconShieldCheck className="w-4 h-4" />
+                  <span>2. Contact & Address (Confidential)</span>
+                </h4>
+                <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">
+                  Private
+                </span>
+              </div>
+
+              {/* 8. Address */}
+              <div>
+                <label className="block text-xs font-bold uppercase tracking-wider text-[var(--foreground)] mb-1.5">
+                  Address (Confidential)
+                </label>
+                <textarea
+                  rows={2}
+                  value={editDraft.permanentAddress}
+                  onChange={(e) => setEditDraft({ ...editDraft, permanentAddress: e.target.value })}
+                  placeholder="House name, street, locality, postal code"
+                  className="w-full rounded-xl border border-[var(--border)] bg-white p-3 text-xs text-[var(--foreground)] focus:outline-none focus:ring-2 focus:ring-[#7E22CE] resize-none"
+                />
+              </div>
+
+              {/* 9. Mob no & 10. Mail Id */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs font-bold uppercase tracking-wider text-[var(--foreground)] mb-1.5">
+                    Mobile Number
+                  </label>
+                  <input
+                    type="tel"
+                    value={editDraft.phone}
+                    onChange={(e) => setEditDraft({ ...editDraft, phone: e.target.value })}
+                    placeholder="10-digit mobile number"
+                    className="w-full rounded-xl border border-[var(--border)] bg-white px-3.5 py-2.5 text-xs text-[var(--foreground)] focus:outline-none focus:ring-2 focus:ring-[#7E22CE]"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold uppercase tracking-wider text-[var(--foreground)] mb-1.5">
+                    Email ID
+                  </label>
+                  <input
+                    type="email"
+                    value={editDraft.email}
+                    onChange={(e) => setEditDraft({ ...editDraft, email: e.target.value })}
+                    placeholder="your.email@example.com"
+                    className="w-full rounded-xl border border-[var(--border)] bg-white px-3.5 py-2.5 text-xs text-[var(--foreground)] focus:outline-none focus:ring-2 focus:ring-[#7E22CE]"
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* 3. Education & Employment */}
+            <div className="p-4 rounded-2xl bg-slate-50/60 border border-slate-200 space-y-4">
+              <h4 className="text-xs font-bold uppercase tracking-wider text-purple-700 flex items-center gap-1.5">
+                <IconBriefcase className="w-4 h-4" />
+                <span>3. Education & Employment</span>
+              </h4>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                {/* 11. Education */}
+                <div>
+                  <ModernSelect
+                    label="Education"
+                    value={editDraft.education}
+                    options={educationOptions}
+                    onChange={(val) => setEditDraft({ ...editDraft, education: val })}
+                    placeholder="Select Education"
+                    searchable
+                    maxHeight="max-h-[220px]"
+                  />
+                </div>
+
+                {/* 12. Employment */}
+                <div>
+                  <ModernSelect
+                    label="Employment"
+                    value={editDraft.employmentStatus || 'Private Sector'}
+                    options={FRIENDSHIP_EMPLOYMENT_OPTIONS.map((em) => ({ value: em, label: em }))}
+                    onChange={(val) => setEditDraft({ ...editDraft, employmentStatus: val, occupation: val })}
+                    placeholder="Select Employment"
+                    maxHeight="max-h-[220px]"
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* 4. Friendship Preferences & Connection Goals */}
+            <div className="p-4 rounded-2xl bg-slate-50/60 border border-slate-200 space-y-4">
+              <h4 className="text-xs font-bold uppercase tracking-wider text-purple-700 flex items-center gap-1.5">
+                <IconSparkles className="w-4 h-4" />
+                <span>4. Friendship Goals & Preferences</span>
+              </h4>
+
+              {/* 13. Gender Preference */}
+              <div>
+                <label className="block text-xs font-bold uppercase tracking-wider text-[var(--foreground)] mb-1.5">
+                  Gender Preference <span className="text-[11px] font-normal text-slate-500">(Even though we show all profiles, what do you prefer?)</span>
+                </label>
+                <ModernSelect
+                  value={editDraft.genderPreference || 'Any / Open to Both'}
+                  options={GENDER_PREFERENCE_OPTIONS.map((g) => ({ value: g, label: g }))}
+                  onChange={(val) => setEditDraft({ ...editDraft, genderPreference: val, lookingFor: val })}
+                  placeholder="Select Gender Preference"
+                />
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                {/* 14. Friendship Goals */}
+                <div>
+                  <ModernSelect
+                    label="Friendship Goals"
+                    value={editDraft.friendshipGoals || 'Casual Chat & Coffee'}
+                    options={FRIENDSHIP_GOAL_OPTIONS.map((goal) => ({ value: goal, label: goal }))}
+                    onChange={(val) => setEditDraft({ ...editDraft, friendshipGoals: val })}
+                    placeholder="Select Friendship Goal"
+                    maxHeight="max-h-[220px]"
+                  />
+                </div>
+
+                {/* 16. Language Spoken */}
+                <div>
+                  <ModernSelect
+                    label="Language Spoken"
+                    value={editDraft.motherTongue || 'Malayalam'}
+                    options={(() => {
+                      const opts = MOTHER_TONGUE_OPTIONS.map((lang) => ({ value: lang, label: lang }));
+                      if (editDraft.motherTongue && !opts.some((o) => o.value.toLowerCase() === editDraft.motherTongue.toLowerCase())) {
+                        opts.unshift({ value: editDraft.motherTongue, label: editDraft.motherTongue });
+                      }
+                      return opts;
+                    })()}
+                    onChange={(val) => setEditDraft({ ...editDraft, motherTongue: val })}
+                    placeholder="Select Language"
+                    searchable
+                    maxHeight="max-h-[220px]"
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* 5. Hobbies, Interests & Bio */}
+            <div className="p-4 rounded-2xl bg-slate-50/60 border border-slate-200 space-y-4">
+              <h4 className="text-xs font-bold uppercase tracking-wider text-purple-700 flex items-center gap-1.5">
+                <IconHeart className="w-4 h-4" />
+                <span>5. Hobbies, Interests & Bio</span>
+              </h4>
+
+              {/* 15. Hobbies / Interests */}
+              <div>
+                <div className="flex items-center justify-between mb-2">
+                  <label className="text-xs font-bold uppercase tracking-wider text-[var(--foreground)]">
+                    Hobbies / Interests
+                  </label>
+                  <span className="text-[11px] text-slate-500 font-medium">
+                    {(editDraft.interests || []).length} selected
+                  </span>
+                </div>
+                <div className="flex flex-wrap gap-1.5 mb-3">
+                  {POPULAR_FRIENDSHIP_INTERESTS.map((interest) => {
+                    const isSelected = editDraft.interests.includes(interest);
+                    return (
+                      <button
+                        key={interest}
+                        type="button"
+                        onClick={() => {
+                          const next = isSelected
+                            ? editDraft.interests.filter((i) => i !== interest)
+                            : [...editDraft.interests, interest];
+                          setEditDraft({ ...editDraft, interests: next });
+                        }}
+                        className={cn(
+                          'inline-flex items-center gap-1 px-3 py-1.5 rounded-full text-xs font-semibold transition-all border',
+                          isSelected
+                            ? 'bg-[#7E22CE] text-white border-[#7E22CE] shadow-2xs'
+                            : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-100 hover:border-slate-300'
+                        )}
+                      >
+                        {isSelected && <IconCheck className="w-3 h-3" />}
+                        <span>{interest}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <input
+                    type="text"
+                    value={editDraft.customInterestInput}
+                    onChange={(e) => setEditDraft({ ...editDraft, customInterestInput: e.target.value })}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        e.preventDefault();
+                        addCustomTag('interests');
+                      }
+                    }}
+                    placeholder="Add custom hobby (press Enter)..."
+                    className="h-9 flex-1 rounded-xl border border-[var(--border)] bg-white px-3 text-xs text-[var(--foreground)] outline-none focus:border-[#7E22CE] focus:ring-2 focus:ring-purple-500/10 transition"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => addCustomTag('interests')}
+                    className="h-9 px-3 rounded-xl bg-purple-50 hover:bg-purple-100 border border-purple-200 text-purple-700 text-xs font-bold transition"
+                  >
+                    + Add
+                  </button>
+                </div>
+              </div>
+
+              {/* 17. About Me / Profile Bio */}
+              <div>
+                <div className="flex justify-between items-center mb-1.5">
+                  <label className="text-xs font-bold uppercase tracking-wider text-[var(--foreground)]">
+                    About Me / Profile Bio
+                  </label>
+                  <span className="text-[10px] text-[var(--muted)]">
+                    {editDraft.bio.length} / 1500 characters
+                  </span>
+                </div>
+                <textarea
+                  rows={4}
+                  maxLength={1500}
+                  value={editDraft.bio}
+                  onChange={(e) => setEditDraft({ ...editDraft, bio: e.target.value })}
+                  placeholder="Tell prospective friends about yourself, your hobbies, favorite weekend activities, and what conversations you enjoy..."
+                  className="w-full rounded-xl border border-[var(--border)] bg-white p-3 text-xs text-[var(--foreground)] focus:outline-none focus:ring-2 focus:ring-[#7E22CE] leading-relaxed resize-none"
+                />
+              </div>
+            </div>
+
+            {/* Modal Actions */}
+            <div className="pt-4 border-t border-[var(--border)] flex justify-end gap-2.5">
+              <Button
+                variant="secondary"
+                size="sm"
+                onClick={() => setIsEditModalOpen(false)}
+                className="rounded-xl"
+              >
+                Cancel
+              </Button>
+              <Button
+                variant="primary"
+                size="sm"
+                onClick={handleSaveDetails}
+                disabled={isSavingDetails}
+                className="rounded-xl font-bold gap-1.5 bg-[#7E22CE] hover:bg-[#6B21A8]"
+              >
+                {isSavingDetails ? (
+                  <>
+                    <IconLoader2 className="h-4 w-4 animate-spin" />
+                    Saving...
+                  </>
+                ) : (
+                  <>
+                    <IconDeviceFloppy className="h-4 w-4" />
+                    Save Details
+                  </>
+                )}
+              </Button>
+            </div>
+          </div>
+        ) : (
         <div className="space-y-5 max-h-[72vh] overflow-y-auto px-1 pr-2">
           {/* Registered Email & Contact Account */}
           <div className="p-3.5 rounded-2xl bg-gradient-to-r from-[#FAF3EC] via-[#FAF0F3] to-[#FFF9F6] border border-[#EAD8C7] flex items-center justify-between gap-3">
@@ -1837,6 +2458,7 @@ export function MyProfile({ initialPreview = false }: { initialPreview?: boolean
             </Button>
           </div>
         </div>
+        )}
       </Modal>
     </div>
   );

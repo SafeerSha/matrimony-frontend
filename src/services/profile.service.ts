@@ -74,6 +74,8 @@ export interface UserProfile {
   profileFor?: string;
   profile?: any;
   lookingFor?: string;
+  friendshipGoals?: string;
+  genderPreference?: string;
   photos?: ProfilePhoto[];
   preferences?: any;
   compatibility?: number;
