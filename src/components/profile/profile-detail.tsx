@@ -122,6 +122,8 @@ function mapApiProfileToDetail(res: any, targetId: string = 'me'): Profile {
     maritalStatus: res.maritalStatus || '',
     religion: res.religion || '',
     caste: res.caste || '',
+    nakshatra: res.nakshatra || res.star || '',
+    star: res.nakshatra || res.star || '',
     gender: res.gender || '',
     profileFor: res.profileFor || 'Self',
     category: res.category || res.profileFor || '',
@@ -1654,6 +1656,17 @@ export function ProfileDetail({
                     {profile.caste || 'Open to all communities'}
                   </p>
                 </div>
+
+                {profile.nakshatra && (
+                  <div className="p-2.5 rounded-xl bg-amber-50/70 border border-amber-200/80">
+                    <p className="text-xs font-bold uppercase tracking-wider text-amber-900">
+                      Birth Star / Nakshatram
+                    </p>
+                    <p className="mt-0.5 text-sm font-bold text-amber-950">
+                      {profile.nakshatra}
+                    </p>
+                  </div>
+                )}
 
                 <div>
                   <p className="text-xs font-semibold uppercase tracking-wider text-[var(--muted)]">

@@ -725,4 +725,35 @@ export const FRIENDSHIP_EMPLOYMENT_OPTIONS: string[] = [
   "Other",
 ];
 
+export const POPULAR_NAKSHATRAS: string[] = [
+  "Aswathi (Ashwini)",
+  "Bharani",
+  "Karthika (Krittika)",
+  "Rohini",
+  "Makayiram (Mrigashirsha)",
+  "Thiruvathira (Ardra)",
+  "Punartham (Punarvasu)",
+  "Pooyam (Pushya)",
+  "Ayilyam (Ashlesha)",
+  "Makam (Magha)",
+  "Pooram (Purva Phalguni)",
+  "Uthram (Uttara Phalguni)",
+  "Atham (Hasta)",
+  "Chithira (Chitra)",
+  "Chothi (Swati)",
+  "Vishakham (Vishakha)",
+  "Anizham (Anuradha)",
+  "Thrikketta (Jyeshtha)",
+  "Moolam (Mula)",
+  "Pooradam (Purva Ashadha)",
+  "Uthradam (Uttara Ashadha)",
+  "Thiruvonam (Shravana)",
+  "Avittam (Dhanishta)",
+  "Chathayam (Shatabhisha)",
+  "Poororuttathi (Purva Bhadrapada)",
+  "Uthrattathi (Uttara Bhadrapada)",
+  "Revathi",
+];
+
+
 

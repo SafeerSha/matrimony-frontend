@@ -63,6 +63,7 @@ import {
   GENDER_PREFERENCE_OPTIONS,
   POPULAR_FRIENDSHIP_INTERESTS,
   FRIENDSHIP_EMPLOYMENT_OPTIONS,
+  POPULAR_NAKSHATRAS,
 } from "@/lib/data/education-profession-data";
 
 const STEPS = [
@@ -276,6 +277,7 @@ export default function OnboardingPage() {
             fatherName: parsed.fatherName || prev.fatherName || "",
             religion: parsed.religion || prev.religion || "Christian",
             caste: parsed.caste || prev.caste || "Roman Catholic Syrian Christian",
+            nakshatra: parsed.nakshatra || parsed.star || prev.nakshatra || prev.star || "",
             permanentAddress: parsed.permanentAddress || prev.permanentAddress || "",
             height: parsed.height || prev.height || "170 cm",
             employmentStatus: parsed.employmentStatus || prev.employmentStatus || "Govt. Employ",
@@ -615,6 +617,7 @@ export default function OnboardingPage() {
       // 4. Religion and Caste
       const religionVal = (formData.get("religion") as string || profileData.religion || "").trim();
       const casteVal = (formData.get("caste") as string || profileData.caste || "").trim();
+      const nakshatraVal = (formData.get("nakshatra") as string || profileData.nakshatra || profileData.star || "").trim();
 
       // 7. Educational qualification
       const eduVal = (formData.get("education") as string || profileData.education || "").trim();
@@ -707,6 +710,7 @@ export default function OnboardingPage() {
         fatherName: fatherNameVal,
         religion: religionVal,
         caste: casteVal,
+        nakshatra: nakshatraVal,
         permanentAddress: permanentAddressVal,
         phone: phoneVal,
         email: emailVal,
@@ -1059,6 +1063,7 @@ export default function OnboardingPage() {
         state: profileData.state,
         religion: profileData.religion,
         caste: profileData.caste,
+        nakshatra: profileData.nakshatra,
         dateOfBirth: profileData.dateOfBirth,
         gender: profileData.gender,
         ...(profileData.lookingFor ? { lookingFor: profileData.lookingFor } : {}),
@@ -2439,6 +2444,54 @@ export default function OnboardingPage() {
                             />
                           </div>
                         </div>
+
+                        {/* Optional Star / Nakshatram for Hindu Candidates (Horoscope compatibility) */}
+                        {(profileData.religion || "").toLowerCase().includes("hindu") && (
+                          <div className="rounded-2xl bg-gradient-to-r from-amber-50/80 via-orange-50/40 to-amber-50/80 border border-amber-200/90 p-4 space-y-2.5 animate-in fade-in">
+                            <div className="flex items-center justify-between">
+                              <label className="text-xs font-bold uppercase tracking-wider text-amber-950 flex items-center gap-1.5">
+                                <span>Birth Star / Nakshatram (നക്ഷത്രം)</span>
+                                <span className="text-[10px] font-semibold text-amber-800 bg-amber-100 px-2 py-0.5 rounded-full border border-amber-300/80">
+                                  Optional for Horoscope
+                                </span>
+                              </label>
+                            </div>
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                              <div>
+                                <ModernSelect
+                                  label="Select Star / Nakshatram"
+                                  name="nakshatraSelect"
+                                  value={POPULAR_NAKSHATRAS.includes(profileData.nakshatra) ? profileData.nakshatra : ""}
+                                  options={POPULAR_NAKSHATRAS.map((s) => ({ value: s, label: s }))}
+                                  onChange={(val) => {
+                                    setProfileData((prev: any) => ({ ...prev, nakshatra: val }));
+                                  }}
+                                  placeholder="Choose from 27 Nakshatrams..."
+                                  searchable
+                                  maxHeight="max-h-[220px]"
+                                />
+                              </div>
+                              <div>
+                                <label className="text-xs font-bold uppercase tracking-wider text-amber-950 block mb-1.5">
+                                  Or Type Custom Star
+                                </label>
+                                <input
+                                  type="text"
+                                  name="nakshatra"
+                                  value={profileData.nakshatra || ""}
+                                  onChange={(e) =>
+                                    setProfileData((prev: any) => ({ ...prev, nakshatra: e.target.value }))
+                                  }
+                                  placeholder="e.g. Rohini, Thiruvathira, Ashwini..."
+                                  className="h-12 w-full rounded-xl border border-amber-300 bg-white px-4 text-sm text-[var(--foreground)] outline-none focus:border-amber-600 focus:ring-4 focus:ring-amber-500/10 transition"
+                                />
+                              </div>
+                            </div>
+                            <p className="text-[11px] text-amber-800/90 leading-relaxed">
+                              Specifying your birth star is helpful for Hindu families looking for horoscope compatibility (Porutham). You may leave this empty if you prefer not to share it.
+                            </p>
+                          </div>
+                        )}
 
                         {/* Gender & Date of Birth */}
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
