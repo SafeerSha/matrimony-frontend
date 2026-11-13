@@ -23,6 +23,7 @@ export type Profile = {
   caste?: string;
   nakshatra?: string;
   star?: string;
+  habits?: string;
   friendshipGoals?: string;
   genderPreference?: string;
   income?: string;

@@ -124,6 +124,7 @@ function mapApiProfileToDetail(res: any, targetId: string = 'me'): Profile {
     caste: res.caste || '',
     nakshatra: res.nakshatra || res.star || '',
     star: res.nakshatra || res.star || '',
+    habits: res.habits || '',
     gender: res.gender || '',
     profileFor: res.profileFor || 'Self',
     category: res.category || res.profileFor || '',
@@ -1704,6 +1705,16 @@ export function ProfileDetail({
                     </span>
                   ))}
                 </div>
+                {Boolean(profile.habits) && (
+                  <div className="mt-3 p-3.5 rounded-2xl bg-emerald-50/60 border border-emerald-100">
+                    <p className="text-xs font-bold uppercase tracking-wider text-emerald-800 mb-1">
+                      Everyday Habits & Routine
+                    </p>
+                    <p className="text-sm text-[var(--foreground)] leading-relaxed whitespace-pre-wrap">
+                      {profile.habits}
+                    </p>
+                  </div>
+                )}
               </div>
 
               <div>

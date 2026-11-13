@@ -44,6 +44,7 @@ export interface UserProfile {
   caste?: string;
   nakshatra?: string;
   star?: string;
+  habits?: string;
   education?: string;
   occupation?: string;
   profession?: string;
@@ -168,6 +169,7 @@ export const profileService = {
     caste?: string;
     nakshatra?: string;
     star?: string;
+    habits?: string;
     friendshipGoals?: string;
     genderPreference?: string;
     fatherName?: string;

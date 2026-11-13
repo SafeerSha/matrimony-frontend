@@ -278,6 +278,7 @@ export default function OnboardingPage() {
             religion: parsed.religion || prev.religion || "Christian",
             caste: parsed.caste || prev.caste || "Roman Catholic Syrian Christian",
             nakshatra: parsed.nakshatra || parsed.star || prev.nakshatra || prev.star || "",
+            habits: parsed.habits || prev.habits || "",
             permanentAddress: parsed.permanentAddress || prev.permanentAddress || "",
             height: parsed.height || prev.height || "170 cm",
             employmentStatus: parsed.employmentStatus || prev.employmentStatus || "Govt. Employ",
@@ -618,6 +619,7 @@ export default function OnboardingPage() {
       const religionVal = (formData.get("religion") as string || profileData.religion || "").trim();
       const casteVal = (formData.get("caste") as string || profileData.caste || "").trim();
       const nakshatraVal = (formData.get("nakshatra") as string || profileData.nakshatra || profileData.star || "").trim();
+      const habitsVal = (formData.get("habits") as string || profileData.habits || "").trim();
 
       // 7. Educational qualification
       const eduVal = (formData.get("education") as string || profileData.education || "").trim();
@@ -711,6 +713,7 @@ export default function OnboardingPage() {
         religion: religionVal,
         caste: casteVal,
         nakshatra: nakshatraVal,
+        habits: habitsVal,
         permanentAddress: permanentAddressVal,
         phone: phoneVal,
         email: emailVal,
@@ -1064,6 +1067,7 @@ export default function OnboardingPage() {
         religion: profileData.religion,
         caste: profileData.caste,
         nakshatra: profileData.nakshatra,
+        habits: profileData.habits,
         dateOfBirth: profileData.dateOfBirth,
         gender: profileData.gender,
         ...(profileData.lookingFor ? { lookingFor: profileData.lookingFor } : {}),
@@ -1399,6 +1403,14 @@ export default function OnboardingPage() {
     regBadge.label === "Friendship" ||
     String(draftInfo?.category || profileData?.category || "").toLowerCase().includes("friend") ||
     String(draftInfo?.profileFor || profileData?.profileFor || "").toLowerCase().includes("friend");
+  const isLivingTogether =
+    regBadge.label === "Live-In" ||
+    selectedCategories.some((c) => c.toLowerCase().includes("living") || c.toLowerCase().includes("live")) ||
+    String(draftInfo?.category || profileData?.category || "").toLowerCase().includes("living") ||
+    String(draftInfo?.category || profileData?.category || "").toLowerCase().includes("live") ||
+    String(draftInfo?.profileFor || profileData?.profileFor || "").toLowerCase().includes("living") ||
+    String(draftInfo?.profileFor || profileData?.profileFor || "").toLowerCase().includes("live") ||
+    (typeof window !== "undefined" && (localStorage.getItem("ishtam_user_category") || "").toLowerCase().includes("live"));
 
   return (
     <main className="relative min-h-screen w-full bg-[var(--background)] flex flex-col">
@@ -2570,6 +2582,33 @@ export default function OnboardingPage() {
                             />
                           </div>
                         </div>
+
+                        {/* Living Together: Habits */}
+                        {isLivingTogether && (
+                          <div className="pt-3 border-t border-[var(--border)]/60">
+                            <div className="flex items-center justify-between mb-1.5">
+                              <label className="block text-xs font-semibold uppercase tracking-wider text-[var(--muted-strong)]">
+                                Habits <span className="text-[10px] text-slate-400 normal-case font-normal">(Optional)</span>
+                              </label>
+                              <span className="text-[10px] font-medium text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">
+                                Living Together
+                              </span>
+                            </div>
+                            <textarea
+                              name="habits"
+                              rows={3}
+                              value={profileData.habits ?? ""}
+                              onChange={(e) =>
+                                setProfileData((prev: any) => ({ ...prev, habits: e.target.value }))
+                              }
+                              placeholder="Share your everyday habits, routine, sleep schedule, smoking/drinking, dietary choices, pet friendliness, or living preferences..."
+                              className="w-full rounded-xl border border-[var(--border)] bg-white p-3.5 text-sm text-[var(--foreground)] outline-none focus:border-[var(--primary)] focus:ring-4 focus:ring-[var(--primary)]/10 transition resize-y"
+                            />
+                            <p className="mt-1 text-[11px] text-[var(--muted)]">
+                              Mention your daily routines, lifestyle habits, pet friendliness, or home preferences to find a compatible living partner.
+                            </p>
+                          </div>
+                        )}
                       </div>
 
                       {/* Card 2: Confidential Contact & Permanent Address (Blended with standard card styles) */}
