@@ -468,9 +468,18 @@ class ChatService {
   async reactToMessage(messageId: string, emoji: string): Promise<ReactionPayload | null> {
     if (this.socket && this.socket.connected) {
       return new Promise<ReactionPayload | null>((resolve) => {
-        const timeout = setTimeout(() => {
+        let settled = false;
+        const cleanup = () => {
+          if (settled) return;
+          settled = true;
+          clearTimeout(timeout);
           this.socket?.off("react_message_ack", onAck);
-          // Fallback to REST on timeout
+          this.socket?.off("error", onError);
+        };
+
+        const timeout = setTimeout(() => {
+          cleanup();
+          // Fallback to REST on socket timeout
           apiFetch<ReactionPayload>(`/chat/messages/${encodeURIComponent(messageId)}/reactions`, {
             method: "POST",
             body: JSON.stringify({ emoji }),
@@ -478,13 +487,26 @@ class ChatService {
         }, 1500);
 
         const onAck = (res: any) => {
-          clearTimeout(timeout);
-          this.socket?.off("react_message_ack", onAck);
+          cleanup();
           resolve(res?.data || res);
         };
 
+        const onError = () => {
+          cleanup();
+          apiFetch<ReactionPayload>(`/chat/messages/${encodeURIComponent(messageId)}/reactions`, {
+            method: "POST",
+            body: JSON.stringify({ emoji }),
+          }).then(resolve).catch(() => resolve(null));
+        };
+
         this.socket?.once("react_message_ack", onAck);
-        this.socket?.emit("react_message", { messageId, emoji });
+        this.socket?.once("error", onError);
+
+        // Emit with ack callback for immediate response
+        this.socket?.emit("react_message", { messageId, emoji }, (res: any) => {
+          cleanup();
+          resolve(res?.data || res);
+        });
       });
     }
 

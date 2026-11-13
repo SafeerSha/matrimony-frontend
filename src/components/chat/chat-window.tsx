@@ -243,18 +243,20 @@ export function ChatWindow({
   // Sync initial reactions from messages prop
   useEffect(() => {
     if (Array.isArray(messages)) {
-      const initialMap: Record<string, MessageReactionItem[]> = {};
+      const map: Record<string, MessageReactionItem[]> = {};
       messages.forEach((m) => {
-        if (m.id && Array.isArray(m.reactions) && m.reactions.length > 0) {
-          initialMap[m.id] = m.reactions;
+        if (m.id && Array.isArray(m.reactions)) {
+          map[m.id] = m.reactions;
         }
       });
-      setMessageReactions((prev) => ({
-        ...initialMap,
-        ...prev,
-      }));
+      setMessageReactions(map);
     }
   }, [messages]);
+
+  // Reset reaction state when switching conversations
+  useEffect(() => {
+    setMessageReactions({});
+  }, [conversation?.id, conversation?.participantId]);
 
   // Subscribe to real-time incoming message reactions from partner
   useEffect(() => {
