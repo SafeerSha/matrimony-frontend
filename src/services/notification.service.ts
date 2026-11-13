@@ -14,6 +14,10 @@ export interface NotificationItem {
     avatarUrl: string | null;
     city?: string | null;
     occupation?: string | null;
+    category?: string | null;
+    profileFor?: string | null;
+    state?: string | null;
+    motherTongue?: string | null;
   } | null;
 }
 

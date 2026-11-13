@@ -77,6 +77,8 @@ const mapProfile = (u: any, idx = 0): Profile => {
     lifestyle: Array.isArray(prof.lifestyle) ? prof.lifestyle : [],
     interests: Array.isArray(prof.interests) ? prof.interests : [],
     lookingFor: prof.lookingFor || '',
+    category: prof.category || user.category || prof.profileFor || 'Marriage',
+    profileFor: prof.profileFor || user.profileFor,
   };
 };
 

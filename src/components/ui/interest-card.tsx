@@ -20,6 +20,7 @@ import { Badge } from './badge';
 import { Button } from './button';
 import { Card } from './card';
 import { VerificationBadge } from './verification-badge';
+import { RegistrationCategoryBadge } from './registration-badge';
 import { cn } from '@/lib/cn';
 import { formatLastActive, getProfileUniqueId } from '@/lib/demo-data';
 
@@ -39,6 +40,8 @@ export interface InterestProfileData {
   verified?: boolean;
   online?: boolean;
   lastActiveAt?: string;
+  category?: string;
+  profileFor?: string;
 }
 
 export interface InterestCardProps {
@@ -140,6 +143,7 @@ export function InterestCard({
       <div className="absolute top-3.5 left-3.5 right-3.5 flex items-start justify-between gap-1.5 z-10 pointer-events-none">
         {/* Left Status Pill */}
         <div className="flex flex-wrap items-center gap-1.5 min-w-0">
+          <RegistrationCategoryBadge profile={profile} size="sm" className="shadow-xs backdrop-blur-md" />
           {type === 'received' && (
             <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-black/45 backdrop-blur-md text-white border border-white/20 text-[11px] font-bold shadow-xs">
               <IconClock className="h-3 w-3 text-amber-300" /> Awaiting Response

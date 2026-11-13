@@ -24,6 +24,7 @@ import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { SectionHeader } from '@/components/ui/section-header';
+import { RegistrationCategoryBadge } from '@/components/ui/registration-badge';
 import { notificationService, parseNotificationText, NotificationItem, authService } from '@/services';
 import { toast } from '@/lib/toast';
 import { cn } from '@/lib/cn';
@@ -38,7 +39,8 @@ export interface NotificationDisplayItem {
   timestamp: number; // for grouping
   group: 'today' | 'yesterday' | 'earlier';
   unread: boolean;
-  profile?: { id: string; name: string; image: string; age?: number; city?: string };
+  category?: string;
+  profile?: { id: string; name: string; image: string; age?: number; city?: string; category?: string };
   link?: string;
   actionLabel?: string;
 }
@@ -128,6 +130,22 @@ export default function NotificationsPage() {
                 }
               : undefined;
 
+            // Resolve sender profile category (Friendship, Live-In, Marriage)
+            let notifCategory = n.sender?.category || undefined;
+            if (!notifCategory && n.sender?.profileFor) {
+              const pf = n.sender.profileFor.toLowerCase();
+              if (pf.includes('friend')) notifCategory = 'Friendship';
+              else if (pf.includes('live') || pf.includes('living')) notifCategory = 'Live-In';
+            }
+            if (!notifCategory && n.content) {
+              const c = n.content.toLowerCase();
+              if (c.includes('friend')) notifCategory = 'Friendship';
+              else if (c.includes('live') || c.includes('living')) notifCategory = 'Live-In';
+            }
+            if (!notifCategory && (n.type.includes('INTEREST') || n.type.includes('MATCH'))) {
+              notifCategory = 'Marriage';
+            }
+
             if (n.type.includes('PAYMENT') || n.type.includes('SUBSCRIPTION')) {
               type = 'SYSTEM';
               if (n.type === 'PAYMENT_SUCCESS') {
@@ -144,14 +162,18 @@ export default function NotificationsPage() {
               actionLabel = 'View Transactions';
             } else if (n.type.includes('INTEREST')) {
               type = 'INTEREST';
-              title = n.sender ? `${n.sender.name} sent you an interest` : 'New Interest Received';
-              text = n.sender?.city ? `Based in ${n.sender.city}` : n.content;
+              const catLabel = notifCategory || 'Marriage';
+              title = n.sender ? `${n.sender.name} sent you a ${catLabel} interest` : `New ${catLabel} Interest Received`;
+              text = n.sender?.city ? `${catLabel} Profile · Based in ${n.sender.city}` : `${catLabel} Profile`;
               link = '/app/interests?tab=received';
               actionLabel = 'Respond to Interest';
             } else if (n.type.includes('MATCH') || n.type.includes('ACCEPTED')) {
               type = 'ACCEPTED';
+              const catLabel = notifCategory || 'Marriage';
               title = n.sender ? `Matched with ${n.sender.name}!` : 'Match Confirmed!';
-              text = 'Both of you are interested in connecting.';
+              text = n.sender?.city
+                ? `${catLabel} Profile · Based in ${n.sender.city}`
+                : `Connected for ${catLabel}.`;
               link = '/app/matches';
               actionLabel = 'View Match';
             } else if (n.type.includes('MESSAGE')) {
@@ -177,7 +199,8 @@ export default function NotificationsPage() {
               timestamp: createdTime,
               group,
               unread: !n.isRead,
-              profile,
+              category: notifCategory,
+              profile: profile ? { ...profile, category: notifCategory } : undefined,
               link,
               actionLabel,
             };
@@ -499,7 +522,7 @@ function NotificationRow({
         <div className="min-w-0 flex-1">
           <div className="flex items-start justify-between gap-2">
             <div>
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 flex-wrap">
                 <h4
                   className={cn(
                     'text-xs sm:text-sm font-bold leading-tight',
@@ -508,11 +531,14 @@ function NotificationRow({
                 >
                   {item.title}
                 </h4>
+                {item.category && (item.type === 'INTEREST' || item.type === 'ACCEPTED') && (
+                  <RegistrationCategoryBadge profile={{ category: item.category }} size="sm" />
+                )}
                 {item.unread && (
-                  <span className="h-2 w-2 rounded-full bg-[#7A1835] ring-2 ring-[#7A1835]/20 animate-pulse" />
+                  <span className="h-2 w-2 rounded-full bg-[#7A1835] ring-2 ring-[#7A1835]/20 animate-pulse shrink-0" />
                 )}
               </div>
-              <p className="mt-1 text-xs text-[#211B1E] leading-relaxed">
+              <p className="mt-1 text-xs text-[#52454A] leading-relaxed">
                 {item.text}
               </p>
             </div>

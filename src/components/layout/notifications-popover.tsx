@@ -13,6 +13,7 @@ import {
   IconCrown,
 } from "@tabler/icons-react";
 import { Avatar } from "@/components/ui/avatar";
+import { RegistrationCategoryBadge } from "@/components/ui/registration-badge";
 import { cn } from "@/lib/cn";
 import { notificationService, parseNotificationText, NotificationItem } from "@/services";
 import { toast } from "@/lib/toast";
@@ -95,6 +96,23 @@ export function NotificationsPopover({ className }: NotificationsPopoverProps) {
             data.map((n) => {
               const link = getNotificationLink(n);
               const sender = n.sender;
+
+              // Resolve sender profile category
+              let notifCategory = sender?.category || undefined;
+              if (!notifCategory && sender?.profileFor) {
+                const pf = sender.profileFor.toLowerCase();
+                if (pf.includes("friend")) notifCategory = "Friendship";
+                else if (pf.includes("live") || pf.includes("living")) notifCategory = "Live-In";
+              }
+              if (!notifCategory && n.content) {
+                const c = n.content.toLowerCase();
+                if (c.includes("friend")) notifCategory = "Friendship";
+                else if (c.includes("live") || c.includes("living")) notifCategory = "Live-In";
+              }
+              if (!notifCategory && (n.type.includes("INTEREST") || n.type.includes("MATCH"))) {
+                notifCategory = "Marriage";
+              }
+
               let title = "Notification";
               if (n.type === "PAYMENT_SUCCESS") {
                 title = "Payment Successful 🎉";
@@ -103,9 +121,11 @@ export function NotificationsPopover({ className }: NotificationsPopoverProps) {
               } else if (n.type === "PAYMENT_PENDING") {
                 title = "Payment Confirmation Pending";
               } else if (n.type === "NEW_INTEREST") {
-                title = sender?.name ? `${sender.name} sent you an interest` : "New interest received";
+                const catLabel = notifCategory || "Marriage";
+                title = sender?.name ? `${sender.name} sent you a ${catLabel} interest` : `New ${catLabel} interest received`;
               } else if (n.type === "MATCH_ACCEPTED") {
-                title = sender?.name ? `Match accepted with ${sender.name}!` : "Match accepted!";
+                const catLabel = notifCategory || "Marriage";
+                title = sender?.name ? `Match accepted with ${sender.name}!` : `Match accepted (${catLabel})!`;
               } else if (n.type === "NEW_MESSAGE") {
                 title = sender?.name ? `Message from ${sender.name}` : "New message";
               }
@@ -114,7 +134,12 @@ export function NotificationsPopover({ className }: NotificationsPopoverProps) {
                 id: n.id,
                 type: n.type,
                 title,
+                category: notifCategory,
                 text: (() => {
+                  if (n.type.includes("INTEREST")) {
+                    const catLabel = notifCategory || "Marriage";
+                    return sender?.city ? `${catLabel} Profile · Based in ${sender.city}` : `${catLabel} Profile`;
+                  }
                   let text = n.content;
                   const colonIdx = text.indexOf(': ');
                   if (colonIdx > -1 && colonIdx < 35) {
@@ -128,6 +153,7 @@ export function NotificationsPopover({ className }: NotificationsPopoverProps) {
                   ? {
                       name: sender.name,
                       image: sender.avatarUrl || "",
+                      category: notifCategory,
                     }
                   : undefined,
               };
@@ -290,9 +316,14 @@ export function NotificationsPopover({ className }: NotificationsPopoverProps) {
 
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center justify-between gap-1">
-                      <p className="text-xs font-bold text-[var(--foreground)] group-hover:text-[var(--primary)] transition-colors leading-tight truncate">
-                        {item.title}
-                      </p>
+                      <div className="flex items-center gap-1.5 min-w-0 flex-wrap">
+                        <p className="text-xs font-bold text-[var(--foreground)] group-hover:text-[var(--primary)] transition-colors leading-tight truncate">
+                          {item.title}
+                        </p>
+                        {item.category && (item.type?.includes("INTEREST") || item.type?.includes("MATCH")) && (
+                          <RegistrationCategoryBadge profile={{ category: item.category }} size="sm" />
+                        )}
+                      </div>
                       <span className="h-2 w-2 rounded-full bg-[var(--primary)] shrink-0" />
                     </div>
                     <p className="mt-0.5 line-clamp-2 text-[11px] text-[var(--muted)] leading-snug">
