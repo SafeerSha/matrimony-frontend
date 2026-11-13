@@ -61,6 +61,7 @@ import {
   GENDER_PREFERENCE_OPTIONS,
   POPULAR_FRIENDSHIP_INTERESTS,
   FRIENDSHIP_EMPLOYMENT_OPTIONS,
+  POPULAR_NAKSHATRAS,
 } from '@/lib/data/education-profession-data';
 import { PageLoader } from '@/components/ui/page-loader';
 import { toast } from '@/lib/toast';
@@ -418,6 +419,7 @@ export function MyProfile({ initialPreview = false }: { initialPreview?: boolean
     maritalStatus: string;
     religion: string;
     caste: string;
+    nakshatra: string;
     lifestyle: string[];
     customLifestyleInput: string;
     customInterestInput: string;
@@ -449,6 +451,7 @@ export function MyProfile({ initialPreview = false }: { initialPreview?: boolean
     maritalStatus: '',
     religion: '',
     caste: '',
+    nakshatra: '',
     lifestyle: [],
     customLifestyleInput: '',
     customInterestInput: '',
@@ -552,6 +555,7 @@ export function MyProfile({ initialPreview = false }: { initialPreview?: boolean
         maritalStatus: combined.maritalStatus || '',
         religion: combined.religion || '',
         caste: combined.caste || '',
+        nakshatra: (combined as any).nakshatra || (combined as any).star || '',
         lifestyle: Array.isArray(combined.lifestyle) ? combined.lifestyle : [],
         interests: Array.isArray(combined.interests) ? combined.interests : [],
         customLifestyleInput: '',
@@ -735,6 +739,7 @@ export function MyProfile({ initialPreview = false }: { initialPreview?: boolean
           maritalStatus: editDraft.maritalStatus,
           religion: editDraft.religion,
           caste: editDraft.caste,
+          nakshatra: editDraft.nakshatra,
           lifestyle: editDraft.lifestyle,
         } : {}),
       };
@@ -1087,14 +1092,34 @@ export function MyProfile({ initialPreview = false }: { initialPreview?: boolean
                     </div>
                   </>
                 ) : (
-                  <div className="p-3 rounded-2xl bg-[var(--surface)] border border-[var(--border)] sm:col-span-2">
-                    <span className="text-[11px] font-semibold text-[var(--muted)] block mb-1">
-                      Annual Income
-                    </span>
-                    <span className="font-bold text-[var(--foreground)] text-sm">
-                      {profile.annualIncome || (profile as any).income || 'Not specified'}
-                    </span>
-                  </div>
+                  <>
+                    <div className="p-3 rounded-2xl bg-[var(--surface)] border border-[var(--border)]">
+                      <span className="text-[11px] font-semibold text-[var(--muted)] block mb-1">
+                        Religion & Community
+                      </span>
+                      <span className="font-bold text-[var(--foreground)] text-sm">
+                        {[profile.religion, profile.caste].filter(Boolean).join(' • ') || 'Not specified'}
+                      </span>
+                    </div>
+                    {((profile.religion || '').toLowerCase().includes('hindu') || Boolean((profile as any).nakshatra)) && (
+                      <div className="p-3 rounded-2xl bg-amber-50/70 border border-amber-200/80">
+                        <span className="text-[11px] font-bold text-amber-900 block mb-1">
+                          Birth Star / Nakshatram
+                        </span>
+                        <span className="font-bold text-amber-950 text-sm">
+                          {(profile as any).nakshatra || (profile as any).star || 'Not specified'}
+                        </span>
+                      </div>
+                    )}
+                    <div className="p-3 rounded-2xl bg-[var(--surface)] border border-[var(--border)]">
+                      <span className="text-[11px] font-semibold text-[var(--muted)] block mb-1">
+                        Annual Income
+                      </span>
+                      <span className="font-bold text-[var(--foreground)] text-sm">
+                        {profile.annualIncome || (profile as any).income || 'Not specified'}
+                      </span>
+                    </div>
+                  </>
                 )}
               </div>
             </Card>
@@ -2310,6 +2335,48 @@ export function MyProfile({ initialPreview = false }: { initialPreview?: boolean
               />
             </div>
           </div>
+
+          {/* Optional Star / Nakshatram for Hindu Candidates (Horoscope compatibility) */}
+          {(editDraft.religion || '').toLowerCase().includes('hindu') && (
+            <div className="rounded-2xl bg-gradient-to-r from-amber-50/80 via-orange-50/40 to-amber-50/80 border border-amber-200/90 p-3.5 space-y-2 animate-in fade-in">
+              <div className="flex items-center justify-between">
+                <label className="text-xs font-bold uppercase tracking-wider text-amber-950 flex items-center gap-1.5">
+                  <span>Birth Star / Nakshatram (നക്ഷത്രം)</span>
+                  <span className="text-[10px] font-semibold text-amber-800 bg-amber-100 px-2 py-0.5 rounded-full border border-amber-300/80">
+                    Optional for Horoscope
+                  </span>
+                </label>
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <ModernSelect
+                    label="Select Star / Nakshatram"
+                    value={POPULAR_NAKSHATRAS.includes(editDraft.nakshatra) ? editDraft.nakshatra : ''}
+                    options={POPULAR_NAKSHATRAS.map((s) => ({ value: s, label: s }))}
+                    onChange={(val) => setEditDraft({ ...editDraft, nakshatra: val })}
+                    placeholder="Choose from 27 Nakshatrams..."
+                    searchable
+                    maxHeight="max-h-[200px]"
+                  />
+                </div>
+                <div>
+                  <label className="text-xs font-bold uppercase tracking-wider text-amber-950 block mb-1.5">
+                    Or Type Custom Star
+                  </label>
+                  <input
+                    type="text"
+                    value={editDraft.nakshatra}
+                    onChange={(e) => setEditDraft({ ...editDraft, nakshatra: e.target.value })}
+                    placeholder="e.g. Rohini, Thiruvathira, Ashwini..."
+                    className="h-10 w-full rounded-xl border border-amber-300 bg-white px-3 text-xs text-[var(--foreground)] outline-none focus:border-amber-600 focus:ring-2 focus:ring-amber-500/10 transition"
+                  />
+                </div>
+              </div>
+              <p className="text-[10px] text-amber-800/80 leading-relaxed">
+                Helpful for prospective matches and families checking horoscope / Porutham compatibility.
+              </p>
+            </div>
+          )}
 
           {/* Bio Textarea (Up to 1,500 chars) */}
           <div>

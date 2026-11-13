@@ -42,6 +42,8 @@ export interface UserProfile {
   gender?: string;
   religion?: string;
   caste?: string;
+  nakshatra?: string;
+  star?: string;
   education?: string;
   occupation?: string;
   profession?: string;
@@ -164,6 +166,10 @@ export const profileService = {
     height?: string | number;
     religion?: string;
     caste?: string;
+    nakshatra?: string;
+    star?: string;
+    friendshipGoals?: string;
+    genderPreference?: string;
     fatherName?: string;
     nationality?: string;
     permanentAddress?: string;
