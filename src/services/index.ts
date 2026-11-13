@@ -9,3 +9,4 @@ export * from "./subscription.service";
 export * from "./support.service";
 export * from "./rm.service";
 export * from "./report.service";
+export * from "./revenue.service";

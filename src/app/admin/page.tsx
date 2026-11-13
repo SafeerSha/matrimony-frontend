@@ -15,10 +15,12 @@ import {
   IconLogout,
   IconCreditCard,
   IconMessageReport,
+  IconCurrencyRupee,
 } from '@tabler/icons-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { PlatformOverview } from '@/components/admin/platform-overview';
+import { RevenueManagement } from '@/components/admin/revenue-management';
 import { UserManagement } from '@/components/admin/user-management';
 import { PlanManagement } from '@/components/admin/plan-management';
 import { RmFeedbackTracker } from '@/components/rm/rm-feedback-tracker';
@@ -27,7 +29,7 @@ import { authService } from '@/services/auth.service';
 import { rmService } from '@/services/rm.service';
 import { toast } from '@/lib/toast';
 
-type AdminTab = 'analytics' | 'users' | 'plans' | 'feedback' | 'moderation' | 'rm-management';
+type AdminTab = 'analytics' | 'revenue' | 'users' | 'plans' | 'feedback' | 'moderation' | 'rm-management';
 
 export default function AdminDashboard() {
   const router = useRouter();
@@ -227,6 +229,17 @@ export default function AdminDashboard() {
           </button>
 
           <button
+            onClick={() => handleSelectTab('revenue')}
+            className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs sm:text-sm font-medium transition-all ${tab === 'revenue'
+              ? 'bg-[var(--primary)] text-white shadow-sm font-semibold'
+              : 'hover:bg-[#3A0A18] text-white/80'
+              }`}
+          >
+            <IconCurrencyRupee className="h-4.5 w-4.5 shrink-0" />
+            <span>Revenue &amp; Finance</span>
+          </button>
+
+          <button
             onClick={() => handleSelectTab('users')}
             className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs sm:text-sm font-medium transition-all ${tab === 'users'
               ? 'bg-[var(--primary)] text-white shadow-sm font-semibold'
@@ -353,6 +366,9 @@ export default function AdminDashboard() {
             </Suspense>
           </div>
         )}
+
+        {/* TAB: REVENUE & FINANCIAL OPERATIONS */}
+        {tab === 'revenue' && <RevenueManagement />}
 
         {/* TAB 2: USER MANAGEMENT */}
         {tab === 'users' && <UserManagement />}

@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, Suspense } from 'react';
-import { useSearchParams } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import {
   IconHeartHandshake,
@@ -17,6 +17,7 @@ import { authService } from '@/services/auth.service';
 import { toast } from '@/lib/toast';
 
 function RmLoginForm() {
+  const router = useRouter();
   const searchParams = useSearchParams();
   const rawNext = searchParams.get('next');
   const nextUrl =
@@ -33,6 +34,10 @@ function RmLoginForm() {
   useEffect(() => {
     let isMounted = true;
     async function checkExistingRm() {
+      // If the user was redirected here with ?next=, do NOT auto-redirect.
+      // This prevents any redirect loops and allows the user to cleanly type their credentials.
+      if (rawNext) return;
+
       const token = authService.getAccessToken();
       if (!token) return;
 
@@ -40,7 +45,7 @@ function RmLoginForm() {
         const user = await authService.getCurrentUser();
         const role = user?.role?.toUpperCase();
         if (isMounted && (role === 'RM' || role === 'ADMIN')) {
-          window.location.href = nextUrl;
+          router.replace('/rm');
         }
       } catch {
         // Not authenticated or expired session; remain on login form
@@ -51,7 +56,7 @@ function RmLoginForm() {
     return () => {
       isMounted = false;
     };
-  }, [nextUrl]);
+  }, [rawNext, router]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

@@ -133,7 +133,11 @@ export async function apiFetch<T>(
       }
 
       const currentPath = window.location.pathname;
-      const isAuthPage = currentPath.startsWith("/login") || currentPath.startsWith("/register");
+      const isAuthPage =
+        currentPath.startsWith("/login") ||
+        currentPath.startsWith("/register") ||
+        currentPath.startsWith("/admin/login") ||
+        currentPath.startsWith("/rm/login");
 
       const tokenSetAt = Number(sessionStorage.getItem("auth_token_set_at") || 0);
       const isWithinGracePeriod = tokenSetAt > 0 && Date.now() - tokenSetAt < 15000;
@@ -214,7 +218,13 @@ export async function apiFetch<T>(
         path.includes("/auth/quick-register") ||
         path.includes("/auth/logout");
 
-      if (!isAuthEndpoint && (currentPath.startsWith("/admin") || currentPath.startsWith("/rm"))) {
+      const isStaffAuthPage =
+        currentPath.startsWith("/admin/login") ||
+        currentPath.startsWith("/rm/login") ||
+        currentPath.startsWith("/login") ||
+        currentPath.startsWith("/register");
+
+      if (!isAuthEndpoint && !isStaffAuthPage && (currentPath.startsWith("/admin") || currentPath.startsWith("/rm"))) {
         if (!isRedirectingToLogin) {
           isRedirectingToLogin = true;
           toast.dismissAll();
@@ -225,7 +235,7 @@ export async function apiFetch<T>(
           );
           const targetLogin = currentPath.startsWith("/admin")
             ? `/admin/login?next=${encodeURIComponent(currentPath)}`
-            : `/login?next=${encodeURIComponent(currentPath)}&error=unauthorized`;
+            : `/rm/login?next=${encodeURIComponent(currentPath)}&error=unauthorized`;
           window.location.href = targetLogin;
         }
         throw new ApiError(response.status, "You do not have permission to access this resource", body);

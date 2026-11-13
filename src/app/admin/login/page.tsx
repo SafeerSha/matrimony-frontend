@@ -32,13 +32,17 @@ function AdminLoginForm() {
   useEffect(() => {
     let isMounted = true;
     async function checkExistingAdmin() {
+      // If the user was redirected here with ?next=, do NOT auto-redirect.
+      // This prevents any redirect loops and allows the administrator to sign in cleanly.
+      if (rawNext) return;
+
       const token = authService.getAccessToken();
       if (!token) return;
 
       try {
         const user = await authService.getCurrentUser();
         if (isMounted && user?.role?.toUpperCase() === 'ADMIN') {
-          window.location.href = nextUrl;
+          router.replace('/admin');
         }
       } catch {
         // Not authenticated or expired session; remain on login form
@@ -49,7 +53,7 @@ function AdminLoginForm() {
     return () => {
       isMounted = false;
     };
-  }, [nextUrl]);
+  }, [rawNext, router]);
 
   // Form submission handler
   const handleSubmit = async (e: React.FormEvent) => {
