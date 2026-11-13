@@ -42,14 +42,16 @@ export interface AnalyticsOverview {
     newSignups: MetricValue;
     paidMembers: MetricValue;
     premiumConversion: MetricValue;
-    churnRate: MetricValue;
+    interestsSent?: MetricValue;
+    churnRate?: MetricValue;
     revenue: MetricValue;
   };
   timeseries: {
     activeUsers: TimeSeriesPoint[];
     newSignups: TimeSeriesPoint[];
+    interestsSent?: TimeSeriesPoint[];
     revenue: TimeSeriesPoint[];
-    churnRate: TimeSeriesPoint[];
+    churnRate?: TimeSeriesPoint[];
   };
   lastUpdated: string;
 }

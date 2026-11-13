@@ -6,6 +6,8 @@ import {
   IconUsers,
   IconUserPlus,
   IconCurrencyDollar,
+  IconCurrencyRupee,
+  IconHeartHandshake,
   IconTrendingDown,
   IconRefresh,
   IconAlertCircle,
@@ -45,7 +47,7 @@ export function PlatformOverview() {
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [statusMessage, setStatusMessage] = useState<string>('');
-  const [activeChartTab, setActiveChartTab] = useState<'activeUsers' | 'newSignups'>('activeUsers');
+  const [activeChartTab, setActiveChartTab] = useState<'activeUsers' | 'newSignups' | 'interestsSent' | 'revenue'>('activeUsers');
 
   // Track active AbortController to guarantee race safety
   const abortControllerRef = useRef<AbortController | null>(null);
@@ -286,30 +288,30 @@ export function PlatformOverview() {
           onRetry={() => fetchData(range)}
         />
 
-        {/* KPI 5: Churn Rate */}
+        {/* KPI 5: Interests & Connections */}
         <KpiCard
-          title="Member Churn Rate"
-          metric={data?.metrics.churnRate}
-          icon={<IconTrendingDown className="h-5 w-5" />}
+          title="Interests & Connections"
+          metric={data?.metrics.interestsSent}
+          icon={<IconHeartHandshake className="h-5 w-5" />}
           iconBg="bg-purple-50 text-purple-600"
-          definition="Percentage of paying subscribers downgraded to BASIC during the period relative to paid members at period start."
-          source={data?.metrics.churnRate?.source}
-          unit="%"
+          definition="Total interests and connection requests sent between members during the selected timeframe."
+          source="Verified member connection requests"
           accentBorderColor="border-l-purple-500"
           isLoading={isLoading}
-          error={error ? 'Failed to load churn rate' : null}
+          error={error ? 'Failed to load connections' : null}
           onRetry={() => fetchData(range)}
         />
 
-        {/* KPI 6: Subscription Revenue (Gated) */}
+        {/* KPI 6: Subscription Revenue */}
         <KpiCard
           title="Subscription Revenue"
           metric={data?.metrics.revenue}
-          icon={<IconCurrencyDollar className="h-5 w-5" />}
-          iconBg="bg-slate-100 text-slate-700"
-          definition="Net recognized revenue across paid subscriptions. Unavailable until payment gateway webhooks are integrated."
-          source="Stripe / Razorpay Webhooks (Pending Integration)"
-          accentBorderColor="border-l-slate-400"
+          icon={<IconCurrencyRupee className="h-5 w-5" />}
+          iconBg="bg-emerald-50 text-emerald-700"
+          definition="Gross recognized revenue collected from verified Cashfree subscription transactions within the period."
+          source="Cashfree Payment Transactions"
+          prefix="₹"
+          accentBorderColor="border-l-emerald-600"
           isLoading={isLoading}
           error={error ? 'Failed to load revenue' : null}
           onRetry={() => fetchData(range)}
@@ -334,7 +336,7 @@ export function PlatformOverview() {
           </div>
 
           {/* Metric Trend Switcher */}
-          <div className="inline-flex items-center rounded-xl bg-[var(--surface-muted)] p-1 border border-[var(--border)] gap-1">
+          <div className="inline-flex items-center rounded-xl bg-[var(--surface-muted)] p-1 border border-[var(--border)] gap-1 flex-wrap">
             <button
               type="button"
               onClick={() => setActiveChartTab('activeUsers')}
@@ -357,6 +359,28 @@ export function PlatformOverview() {
             >
               New Signups
             </button>
+            <button
+              type="button"
+              onClick={() => setActiveChartTab('interestsSent')}
+              className={`px-3 py-1 text-xs font-semibold rounded-lg transition-all ${
+                activeChartTab === 'interestsSent'
+                  ? 'bg-white text-purple-700 shadow-xs font-bold'
+                  : 'text-[var(--muted)] hover:text-[var(--foreground)]'
+              }`}
+            >
+              Interests Sent
+            </button>
+            <button
+              type="button"
+              onClick={() => setActiveChartTab('revenue')}
+              className={`px-3 py-1 text-xs font-semibold rounded-lg transition-all ${
+                activeChartTab === 'revenue'
+                  ? 'bg-white text-emerald-700 shadow-xs font-bold'
+                  : 'text-[var(--muted)] hover:text-[var(--foreground)]'
+              }`}
+            >
+              Revenue (₹)
+            </button>
           </div>
         </div>
 
@@ -377,12 +401,28 @@ export function PlatformOverview() {
               metricName="Active Users"
               height={180}
             />
-          ) : (
+          ) : activeChartTab === 'newSignups' ? (
             <AnalyticsChart
               data={data?.timeseries.newSignups || []}
               color="#2563eb"
               gradientId="signups-grad"
               metricName="New Signups"
+              height={180}
+            />
+          ) : activeChartTab === 'interestsSent' ? (
+            <AnalyticsChart
+              data={data?.timeseries.interestsSent || []}
+              color="#9333ea"
+              gradientId="interests-grad"
+              metricName="Interests Sent"
+              height={180}
+            />
+          ) : (
+            <AnalyticsChart
+              data={data?.timeseries.revenue || []}
+              color="#059669"
+              gradientId="revenue-grad"
+              metricName="Revenue (₹)"
               height={180}
             />
           )}

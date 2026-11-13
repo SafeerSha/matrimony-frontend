@@ -64,13 +64,15 @@ export const analyticsOverviewSchema = z.object({
     paidMembers: metricValueSchema,
     premiumConversion: metricValueSchema,
     revenue: metricValueSchema,
-    churnRate: metricValueSchema,
+    interestsSent: metricValueSchema.optional(),
+    churnRate: metricValueSchema.optional(),
   }),
   timeseries: z.object({
     activeUsers: z.array(timeSeriesPointSchema),
     newSignups: z.array(timeSeriesPointSchema),
+    interestsSent: z.array(timeSeriesPointSchema).optional(),
     revenue: z.array(timeSeriesPointSchema),
-    churnRate: z.array(timeSeriesPointSchema),
+    churnRate: z.array(timeSeriesPointSchema).optional(),
   }),
   lastUpdated: z.string(),
 });
