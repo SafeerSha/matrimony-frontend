@@ -20,6 +20,7 @@ interface KpiCardProps {
   iconBg?: string;
   definition: string;
   source?: string;
+  prefix?: string;
   unit?: string;
   isSnapshot?: boolean;
   isLoading?: boolean;
@@ -46,6 +47,7 @@ export function KpiCard({
   iconBg = 'bg-[var(--primary-light)] text-[var(--primary)]',
   definition,
   source,
+  prefix,
   unit,
   isSnapshot = false,
   isLoading = false,
@@ -146,7 +148,12 @@ export function KpiCard({
       {/* Metric Value */}
       <div className="min-w-0">
         {isAvailable ? (
-          <div className="flex items-baseline gap-1.5">
+          <div className="flex items-baseline gap-1">
+            {prefix && (
+              <span className="text-xl sm:text-2xl font-bold text-[var(--foreground)]">
+                {prefix}
+              </span>
+            )}
             <span className="text-2xl sm:text-3xl font-extrabold text-[var(--foreground)] tracking-tight">
               {val !== null && val !== undefined ? val.toLocaleString() : 'N/A'}
             </span>

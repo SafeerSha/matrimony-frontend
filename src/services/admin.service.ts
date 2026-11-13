@@ -99,6 +99,36 @@ export const adminService = {
     );
   },
 
+  deleteUser: (userId: string) => {
+    return apiFetch<{ success: boolean; message: string }>(
+      `/admin/users/${userId}`,
+      { method: "DELETE" }
+    );
+  },
+
+  resetPassword: (userId: string, password: string) => {
+    return apiFetch<{ success: boolean; message: string }>(
+      `/admin/users/${userId}/reset-password`,
+      {
+        method: "POST",
+        body: JSON.stringify({ password }),
+      }
+    );
+  },
+
+  updateUserDetails: (
+    userId: string,
+    data: { firstName?: string; lastName?: string; email?: string; phone?: string }
+  ) => {
+    return apiFetch<{ success: boolean; message: string; user: any }>(
+      `/admin/users/${userId}`,
+      {
+        method: "PATCH",
+        body: JSON.stringify(data),
+      }
+    );
+  },
+
   banUser: (userId: string) => {
     return apiFetch<{ id: string; email: string; isBanned: boolean }>(`/admin/users/${userId}/ban`, {
       method: "POST",

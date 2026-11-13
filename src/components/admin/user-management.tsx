@@ -25,6 +25,8 @@ import {
   IconEyeOff,
   IconShieldCheck,
   IconKey,
+  IconPencil,
+  IconTrash,
 } from '@tabler/icons-react';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -444,6 +446,426 @@ function CreateUserModal({ isOpen, onClose, onUserCreated }: CreateUserModalProp
         </div>
       </form>
     </Modal>
+  );
+}
+
+// ─── Edit RM Modal ────────────────────────────────────────────────────────
+interface EditRmModalProps {
+  user: AdminUserListItem | null;
+  isOpen: boolean;
+  onClose: () => void;
+  onUserUpdated: (user: AdminUserListItem) => void;
+}
+
+function EditRmModal({ user, isOpen, onClose, onUserUpdated }: EditRmModalProps) {
+  const [firstName, setFirstName] = useState('');
+  const [lastName, setLastName] = useState('');
+  const [email, setEmail] = useState('');
+  const [phone, setPhone] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [formError, setFormError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!isOpen || !user) return;
+    setFirstName(user.firstName || user.profile?.firstName || '');
+    setLastName(user.lastName || user.profile?.lastName || '');
+    setEmail(user.email || '');
+    setPhone(user.phone || '');
+    setFormError(null);
+  }, [isOpen, user]);
+
+  if (!isOpen || !user) return null;
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setFormError(null);
+
+    const cleanFirst = firstName.trim();
+    const cleanLast = lastName.trim();
+    const cleanEmail = email.trim().toLowerCase();
+    const cleanPhone = phone.trim();
+
+    if (!cleanFirst) {
+      setFormError('First name is required.');
+      return;
+    }
+    if (!cleanEmail || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(cleanEmail)) {
+      setFormError('Please enter a valid email address.');
+      return;
+    }
+
+    setIsSubmitting(true);
+    try {
+      await adminService.updateUserDetails(user.id, {
+        firstName: cleanFirst,
+        lastName: cleanLast || undefined,
+        email: cleanEmail,
+        phone: cleanPhone || undefined,
+      });
+
+      toast.success('RM Details Updated', `${cleanFirst}'s details have been updated successfully.`);
+      onUserUpdated({
+        ...user,
+        firstName: cleanFirst,
+        lastName: cleanLast,
+        email: cleanEmail,
+        phone: cleanPhone || null,
+        profile: user.profile
+          ? {
+              ...user.profile,
+              firstName: cleanFirst,
+              lastName: cleanLast,
+            }
+          : undefined,
+      });
+      onClose();
+    } catch (err: any) {
+      const msg = err?.message || 'Failed to update Relationship Manager details.';
+      setFormError(msg);
+      toast.error('Update Failed', msg);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-xs animate-in fade-in duration-150"
+      role="dialog"
+      aria-modal="true"
+    >
+      <div
+        className="w-full max-w-md bg-[var(--surface)] border border-[var(--border)] rounded-2xl shadow-xl overflow-hidden animate-in zoom-in-95 duration-150"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="flex items-center justify-between p-4 sm:p-5 border-b border-[var(--border)]">
+          <div className="flex items-center gap-2.5">
+            <div className="h-8 w-8 rounded-lg bg-amber-100 text-amber-800 flex items-center justify-center font-bold">
+              <IconPencil className="h-4 w-4" />
+            </div>
+            <div>
+              <h3 className="text-base font-bold text-[var(--foreground)]">Edit RM Account</h3>
+              <p className="text-xs text-[var(--muted)]">Update name, email, or contact number.</p>
+            </div>
+          </div>
+          <button
+            onClick={onClose}
+            className="p-1 rounded-lg text-[var(--muted)] hover:text-[var(--foreground)] hover:bg-[var(--surface-muted)] cursor-pointer"
+          >
+            <IconX className="h-4 w-4" />
+          </button>
+        </div>
+
+        <form onSubmit={handleSubmit} className="p-4 sm:p-5 space-y-4">
+          {formError && (
+            <div className="p-3 text-xs text-rose-700 bg-rose-50 border border-rose-200 rounded-xl">
+              {formError}
+            </div>
+          )}
+
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="block text-xs font-semibold text-[var(--foreground)] mb-1">
+                First Name <span className="text-rose-500">*</span>
+              </label>
+              <input
+                type="text"
+                value={firstName}
+                onChange={(e) => setFirstName(e.target.value)}
+                required
+                className="w-full h-9 px-3 text-xs rounded-xl border border-[var(--border)] bg-[var(--background)] outline-none focus:border-[var(--primary)]"
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-semibold text-[var(--foreground)] mb-1">
+                Last Name
+              </label>
+              <input
+                type="text"
+                value={lastName}
+                onChange={(e) => setLastName(e.target.value)}
+                className="w-full h-9 px-3 text-xs rounded-xl border border-[var(--border)] bg-[var(--background)] outline-none focus:border-[var(--primary)]"
+              />
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-xs font-semibold text-[var(--foreground)] mb-1">
+              Email Address <span className="text-rose-500">*</span>
+            </label>
+            <input
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              required
+              className="w-full h-9 px-3 text-xs rounded-xl border border-[var(--border)] bg-[var(--background)] outline-none focus:border-[var(--primary)]"
+            />
+          </div>
+
+          <div>
+            <label className="block text-xs font-semibold text-[var(--foreground)] mb-1">
+              Phone Number
+            </label>
+            <input
+              type="tel"
+              value={phone}
+              onChange={(e) => setPhone(e.target.value)}
+              placeholder="+91..."
+              className="w-full h-9 px-3 text-xs rounded-xl border border-[var(--border)] bg-[var(--background)] outline-none focus:border-[var(--primary)]"
+            />
+          </div>
+
+          <div className="flex items-center justify-end gap-2 pt-2 border-t border-[var(--border)]">
+            <Button size="sm" variant="outline" type="button" onClick={onClose} disabled={isSubmitting}>
+              Cancel
+            </Button>
+            <Button size="sm" type="submit" disabled={isSubmitting} className="bg-[#80132E] hover:bg-[#600E22] text-white">
+              {isSubmitting ? 'Saving…' : 'Save Changes'}
+            </Button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+}
+
+// ─── Reset Password Modal ─────────────────────────────────────────────────
+interface ResetPasswordModalProps {
+  user: AdminUserListItem | null;
+  isOpen: boolean;
+  onClose: () => void;
+}
+
+function ResetPasswordModal({ user, isOpen, onClose }: ResetPasswordModalProps) {
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [formError, setFormError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!isOpen) return;
+    setNewPassword('');
+    setConfirmPassword('');
+    setShowPassword(false);
+    setFormError(null);
+  }, [isOpen]);
+
+  if (!isOpen || !user) return null;
+
+  const displayName = user.firstName ?? user.profile?.firstName ?? user.email?.split('@')[0] ?? 'RM';
+
+  const handleGeneratePassword = () => {
+    const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz23456789!@#$%';
+    let pass = '';
+    for (let i = 0; i < 12; i++) {
+      pass += chars.charAt(Math.floor(Math.random() * chars.length));
+    }
+    setNewPassword(pass);
+    setConfirmPassword(pass);
+    setShowPassword(true);
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setFormError(null);
+
+    if (newPassword.length < 8) {
+      setFormError('Password must be at least 8 characters long.');
+      return;
+    }
+    if (newPassword !== confirmPassword) {
+      setFormError('Passwords do not match.');
+      return;
+    }
+
+    setIsSubmitting(true);
+    try {
+      await adminService.resetPassword(user.id, newPassword);
+      toast.success(
+        'Password Reset Successful',
+        `Password for ${displayName} has been updated. Old sessions have been invalidated.`
+      );
+      onClose();
+    } catch (err: any) {
+      const msg = err?.message || 'Failed to reset password.';
+      setFormError(msg);
+      toast.error('Reset Failed', msg);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-xs animate-in fade-in duration-150"
+      role="dialog"
+      aria-modal="true"
+    >
+      <div
+        className="w-full max-w-md bg-[var(--surface)] border border-[var(--border)] rounded-2xl shadow-xl overflow-hidden animate-in zoom-in-95 duration-150"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="flex items-center justify-between p-4 sm:p-5 border-b border-[var(--border)]">
+          <div className="flex items-center gap-2.5">
+            <div className="h-8 w-8 rounded-lg bg-blue-100 text-blue-800 flex items-center justify-center font-bold">
+              <IconKey className="h-4 w-4" />
+            </div>
+            <div>
+              <h3 className="text-base font-bold text-[var(--foreground)]">Reset Password</h3>
+              <p className="text-xs text-[var(--muted)]">Set a new sign-in password for {displayName}.</p>
+            </div>
+          </div>
+          <button
+            onClick={onClose}
+            className="p-1 rounded-lg text-[var(--muted)] hover:text-[var(--foreground)] hover:bg-[var(--surface-muted)] cursor-pointer"
+          >
+            <IconX className="h-4 w-4" />
+          </button>
+        </div>
+
+        <form onSubmit={handleSubmit} className="p-4 sm:p-5 space-y-4">
+          <div className="p-3 bg-amber-50 border border-amber-200 rounded-xl text-amber-900 text-xs">
+            <span className="font-bold">Security Notice:</span> Setting a new password will revoke all currently active sessions for this account.
+          </div>
+
+          {formError && (
+            <div className="p-3 text-xs text-rose-700 bg-rose-50 border border-rose-200 rounded-xl">
+              {formError}
+            </div>
+          )}
+
+          <div>
+            <div className="flex items-center justify-between mb-1">
+              <label className="text-xs font-semibold text-[var(--foreground)]">
+                New Password <span className="text-rose-500">*</span>
+              </label>
+              <button
+                type="button"
+                onClick={handleGeneratePassword}
+                className="text-[11px] text-[var(--primary)] hover:underline font-semibold cursor-pointer"
+              >
+                Generate Secure Password
+              </button>
+            </div>
+            <div className="relative">
+              <input
+                type={showPassword ? 'text' : 'password'}
+                value={newPassword}
+                onChange={(e) => setNewPassword(e.target.value)}
+                required
+                minLength={8}
+                placeholder="At least 8 characters"
+                className="w-full h-9 pl-3 pr-10 text-xs rounded-xl border border-[var(--border)] bg-[var(--background)] outline-none focus:border-[var(--primary)] font-mono"
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword((p) => !p)}
+                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[var(--muted)] hover:text-[var(--foreground)] cursor-pointer"
+              >
+                {showPassword ? <IconEyeOff className="h-4 w-4" /> : <IconEye className="h-4 w-4" />}
+              </button>
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-xs font-semibold text-[var(--foreground)] mb-1">
+              Confirm New Password <span className="text-rose-500">*</span>
+            </label>
+            <input
+              type={showPassword ? 'text' : 'password'}
+              value={confirmPassword}
+              onChange={(e) => setConfirmPassword(e.target.value)}
+              required
+              minLength={8}
+              placeholder="Re-enter new password"
+              className="w-full h-9 px-3 text-xs rounded-xl border border-[var(--border)] bg-[var(--background)] outline-none focus:border-[var(--primary)] font-mono"
+            />
+          </div>
+
+          <div className="flex items-center justify-end gap-2 pt-2 border-t border-[var(--border)]">
+            <Button size="sm" variant="outline" type="button" onClick={onClose} disabled={isSubmitting}>
+              Cancel
+            </Button>
+            <Button size="sm" type="submit" disabled={isSubmitting} className="bg-blue-600 hover:bg-blue-700 text-white font-bold">
+              {isSubmitting ? 'Resetting…' : 'Reset Password'}
+            </Button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+}
+
+// ─── Delete RM Modal ──────────────────────────────────────────────────────
+interface DeleteRmModalProps {
+  user: AdminUserListItem | null;
+  isOpen: boolean;
+  onClose: () => void;
+  onUserDeleted: (userId: string) => void;
+}
+
+function DeleteRmModal({ user, isOpen, onClose, onUserDeleted }: DeleteRmModalProps) {
+  const [isDeleting, setIsDeleting] = useState(false);
+
+  if (!isOpen || !user) return null;
+
+  const displayName = user.firstName ?? user.profile?.firstName ?? user.email?.split('@')[0] ?? 'RM';
+
+  const handleDelete = async () => {
+    setIsDeleting(true);
+    try {
+      await adminService.purgeUser(user.id);
+      toast.success('Account Deleted', `Relationship Manager account for ${displayName} has been permanently deleted.`);
+      onUserDeleted(user.id);
+      onClose();
+    } catch (err: any) {
+      toast.error('Deletion Failed', err?.message || 'Could not delete user account.');
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-xs animate-in fade-in duration-150"
+      role="dialog"
+      aria-modal="true"
+    >
+      <div
+        className="w-full max-w-sm bg-[var(--surface)] border border-[var(--border)] rounded-2xl shadow-xl overflow-hidden p-5 space-y-4 animate-in zoom-in-95 duration-150"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="flex items-center gap-3">
+          <div className="h-10 w-10 rounded-xl bg-red-100 text-red-700 flex items-center justify-center shrink-0">
+            <IconTrash className="h-5 w-5" />
+          </div>
+          <div>
+            <h3 className="text-base font-bold text-[var(--foreground)]">Delete RM Account</h3>
+            <p className="text-xs text-[var(--muted)]">Permanent deletion confirmation</p>
+          </div>
+        </div>
+
+        <p className="text-xs text-[var(--muted-strong)] leading-relaxed">
+          Are you sure you want to permanently delete the Relationship Manager account for{' '}
+          <strong className="text-[var(--foreground)]">{displayName}</strong> ({user.email})? This action cannot be undone.
+        </p>
+
+        <div className="flex items-center justify-end gap-2 pt-2 border-t border-[var(--border)]">
+          <Button size="sm" variant="outline" onClick={onClose} disabled={isDeleting}>
+            Cancel
+          </Button>
+          <Button
+            size="sm"
+            onClick={handleDelete}
+            disabled={isDeleting}
+            className="bg-red-600 hover:bg-red-700 text-white font-bold"
+          >
+            {isDeleting ? 'Deleting…' : 'Delete Account'}
+          </Button>
+        </div>
+      </div>
+    </div>
   );
 }
 
@@ -972,6 +1394,22 @@ export function UserManagement() {
   const [selectedUserForPlan, setSelectedUserForPlan] = useState<AdminUserListItem | null>(null);
   const [isCreateUserOpen, setIsCreateUserOpen] = useState(false);
 
+  // Relationship Manager Action Modals state
+  const [editingRmUser, setEditingRmUser] = useState<AdminUserListItem | null>(null);
+  const [resetPasswordUser, setResetPasswordUser] = useState<AdminUserListItem | null>(null);
+  const [deletingRmUser, setDeletingRmUser] = useState<AdminUserListItem | null>(null);
+
+  const handleRmUpdated = (updatedUser: AdminUserListItem) => {
+    setUsers((prev) =>
+      prev.map((u) => (u.id === updatedUser.id ? { ...u, ...updatedUser } : u))
+    );
+  };
+
+  const handleRmDeleted = (deletedUserId: string) => {
+    setUsers((prev) => prev.filter((u) => u.id !== deletedUserId));
+    setTotalCount((prev) => Math.max(0, prev - 1));
+  };
+
   // Real-time count of active online users in current list
   const onlineCount = useMemo(() => {
     return users.filter((u) => livePresence[u.id] ?? u.isOnline).length;
@@ -1178,6 +1616,29 @@ export function UserManagement() {
         isOnline={selectedUserForPlan ? (livePresence[selectedUserForPlan.id] ?? selectedUserForPlan.isOnline ?? false) : false}
       />
 
+      {/* Edit Relationship Manager Modal */}
+      <EditRmModal
+        user={editingRmUser}
+        isOpen={Boolean(editingRmUser)}
+        onClose={() => setEditingRmUser(null)}
+        onUserUpdated={handleRmUpdated}
+      />
+
+      {/* Reset RM Password Modal */}
+      <ResetPasswordModal
+        user={resetPasswordUser}
+        isOpen={Boolean(resetPasswordUser)}
+        onClose={() => setResetPasswordUser(null)}
+      />
+
+      {/* Delete RM Account Modal */}
+      <DeleteRmModal
+        user={deletingRmUser}
+        isOpen={Boolean(deletingRmUser)}
+        onClose={() => setDeletingRmUser(null)}
+        onUserDeleted={handleRmDeleted}
+      />
+
       <div className="space-y-6 animate-in fade-in slide-in-from-bottom-3 duration-300">
         {/* ── Header ── */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
@@ -1224,9 +1685,9 @@ export function UserManagement() {
         <Card className="relative z-10 p-4 sm:p-5 border border-[var(--border)] shadow-xs bg-[var(--surface)]">
           <fieldset>
             <legend className="sr-only">Filter users</legend>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-12 gap-3">
+            <div className={`grid grid-cols-1 sm:grid-cols-2 ${roleFilter === 'RM' ? 'lg:grid-cols-12' : 'lg:grid-cols-12'} gap-3`}>
               {/* Search */}
-              <div className="relative lg:col-span-3">
+              <div className={`relative ${roleFilter === 'RM' ? 'lg:col-span-6' : 'lg:col-span-3'}`}>
                 <label htmlFor="um-search" className="sr-only">
                   Search users
                 </label>
@@ -1234,7 +1695,7 @@ export function UserManagement() {
                 <input
                   id="um-search"
                   type="search"
-                  placeholder="Search name, email, ID…"
+                  placeholder={roleFilter === 'RM' ? 'Search RM name, email, ID…' : 'Search name, email, ID…'}
                   value={search}
                   onChange={(e) => handleSearchChange(e.target.value)}
                   maxLength={100}
@@ -1242,25 +1703,27 @@ export function UserManagement() {
                 />
               </div>
 
-              {/* Location */}
-              <div className="relative lg:col-span-3">
-                <label htmlFor="um-location" className="sr-only">
-                  Filter by location
-                </label>
-                <IconMapPin className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-[var(--muted)]" aria-hidden="true" />
-                <input
-                  id="um-location"
-                  type="search"
-                  placeholder="City, state, country…"
-                  value={location}
-                  onChange={(e) => handleLocationChange(e.target.value)}
-                  maxLength={100}
-                  className="w-full h-10 pl-9 pr-3 text-xs sm:text-sm rounded-xl border border-[var(--border)] bg-[var(--background)] outline-none focus:border-[var(--primary)] transition-colors"
-                />
-              </div>
+              {/* Location (hidden when RM role is selected) */}
+              {roleFilter !== 'RM' && (
+                <div className="relative lg:col-span-3">
+                  <label htmlFor="um-location" className="sr-only">
+                    Filter by location
+                  </label>
+                  <IconMapPin className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-[var(--muted)]" aria-hidden="true" />
+                  <input
+                    id="um-location"
+                    type="search"
+                    placeholder="City, state, country…"
+                    value={location}
+                    onChange={(e) => handleLocationChange(e.target.value)}
+                    maxLength={100}
+                    className="w-full h-10 pl-9 pr-3 text-xs sm:text-sm rounded-xl border border-[var(--border)] bg-[var(--background)] outline-none focus:border-[var(--primary)] transition-colors"
+                  />
+                </div>
+              )}
 
               {/* Role */}
-              <div className="lg:col-span-2">
+              <div className={roleFilter === 'RM' ? 'lg:col-span-3' : 'lg:col-span-2'}>
                 <ModernSelect
                   value={roleFilter}
                   onChange={(val) => {
@@ -1274,23 +1737,25 @@ export function UserManagement() {
                 />
               </div>
 
-              {/* Plan */}
-              <div className="lg:col-span-2">
-                <ModernSelect
-                  value={plan}
-                  onChange={(val) => {
-                    setPlan(val as 'ALL' | 'BASIC' | 'PAID');
-                    setPage(1);
-                  }}
-                  options={PLAN_FILTER_OPTIONS}
-                  size="sm"
-                  ariaLabel="Filter by plan"
-                  triggerClassName="border-[var(--border)] bg-[var(--background)] hover:border-[var(--primary)]/50 text-xs sm:text-sm font-medium"
-                />
-              </div>
+              {/* Plan (hidden when RM role is selected) */}
+              {roleFilter !== 'RM' && (
+                <div className="lg:col-span-2">
+                  <ModernSelect
+                    value={plan}
+                    onChange={(val) => {
+                      setPlan(val as 'ALL' | 'BASIC' | 'PAID');
+                      setPage(1);
+                    }}
+                    options={PLAN_FILTER_OPTIONS}
+                    size="sm"
+                    ariaLabel="Filter by plan"
+                    triggerClassName="border-[var(--border)] bg-[var(--background)] hover:border-[var(--primary)]/50 text-xs sm:text-sm font-medium"
+                  />
+                </div>
+              )}
 
               {/* Status */}
-              <div className="lg:col-span-2">
+              <div className={roleFilter === 'RM' ? 'lg:col-span-3' : 'lg:col-span-2'}>
                 <ModernSelect
                   value={status}
                   onChange={(val) => {
@@ -1446,51 +1911,56 @@ export function UserManagement() {
                           {!u.email && !u.phone && (
                             <span className="text-[var(--muted)] italic text-[11px]">No contact details</span>
                           )}
-                          <div className="flex items-center gap-1.5 text-[var(--muted)] pt-0.5 truncate">
-                            <IconMapPin className="h-3.5 w-3.5 text-[var(--primary)] shrink-0" />
-                            <span className="truncate">{locationText}</span>
-                          </div>
+                          {/* Location (hidden for RM staff) */}
+                          {u.role !== 'RM' && (
+                            <div className="flex items-center gap-1.5 text-[var(--muted)] pt-0.5 truncate">
+                              <IconMapPin className="h-3.5 w-3.5 text-[var(--primary)] shrink-0" />
+                              <span className="truncate">{locationText}</span>
+                            </div>
+                          )}
                         </div>
 
-                        {/* Plan Status Row */}
-                        <div className="flex items-center justify-between pt-2 border-t border-[var(--border)] text-xs">
-                          <span className="text-[var(--muted-strong)] font-semibold flex items-center gap-1.5">
-                            <IconCrown className="h-3.5 w-3.5 text-amber-600 shrink-0" />
-                            Plan Status:
-                          </span>
-                          <div className="flex items-center gap-1.5">
-                            <button
-                              type="button"
-                              onClick={() => openAssignPlanModal(u)}
-                              disabled={isActing}
-                              className="group inline-flex items-center gap-1 focus:outline-none"
-                              title="Click to manage subscription plan"
-                            >
-                              <Badge
-                                tone={isPaid ? 'accent' : 'default'}
-                                className={`cursor-pointer transition-all hover:scale-105 ${isPaid
-                                    ? 'bg-amber-100 text-amber-900 border-amber-300 font-bold'
-                                    : 'bg-slate-100 text-slate-700 font-medium'
-                                  }`}
+                        {/* Plan Status Row (hidden for RM staff) */}
+                        {u.role !== 'RM' && (
+                          <div className="flex items-center justify-between pt-2 border-t border-[var(--border)] text-xs">
+                            <span className="text-[var(--muted-strong)] font-semibold flex items-center gap-1.5">
+                              <IconCrown className="h-3.5 w-3.5 text-amber-600 shrink-0" />
+                              Plan Status:
+                            </span>
+                            <div className="flex items-center gap-1.5">
+                              <button
+                                type="button"
+                                onClick={() => openAssignPlanModal(u)}
+                                disabled={isActing}
+                                className="group inline-flex items-center gap-1 focus:outline-none"
+                                title="Click to manage subscription plan"
                               >
-                                {isPaid && <IconCrown className="h-3 w-3 text-amber-600 inline mr-1" />}
-                                {u.subscription?.tier ? `${u.subscription.tier} Plan` : isPaid ? 'Paid Tier' : 'Basic Tier'}
-                              </Badge>
-                            </button>
-                            <Button
-                              size="xs"
-                              variant="ghost"
-                              onClick={() => openAssignPlanModal(u)}
-                              disabled={isActing}
-                              className="h-6 px-1.5 text-[11px] font-semibold text-[var(--primary)] hover:bg-[var(--primary)]/10"
-                            >
-                              Change
-                            </Button>
+                                <Badge
+                                  tone={isPaid ? 'accent' : 'default'}
+                                  className={`cursor-pointer transition-all hover:scale-105 ${isPaid
+                                      ? 'bg-amber-100 text-amber-900 border-amber-300 font-bold'
+                                      : 'bg-slate-100 text-slate-700 font-medium'
+                                    }`}
+                                >
+                                  {isPaid && <IconCrown className="h-3 w-3 text-amber-600 inline mr-1" />}
+                                  {u.subscription?.tier ? `${u.subscription.tier} Plan` : isPaid ? 'Paid Tier' : 'Basic Tier'}
+                                </Badge>
+                              </button>
+                              <Button
+                                size="xs"
+                                variant="ghost"
+                                onClick={() => openAssignPlanModal(u)}
+                                disabled={isActing}
+                                className="h-6 px-1.5 text-[11px] font-semibold text-[var(--primary)] hover:bg-[var(--primary)]/10"
+                              >
+                                Change
+                              </Button>
+                            </div>
                           </div>
-                        </div>
+                        )}
 
-                        {/* Active Expiry details */}
-                        {u.subscription?.expiresAt && (
+                        {/* Active Expiry details (hidden for RM staff) */}
+                        {u.role !== 'RM' && u.subscription?.expiresAt && (
                           <div className="text-[11px] text-amber-900/90 font-medium flex items-center justify-between pt-0.5">
                             <span>Active permit:</span>
                             <span>Expires {new Date(u.subscription.expiresAt).toLocaleDateString()}</span>
@@ -1505,38 +1975,94 @@ export function UserManagement() {
                         )}
                       </div>
 
-                      {/* Mobile Actions: Assign Plan & Block / Unblock */}
-                      <div className="grid grid-cols-2 gap-2 pt-1">
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          disabled={isActing}
-                          onClick={() => openAssignPlanModal(u)}
-                          className="w-full text-xs h-8 px-2.5 flex items-center justify-center gap-1.5 font-semibold text-amber-800 border-amber-300 hover:bg-amber-50"
-                        >
-                          <IconCrown className="h-3.5 w-3.5 text-amber-600 shrink-0" />
-                          <span>Assign Plan</span>
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          disabled={isActing}
-                          onClick={() => confirmBlock(u)}
-                          className={`w-full text-xs h-8 px-2.5 flex items-center justify-center gap-1.5 font-semibold transition-colors ${isBlocked
-                              ? 'text-emerald-700 border-emerald-300 hover:bg-emerald-50'
-                              : 'text-red-600 border-red-200 hover:bg-red-50'
+                      {/* Mobile Actions: RM Actions vs Normal User Actions */}
+                      {u.role === 'RM' ? (
+                        <div className="grid grid-cols-2 gap-2 pt-1">
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            disabled={isActing}
+                            onClick={() => setEditingRmUser(u)}
+                            className="w-full text-xs h-8 px-2 flex items-center justify-center gap-1 font-semibold text-[var(--foreground)] hover:bg-[var(--surface-muted)] cursor-pointer"
+                          >
+                            <IconPencil className="h-3.5 w-3.5 text-[var(--muted-strong)]" />
+                            <span>Edit Details</span>
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            disabled={isActing}
+                            onClick={() => setResetPasswordUser(u)}
+                            className="w-full text-xs h-8 px-2 flex items-center justify-center gap-1 font-semibold text-blue-700 border-blue-200 hover:bg-blue-50 cursor-pointer"
+                          >
+                            <IconKey className="h-3.5 w-3.5 text-blue-600" />
+                            <span>Reset Pass</span>
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            disabled={isActing}
+                            onClick={() => confirmBlock(u)}
+                            className={`w-full text-xs h-8 px-2 flex items-center justify-center gap-1 font-semibold transition-colors cursor-pointer ${
+                              isBlocked
+                                ? 'text-emerald-700 border-emerald-300 hover:bg-emerald-50'
+                                : 'text-amber-700 border-amber-200 hover:bg-amber-50'
                             }`}
-                        >
-                          {isActing ? (
-                            <span className="h-3.5 w-3.5 border border-current border-t-transparent rounded-full animate-spin" />
-                          ) : isBlocked ? (
-                            <IconUserCheck className="h-3.5 w-3.5" />
-                          ) : (
-                            <IconBan className="h-3.5 w-3.5" />
-                          )}
-                          <span>{isBlocked ? 'Unblock' : 'Block User'}</span>
-                        </Button>
-                      </div>
+                          >
+                            {isActing ? (
+                              <span className="h-3.5 w-3.5 border border-current border-t-transparent rounded-full animate-spin" />
+                            ) : isBlocked ? (
+                              <IconUserCheck className="h-3.5 w-3.5" />
+                            ) : (
+                              <IconBan className="h-3.5 w-3.5" />
+                            )}
+                            <span>{isBlocked ? 'Unblock' : 'Block Access'}</span>
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            disabled={isActing}
+                            onClick={() => setDeletingRmUser(u)}
+                            className="w-full text-xs h-8 px-2 flex items-center justify-center gap-1 font-semibold text-red-600 border-red-200 hover:bg-red-50 cursor-pointer"
+                          >
+                            <IconTrash className="h-3.5 w-3.5 text-red-600" />
+                            <span>Delete Account</span>
+                          </Button>
+                        </div>
+                      ) : (
+                        <div className="grid grid-cols-2 gap-2 pt-1">
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            disabled={isActing}
+                            onClick={() => openAssignPlanModal(u)}
+                            className="w-full text-xs h-8 px-2.5 flex items-center justify-center gap-1.5 font-semibold text-amber-800 border-amber-300 hover:bg-amber-50"
+                          >
+                            <IconCrown className="h-3.5 w-3.5 text-amber-600 shrink-0" />
+                            <span>Assign Plan</span>
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            disabled={isActing}
+                            onClick={() => confirmBlock(u)}
+                            className={`w-full text-xs h-8 px-2.5 flex items-center justify-center gap-1.5 font-semibold transition-colors ${
+                              isBlocked
+                                ? 'text-emerald-700 border-emerald-300 hover:bg-emerald-50'
+                                : 'text-red-600 border-red-200 hover:bg-red-50'
+                            }`}
+                          >
+                            {isActing ? (
+                              <span className="h-3.5 w-3.5 border border-current border-t-transparent rounded-full animate-spin" />
+                            ) : isBlocked ? (
+                              <IconUserCheck className="h-3.5 w-3.5" />
+                            ) : (
+                              <IconBan className="h-3.5 w-3.5" />
+                            )}
+                            <span>{isBlocked ? 'Unblock' : 'Block User'}</span>
+                          </Button>
+                        </div>
+                      )}
                     </div>
                   );
                 })}
@@ -1547,10 +2073,10 @@ export function UserManagement() {
                 <table className="w-full text-left border-collapse text-xs sm:text-sm">
                   <thead>
                     <tr className="border-b border-[var(--border)] bg-[var(--surface-muted)] text-[var(--muted-strong)] font-semibold">
-                      <th scope="col" className="p-3.5 sm:p-4">User / Profile</th>
+                      <th scope="col" className="p-3.5 sm:p-4">{roleFilter === 'RM' ? 'Staff / RM User' : 'User / Profile'}</th>
                       <th scope="col" className="p-3.5 sm:p-4">Contact</th>
-                      <th scope="col" className="p-3.5 sm:p-4">Location</th>
-                      <th scope="col" className="p-3.5 sm:p-4">Plan</th>
+                      {roleFilter !== 'RM' && <th scope="col" className="p-3.5 sm:p-4">Location</th>}
+                      {roleFilter !== 'RM' && <th scope="col" className="p-3.5 sm:p-4">Plan</th>}
                       <th scope="col" className="p-3.5 sm:p-4">Status</th>
                       <th scope="col" className="p-3.5 sm:p-4 text-right">Actions</th>
                     </tr>
@@ -1642,43 +2168,55 @@ export function UserManagement() {
                             </div>
                           </td>
 
-                          {/* Location */}
-                          <td className="p-3.5 sm:p-4 text-xs">
-                            <div className="flex items-center gap-1.5 text-[var(--foreground)]">
-                              <IconMapPin className="h-3.5 w-3.5 text-[var(--primary)] shrink-0" aria-hidden="true" />
-                              <span className="truncate max-w-[160px]">{locationText}</span>
-                            </div>
-                          </td>
-
-                          {/* Plan management */}
-                          <td className="p-3.5 sm:p-4">
-                            <div className="flex flex-col gap-0.5">
-                              <button
-                                type="button"
-                                onClick={() => openAssignPlanModal(u)}
-                                disabled={isActing}
-                                aria-label={`Manage plan for ${displayName} — currently ${isPaid ? (u.subscription?.tier || 'Paid') : 'Basic'}`}
-                                title="Click to manage subscription plan"
-                                className="group inline-flex items-center gap-1.5 focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)] rounded self-start"
-                              >
-                                <Badge
-                                  tone={isPaid ? 'accent' : 'default'}
-                                  className={`cursor-pointer transition-all group-hover:scale-105 ${isPaid
-                                      ? 'bg-amber-100 text-amber-900 border-amber-300 font-semibold'
-                                      : 'bg-slate-100 text-slate-700 font-medium'
-                                    }`}
-                                >
-                                  {isPaid && <IconCrown className="h-3 w-3 text-amber-600 inline mr-1" aria-hidden="true" />}
-                                  {isPaid ? (u.subscription?.tier || 'Paid Tier') : 'Basic'}
-                                </Badge>
-                              </button>
-                              {isPaid && u.subscription?.expiresAt && (
-                                <span className="text-[10px] text-[var(--muted-strong)]">
-                                  Exp: {new Date(u.subscription.expiresAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}
-                                </span>
+                          {/* Location (hidden when roleFilter === 'RM') */}
+                          {roleFilter !== 'RM' && (
+                            <td className="p-3.5 sm:p-4 text-xs">
+                              {u.role === 'RM' ? (
+                                <span className="text-[var(--muted)] text-xs font-mono">—</span>
+                              ) : (
+                                <div className="flex items-center gap-1.5 text-[var(--foreground)]">
+                                  <IconMapPin className="h-3.5 w-3.5 text-[var(--primary)] shrink-0" aria-hidden="true" />
+                                  <span className="truncate max-w-[160px]">{locationText}</span>
+                                </div>
                               )}
-                            </div>
-                          </td>
+                            </td>
+                          )}
+
+                          {/* Plan management (hidden when roleFilter === 'RM') */}
+                          {roleFilter !== 'RM' && (
+                            <td className="p-3.5 sm:p-4">
+                              {u.role === 'RM' ? (
+                                <span className="text-[var(--muted)] text-xs font-mono">—</span>
+                              ) : (
+                                <div className="flex flex-col gap-0.5">
+                                  <button
+                                    type="button"
+                                    onClick={() => openAssignPlanModal(u)}
+                                    disabled={isActing}
+                                    aria-label={`Manage plan for ${displayName} — currently ${isPaid ? (u.subscription?.tier || 'Paid') : 'Basic'}`}
+                                    title="Click to manage subscription plan"
+                                    className="group inline-flex items-center gap-1.5 focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)] rounded self-start"
+                                  >
+                                    <Badge
+                                      tone={isPaid ? 'accent' : 'default'}
+                                      className={`cursor-pointer transition-all group-hover:scale-105 ${isPaid
+                                          ? 'bg-amber-100 text-amber-900 border-amber-300 font-semibold'
+                                          : 'bg-slate-100 text-slate-700 font-medium'
+                                        }`}
+                                    >
+                                      {isPaid && <IconCrown className="h-3 w-3 text-amber-600 inline mr-1" aria-hidden="true" />}
+                                      {isPaid ? (u.subscription?.tier || 'Paid Tier') : 'Basic'}
+                                    </Badge>
+                                  </button>
+                                  {isPaid && u.subscription?.expiresAt && (
+                                    <span className="text-[10px] text-[var(--muted-strong)]">
+                                      Exp: {new Date(u.subscription.expiresAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}
+                                    </span>
+                                  )}
+                                </div>
+                              )}
+                            </td>
+                          )}
 
                           {/* Status (Read-Only) */}
                           <td className="p-3.5 sm:p-4">
@@ -1692,44 +2230,111 @@ export function UserManagement() {
                             </div>
                           </td>
 
-                          {/* Actions: Plan & Block / Unblock */}
+                          {/* Actions: RM vs Normal User */}
                           <td className="p-3.5 sm:p-4 text-right">
-                            <div className="flex items-center justify-end gap-2">
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                disabled={isActing}
-                                onClick={() => openAssignPlanModal(u)}
-                                aria-label={`Assign plan for ${displayName}`}
-                                className="text-xs h-8 px-2.5 flex items-center gap-1 font-medium border-amber-200 text-amber-800 hover:bg-amber-50"
-                              >
-                                <IconCrown className="h-3.5 w-3.5 text-amber-600" aria-hidden="true" />
-                                Plan
-                              </Button>
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                disabled={isActing}
-                                onClick={() => confirmBlock(u)}
-                                aria-label={isBlocked ? `Unblock ${displayName}` : `Block ${displayName}`}
-                                className={`text-xs h-8 px-2.5 flex items-center gap-1 font-medium transition-colors ${isBlocked
-                                    ? 'text-emerald-700 hover:text-emerald-800 border-emerald-300 hover:bg-emerald-50'
-                                    : 'text-red-600 hover:text-red-700 border-red-200 hover:bg-red-50'
+                            {u.role === 'RM' ? (
+                              <div className="flex items-center justify-end gap-1.5">
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  disabled={isActing}
+                                  onClick={() => setEditingRmUser(u)}
+                                  aria-label={`Edit ${displayName}`}
+                                  title="Edit RM Details"
+                                  className="text-xs h-8 px-2.5 flex items-center gap-1 font-medium border-[var(--border)] text-[var(--foreground)] hover:bg-[var(--surface-muted)] cursor-pointer"
+                                >
+                                  <IconPencil className="h-3.5 w-3.5 text-[var(--muted-strong)]" aria-hidden="true" />
+                                  <span>Edit</span>
+                                </Button>
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  disabled={isActing}
+                                  onClick={() => setResetPasswordUser(u)}
+                                  aria-label={`Reset password for ${displayName}`}
+                                  title="Reset Password"
+                                  className="text-xs h-8 px-2.5 flex items-center gap-1 font-medium border-blue-200 text-blue-800 hover:bg-blue-50 cursor-pointer"
+                                >
+                                  <IconKey className="h-3.5 w-3.5 text-blue-600" aria-hidden="true" />
+                                  <span>Reset Pass</span>
+                                </Button>
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  disabled={isActing}
+                                  onClick={() => confirmBlock(u)}
+                                  aria-label={isBlocked ? `Unblock ${displayName}` : `Block ${displayName}`}
+                                  title={isBlocked ? 'Unblock RM Account' : 'Block RM Account'}
+                                  className={`text-xs h-8 px-2.5 flex items-center gap-1 font-medium transition-colors cursor-pointer ${
+                                    isBlocked
+                                      ? 'text-emerald-700 hover:text-emerald-800 border-emerald-300 hover:bg-emerald-50'
+                                      : 'text-amber-700 hover:text-amber-800 border-amber-200 hover:bg-amber-50'
                                   }`}
-                              >
-                                {isActing ? (
-                                  <span
-                                    className="h-3.5 w-3.5 border border-current border-t-transparent rounded-full animate-spin"
-                                    aria-hidden="true"
-                                  />
-                                ) : isBlocked ? (
-                                  <IconUserCheck className="h-3.5 w-3.5" aria-hidden="true" />
-                                ) : (
-                                  <IconBan className="h-3.5 w-3.5" aria-hidden="true" />
-                                )}
-                                {isBlocked ? 'Unblock' : 'Block'}
-                              </Button>
-                            </div>
+                                >
+                                  {isActing ? (
+                                    <span
+                                      className="h-3.5 w-3.5 border border-current border-t-transparent rounded-full animate-spin"
+                                      aria-hidden="true"
+                                    />
+                                  ) : isBlocked ? (
+                                    <IconUserCheck className="h-3.5 w-3.5" aria-hidden="true" />
+                                  ) : (
+                                    <IconBan className="h-3.5 w-3.5" aria-hidden="true" />
+                                  )}
+                                  <span>{isBlocked ? 'Unblock' : 'Block'}</span>
+                                </Button>
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  disabled={isActing}
+                                  onClick={() => setDeletingRmUser(u)}
+                                  aria-label={`Delete ${displayName}`}
+                                  title="Delete RM Account"
+                                  className="text-xs h-8 px-2.5 flex items-center gap-1 font-medium text-red-600 hover:text-red-700 border-red-200 hover:bg-red-50 cursor-pointer"
+                                >
+                                  <IconTrash className="h-3.5 w-3.5 text-red-600" aria-hidden="true" />
+                                  <span>Delete</span>
+                                </Button>
+                              </div>
+                            ) : (
+                              <div className="flex items-center justify-end gap-2">
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  disabled={isActing}
+                                  onClick={() => openAssignPlanModal(u)}
+                                  aria-label={`Assign plan for ${displayName}`}
+                                  className="text-xs h-8 px-2.5 flex items-center gap-1 font-medium border-amber-200 text-amber-800 hover:bg-amber-50 cursor-pointer"
+                                >
+                                  <IconCrown className="h-3.5 w-3.5 text-amber-600" aria-hidden="true" />
+                                  Plan
+                                </Button>
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  disabled={isActing}
+                                  onClick={() => confirmBlock(u)}
+                                  aria-label={isBlocked ? `Unblock ${displayName}` : `Block ${displayName}`}
+                                  className={`text-xs h-8 px-2.5 flex items-center gap-1 font-medium transition-colors cursor-pointer ${
+                                    isBlocked
+                                      ? 'text-emerald-700 hover:text-emerald-800 border-emerald-300 hover:bg-emerald-50'
+                                      : 'text-red-600 hover:text-red-700 border-red-200 hover:bg-red-50'
+                                  }`}
+                                >
+                                  {isActing ? (
+                                    <span
+                                      className="h-3.5 w-3.5 border border-current border-t-transparent rounded-full animate-spin"
+                                      aria-hidden="true"
+                                    />
+                                  ) : isBlocked ? (
+                                    <IconUserCheck className="h-3.5 w-3.5" aria-hidden="true" />
+                                  ) : (
+                                    <IconBan className="h-3.5 w-3.5" aria-hidden="true" />
+                                  )}
+                                  <span>{isBlocked ? 'Unblock' : 'Block'}</span>
+                                </Button>
+                              </div>
+                            )}
                           </td>
                         </tr>
                       );

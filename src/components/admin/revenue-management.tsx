@@ -24,6 +24,7 @@ import {
   IconReceipt,
   IconHelpCircle,
   IconLoader2,
+  IconChartBar,
 } from '@tabler/icons-react';
 import { revenueService } from '@/services/revenue.service';
 import type {
@@ -68,7 +69,12 @@ function formatDate(isoString: string): string {
   }
 }
 
+export type RevenueSubTab = 'analytics' | 'ledger';
+
 export function RevenueManagement() {
+  // Sub-tab state (Analytics Cards vs Transactions Ledger)
+  const [activeTab, setActiveTab] = useState<RevenueSubTab>('analytics');
+
   // Preset filter state
   const [preset, setPreset] = useState<RevenuePreset>('30d');
   const [customFrom, setCustomFrom] = useState<string>('');
@@ -237,8 +243,8 @@ export function RevenueManagement() {
 
   return (
     <div className="space-y-6 sm:space-y-8 animate-in fade-in slide-in-from-bottom-2 duration-300">
-      {/* 1. TOP HEADER & CONTROLS */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-2 border-b border-[var(--border)]">
+      {/* 1. TOP HEADER */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-2 border-b border-[var(--border)]">
         <div>
           <div className="flex items-center gap-2">
             <h1 className="text-xl sm:text-2xl font-bold text-[var(--foreground)] tracking-tight">
@@ -253,50 +259,91 @@ export function RevenueManagement() {
             Real-time platform earnings, recurring subscriptions, ticket sizes, and payment ledger.
           </p>
         </div>
+      </div>
 
-        <div className="flex items-center gap-2 self-start md:self-auto flex-wrap">
-          {/* Preset Buttons */}
-          <div className="flex items-center bg-[var(--surface-muted)] p-1 rounded-xl border border-[var(--border)] text-xs font-semibold overflow-x-auto max-w-full">
-            {presets.map((p) => (
-              <button
-                key={p.id}
-                onClick={() => {
-                  setPreset(p.id);
-                  setPage(1);
-                }}
-                className={`px-3 py-1.5 rounded-lg transition-all cursor-pointer whitespace-nowrap ${
-                  preset === p.id
-                    ? 'bg-white text-[var(--foreground)] shadow-xs font-bold'
-                    : 'text-[var(--muted)] hover:text-[var(--foreground)]'
-                }`}
-              >
-                {p.label}
-              </button>
-            ))}
-          </div>
+      {/* 2. SUB-TAB SWITCHER & CONTEXTUAL ACTIONS */}
+      <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 bg-white p-2 sm:p-2.5 rounded-2xl border border-[var(--border)] shadow-xs">
+        {/* Tab Buttons */}
+        <div className="flex items-center gap-1.5 p-1 bg-[var(--surface-muted)] rounded-xl border border-[var(--border)] w-full sm:w-auto">
+          <button
+            type="button"
+            onClick={() => setActiveTab('analytics')}
+            className={`flex-1 sm:flex-initial flex items-center justify-center gap-2 px-3.5 sm:px-4 py-2 rounded-lg text-xs sm:text-sm font-bold transition-all cursor-pointer ${
+              activeTab === 'analytics'
+                ? 'bg-white text-[#80132E] shadow-xs'
+                : 'text-[var(--muted)] hover:text-[var(--foreground)]'
+            }`}
+          >
+            <IconChartBar className="h-4 w-4" />
+            <span>Revenue Analytics</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => setActiveTab('ledger')}
+            className={`flex-1 sm:flex-initial flex items-center justify-center gap-2 px-3.5 sm:px-4 py-2 rounded-lg text-xs sm:text-sm font-bold transition-all cursor-pointer ${
+              activeTab === 'ledger'
+                ? 'bg-white text-[#80132E] shadow-xs'
+                : 'text-[var(--muted)] hover:text-[var(--foreground)]'
+            }`}
+          >
+            <IconReceipt className="h-4 w-4" />
+            <span>Transactions Ledger</span>
+            <span
+              className={`px-2 py-0.5 rounded-full text-[10px] sm:text-[11px] font-bold transition-colors ${
+                activeTab === 'ledger'
+                  ? 'bg-[#80132E]/10 text-[#80132E]'
+                  : 'bg-slate-200/70 text-slate-600'
+              }`}
+            >
+              {totalTransactions}
+            </span>
+          </button>
+        </div>
+
+        {/* Contextual Actions on Right */}
+        <div className="flex items-center gap-2 self-stretch sm:self-auto justify-end flex-wrap">
+          {activeTab === 'analytics' ? (
+            <div className="flex items-center bg-[var(--surface-muted)] p-1 rounded-xl border border-[var(--border)] text-xs font-semibold overflow-x-auto max-w-full">
+              {presets.map((p) => (
+                <button
+                  key={p.id}
+                  onClick={() => {
+                    setPreset(p.id);
+                    setPage(1);
+                  }}
+                  className={`px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-lg transition-all cursor-pointer whitespace-nowrap text-xs ${
+                    preset === p.id
+                      ? 'bg-white text-[var(--foreground)] shadow-xs font-bold'
+                      : 'text-[var(--muted)] hover:text-[var(--foreground)]'
+                  }`}
+                >
+                  {p.label}
+                </button>
+              ))}
+            </div>
+          ) : (
+            <button
+              onClick={handleExportCsv}
+              disabled={isExporting}
+              className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-[#80132E] hover:bg-[#600E22] text-white text-xs font-bold transition-all shadow-xs cursor-pointer disabled:opacity-50"
+            >
+              {isExporting ? (
+                <IconLoader2 className="h-3.5 w-3.5 animate-spin" />
+              ) : (
+                <IconDownload className="h-3.5 w-3.5" />
+              )}
+              <span>Export CSV</span>
+            </button>
+          )}
 
           {/* Refresh Button */}
           <button
             onClick={handleRefresh}
-            disabled={isRefreshing || isLoadingMetrics}
-            title="Refresh revenue metrics"
+            disabled={isRefreshing || (activeTab === 'analytics' ? isLoadingMetrics : isLoadingLedger)}
+            title="Refresh current view"
             className="p-2 rounded-xl bg-white border border-[var(--border)] text-[var(--muted)] hover:text-[var(--foreground)] hover:bg-[var(--surface-muted)] transition-colors cursor-pointer disabled:opacity-50 shadow-2xs"
           >
             <IconRefresh className={`h-4 w-4 ${isRefreshing ? 'animate-spin text-[var(--primary)]' : ''}`} />
-          </button>
-
-          {/* Export CSV Button */}
-          <button
-            onClick={handleExportCsv}
-            disabled={isExporting}
-            className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-[#80132E] hover:bg-[#600E22] text-white text-xs font-bold transition-all shadow-xs cursor-pointer disabled:opacity-50"
-          >
-            {isExporting ? (
-              <IconLoader2 className="h-3.5 w-3.5 animate-spin" />
-            ) : (
-              <IconDownload className="h-3.5 w-3.5" />
-            )}
-            <span>Export CSV</span>
           </button>
         </div>
       </div>
@@ -317,8 +364,11 @@ export function RevenueManagement() {
         </div>
       )}
 
-      {/* 2. EXECUTIVE KPI SCORECARD (5 CARDS) */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3.5">
+      {/* 3. TAB 1: REVENUE ANALYTICS & TRENDS */}
+      {activeTab === 'analytics' && (
+        <div className="space-y-6 sm:space-y-8 animate-in fade-in duration-200">
+          {/* EXECUTIVE KPI SCORECARD (5 CARDS) */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3.5">
         {/* CARD 1: GROSS REVENUE */}
         <div className="bg-white rounded-2xl p-4 sm:p-5 border border-[var(--border)] shadow-xs relative overflow-hidden flex flex-col justify-between">
           <div className="flex items-center justify-between">
@@ -613,87 +663,241 @@ export function RevenueManagement() {
           </div>
         </div>
       </div>
+    </div>
+  )}
 
-      {/* 4. LIVE TRANSACTIONS LEDGER (CORE AUDIT TABLE) */}
-      <div className="bg-white rounded-2xl border border-[var(--border)] shadow-xs overflow-hidden">
-        {/* Table Header and Filter Controls */}
-        <div className="p-4 sm:p-5 border-b border-[var(--border)] space-y-3">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-            <div>
-              <h2 className="text-base font-bold text-[var(--foreground)]">
-                Live Transactions Ledger
-              </h2>
-              <p className="text-xs text-[var(--muted)]">
-                Comprehensive audit trail of checkout orders, Cashfree gateway references, and subscription events.
-              </p>
+      {/* 4. TAB 2: LIVE TRANSACTIONS LEDGER */}
+      {activeTab === 'ledger' && (
+        <div className="bg-white rounded-2xl border border-[var(--border)] shadow-xs overflow-hidden animate-in fade-in duration-200">
+          {/* Table Header and Filter Controls */}
+          <div className="p-4 sm:p-5 border-b border-[var(--border)] space-y-3">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+              <div>
+                <h2 className="text-base font-bold text-[var(--foreground)]">
+                  Live Transactions Ledger
+                </h2>
+                <p className="text-xs text-[var(--muted)]">
+                  Comprehensive audit trail of checkout orders, Cashfree gateway references, and subscription events.
+                </p>
+              </div>
+              <div className="text-xs text-[var(--muted)] font-semibold">
+                Total Records: <span className="text-[var(--foreground)] font-bold">{totalTransactions}</span>
+              </div>
             </div>
-            <div className="text-xs text-[var(--muted)] font-semibold">
-              Total Records: <span className="text-[var(--foreground)] font-bold">{totalTransactions}</span>
-            </div>
-          </div>
 
-          {/* Search and Dropdowns Filter Bar */}
-          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5 pt-1">
-            {/* Search Input */}
-            <div className="relative flex-1">
-              <IconSearch className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-[var(--muted)]" />
-              <input
-                type="text"
-                value={searchQuery}
+            {/* Search and Dropdowns Filter Bar */}
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5 pt-1">
+              {/* Search Input */}
+              <div className="relative flex-1">
+                <IconSearch className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-[var(--muted)]" />
+                <input
+                  type="text"
+                  value={searchQuery}
+                  onChange={(e) => {
+                    setSearchQuery(e.target.value);
+                    setPage(1);
+                  }}
+                  placeholder="Search Order ID, Cashfree Ref, IMC ID, Email, Customer Name..."
+                  className="w-full pl-9 pr-3 py-2 rounded-xl text-xs bg-[var(--surface-muted)] border border-[var(--border)] text-[var(--foreground)] placeholder:text-[var(--muted)] focus:outline-none focus:ring-1 focus:ring-[#80132E]"
+                />
+                {searchQuery && (
+                  <button
+                    onClick={() => setSearchQuery('')}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-[var(--muted)] hover:text-[var(--foreground)] cursor-pointer"
+                  >
+                    ✕
+                  </button>
+                )}
+              </div>
+
+              {/* Status Filter */}
+              <select
+                value={statusFilter}
                 onChange={(e) => {
-                  setSearchQuery(e.target.value);
+                  setStatusFilter(e.target.value);
                   setPage(1);
                 }}
-                placeholder="Search Order ID, Cashfree Ref, IMC ID, Email, Customer Name..."
-                className="w-full pl-9 pr-3 py-2 rounded-xl text-xs bg-[var(--surface-muted)] border border-[var(--border)] text-[var(--foreground)] placeholder:text-[var(--muted)] focus:outline-none focus:ring-1 focus:ring-[#80132E]"
-              />
-              {searchQuery && (
-                <button
-                  onClick={() => setSearchQuery('')}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-[var(--muted)] hover:text-[var(--foreground)]"
-                >
-                  ✕
-                </button>
-              )}
+                className="px-3 py-2 rounded-xl text-xs bg-[var(--surface-muted)] border border-[var(--border)] font-medium text-[var(--foreground)] focus:outline-none cursor-pointer"
+              >
+                <option value="ALL">All Statuses</option>
+                <option value="SUCCESS">Success</option>
+                <option value="FAILED">Failed</option>
+                <option value="PENDING">Pending</option>
+                <option value="USER_DROPPED">User Dropped</option>
+              </select>
+
+              {/* Plan Filter */}
+              <select
+                value={planFilter}
+                onChange={(e) => {
+                  setPlanFilter(e.target.value);
+                  setPage(1);
+                }}
+                className="px-3 py-2 rounded-xl text-xs bg-[var(--surface-muted)] border border-[var(--border)] font-medium text-[var(--foreground)] focus:outline-none cursor-pointer"
+              >
+                <option value="ALL">All Plans</option>
+                {plans.map((p) => (
+                  <option key={p.planCode} value={p.planCode}>
+                    {p.planName}
+                  </option>
+                ))}
+              </select>
             </div>
-
-            {/* Status Filter */}
-            <select
-              value={statusFilter}
-              onChange={(e) => {
-                setStatusFilter(e.target.value);
-                setPage(1);
-              }}
-              className="px-3 py-2 rounded-xl text-xs bg-[var(--surface-muted)] border border-[var(--border)] font-medium text-[var(--foreground)] focus:outline-none"
-            >
-              <option value="ALL">All Statuses</option>
-              <option value="SUCCESS">Success</option>
-              <option value="FAILED">Failed</option>
-              <option value="PENDING">Pending</option>
-              <option value="USER_DROPPED">User Dropped</option>
-            </select>
-
-            {/* Plan Filter */}
-            <select
-              value={planFilter}
-              onChange={(e) => {
-                setPlanFilter(e.target.value);
-                setPage(1);
-              }}
-              className="px-3 py-2 rounded-xl text-xs bg-[var(--surface-muted)] border border-[var(--border)] font-medium text-[var(--foreground)] focus:outline-none"
-            >
-              <option value="ALL">All Plans</option>
-              {plans.map((p) => (
-                <option key={p.planCode} value={p.planCode}>
-                  {p.planName}
-                </option>
-              ))}
-            </select>
           </div>
-        </div>
 
-        {/* Ledger Table */}
-        <div className="overflow-x-auto min-h-[300px]">
+          {/* Mobile Card List View (< md) */}
+          <div className="block md:hidden divide-y divide-[var(--border)]">
+            {isLoadingLedger ? (
+              <div className="p-4 space-y-3">
+                {Array.from({ length: 4 }).map((_, i) => (
+                  <div key={i} className="h-32 bg-[var(--surface-muted)] rounded-xl animate-pulse" />
+                ))}
+              </div>
+            ) : transactions.length === 0 ? (
+              <div className="p-8 text-center text-[var(--muted)]">
+                <div className="flex flex-col items-center gap-2">
+                  <IconReceipt className="h-8 w-8 text-slate-300" />
+                  <span className="font-bold text-sm text-[var(--foreground)]">No transactions found</span>
+                  <span className="text-xs">No records matched your search filters or selected date range.</span>
+                </div>
+              </div>
+            ) : (
+              transactions.map((tx) => {
+                const isSuccess = tx.status === 'SUCCESS';
+                const isFailed = tx.status === 'FAILED';
+                const isPending = tx.status === 'PENDING';
+
+                return (
+                  <div key={tx.id} className="p-4 space-y-3 hover:bg-[var(--surface-muted)]/30 transition-colors">
+                    {/* Customer & Status Header */}
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="flex items-center gap-2.5">
+                        <div className="h-9 w-9 rounded-full bg-[var(--surface-muted)] border border-[var(--border)] flex items-center justify-center font-bold text-[#80132E] shrink-0 overflow-hidden text-xs">
+                          {tx.user.avatarUrl ? (
+                            <img
+                              src={tx.user.avatarUrl}
+                              alt={tx.user.customerName}
+                              className="h-full w-full object-cover"
+                            />
+                          ) : (
+                            tx.user.customerName.charAt(0).toUpperCase()
+                          )}
+                        </div>
+                        <div>
+                          <div className="font-bold text-sm text-[var(--foreground)] leading-tight">
+                            {tx.user.customerName}
+                          </div>
+                          <div className="flex items-center gap-1.5 mt-0.5">
+                            <span className="font-mono text-[10px] px-1.5 py-0.2 rounded bg-slate-100 text-slate-700 font-semibold">
+                              {tx.user.profileId}
+                            </span>
+                            <span className="text-[11px] text-[var(--muted)] truncate max-w-[140px]">
+                              {tx.user.email !== 'N/A' ? tx.user.email : tx.user.phone}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Status */}
+                      <div>
+                        {isSuccess && (
+                          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                            <IconCheck className="h-3 w-3" />
+                            Success
+                          </span>
+                        )}
+                        {isFailed && (
+                          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold bg-rose-50 text-rose-700 border border-rose-200">
+                            <IconX className="h-3 w-3" />
+                            Failed
+                          </span>
+                        )}
+                        {isPending && (
+                          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold bg-amber-50 text-amber-700 border border-amber-200">
+                            <IconClock className="h-3 w-3" />
+                            Pending
+                          </span>
+                        )}
+                        {!isSuccess && !isFailed && !isPending && (
+                          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold bg-slate-100 text-slate-700 border border-slate-200">
+                            {tx.status}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Plan & Amount Box */}
+                    <div className="flex items-center justify-between p-2.5 rounded-xl bg-[var(--surface-muted)] text-xs">
+                      <div>
+                        <div className="font-semibold text-[var(--foreground)]">{tx.planName}</div>
+                        <span className="font-mono text-[10px] text-[var(--muted)]">{tx.planCode}</span>
+                      </div>
+                      <div className="text-right">
+                        <div className="font-extrabold text-sm text-[var(--foreground)]">
+                          {formatINRDecimals(tx.amount)}
+                        </div>
+                        <span className="inline-flex items-center gap-1 px-1.5 py-0.2 rounded bg-white border border-[var(--border)] text-[10px] font-bold text-[var(--foreground)]">
+                          {tx.paymentMethod}
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Metadata & Copyable IDs */}
+                    <div className="space-y-1.5 text-[11px] text-[var(--muted)]">
+                      <div className="flex items-center justify-between">
+                        <span>Date &amp; Time:</span>
+                        <span className="font-medium text-[var(--foreground)]">{formatDate(tx.createdAt)}</span>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span>Order ID:</span>
+                        <div className="flex items-center gap-1">
+                          <span className="font-mono text-[10px] text-[var(--foreground)]">{tx.orderId}</span>
+                          <button
+                            onClick={() => handleCopy(tx.orderId, `m-order-${tx.id}`)}
+                            title="Copy Order ID"
+                            className="p-1 text-[var(--muted)] hover:text-[var(--foreground)] cursor-pointer"
+                          >
+                            {copiedId === `m-order-${tx.id}` ? (
+                              <IconCheck className="h-3 w-3 text-emerald-600" />
+                            ) : (
+                              <IconCopy className="h-3 w-3" />
+                            )}
+                          </button>
+                        </div>
+                      </div>
+                      {tx.cfPaymentId && (
+                        <div className="flex items-center justify-between">
+                          <span>Cashfree Ref:</span>
+                          <div className="flex items-center gap-1">
+                            <span className="font-mono text-[10px] text-[var(--foreground)]">{tx.cfPaymentId}</span>
+                            <button
+                              onClick={() => handleCopy(tx.cfPaymentId!, `m-cf-${tx.id}`)}
+                              title="Copy Cashfree ID"
+                              className="p-1 text-[var(--muted)] hover:text-[var(--foreground)] cursor-pointer"
+                            >
+                              {copiedId === `m-cf-${tx.id}` ? (
+                                <IconCheck className="h-3 w-3 text-emerald-600" />
+                              ) : (
+                                <IconCopy className="h-3 w-3" />
+                              )}
+                            </button>
+                          </div>
+                        </div>
+                      )}
+                      {tx.paymentMessage && (
+                        <div className="pt-1 text-[11px] text-rose-600 font-medium">
+                          {tx.paymentMessage}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                );
+              })
+            )}
+          </div>
+
+          {/* Desktop Table View (>= md) */}
+          <div className="hidden md:block overflow-x-auto min-h-[300px]">
           <table className="w-full text-left text-xs min-w-[850px]">
             <thead className="bg-[#FAF3EC] border-b border-[#E9DDE0] text-[#7A1835] font-bold">
               <tr>
@@ -901,8 +1105,9 @@ export function RevenueManagement() {
           </div>
         </div>
       </div>
-    </div>
-  );
+    )}
+  </div>
+);
 }
 
 /**
