@@ -681,3 +681,48 @@ export const POPULAR_EDUCATION_OPTIONS: { value: string; label: string; descript
   { value: "Other", label: "Other Educational Qualification", description: "Other" },
 ];
 
+export const FRIENDSHIP_GOAL_OPTIONS: string[] = [
+  "Casual Chat & Coffee",
+  "Activity & Hobby Partner",
+  "Travel & Adventure Buddy",
+  "Professional Networking",
+  "Close & Meaningful Friendship",
+  "Fitness & Sports Partner",
+  "Learning & Creative Collaboration",
+];
+
+export const GENDER_PREFERENCE_OPTIONS: string[] = [
+  "Any / Open to Both",
+  "Female Friends Only",
+  "Male Friends Only",
+];
+
+export const POPULAR_FRIENDSHIP_INTERESTS: string[] = [
+  "Music & Concerts",
+  "Movies & Cinema",
+  "Reading & Books",
+  "Travel & Exploring",
+  "Fitness & Gym",
+  "Coffee & Foodie",
+  "Gaming",
+  "Photography",
+  "Technology & Coding",
+  "Art & Design",
+  "Nature & Outdoors",
+  "Cooking & Baking",
+  "Volunteering",
+  "Sports & Badminton",
+];
+
+export const FRIENDSHIP_EMPLOYMENT_OPTIONS: string[] = [
+  "Govt. Employee",
+  "Private Sector",
+  "Business / Entrepreneur",
+  "Self Employed / Freelancer",
+  "Student",
+  "Homemaker",
+  "Seeking Opportunities",
+  "Other",
+];
+
+

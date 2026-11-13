@@ -21,6 +21,8 @@ export type Profile = {
   nationality?: string;
   country?: string;
   caste?: string;
+  friendshipGoals?: string;
+  genderPreference?: string;
   income?: string;
   intent?: string;
   diet?: string;
