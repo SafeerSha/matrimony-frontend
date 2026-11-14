@@ -869,6 +869,31 @@ function DeleteRmModal({ user, isOpen, onClose, onUserDeleted }: DeleteRmModalPr
   );
 }
 
+// ─── Helpers ──────────────────────────────────────────────────────────────
+export function checkUserIsPaid(u: {
+  subscription?: {
+    status?: string;
+    canChat?: boolean;
+    expiresAt?: string | null;
+    tier?: string;
+  } | null;
+  subscriptionTier?: string | null;
+} | null | undefined): boolean {
+  if (!u) return false;
+  const sub = u.subscription;
+  const isSubActive = Boolean(
+    sub &&
+    sub.status === 'ACTIVE' &&
+    sub.canChat &&
+    (!sub.expiresAt || new Date(sub.expiresAt) > new Date())
+  );
+  if (isSubActive) return true;
+  if (u.subscriptionTier) {
+    return ['PAID', 'PLUS', 'ELITE', 'PREMIUM', 'STANDARD'].includes(u.subscriptionTier.toUpperCase());
+  }
+  return false;
+}
+
 function AssignPlanModal({
   user,
   isOpen,
@@ -911,7 +936,7 @@ function AssignPlanModal({
     user.phone ??
     'Unnamed User';
 
-  const isCurrentPaid = user.subscriptionTier === 'PAID' || (user.subscription?.canChat ?? false);
+  const isCurrentPaid = checkUserIsPaid(user);
   const currentExpiry = user.subscription?.expiresAt ? new Date(user.subscription.expiresAt) : null;
   const isExpired = currentExpiry ? currentExpiry < new Date() : false;
 
@@ -991,7 +1016,7 @@ function AssignPlanModal({
                 {isCurrentPaid && !isExpired ? (
                   <>
                     <IconCrown className="h-3 w-3 inline text-amber-600 mr-1" />
-                    {user.subscription?.tier || 'Paid Tier'}
+                    {user.subscription?.tier || user.subscriptionTier || 'Paid Tier'}
                   </>
                 ) : (
                   'Basic / Free'
@@ -1833,7 +1858,7 @@ export function UserManagement() {
                     [u.profile?.city, u.profile?.state, u.profile?.country]
                       .filter(Boolean)
                       .join(', ') || 'Not specified';
-                  const isPaid = u.subscriptionTier === 'PAID';
+                  const isPaid = checkUserIsPaid(u);
                   const isBlocked = u.isBanned;
                   const isActing = actionLoadingId === u.id;
                   const isOnline = livePresence[u.id] ?? u.isOnline ?? false;
@@ -2093,7 +2118,7 @@ export function UserManagement() {
                         [u.profile?.city, u.profile?.state, u.profile?.country]
                           .filter(Boolean)
                           .join(', ') || 'Not specified';
-                      const isPaid = u.subscriptionTier === 'PAID';
+                      const isPaid = checkUserIsPaid(u);
                       const isBlocked = u.isBanned;
                       const isActing = actionLoadingId === u.id;
                       const isOnline = livePresence[u.id] ?? u.isOnline ?? false;
@@ -2193,7 +2218,7 @@ export function UserManagement() {
                                     type="button"
                                     onClick={() => openAssignPlanModal(u)}
                                     disabled={isActing}
-                                    aria-label={`Manage plan for ${displayName} — currently ${isPaid ? (u.subscription?.tier || 'Paid') : 'Basic'}`}
+                                    aria-label={`Manage plan for ${displayName} — currently ${isPaid ? (u.subscription?.tier || u.subscriptionTier || 'Paid') : 'Basic'}`}
                                     title="Click to manage subscription plan"
                                     className="group inline-flex items-center gap-1.5 focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)] rounded self-start"
                                   >
@@ -2205,7 +2230,7 @@ export function UserManagement() {
                                         }`}
                                     >
                                       {isPaid && <IconCrown className="h-3 w-3 text-amber-600 inline mr-1" aria-hidden="true" />}
-                                      {isPaid ? (u.subscription?.tier || 'Paid Tier') : 'Basic'}
+                                      {isPaid ? (u.subscription?.tier || u.subscriptionTier || 'Paid Tier') : 'Basic'}
                                     </Badge>
                                   </button>
                                   {isPaid && u.subscription?.expiresAt && (
