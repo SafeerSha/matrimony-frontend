@@ -28,6 +28,8 @@ import {
 } from '@tabler/icons-react';
 import { Button } from '@/components/ui/button';
 import { Avatar } from '@/components/ui/avatar';
+import { Modal } from '@/components/ui/modal';
+import { ModernSelect } from '@/components/ui/modern-select';
 import { VerificationBadge } from '@/components/ui/verification-badge';
 import { RegistrationCategoryBadge } from '@/components/ui/registration-badge';
 import { toast } from '@/lib/toast';
@@ -36,8 +38,17 @@ import { chatService, parseMessageContent, formatReplyContent, type Conversation
 import { authService } from '@/services/auth.service';
 import { matchesService } from '@/services/matches.service';
 import { profileService } from '@/services/profile.service';
+import { reportService, type ReportReason } from '@/services/report.service';
 import { formatLastActive } from '@/lib/demo-data';
 import { isFreeTrialMode } from '@/config/feature-flags';
+
+const REPORT_REASON_OPTIONS = [
+  { value: 'spam', label: 'Spam or commercial advertising' },
+  { value: 'harassment', label: 'Harassment or abusive behavior' },
+  { value: 'fake_profile', label: 'Fake profile / Impersonation' },
+  { value: 'inappropriate_content', label: 'Inappropriate or explicit content' },
+  { value: 'other', label: 'Other concern' },
+];
 
 interface ChatWindowProps {
   conversation: Conversation;
@@ -149,6 +160,15 @@ export function ChatWindow({
   const [swipedMessageId, setSwipedMessageId] = useState<string | null>(null);
   const [swipeOffset, setSwipeOffset] = useState<number>(0);
   const touchStartRef = useRef<{ x: number; y: number; id: string } | null>(null);
+
+  // Report & Block Member state
+  const [isReportModalOpen, setIsReportModalOpen] = useState(false);
+  const [reportReason, setReportReason] = useState<ReportReason>('spam');
+  const [reportDescription, setReportDescription] = useState('');
+  const [isReporting, setIsReporting] = useState(false);
+
+  const [isBlockModalOpen, setIsBlockModalOpen] = useState(false);
+  const [isBlocking, setIsBlocking] = useState(false);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
@@ -639,6 +659,48 @@ export function ChatWindow({
     }
   };
 
+  const handleReportSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const targetId = conversation.participantId || conversation.id;
+    if (!targetId) return;
+    setIsReporting(true);
+    try {
+      await reportService.reportUser(targetId, reportReason, reportDescription);
+      setIsReportModalOpen(false);
+      setReportReason('spam');
+      setReportDescription('');
+      toast.success('Report Submitted', {
+        description: 'Our trust & safety team has received your report for review.',
+      });
+    } catch (err: any) {
+      toast.error('Report Failed', {
+        description: err?.message || 'Could not submit your report right now.',
+      });
+    } finally {
+      setIsReporting(false);
+    }
+  };
+
+  const handleBlockConfirm = async () => {
+    const targetId = conversation.participantId || conversation.id;
+    if (!targetId) return;
+    setIsBlocking(true);
+    try {
+      await reportService.blockUser(targetId);
+      setIsBlockModalOpen(false);
+      toast.warning('Member Blocked', {
+        description: `You will no longer receive communications from ${participantName}.`,
+      });
+      if (onBack) onBack();
+    } catch (err: any) {
+      toast.error('Block Failed', {
+        description: err?.message || 'Could not block member right now.',
+      });
+    } finally {
+      setIsBlocking(false);
+    }
+  };
+
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
@@ -828,11 +890,9 @@ export function ChatWindow({
                   <button
                     onClick={() => {
                       setShowMenu(false);
-                      toast.warning('Member Blocked', {
-                        description: `You will no longer receive communications from ${participantName}.`,
-                      });
+                      setIsBlockModalOpen(true);
                     }}
-                    className="flex w-full items-center gap-2.5 rounded-xl px-3 py-2 text-xs font-semibold text-rose-600 hover:bg-rose-50 transition-colors"
+                    className="flex w-full items-center gap-2.5 rounded-xl px-3 py-2 text-xs font-semibold text-rose-600 hover:bg-rose-50 transition-colors cursor-pointer"
                   >
                     <IconBan className="h-4 w-4" />
                     <span>Block Member</span>
@@ -840,11 +900,9 @@ export function ChatWindow({
                   <button
                     onClick={() => {
                       setShowMenu(false);
-                      toast.info('Report Sent', {
-                        description: 'Your report has been logged with our trust team.',
-                      });
+                      setIsReportModalOpen(true);
                     }}
-                    className="flex w-full items-center gap-2.5 rounded-xl px-3 py-2 text-xs font-semibold text-amber-700 hover:bg-amber-50 transition-colors"
+                    className="flex w-full items-center gap-2.5 rounded-xl px-3 py-2 text-xs font-semibold text-amber-700 hover:bg-amber-50 transition-colors cursor-pointer"
                   >
                     <IconFlag className="h-4 w-4" />
                     <span>Report Profile</span>
@@ -1425,6 +1483,120 @@ export function ChatWindow({
           </div>
         </div>
       )}
+
+      {/* Block Confirmation Modal */}
+      <Modal
+        isOpen={isBlockModalOpen}
+        onClose={() => !isBlocking && setIsBlockModalOpen(false)}
+        size="sm"
+        title={`Block ${participantName}?`}
+        description="Blocking this member will hide their profile from your searches and prevent them from sending you messages or interest requests."
+      >
+        <div className="flex items-center justify-end gap-2 pt-2">
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            disabled={isBlocking}
+            onClick={() => setIsBlockModalOpen(false)}
+          >
+            Cancel
+          </Button>
+          <Button
+            type="button"
+            variant="primary"
+            size="sm"
+            disabled={isBlocking}
+            onClick={handleBlockConfirm}
+            className="bg-rose-700 hover:bg-rose-800 text-white gap-1.5"
+          >
+            {isBlocking ? (
+              <>
+                <IconLoader2 className="h-3.5 w-3.5 animate-spin" />
+                Blocking…
+              </>
+            ) : (
+              <>
+                <IconBan className="h-3.5 w-3.5" />
+                Block Member
+              </>
+            )}
+          </Button>
+        </div>
+      </Modal>
+
+      {/* Report Member Modal */}
+      <Modal
+        isOpen={isReportModalOpen}
+        onClose={() => !isReporting && setIsReportModalOpen(false)}
+        size="md"
+        title={`Report ${participantName}`}
+        description="Let our trust & safety team know what happened. Reports remain strictly confidential."
+      >
+        <form onSubmit={handleReportSubmit} className="space-y-4">
+          <div>
+            <label className="block text-xs font-bold text-[#3B1520] mb-1.5">
+              Reason for reporting
+            </label>
+            <ModernSelect
+              value={reportReason}
+              onChange={(val) => setReportReason(val as ReportReason)}
+              options={REPORT_REASON_OPTIONS}
+              size="sm"
+              ariaLabel="Reason for reporting"
+            />
+          </div>
+
+          <div>
+            <label
+              htmlFor="chat-report-description"
+              className="block text-xs font-bold text-[#3B1520] mb-1.5"
+            >
+              Additional details (optional)
+            </label>
+            <textarea
+              id="chat-report-description"
+              rows={4}
+              maxLength={2000}
+              value={reportDescription}
+              onChange={(e) => setReportDescription(e.target.value)}
+              placeholder="Provide any relevant context or specific incidents…"
+              className="w-full rounded-xl border border-[#E9DDE0] bg-white p-3 text-xs sm:text-sm text-[#211B1E] outline-none focus:border-[#7A1835] transition-colors"
+            />
+          </div>
+
+          <div className="flex items-center justify-end gap-2 pt-1">
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              disabled={isReporting}
+              onClick={() => setIsReportModalOpen(false)}
+            >
+              Cancel
+            </Button>
+            <Button
+              type="submit"
+              variant="primary"
+              size="sm"
+              disabled={isReporting}
+              className="gap-1.5"
+            >
+              {isReporting ? (
+                <>
+                  <IconLoader2 className="h-3.5 w-3.5 animate-spin" />
+                  Submitting…
+                </>
+              ) : (
+                <>
+                  <IconFlag className="h-3.5 w-3.5" />
+                  Submit Report
+                </>
+              )}
+            </Button>
+          </div>
+        </form>
+      </Modal>
     </div>
   );
 }
