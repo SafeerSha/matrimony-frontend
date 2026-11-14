@@ -110,11 +110,26 @@ function MessagesContent() {
   const handleTouchStart = (e: React.TouchEvent) => {
     if (mobileView !== 'chat') return;
     const target = e.target as HTMLElement | null;
-    if (target && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable)) {
+    // Strictly prevent edge-swipe navigation if touching any chat elements, message rows, or form controls
+    if (
+      target &&
+      (target.tagName === 'INPUT' ||
+        target.tagName === 'TEXTAREA' ||
+        target.tagName === 'BUTTON' ||
+        target.isContentEditable ||
+        target.closest('[data-chat-message]') ||
+        target.closest('[data-chat-container]') ||
+        target.closest('button'))
+    ) {
       touchStartRef.current = null;
       return;
     }
     const touch = e.touches[0];
+    // Edge swipe-back must strictly originate from the extreme phone bezel edge (<= 24px)
+    if (touch.clientX > 24) {
+      touchStartRef.current = null;
+      return;
+    }
     touchStartRef.current = {
       x: touch.clientX,
       y: touch.clientY,
@@ -131,12 +146,12 @@ function MessagesContent() {
     const startX = touchStartRef.current.x;
     touchStartRef.current = null;
 
-    // Detect deliberate rightward swipe starting from the left side of the screen:
+    // Detect deliberate rightward edge swipe starting ONLY from the extreme left bezel edge (<= 24px):
     if (
-      startX < window.innerWidth * 0.5 &&
-      deltaX > 65 &&
-      deltaX > Math.abs(deltaY) * 1.5 &&
-      (deltaTime < 600 || deltaX > 110)
+      startX <= 24 &&
+      deltaX > 75 &&
+      deltaX > Math.abs(deltaY) * 1.8 &&
+      (deltaTime < 500 || deltaX > 120)
     ) {
       handleBack();
     }

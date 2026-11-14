@@ -575,16 +575,18 @@ export function ChatWindow({
     if (Math.abs(deltaY) > Math.abs(deltaX)) return;
 
     if (deltaX > 4) {
+      e.stopPropagation();
       setSwipedMessageId(msgKey);
-      const clamped = Math.min(55, deltaX * 0.55);
+      const clamped = Math.min(50, deltaX * 0.55);
       setSwipeOffset(clamped);
     } else {
       setSwipeOffset(0);
     }
   };
 
-  const handleTouchEnd = (m: Message, isOurs: boolean) => {
-    if (swipeOffset >= 30) {
+  const handleTouchEnd = (e: React.TouchEvent, m: Message, isOurs: boolean) => {
+    if (swipeOffset >= 24) {
+      e.stopPropagation();
       handleStartReply(m, isOurs);
       if (typeof window !== 'undefined' && 'vibrate' in navigator) {
         try { navigator.vibrate(25); } catch {}
@@ -896,6 +898,7 @@ export function ChatWindow({
           {/* Messages Scroll Area */}
           <div
             ref={messagesContainerRef}
+            data-chat-container="true"
             className="flex-1 overflow-y-auto overflow-x-hidden p-3 sm:p-6 space-y-4 bg-gradient-to-b from-[#FFFDFB] via-[#FFF9F6]/80 to-[#FAF4EE]/90 relative z-10 w-full overscroll-contain"
           >
             {/* Celebratory Mutual Connection Card */}
@@ -1041,11 +1044,12 @@ export function ChatWindow({
                   <div
                     key={msgKey}
                     id={`chat-msg-${m.id}`}
+                    data-chat-message="true"
                     onMouseEnter={() => setHoveredMessageId(msgKey)}
                     onMouseLeave={() => setHoveredMessageId(null)}
                     onTouchStart={(e) => handleTouchStart(e, msgKey)}
                     onTouchMove={(e) => handleTouchMove(e, msgKey)}
-                    onTouchEnd={() => handleTouchEnd(m, isOurs)}
+                    onTouchEnd={(e) => handleTouchEnd(e, m, isOurs)}
                     className={cn(
                       'flex flex-col group relative animate-chat-message transition-all duration-300 w-full min-w-0',
                       isOurs ? 'items-end' : 'items-start',
@@ -1057,7 +1061,7 @@ export function ChatWindow({
                       <div
                         className={cn(
                           "absolute top-1/2 -translate-y-1/2 flex items-center justify-center pointer-events-none z-10 transition-transform",
-                          isOurs ? "right-1" : "left-1"
+                          isOurs ? "right-[calc(85%+10px)]" : "left-1"
                         )}
                         style={{
                           opacity: Math.min(1, swipeOffset / 20),
@@ -1104,7 +1108,7 @@ export function ChatWindow({
                     <div
                       className="flex items-end gap-2 max-w-[85%] sm:max-w-[72%] transition-transform duration-100 ease-out min-w-0"
                       style={{
-                        transform: isSwiped ? `translateX(${isOurs ? -swipeOffset : swipeOffset}px)` : 'none',
+                        transform: isSwiped ? `translateX(${swipeOffset}px)` : 'none',
                       }}
                     >
                       {/* Received message avatar */}
