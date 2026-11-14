@@ -1122,11 +1122,11 @@ export function ChatWindow({
                         </div>
                       )}
 
-                      <div className="relative">
+                      <div className="relative min-w-0 max-w-full">
                         {/* Bubble */}
                         <div
                           className={cn(
-                            'px-4 py-2.5 text-xs sm:text-sm leading-relaxed transition-all relative',
+                            'px-4 py-2.5 text-xs sm:text-sm leading-relaxed transition-all relative min-w-0 max-w-full break-words [overflow-wrap:anywhere]',
                             isOurs
                               ? 'rounded-2xl rounded-br-xs bg-gradient-to-br from-[#7A1835] via-[#8C1B3D] to-[#9E2045] text-white shadow-[0_6px_22px_rgba(122,24,53,0.22)]'
                               : 'rounded-2xl rounded-bl-xs bg-white/95 border border-[#EAD8C7]/90 text-[#211B1E] shadow-[0_4px_16px_rgba(40,10,20,0.04)] backdrop-blur-sm'
@@ -1137,26 +1137,26 @@ export function ChatWindow({
                             <div
                               onClick={() => handleScrollToMessage(parsed.replyTo?.id)}
                               className={cn(
-                                'mb-2 flex flex-col rounded-xl px-2.5 py-1.5 text-xs cursor-pointer transition-all border-l-3',
+                                'mb-2 flex flex-col rounded-xl px-2.5 py-1.5 text-xs cursor-pointer transition-all border-l-3 min-w-0 max-w-full overflow-hidden',
                                 isOurs
                                   ? 'bg-black/20 border-l-white/90 hover:bg-black/30 text-white/95'
                                   : 'bg-[#FAF3EC] border-l-[#7A1835] hover:bg-[#F5ECE3] text-[#211B1E]'
                               )}
                               title="Click to view quoted message"
                             >
-                              <div className="flex items-center gap-1 font-bold text-[10px] uppercase tracking-wider mb-0.5">
-                                <IconArrowBackUp className="h-2.5 w-2.5" />
-                                <span>{parsed.replyTo.name}</span>
+                              <div className="flex items-center gap-1 font-bold text-[10px] uppercase tracking-wider mb-0.5 min-w-0">
+                                <IconArrowBackUp className="h-2.5 w-2.5 shrink-0" />
+                                <span className="truncate">{parsed.replyTo.name}</span>
                               </div>
                               <p className={cn(
-                                'truncate text-[11px] leading-tight',
+                                'text-[11px] leading-snug break-words [overflow-wrap:anywhere] whitespace-pre-wrap line-clamp-3',
                                 isOurs ? 'text-white/80' : 'text-[#766B6F]'
                               )}>
                                 {parsed.replyTo.text}
                               </p>
                             </div>
                           )}
-                          <p className="whitespace-pre-wrap break-words">{parsed.text}</p>
+                          <p className="whitespace-pre-wrap break-words [overflow-wrap:anywhere]">{parsed.text}</p>
                         </div>
 
                         {/* Floating Reaction Badges */}
