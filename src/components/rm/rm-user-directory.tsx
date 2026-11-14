@@ -725,7 +725,15 @@ export function RmUserDirectory() {
                           .filter(Boolean)
                           .join(', ') || 'Not specified';
                       const isOnline = livePresence[u.id] ?? u.isOnline ?? false;
-                      const isPaid = u.subscriptionTier === 'PAID';
+                      const isPaid = Boolean(
+                        (u.subscription &&
+                          u.subscription.status === 'ACTIVE' &&
+                          (!u.subscription.expiresAt || new Date(u.subscription.expiresAt) > new Date())) ||
+                        (u.subscriptionTier &&
+                          ['PAID', 'PLUS', 'ELITE', 'PREMIUM', 'STANDARD'].includes(
+                            u.subscriptionTier.toUpperCase(),
+                          )),
+                      );
                       const catLabel = u.profile?.category || u.profile?.profileFor || 'Marriage';
 
                       return (

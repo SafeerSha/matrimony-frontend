@@ -111,6 +111,16 @@ export function RmUserDetailView({
   const locationText = [p?.city, p?.state, p?.country].filter(Boolean).join(', ') || 'Not specified';
   const categoryLabel = p?.category || p?.profileFor || 'Marriage';
 
+  const isPaid = Boolean(
+    (detail?.subscription &&
+      detail.subscription.status === 'ACTIVE' &&
+      (!detail.subscription.expiresAt || new Date(detail.subscription.expiresAt) > new Date())) ||
+    (detail?.subscriptionTier &&
+      ['PAID', 'PLUS', 'ELITE', 'PREMIUM', 'STANDARD'].includes(
+        detail.subscriptionTier.toUpperCase(),
+      )),
+  );
+
   const openPhotoAt = (url?: string) => {
     if (!url || photoUrls.length === 0) return;
     const idx = photoUrls.indexOf(url);
@@ -280,18 +290,18 @@ export function RmUserDetailView({
                     {detail.isBanned ? 'BLOCKED' : detail.status}
                   </Badge>
                   <Badge
-                    tone={detail.subscriptionTier === 'PAID' ? 'champagne' : 'neutral'}
+                    tone={isPaid ? 'champagne' : 'neutral'}
                     size="md"
                     className={
-                      detail.subscriptionTier === 'PAID'
+                      isPaid
                         ? 'bg-amber-100 text-amber-900 border-amber-300 font-bold'
                         : ''
                     }
                   >
-                    {detail.subscriptionTier === 'PAID' && (
+                    {isPaid && (
                       <IconCrown className="h-3.5 w-3.5 inline mr-1 text-amber-600" />
                     )}
-                    {detail.subscription?.tier || detail.subscriptionTier}
+                    {detail.subscription?.tier || (isPaid ? 'PAID' : 'BASIC')}
                   </Badge>
                 </div>
               </div>
