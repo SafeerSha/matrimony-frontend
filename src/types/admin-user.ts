@@ -18,6 +18,9 @@ export interface AdminUserListItem {
   lastActiveAt: string;
   isOnline?: boolean;
   createdAt: string;
+  profileRejectionReason?: string | null;
+  assignedRmId?: string | null;
+  clientStage?: string | null;
   profile?: {
     id: string;
     firstName: string | null;

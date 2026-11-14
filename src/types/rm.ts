@@ -25,6 +25,9 @@ export interface RmUserListItem {
   isOnline?: boolean;
   createdAt: string;
   updatedAt?: string;
+  assignedRmId?: string | null;
+  clientStage?: ClientStage | null;
+  profileRejectionReason?: string | null;
   profile?: {
     id: string;
     firstName: string | null;
@@ -231,4 +234,140 @@ export interface UpdateRmFeedbackPayload {
   priority?: RmFeedbackPriority;
   rmNotes?: string;
 }
+
+export type ClientStage =
+  | 'NEW_LEAD'
+  | 'ONBOARDED'
+  | 'EXPLORING'
+  | 'SHORTLISTS_SENT'
+  | 'MEETING_ARRANGED'
+  | 'PROPOSAL_SENT'
+  | 'MATCHED'
+  | 'INACTIVE';
+
+export interface RmAssignedClientItem extends RmUserListItem {
+  assignedRmId?: string | null;
+  rmAssignedAt?: string | null;
+  clientStage?: ClientStage;
+  shortlistCount?: number;
+  interactionCount?: number;
+  pendingFollowUpsCount?: number;
+  lastInteraction?: {
+    id: string;
+    channel: string;
+    status: string;
+    summary: string;
+    interactionAt: string;
+  } | null;
+  nextFollowUp?: {
+    id: string;
+    title: string;
+    scheduledAt: string;
+    priority: string;
+  } | null;
+}
+
+export interface RmDashboardMetrics {
+  totalAssignedClients: number;
+  activeClientsCount: number;
+  pendingFollowUpsToday: number;
+  overdueFollowUpsCount: number;
+  totalShortlistsCount: number;
+  totalInteractionsCount: number;
+  stageBreakdown: Record<string, number>;
+  recentInteractions: Array<{
+    id: string;
+    channel: string;
+    status: string;
+    summary: string;
+    interactionAt: string;
+    client: {
+      id: string;
+      firstName: string | null;
+      lastName: string | null;
+      profileId: string | null;
+      email: string | null;
+      clientStage: string;
+    };
+  }>;
+  upcomingFollowUps: Array<{
+    id: string;
+    title: string;
+    scheduledAt: string;
+    priority: string;
+    client: {
+      id: string;
+      firstName: string | null;
+      lastName: string | null;
+      profileId: string | null;
+      phone: string | null;
+    };
+  }>;
+}
+
+export interface RmShortlistItem {
+  id: string;
+  rmId: string;
+  clientId: string;
+  candidateId: string;
+  notes: string | null;
+  status: string;
+  createdAt: string;
+  updatedAt: string;
+  candidate: RmUserDetail;
+  rm?: {
+    id: string;
+    firstName: string | null;
+    lastName: string | null;
+  };
+}
+
+export interface RmInteractionItem {
+  id: string;
+  rmId: string;
+  clientId: string;
+  channel: 'CALL' | 'WHATSAPP' | 'EMAIL' | 'MEETING' | 'NOTE';
+  status: string;
+  clientStage: string;
+  summary: string;
+  details: string | null;
+  interactionAt: string;
+  createdAt: string;
+  rm?: {
+    id: string;
+    firstName: string | null;
+    lastName: string | null;
+    role: string;
+  };
+}
+
+export interface RmFollowUpItem {
+  id: string;
+  rmId: string;
+  clientId: string;
+  title: string;
+  description: string | null;
+  scheduledAt: string;
+  priority: 'LOW' | 'MEDIUM' | 'HIGH' | 'URGENT';
+  status: 'PENDING' | 'COMPLETED' | 'CANCELLED' | 'RESCHEDULED';
+  completedAt: string | null;
+  completionNotes: string | null;
+  createdAt: string;
+  client?: {
+    id: string;
+    firstName: string | null;
+    lastName: string | null;
+    phone: string | null;
+    email: string | null;
+    profileId: string | null;
+    clientStage: string;
+    photos?: { id: string; url: string }[];
+  };
+  rm?: {
+    id: string;
+    firstName: string | null;
+    lastName: string | null;
+  };
+}
+
 
