@@ -6,6 +6,7 @@ export interface AdminUserListItem {
   status: string;
   deactivatedAt?: string | null;
   deletedAt?: string | null;
+  deletedBy?: 'USER' | 'ADMIN' | string | null;
   deletionReason?: string | null;
   subscriptionTier: 'BASIC' | 'PAID' | string;
   isBanned: boolean;

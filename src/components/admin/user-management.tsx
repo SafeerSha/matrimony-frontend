@@ -797,26 +797,30 @@ function ResetPasswordModal({ user, isOpen, onClose }: ResetPasswordModalProps) 
   );
 }
 
-// ─── Delete RM Modal ──────────────────────────────────────────────────────
-interface DeleteRmModalProps {
+// ─── Delete User Modal ──────────────────────────────────────────────────────
+interface DeleteUserModalProps {
   user: AdminUserListItem | null;
   isOpen: boolean;
   onClose: () => void;
   onUserDeleted: (userId: string) => void;
 }
 
-function DeleteRmModal({ user, isOpen, onClose, onUserDeleted }: DeleteRmModalProps) {
+function DeleteUserModal({ user, isOpen, onClose, onUserDeleted }: DeleteUserModalProps) {
   const [isDeleting, setIsDeleting] = useState(false);
 
   if (!isOpen || !user) return null;
 
-  const displayName = user.firstName ?? user.profile?.firstName ?? user.email?.split('@')[0] ?? 'RM';
+  const isRm = user.role === 'RM';
+  const displayName = user.firstName ?? user.profile?.firstName ?? user.email?.split('@')[0] ?? (isRm ? 'RM' : 'User');
 
   const handleDelete = async () => {
     setIsDeleting(true);
     try {
       await adminService.purgeUser(user.id);
-      toast.success('Account Deleted', `Relationship Manager account for ${displayName} has been permanently deleted.`);
+      toast.success(
+        'Account Deleted & Blocked',
+        `Account for ${displayName} has been deleted. Photos removed and future registration/login permanently blocked.`
+      );
       onUserDeleted(user.id);
       onClose();
     } catch (err: any) {
@@ -841,14 +845,16 @@ function DeleteRmModal({ user, isOpen, onClose, onUserDeleted }: DeleteRmModalPr
             <IconTrash className="h-5 w-5" />
           </div>
           <div>
-            <h3 className="text-base font-bold text-[var(--foreground)]">Delete RM Account</h3>
-            <p className="text-xs text-[var(--muted)]">Permanent deletion confirmation</p>
+            <h3 className="text-base font-bold text-[var(--foreground)]">
+              {isRm ? 'Delete RM Account' : 'Delete & Block Profile'}
+            </h3>
+            <p className="text-xs text-[var(--muted)]">Admin termination</p>
           </div>
         </div>
 
         <p className="text-xs text-[var(--muted-strong)] leading-relaxed">
-          Are you sure you want to permanently delete the Relationship Manager account for{' '}
-          <strong className="text-[var(--foreground)]">{displayName}</strong> ({user.email})? This action cannot be undone.
+          Are you sure you want to delete and permanently block the account for{' '}
+          <strong className="text-[var(--foreground)]">{displayName}</strong> ({user.email || user.phone})? All uploaded photos will be permanently removed, and this email/mobile number will be blocked from logging in or re-registering.
         </p>
 
         <div className="flex items-center justify-end gap-2 pt-2 border-t border-[var(--border)]">
@@ -861,7 +867,7 @@ function DeleteRmModal({ user, isOpen, onClose, onUserDeleted }: DeleteRmModalPr
             disabled={isDeleting}
             className="bg-red-600 hover:bg-red-700 text-white font-bold"
           >
-            {isDeleting ? 'Deleting…' : 'Delete Account'}
+            {isDeleting ? 'Deleting…' : 'Delete & Block'}
           </Button>
         </div>
       </div>
@@ -1339,11 +1345,19 @@ const STATUS_FILTER_OPTIONS: ModernSelectOption[] = [
 
 function renderUserStatusBadge(u: AdminUserListItem) {
   if (u.status === 'DELETED' || u.deletedAt) {
+    const isUserDeleted = u.deletedBy === 'USER';
     return (
-      <Badge tone="default" className="bg-rose-100 text-rose-800 border-rose-200 text-xs font-semibold inline-flex items-center gap-1.5 px-2.5 py-0.5">
-        <span className="h-1.5 w-1.5 rounded-full bg-rose-500 inline-block" />
-        Deleted
-      </Badge>
+      <div className="inline-flex flex-col items-start gap-0.5">
+        <Badge tone="default" className="bg-rose-100 text-rose-800 border-rose-200 text-xs font-semibold inline-flex items-center gap-1.5 px-2.5 py-0.5">
+          <span className="h-1.5 w-1.5 rounded-full bg-rose-500 inline-block" />
+          {isUserDeleted ? 'Deleted (User)' : 'Deleted (Admin)'}
+        </Badge>
+        {u.deletionReason && (
+          <span className="text-[10px] text-rose-700/80 max-w-[130px] truncate block" title={u.deletionReason}>
+            {u.deletionReason}
+          </span>
+        )}
+      </div>
     );
   }
   if (u.isBanned || u.status === 'BLOCKED') {
@@ -1430,9 +1444,21 @@ export function UserManagement() {
     );
   };
 
-  const handleRmDeleted = (deletedUserId: string) => {
-    setUsers((prev) => prev.filter((u) => u.id !== deletedUserId));
-    setTotalCount((prev) => Math.max(0, prev - 1));
+  const handleUserDeleted = (deletedUserId: string) => {
+    setUsers((prev) =>
+      prev.map((u) =>
+        u.id === deletedUserId
+          ? {
+              ...u,
+              status: 'DELETED',
+              deletedBy: 'ADMIN',
+              isBanned: true,
+              deletedAt: new Date().toISOString(),
+              deletionReason: 'Account terminated by administrator',
+            }
+          : u
+      )
+    );
   };
 
   // Real-time count of active online users in current list
@@ -1656,12 +1682,12 @@ export function UserManagement() {
         onClose={() => setResetPasswordUser(null)}
       />
 
-      {/* Delete RM Account Modal */}
-      <DeleteRmModal
+      {/* Delete User/RM Account Modal */}
+      <DeleteUserModal
         user={deletingRmUser}
         isOpen={Boolean(deletingRmUser)}
         onClose={() => setDeletingRmUser(null)}
-        onUserDeleted={handleRmDeleted}
+        onUserDeleted={handleUserDeleted}
       />
 
       <div className="space-y-6 animate-in fade-in slide-in-from-bottom-3 duration-300">
@@ -2358,6 +2384,20 @@ export function UserManagement() {
                                   )}
                                   <span>{isBlocked ? 'Unblock' : 'Block'}</span>
                                 </Button>
+                                {u.status !== 'DELETED' && (
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    disabled={isActing}
+                                    onClick={() => setDeletingRmUser(u)}
+                                    aria-label={`Delete ${displayName}`}
+                                    title="Delete & Block Profile"
+                                    className="text-xs h-8 px-2.5 flex items-center gap-1 font-medium text-red-600 hover:text-red-700 border-red-200 hover:bg-red-50 cursor-pointer"
+                                  >
+                                    <IconTrash className="h-3.5 w-3.5" aria-hidden="true" />
+                                    <span>Delete</span>
+                                  </Button>
+                                )}
                               </div>
                             )}
                           </td>
