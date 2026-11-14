@@ -109,6 +109,8 @@ export interface ProfileVisitor {
   online?: boolean;
   verified?: boolean;
   visitedAt: string;
+  isBlurred?: boolean;
+  isLocked?: boolean;
 }
 
 export const profileService = {

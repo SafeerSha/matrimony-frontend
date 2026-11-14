@@ -21,6 +21,7 @@ import {
   IconSparkles,
   IconMessageCircle,
   IconEye,
+  IconLock,
 } from '@tabler/icons-react';
 import { Avatar } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
@@ -220,12 +221,12 @@ export default function DashboardPage() {
             });
             const recPool = resolvedCategory
               ? mappedRecommendations.filter((p) => {
-                  const pCat = ((p as any).category || '').toLowerCase().trim();
-                  if (!pCat) return true;
-                  if (resolvedCategory === 'Friendship') return pCat.includes('friend');
-                  if (resolvedCategory === 'Live-In') return pCat.includes('live') || pCat.includes('living');
-                  return !pCat.includes('friend') && !pCat.includes('live') && !pCat.includes('living');
-                })
+                const pCat = ((p as any).category || '').toLowerCase().trim();
+                if (!pCat) return true;
+                if (resolvedCategory === 'Friendship') return pCat.includes('friend');
+                if (resolvedCategory === 'Live-In') return pCat.includes('live') || pCat.includes('living');
+                return !pCat.includes('friend') && !pCat.includes('live') && !pCat.includes('living');
+              })
               : mappedRecommendations;
             setRecommendations(recPool);
           }
@@ -326,12 +327,12 @@ export default function DashboardPage() {
 
             const categoryFilteredSearch = resolvedCategory
               ? mappedSearch.filter((p) => {
-                  const pCat = ((p as any).category || '').toLowerCase().trim();
-                  if (!pCat) return true;
-                  if (resolvedCategory === 'Friendship') return pCat.includes('friend');
-                  if (resolvedCategory === 'Live-In') return pCat.includes('live') || pCat.includes('living');
-                  return !pCat.includes('friend') && !pCat.includes('live') && !pCat.includes('living');
-                })
+                const pCat = ((p as any).category || '').toLowerCase().trim();
+                if (!pCat) return true;
+                if (resolvedCategory === 'Friendship') return pCat.includes('friend');
+                if (resolvedCategory === 'Live-In') return pCat.includes('live') || pCat.includes('living');
+                return !pCat.includes('friend') && !pCat.includes('live') && !pCat.includes('living');
+              })
               : mappedSearch;
 
             // 1. Deduplicate Recently Joined rail:
@@ -742,7 +743,7 @@ export default function DashboardPage() {
               <IconEye className="w-4 h-4" />
             </div>
             <div>
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 flex-wrap">
                 <h2 className="text-base sm:text-lg font-bold text-[var(--foreground)] tracking-tight">
                   Who Visited My Profile
                 </h2>
@@ -751,21 +752,44 @@ export default function DashboardPage() {
                     {visitors.length} {visitors.length === 1 ? 'visitor' : 'visitors'}
                   </span>
                 )}
+                {!isSubscribed && (
+                  <button
+                    type="button"
+                    onClick={openUpgradeModal}
+                    className="inline-flex items-center gap-1 text-[11px] font-bold text-amber-800 bg-amber-50 hover:bg-amber-100 border border-amber-200/80 px-2 py-0.5 rounded-full transition cursor-pointer"
+                  >
+                    <IconLock className="w-3 h-3 text-amber-600" />
+                    <span>Active Plan Required</span>
+                  </button>
+                )}
               </div>
               <p className="text-xs text-[var(--muted)]">
-                Members who recently viewed your profile
+                {!isSubscribed
+                  ? 'Members who viewed your profile · Upgrade to an active plan to reveal and connect'
+                  : 'Members who recently viewed your profile'}
               </p>
             </div>
           </div>
 
           {visitors.length > 0 && (
-            <Link
-              href="/app/discover"
-              className="focus-ring inline-flex items-center gap-1 text-xs font-bold text-[var(--primary)] hover:text-[var(--primary-deep)] rounded-lg p-0.5"
-            >
-              <span>Explore all</span>
-              <IconArrowRight className="h-3.5 w-3.5" />
-            </Link>
+            !isSubscribed ? (
+              <button
+                type="button"
+                onClick={openUpgradeModal}
+                className="focus-ring inline-flex items-center gap-1 text-xs font-bold text-[var(--primary)] hover:text-[var(--primary-deep)] rounded-lg p-0.5 cursor-pointer"
+              >
+                <span>Unlock with plan</span>
+                <IconArrowRight className="h-3.5 w-3.5" />
+              </button>
+            ) : (
+              <Link
+                href="/app/discover"
+                className="focus-ring inline-flex items-center gap-1 text-xs font-bold text-[var(--primary)] hover:text-[var(--primary-deep)] rounded-lg p-0.5"
+              >
+                <span>Explore all</span>
+                <IconArrowRight className="h-3.5 w-3.5" />
+              </Link>
+            )
           )}
         </div>
 
@@ -786,53 +810,97 @@ export default function DashboardPage() {
             <div className="min-w-0">
               <p className="font-semibold text-[var(--foreground)] text-xs sm:text-sm">No recent visitors yet</p>
               <p className="text-[11px] text-[var(--muted)] mt-0.5">
-                When other members view your profile, their circular profile cards will appear here in real-time.
+                When other members view your profile, their circular profile cards will appear here.
               </p>
             </div>
           </div>
         ) : (
           <div className="relative">
             <div className="flex items-center gap-4 sm:gap-5 overflow-x-auto py-2 px-1 scrollbar-none no-scrollbar touch-pan-x">
-              {visitors.map((visitor) => (
-                <div
-                  key={visitor.id}
-                  role="button"
-                  tabIndex={0}
-                  onClick={() => router.push(`/app/profile?user=${visitor.id}`)}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter' || e.key === ' ') {
-                      e.preventDefault();
+              {visitors.map((visitor) => {
+                const shouldBlur = !isSubscribed || visitor.isBlurred || visitor.isLocked;
+                return (
+                  <div
+                    key={visitor.id}
+                    role="button"
+                    tabIndex={0}
+                    onClick={() => {
+                      if (!isSubscribed) {
+                        openUpgradeModal();
+                        return;
+                      }
                       router.push(`/app/profile?user=${visitor.id}`);
+                    }}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault();
+                        if (!isSubscribed) {
+                          openUpgradeModal();
+                          return;
+                        }
+                        router.push(`/app/profile?user=${visitor.id}`);
+                      }
+                    }}
+                    className="flex flex-col items-center gap-1.5 shrink-0 group cursor-pointer focus:outline-none select-none transition-transform active:scale-95"
+                    title={
+                      !isSubscribed
+                        ? 'Upgrade to an active plan to view who visited your profile'
+                        : `View ${visitor.fullName || visitor.name}'s profile`
                     }
-                  }}
-                  className="flex flex-col items-center gap-1.5 shrink-0 group cursor-pointer focus:outline-none select-none transition-transform active:scale-95"
-                  title={`View ${visitor.fullName || visitor.name}'s profile`}
-                >
-                  {/* Circle Avatar Container - Not too large, not too small */}
-                  <div className="relative">
-                    <div className="w-16 h-16 sm:w-[70px] sm:h-[70px] rounded-full p-[2.5px] bg-gradient-to-tr from-[#80132E] via-[#C94A6E] to-[#E59866] group-hover:scale-105 group-hover:shadow-md transition-all duration-200">
-                      <div className="w-full h-full rounded-full overflow-hidden bg-white border-2 border-white relative shadow-inner">
-                        <SafeCardImage
-                          src={visitor.avatar || visitor.image}
-                          alt={visitor.name}
-                          name={visitor.name}
-                        />
-                      </div>
-                    </div>
-                    {visitor.online && (
-                      <span
-                        title="Online now"
-                        className="absolute bottom-0.5 right-0.5 h-3.5 w-3.5 rounded-full bg-emerald-500 border-2 border-white shadow-xs"
-                      />
-                    )}
-                  </div>
+                  >
+                    {/* Circle Avatar Container - Not too large, not too small */}
+                    <div className="relative">
+                      <div
+                        className={cn(
+                          'w-16 h-16 sm:w-[70px] sm:h-[70px] rounded-full p-[2.5px] group-hover:scale-105 group-hover:shadow-md transition-all duration-200',
+                          shouldBlur
+                            ? 'bg-gradient-to-tr from-amber-400 via-amber-500 to-rose-400'
+                            : 'bg-gradient-to-tr from-[#80132E] via-[#C94A6E] to-[#E59866]'
+                        )}
+                      >
+                        <div className="w-full h-full rounded-full overflow-hidden bg-white border-2 border-white relative shadow-inner">
+                          {/* Profile Image - Blurred if user is on free plan */}
+                          <div
+                            className={cn(
+                              'w-full h-full transition-all duration-300',
+                              shouldBlur && 'filter blur-[7px] scale-125 select-none'
+                            )}
+                          >
+                            <SafeCardImage
+                              src={visitor.avatar || visitor.image}
+                              alt={visitor.name}
+                              name={visitor.name}
+                            />
+                          </div>
 
-                  {/* Name only under the circle */}
-                  <span className="text-xs font-semibold text-[var(--foreground)] group-hover:text-[var(--primary)] transition-colors text-center max-w-[76px] truncate leading-tight">
-                    {visitor.firstName || visitor.name}
-                  </span>
-                </div>
-              ))}
+                          {/* Lock Overlay when on Free Plan */}
+                          {shouldBlur && (
+                            <div className="absolute inset-0 bg-black/20 backdrop-blur-[1px] flex items-center justify-center z-10 transition-colors group-hover:bg-black/30">
+                              <div className="w-6 h-6 rounded-full bg-white/95 text-amber-700 flex items-center justify-center shadow-xs border border-amber-200">
+                                <IconLock className="w-3.5 h-3.5" />
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Online dot (only shown when plan is active and visitor is online) */}
+                      {!shouldBlur && visitor.online && (
+                        <span
+                          title="Online now"
+                          className="absolute bottom-0.5 right-0.5 h-3.5 w-3.5 rounded-full bg-emerald-500 border-2 border-white shadow-xs"
+                        />
+                      )}
+                    </div>
+
+                    {/* Name under the circle */}
+                    <span className="text-xs font-semibold text-[var(--foreground)] group-hover:text-[var(--primary)] transition-colors text-center max-w-[76px] truncate leading-tight flex items-center gap-0.5 justify-center">
+                      {shouldBlur && <IconLock className="w-2.5 h-2.5 text-amber-600 shrink-0" />}
+                      <span className="truncate">{visitor.firstName || visitor.name}</span>
+                    </span>
+                  </div>
+                );
+              })}
             </div>
           </div>
         )}
@@ -1173,95 +1241,95 @@ export default function DashboardPage() {
               const isInterestSent = sentInterestIds.has(p.id) && !isMatched;
               const isInterestReceived = receivedInterestIds.has(p.id) && !isMatched;
               return (
-              <Card
-                key={p.id}
-                variant="interactive"
-                className="p-3 sm:p-3.5 rounded-xl border-[var(--border)] bg-white flex flex-col justify-between gap-2.5 min-w-0 w-full overflow-hidden shadow-2xs"
-              >
-                <div className="flex items-center gap-2.5 min-w-0">
-                  <Avatar
-                    src={p.image}
-                    name={p.name}
-                    size="md"
-                    online={p.online}
-                    verified={p.verified}
-                    bordered
-                  />
-                  <div className="min-w-0 flex-1">
-                    <div className="flex items-center gap-1.5">
-                      <Link
-                        href={`/app/profile?user=${p.id}`}
-                        className="font-editorial-title text-sm sm:text-base font-bold text-[var(--foreground)] hover:text-[var(--primary)] transition-colors truncate"
-                      >
-                        {p.name}, {p.age}
-                      </Link>
-                    </div>
+                <Card
+                  key={p.id}
+                  variant="interactive"
+                  className="p-3 sm:p-3.5 rounded-xl border-[var(--border)] bg-white flex flex-col justify-between gap-2.5 min-w-0 w-full overflow-hidden shadow-2xs"
+                >
+                  <div className="flex items-center gap-2.5 min-w-0">
+                    <Avatar
+                      src={p.image}
+                      name={p.name}
+                      size="md"
+                      online={p.online}
+                      verified={p.verified}
+                      bordered
+                    />
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center gap-1.5">
+                        <Link
+                          href={`/app/profile?user=${p.id}`}
+                          className="font-editorial-title text-sm sm:text-base font-bold text-[var(--foreground)] hover:text-[var(--primary)] transition-colors truncate"
+                        >
+                          {p.name}, {p.age}
+                        </Link>
+                      </div>
 
-                    <p className="mt-0.5 text-[11px] text-[var(--muted)] truncate flex items-center gap-1">
-                      <IconMapPin className="h-2.5 w-2.5 text-[var(--accent)] shrink-0" />
-                      <span>{p.city}</span>
-                      <span>·</span>
-                      <span className="truncate">{p.profession}</span>
-                    </p>
+                      <p className="mt-0.5 text-[11px] text-[var(--muted)] truncate flex items-center gap-1">
+                        <IconMapPin className="h-2.5 w-2.5 text-[var(--accent)] shrink-0" />
+                        <span>{p.city}</span>
+                        <span>·</span>
+                        <span className="truncate">{p.profession}</span>
+                      </p>
 
-                    <div className="mt-1 flex flex-wrap gap-1">
-                      {p.motherTongue && (
-                        <span className="rounded-md bg-[var(--surface-muted)] px-1.5 py-0.2 text-[9px] font-medium text-[var(--muted-strong)]">
-                          {p.motherTongue}
-                        </span>
-                      )}
-                      {p.education && (
-                        <span className="rounded-md bg-[var(--surface-muted)] px-1.5 py-0.2 text-[9px] font-medium text-[var(--muted-strong)]">
-                          {p.education.split(',')[0]}
-                        </span>
-                      )}
+                      <div className="mt-1 flex flex-wrap gap-1">
+                        {p.motherTongue && (
+                          <span className="rounded-md bg-[var(--surface-muted)] px-1.5 py-0.2 text-[9px] font-medium text-[var(--muted-strong)]">
+                            {p.motherTongue}
+                          </span>
+                        )}
+                        {p.education && (
+                          <span className="rounded-md bg-[var(--surface-muted)] px-1.5 py-0.2 text-[9px] font-medium text-[var(--muted-strong)]">
+                            {p.education.split(',')[0]}
+                          </span>
+                        )}
+                      </div>
                     </div>
                   </div>
-                </div>
 
-                <div className="flex items-center gap-2 pt-2 border-t border-[var(--border)]/70">
-                  <Button
-                    href={`/app/profile?user=${p.id}`}
-                    variant="secondary"
-                    size="sm"
-                    className="flex-1 h-8 text-xs font-bold rounded-lg"
-                  >
-                    View
-                  </Button>
-                  {isMatched ? (
+                  <div className="flex items-center gap-2 pt-2 border-t border-[var(--border)]/70">
                     <Button
-                      href={`/app/messages?user=${p.id}`}
-                      variant="primary"
+                      href={`/app/profile?user=${p.id}`}
+                      variant="secondary"
                       size="sm"
-                      className="flex-1 h-8 text-xs font-bold rounded-lg bg-emerald-600 hover:bg-emerald-700"
+                      className="flex-1 h-8 text-xs font-bold rounded-lg"
                     >
-                      Chat
+                      View
                     </Button>
-                  ) : isInterestReceived ? (
-                    <Button
-                      variant="primary"
-                      size="sm"
-                      onClick={() => handleAcceptInterest(p.id, p.name)}
-                      className="flex-1 h-8 text-xs font-bold rounded-lg bg-emerald-600 hover:bg-emerald-700"
-                    >
-                      Accept
-                    </Button>
-                  ) : (
-                    <Button
-                      variant={isInterestSent ? 'secondary' : 'primary'}
-                      size="sm"
-                      disabled={isInterestSent}
-                      onClick={() => handleSendInterest(p.id, p.name)}
-                      className={cn(
-                        'flex-1 h-8 text-xs font-bold rounded-lg',
-                        isInterestSent && 'opacity-75 cursor-not-allowed'
-                      )}
-                    >
-                      {isInterestSent ? 'Interest Sent' : 'Connect'}
-                    </Button>
-                  )}
-                </div>
-              </Card>
+                    {isMatched ? (
+                      <Button
+                        href={`/app/messages?user=${p.id}`}
+                        variant="primary"
+                        size="sm"
+                        className="flex-1 h-8 text-xs font-bold rounded-lg bg-emerald-600 hover:bg-emerald-700"
+                      >
+                        Chat
+                      </Button>
+                    ) : isInterestReceived ? (
+                      <Button
+                        variant="primary"
+                        size="sm"
+                        onClick={() => handleAcceptInterest(p.id, p.name)}
+                        className="flex-1 h-8 text-xs font-bold rounded-lg bg-emerald-600 hover:bg-emerald-700"
+                      >
+                        Accept
+                      </Button>
+                    ) : (
+                      <Button
+                        variant={isInterestSent ? 'secondary' : 'primary'}
+                        size="sm"
+                        disabled={isInterestSent}
+                        onClick={() => handleSendInterest(p.id, p.name)}
+                        className={cn(
+                          'flex-1 h-8 text-xs font-bold rounded-lg',
+                          isInterestSent && 'opacity-75 cursor-not-allowed'
+                        )}
+                      >
+                        {isInterestSent ? 'Interest Sent' : 'Connect'}
+                      </Button>
+                    )}
+                  </div>
+                </Card>
               );
             })
           )}
