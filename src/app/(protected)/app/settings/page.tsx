@@ -110,7 +110,7 @@ function SettingsContent() {
       } else {
         await profileService.deleteAccount(accountActionReason, accountActionFeedback);
         toast.flash('warning', 'Account Deleted', {
-          description: 'Your profile has been scheduled for deletion.',
+          description: 'Your profile has been deleted. A 30-day cooling-off period is now in effect.',
         });
       }
       setAccountActionModal(false);
@@ -1624,11 +1624,11 @@ function SettingsContent() {
             </div>
           ) : (
             <div className="rounded-2xl bg-red-50/70 border border-red-200/80 p-3 text-xs text-red-900 leading-relaxed">
-              <p className="font-semibold mb-1">Important: Account Deletion Policy</p>
+              <p className="font-semibold mb-1">Important: Account Deletion & Cooling-off Policy</p>
               <ul className="list-disc pl-4 space-y-0.5 text-[11px] text-red-800">
-                <li>Your profile and conversations will be immediately deactivated.</li>
-                <li>A 30-day grace period applies: contact support anytime to cancel.</li>
-                <li>After 30 days, personal data and photos are permanently purged.</li>
+                <li>Your profile and chats will be immediately deactivated and all photos permanently removed.</li>
+                <li>A 30-day cooling-off period applies. You cannot log in or register during this period.</li>
+                <li>After 30 days, you can create a fresh profile using the same email or mobile number.</li>
               </ul>
             </div>
           )}
@@ -1651,11 +1651,12 @@ function SettingsContent() {
                       { value: 'Other reason', label: 'Other reason' },
                     ]
                   : [
-                      { value: 'Found my match on IshtamChat', label: 'Found my match on IshtamChat! 💍' },
+                      { value: 'Found match / Marriage fixed', label: 'Found match / Marriage fixed! 💍💒' },
                       { value: 'Found partner outside platform', label: 'Found partner outside platform' },
+                      { value: 'Taking a temporary break', label: 'Taking a break from matrimonial search' },
                       { value: 'Did not find suitable matches', label: 'Did not find suitable matches' },
                       { value: 'Privacy or safety concerns', label: 'Privacy or safety concerns' },
-                      { value: 'Closing matrimonial search', label: 'Closing matrimonial search' },
+                      { value: 'Other reason', label: 'Other reason' },
                     ]
               }
               size="sm"
