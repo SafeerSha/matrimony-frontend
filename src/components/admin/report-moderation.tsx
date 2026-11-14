@@ -1,21 +1,23 @@
 'use client';
 
 import React, { useState, useEffect, useCallback } from 'react';
+import Link from 'next/link';
 import {
   IconFlag,
   IconAlertTriangle,
   IconCheck,
   IconX,
   IconBan,
+  IconShieldOff,
   IconLoader2,
   IconRefresh,
-  IconFilter,
   IconChevronLeft,
   IconChevronRight,
   IconUser,
   IconClock,
   IconShieldCheck,
-  IconMessage,
+  IconEye,
+  IconPencil,
 } from '@tabler/icons-react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -34,7 +36,12 @@ const REASON_LABELS: Record<string, string> = {
   other: 'Other concern',
 };
 
-export function ReportModeration() {
+export interface ReportModerationProps {
+  portal?: 'admin' | 'rm';
+  onPendingCountChange?: (count: number) => void;
+}
+
+export function ReportModeration({ portal = 'admin', onPendingCountChange }: ReportModerationProps) {
   const [reports, setReports] = useState<AdminUserReportItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [statusFilter, setStatusFilter] = useState<'ALL' | 'PENDING' | 'REVIEWED' | 'DISMISSED' | 'ACTION_TAKEN'>('PENDING');
@@ -43,9 +50,20 @@ export function ReportModeration() {
   const [totalCount, setTotalCount] = useState(0);
   const [actionLoadingId, setActionLoadingId] = useState<string | null>(null);
 
-  // Ban user confirmation modal
+  // Quick Ban user modal
   const [banConfirmReport, setBanConfirmReport] = useState<AdminUserReportItem | null>(null);
   const [isBanning, setIsBanning] = useState(false);
+
+  // Quick Unban user modal
+  const [unbanConfirmReport, setUnbanConfirmReport] = useState<AdminUserReportItem | null>(null);
+  const [isUnbanning, setIsUnbanning] = useState(false);
+
+  // Comprehensive Action & Resolution modal
+  const [actionModalReport, setActionModalReport] = useState<AdminUserReportItem | null>(null);
+  const [actionStatus, setActionStatus] = useState<'ACTION_TAKEN' | 'REVIEWED' | 'DISMISSED' | 'PENDING'>('ACTION_TAKEN');
+  const [actionNotes, setActionNotes] = useState('');
+  const [alsoBanUser, setAlsoBanUser] = useState(false);
+  const [isSubmittingAction, setIsSubmittingAction] = useState(false);
 
   const fetchReports = useCallback(async (signal?: AbortSignal) => {
     try {
@@ -61,6 +79,10 @@ export function ReportModeration() {
       setReports(res.data || []);
       setTotalPages(res.meta?.totalPages || 1);
       setTotalCount(res.meta?.total || 0);
+
+      if (statusFilter === 'PENDING') {
+        onPendingCountChange?.(res.meta?.total || 0);
+      }
     } catch (err: any) {
       if (err?.name === 'AbortError') return;
       console.error('Failed to load reports:', err);
@@ -68,13 +90,24 @@ export function ReportModeration() {
     } finally {
       setLoading(false);
     }
-  }, [statusFilter, page]);
+  }, [statusFilter, page, onPendingCountChange]);
 
   useEffect(() => {
     const controller = new AbortController();
     fetchReports(controller.signal);
     return () => controller.abort();
   }, [fetchReports]);
+
+  // Sync total pending count for parent badge
+  useEffect(() => {
+    if (!onPendingCountChange) return;
+    const controller = new AbortController();
+    reportService
+      .getReportsAdmin({ status: 'PENDING', limit: 1 }, controller.signal)
+      .then((res) => onPendingCountChange(res.meta?.total || 0))
+      .catch(() => {});
+    return () => controller.abort();
+  }, [onPendingCountChange]);
 
   const handleUpdateStatus = async (
     reportId: string,
@@ -103,7 +136,7 @@ export function ReportModeration() {
       await adminService.banUser(banConfirmReport.reportedId);
       await reportService.updateReportAdmin(banConfirmReport.id, {
         status: 'ACTION_TAKEN',
-        adminNotes: 'Reported user has been banned by administrator.',
+        adminNotes: `Reported member banned by ${portal === 'rm' ? 'Relationship Manager' : 'Administrator'}.`,
       });
       toast.success('User Banned', `${banConfirmReport.reported?.firstName || 'Reported user'} has been banned and report resolved.`);
       setBanConfirmReport(null);
@@ -112,6 +145,52 @@ export function ReportModeration() {
       toast.error('Ban Action Failed', err?.message || 'Could not ban user.');
     } finally {
       setIsBanning(false);
+    }
+  };
+
+  const handleUnbanReportedUser = async () => {
+    if (!unbanConfirmReport) return;
+    try {
+      setIsUnbanning(true);
+      await adminService.unbanUser(unbanConfirmReport.reportedId);
+      toast.success('User Unbanned', `${unbanConfirmReport.reported?.firstName || 'Reported user'} has been unbanned.`);
+      setUnbanConfirmReport(null);
+      fetchReports();
+    } catch (err: any) {
+      toast.error('Unban Failed', err?.message || 'Could not unban user.');
+    } finally {
+      setIsUnbanning(false);
+    }
+  };
+
+  const openActionModal = (report: AdminUserReportItem) => {
+    setActionModalReport(report);
+    setActionStatus(report.status === 'PENDING' ? 'ACTION_TAKEN' : report.status);
+    setActionNotes(report.adminNotes || '');
+    setAlsoBanUser(false);
+  };
+
+  const handleSubmitActionModal = async () => {
+    if (!actionModalReport) return;
+    try {
+      setIsSubmittingAction(true);
+      if (alsoBanUser && !actionModalReport.reported?.isBanned) {
+        await adminService.banUser(actionModalReport.reportedId);
+      }
+      await reportService.updateReportAdmin(actionModalReport.id, {
+        status: actionStatus,
+        adminNotes: actionNotes.trim() || undefined,
+      });
+      toast.success(
+        'Action Recorded',
+        `Report marked as ${actionStatus.replace('_', ' ')}${alsoBanUser ? ' & member banned' : ''}.`
+      );
+      setActionModalReport(null);
+      fetchReports();
+    } catch (err: any) {
+      toast.error('Action Failed', err?.message || 'Could not record action.');
+    } finally {
+      setIsSubmittingAction(false);
     }
   };
 
@@ -142,7 +221,7 @@ export function ReportModeration() {
             size="sm"
             onClick={() => fetchReports()}
             disabled={loading}
-            className="text-xs h-9"
+            className="text-xs h-9 cursor-pointer"
           >
             <IconRefresh className={cn('mr-1.5 h-3.5 w-3.5', loading && 'animate-spin text-[var(--primary)]')} />
             Refresh
@@ -248,8 +327,20 @@ export function ReportModeration() {
                     {/* Parties involved */}
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 p-3 rounded-xl bg-[var(--surface-muted)] text-xs">
                       <div>
-                        <span className="text-[10px] uppercase font-bold text-[var(--muted)] block">Reported Member</span>
-                        <div className="font-bold text-[var(--foreground)] mt-0.5 flex items-center gap-1.5">
+                        <div className="flex items-center justify-between mb-0.5">
+                          <span className="text-[10px] uppercase font-bold text-[var(--muted)] block">Reported Member</span>
+                          <Link
+                            href={`/rm/users/${report.reportedId}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center gap-1 text-[11px] font-bold text-[#80132E] hover:underline"
+                            title="Inspect full profile details in new tab"
+                          >
+                            <IconEye className="h-3 w-3" />
+                            <span>View Profile</span>
+                          </Link>
+                        </div>
+                        <div className="font-bold text-[var(--foreground)] mt-0.5 flex items-center gap-1.5 flex-wrap">
                           <span>{reportedName}</span>
                           {report.reported?.profileId && (
                             <span className="text-[10px] text-[var(--muted)] font-normal">
@@ -264,8 +355,22 @@ export function ReportModeration() {
                       </div>
 
                       <div>
-                        <span className="text-[10px] uppercase font-bold text-[var(--muted)] block">Reported By</span>
-                        <div className="font-bold text-[var(--foreground)] mt-0.5 flex items-center gap-1.5">
+                        <div className="flex items-center justify-between mb-0.5">
+                          <span className="text-[10px] uppercase font-bold text-[var(--muted)] block">Reported By</span>
+                          {report.reporterId && (
+                            <Link
+                              href={`/rm/users/${report.reporterId}`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="inline-flex items-center gap-1 text-[11px] font-bold text-[var(--muted)] hover:text-[var(--foreground)] hover:underline"
+                              title="Inspect reporter profile in new tab"
+                            >
+                              <IconEye className="h-3 w-3" />
+                              <span>View Profile</span>
+                            </Link>
+                          )}
+                        </div>
+                        <div className="font-bold text-[var(--foreground)] mt-0.5 flex items-center gap-1.5 flex-wrap">
                           <span>{reporterName}</span>
                           {report.reporter?.profileId && (
                             <span className="text-[10px] text-[var(--muted)] font-normal">
@@ -285,16 +390,29 @@ export function ReportModeration() {
                       </div>
                     )}
 
-                    {/* Admin notes */}
+                    {/* Staff Moderation notes */}
                     {report.adminNotes && (
-                      <p className="text-xs text-[var(--muted)] italic">
-                        <strong>Admin Note:</strong> {report.adminNotes}
-                      </p>
+                      <div className="text-xs text-[var(--muted)] bg-amber-50/70 border border-amber-200/60 rounded-xl p-2.5">
+                        <span className="font-bold text-[11px] text-amber-900 block mb-0.5">Moderation Note:</span>
+                        <p className="italic text-amber-950 whitespace-pre-wrap">{report.adminNotes}</p>
+                      </div>
                     )}
                   </div>
 
                   {/* Right: Actions */}
-                  <div className="flex sm:flex-row lg:flex-col items-center sm:justify-end gap-2 shrink-0 pt-2 lg:pt-0 border-t lg:border-t-0 border-[var(--border)]">
+                  <div className="flex flex-wrap lg:flex-col items-center sm:justify-end gap-2 shrink-0 pt-2 lg:pt-0 border-t lg:border-t-0 border-[var(--border)]">
+                    {/* Primary Take Action Button */}
+                    <Button
+                      size="sm"
+                      variant="primary"
+                      disabled={isLoadingThis}
+                      onClick={() => openActionModal(report)}
+                      className="text-xs h-8 bg-[#80132E] hover:bg-[#680F25] text-white cursor-pointer"
+                    >
+                      <IconPencil className="mr-1 h-3.5 w-3.5" />
+                      Take Action
+                    </Button>
+
                     {report.status === 'PENDING' && (
                       <>
                         <Button
@@ -302,7 +420,7 @@ export function ReportModeration() {
                           variant="outline"
                           disabled={isLoadingThis}
                           onClick={() => handleUpdateStatus(report.id, 'REVIEWED')}
-                          className="text-xs h-8 text-blue-700 border-blue-200 hover:bg-blue-50"
+                          className="text-xs h-8 text-blue-700 border-blue-200 hover:bg-blue-50 cursor-pointer"
                         >
                           <IconCheck className="mr-1 h-3.5 w-3.5" />
                           Mark Reviewed
@@ -313,7 +431,7 @@ export function ReportModeration() {
                           variant="outline"
                           disabled={isLoadingThis}
                           onClick={() => handleUpdateStatus(report.id, 'DISMISSED')}
-                          className="text-xs h-8 text-zinc-600 border-zinc-200 hover:bg-zinc-50"
+                          className="text-xs h-8 text-zinc-600 border-zinc-200 hover:bg-zinc-50 cursor-pointer"
                         >
                           <IconX className="mr-1 h-3.5 w-3.5" />
                           Dismiss
@@ -321,15 +439,26 @@ export function ReportModeration() {
                       </>
                     )}
 
-                    {!report.reported?.isBanned && (
+                    {!report.reported?.isBanned ? (
                       <Button
                         size="sm"
                         disabled={isLoadingThis}
                         onClick={() => setBanConfirmReport(report)}
-                        className="text-xs h-8 bg-rose-700 hover:bg-rose-800 text-white"
+                        className="text-xs h-8 bg-rose-700 hover:bg-rose-800 text-white cursor-pointer"
                       >
                         <IconBan className="mr-1 h-3.5 w-3.5" />
                         Ban Member
+                      </Button>
+                    ) : (
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        disabled={isLoadingThis}
+                        onClick={() => setUnbanConfirmReport(report)}
+                        className="text-xs h-8 text-emerald-700 border-emerald-300 hover:bg-emerald-50 cursor-pointer"
+                      >
+                        <IconShieldCheck className="mr-1 h-3.5 w-3.5" />
+                        Unban Member
                       </Button>
                     )}
                   </div>
@@ -350,7 +479,7 @@ export function ReportModeration() {
                   variant="outline"
                   disabled={page <= 1 || loading}
                   onClick={() => setPage((p) => Math.max(1, p - 1))}
-                  className="h-8 w-8 p-0"
+                  className="h-8 w-8 p-0 cursor-pointer"
                 >
                   <IconChevronLeft className="h-4 w-4" />
                 </Button>
@@ -359,7 +488,7 @@ export function ReportModeration() {
                   variant="outline"
                   disabled={page >= totalPages || loading}
                   onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-                  className="h-8 w-8 p-0"
+                  className="h-8 w-8 p-0 cursor-pointer"
                 >
                   <IconChevronRight className="h-4 w-4" />
                 </Button>
@@ -368,6 +497,115 @@ export function ReportModeration() {
           )}
         </div>
       )}
+
+      {/* Comprehensive Action & Resolution Modal */}
+      <Modal
+        isOpen={Boolean(actionModalReport)}
+        onClose={() => !isSubmittingAction && setActionModalReport(null)}
+        size="md"
+        title="Take Action on Report"
+        description={`Record moderation resolution and action details for report against ${actionModalReport?.reported?.firstName || 'member'}.`}
+      >
+        <div className="space-y-4 pt-2">
+          {/* Target Status Selection */}
+          <div>
+            <label className="text-xs font-bold text-[var(--foreground)] block mb-1.5">
+              Set Resolution Status
+            </label>
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+              {(
+                [
+                  { value: 'ACTION_TAKEN', label: 'Action Taken', tone: 'text-rose-700 border-rose-200 bg-rose-50' },
+                  { value: 'REVIEWED', label: 'Reviewed', tone: 'text-blue-700 border-blue-200 bg-blue-50' },
+                  { value: 'DISMISSED', label: 'Dismissed', tone: 'text-zinc-700 border-zinc-200 bg-zinc-50' },
+                  { value: 'PENDING', label: 'Pending', tone: 'text-amber-700 border-amber-200 bg-amber-50' },
+                ] as const
+              ).map((opt) => (
+                <button
+                  key={opt.value}
+                  type="button"
+                  onClick={() => setActionStatus(opt.value)}
+                  className={cn(
+                    'px-2.5 py-2 rounded-xl text-xs font-semibold border transition-all text-center cursor-pointer',
+                    actionStatus === opt.value
+                      ? 'border-[#80132E] bg-[#80132E] text-white shadow-xs'
+                      : 'border-[var(--border)] bg-white text-[var(--foreground)] hover:bg-[var(--surface-muted)]'
+                  )}
+                >
+                  {opt.label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Notes textarea */}
+          <div>
+            <label className="text-xs font-bold text-[var(--foreground)] block mb-1">
+              Moderation / Staff Note (Optional)
+            </label>
+            <textarea
+              rows={3}
+              value={actionNotes}
+              onChange={(e) => setActionNotes(e.target.value)}
+              placeholder="e.g. Spoke with member, issued formal warning, or removed inappropriate photos."
+              className="w-full text-xs rounded-xl border border-[var(--border)] p-3 focus:outline-none focus:ring-2 focus:ring-[#80132E]/30 focus:border-[#80132E] resize-none"
+            />
+          </div>
+
+          {/* Also Ban Checkbox */}
+          {!actionModalReport?.reported?.isBanned && (
+            <label className="flex items-start gap-2.5 p-3 rounded-xl border border-rose-200 bg-rose-50/50 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={alsoBanUser}
+                onChange={(e) => setAlsoBanUser(e.target.checked)}
+                className="mt-0.5 rounded border-rose-300 text-rose-700 focus:ring-rose-500 h-4 w-4"
+              />
+              <div className="text-xs">
+                <span className="font-bold text-rose-900 block">
+                  Also ban this reported member immediately
+                </span>
+                <span className="text-rose-700 text-[11px] block mt-0.5">
+                  Terminates all active sessions and permanently blocks login and registration.
+                </span>
+              </div>
+            </label>
+          )}
+
+          <div className="flex items-center justify-end gap-2 pt-2 border-t border-[var(--border)]">
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              disabled={isSubmittingAction}
+              onClick={() => setActionModalReport(null)}
+              className="cursor-pointer"
+            >
+              Cancel
+            </Button>
+            <Button
+              type="button"
+              variant="primary"
+              size="sm"
+              disabled={isSubmittingAction}
+              onClick={handleSubmitActionModal}
+              className="bg-[#80132E] hover:bg-[#680F25] text-white gap-1.5 cursor-pointer"
+            >
+              {isSubmittingAction ? (
+                <>
+                  <IconLoader2 className="h-3.5 w-3.5 animate-spin" />
+                  Saving…
+                </>
+              ) : (
+                <>
+                  <IconCheck className="h-3.5 w-3.5" />
+                  Save Action
+                </>
+              )}
+            </Button>
+          </div>
+        </div>
+      </Modal>
 
       {/* Ban Confirmation Modal */}
       <Modal
@@ -384,6 +622,7 @@ export function ReportModeration() {
             size="sm"
             disabled={isBanning}
             onClick={() => setBanConfirmReport(null)}
+            className="cursor-pointer"
           >
             Cancel
           </Button>
@@ -393,7 +632,7 @@ export function ReportModeration() {
             size="sm"
             disabled={isBanning}
             onClick={handleBanReportedUser}
-            className="bg-rose-700 hover:bg-rose-800 text-white gap-1.5"
+            className="bg-rose-700 hover:bg-rose-800 text-white gap-1.5 cursor-pointer"
           >
             {isBanning ? (
               <>
@@ -404,6 +643,48 @@ export function ReportModeration() {
               <>
                 <IconBan className="h-3.5 w-3.5" />
                 Confirm Ban
+              </>
+            )}
+          </Button>
+        </div>
+      </Modal>
+
+      {/* Unban Confirmation Modal */}
+      <Modal
+        isOpen={Boolean(unbanConfirmReport)}
+        onClose={() => !isUnbanning && setUnbanConfirmReport(null)}
+        size="sm"
+        title="Unban Member?"
+        description={`Are you sure you want to restore access for ${unbanConfirmReport?.reported?.firstName || 'this member'}? They will be able to log in and use the platform again.`}
+      >
+        <div className="flex items-center justify-end gap-2 pt-2">
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            disabled={isUnbanning}
+            onClick={() => setUnbanConfirmReport(null)}
+            className="cursor-pointer"
+          >
+            Cancel
+          </Button>
+          <Button
+            type="button"
+            variant="primary"
+            size="sm"
+            disabled={isUnbanning}
+            onClick={handleUnbanReportedUser}
+            className="bg-emerald-700 hover:bg-emerald-800 text-white gap-1.5 cursor-pointer"
+          >
+            {isUnbanning ? (
+              <>
+                <IconLoader2 className="h-3.5 w-3.5 animate-spin" />
+                Unbanning…
+              </>
+            ) : (
+              <>
+                <IconShieldCheck className="h-3.5 w-3.5" />
+                Confirm Unban
               </>
             )}
           </Button>

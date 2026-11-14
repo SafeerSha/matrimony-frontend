@@ -30,6 +30,7 @@ import { RmFeedbackTracker } from '@/components/rm/rm-feedback-tracker';
 import { RmUserDetailView } from '@/components/rm/rm-user-detail-view';
 import { authService } from '@/services/auth.service';
 import { rmService } from '@/services/rm.service';
+import { reportService } from '@/services/report.service';
 import { toast } from '@/lib/toast';
 
 type AdminTab = 'analytics' | 'revenue' | 'users' | 'plans' | 'feedback' | 'moderation' | 'rm-management' | 'settings';
@@ -40,6 +41,7 @@ export default function AdminDashboard() {
   const [tab, setTab] = useState<AdminTab>('analytics');
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [openIssuesCount, setOpenIssuesCount] = useState<number>(0);
+  const [openReportsCount, setOpenReportsCount] = useState<number>(0);
   const [inspectedFeedbackUserId, setInspectedFeedbackUserId] = useState<string | null>(null);
 
   useEffect(() => {
@@ -92,6 +94,12 @@ export default function AdminDashboard() {
       .getFeedbackStats(controller.signal)
       .then((res) => setOpenIssuesCount(res.openCount || 0))
       .catch(() => {});
+
+    reportService
+      .getReportsAdmin({ status: 'PENDING', limit: 1 }, controller.signal)
+      .then((res) => setOpenReportsCount(res.meta?.total || 0))
+      .catch(() => {});
+
     return () => controller.abort();
   }, [isAuthorized]);
 
@@ -304,6 +312,11 @@ export default function AdminDashboard() {
               <IconShield className="h-4.5 w-4.5 shrink-0" />
               <span>User Reports</span>
             </div>
+            {openReportsCount > 0 && (
+              <span className="rounded-full bg-rose-500 px-2 py-0.5 text-[10px] font-bold text-white">
+                {openReportsCount}
+              </span>
+            )}
           </button>
 
           {/* <button
@@ -408,7 +421,9 @@ export default function AdminDashboard() {
         {tab === 'settings' && <PlatformSettings />}
 
         {/* TAB: USER REPORTS & MODERATION */}
-        {tab === 'moderation' && <ReportModeration />}
+        {tab === 'moderation' && (
+          <ReportModeration portal="admin" onPendingCountChange={setOpenReportsCount} />
+        )}
 
         {/* TAB 4: RM MANAGEMENT (Labeled Mock Prototype) */}
         {tab === 'rm-management' && (
