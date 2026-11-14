@@ -25,6 +25,7 @@ import { RevenueManagement } from '@/components/admin/revenue-management';
 import { UserManagement } from '@/components/admin/user-management';
 import { PlanManagement } from '@/components/admin/plan-management';
 import { PlatformSettings } from '@/components/admin/platform-settings';
+import { ReportModeration } from '@/components/admin/report-moderation';
 import { RmFeedbackTracker } from '@/components/rm/rm-feedback-tracker';
 import { RmUserDetailView } from '@/components/rm/rm-user-detail-view';
 import { authService } from '@/services/auth.service';
@@ -292,19 +293,18 @@ export default function AdminDashboard() {
             <span>Platform Settings</span>
           </button>
 
-          {/* <button
+          <button
             onClick={() => handleSelectTab('moderation')}
             className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs sm:text-sm font-medium transition-all ${tab === 'moderation'
-                ? 'bg-[var(--primary)] text-white shadow-sm font-semibold'
-                : 'hover:bg-[#3A0A18] text-white/80'
+              ? 'bg-[var(--primary)] text-white shadow-sm font-semibold'
+              : 'hover:bg-[#3A0A18] text-white/80'
               }`}
           >
             <div className="flex items-center gap-3">
               <IconShield className="h-4.5 w-4.5 shrink-0" />
-              <span>Moderation</span>
+              <span>User Reports</span>
             </div>
-            <span className="text-[10px] bg-white/10 px-1.5 py-0.5 rounded text-white/60">Mock</span>
-          </button> */}
+          </button>
 
           {/* <button
             onClick={() => handleSelectTab('rm-management')}
@@ -407,42 +407,8 @@ export default function AdminDashboard() {
         {/* TAB: PLATFORM SETTINGS & CONTROLS */}
         {tab === 'settings' && <PlatformSettings />}
 
-        {/* TAB 3: PROFILE MODERATION QUEUE (Labeled Mock Prototype) */}
-        {tab === 'moderation' && (
-          <div className="space-y-6 animate-in fade-in slide-in-from-bottom-3 duration-300">
-            <header className="mb-6 sm:mb-8 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-              <div>
-                <div className="flex items-center gap-2">
-                  <h1 className="text-xl sm:text-2xl font-bold text-[var(--foreground)] tracking-tight">
-                    Profile Moderation Queue
-                  </h1>
-                  <Badge tone="default" size="sm" className="bg-amber-100 text-amber-800">
-                    Mock Prototype
-                  </Badge>
-                </div>
-                <p className="text-xs sm:text-sm text-[var(--muted)] mt-1">
-                  Review new registrations, KYC documents, and abuse reports.
-                </p>
-              </div>
-              <div className="flex gap-2 self-start sm:self-auto">
-                <Button variant="outline" size="sm" className="text-xs">
-                  <IconFilter className="mr-1.5 h-3.5 w-3.5" /> Filter Pending
-                </Button>
-              </div>
-            </header>
-
-            {/* Moderation Queue Empty State */}
-            <div className="rounded-2xl border border-dashed border-[var(--border)] bg-white p-12 text-center shadow-xs">
-              <div className="mx-auto grid h-12 w-12 place-items-center rounded-2xl bg-[var(--surface-muted)] text-[var(--muted)] mb-3 border border-[var(--border)]">
-                <IconShield className="h-6 w-6 text-emerald-600" />
-              </div>
-              <h3 className="text-base font-bold text-[var(--foreground)]">Moderation Queue is Clear</h3>
-              <p className="mt-1 text-xs sm:text-sm text-[var(--muted)] max-w-sm mx-auto">
-                No new profile registrations or KYC documents are awaiting review at this time.
-              </p>
-            </div>
-          </div>
-        )}
+        {/* TAB: USER REPORTS & MODERATION */}
+        {tab === 'moderation' && <ReportModeration />}
 
         {/* TAB 4: RM MANAGEMENT (Labeled Mock Prototype) */}
         {tab === 'rm-management' && (
