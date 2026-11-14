@@ -12,6 +12,7 @@ import {
   IconUserCheck,
   IconLoader2,
   IconLogout,
+  IconFlag,
 } from '@tabler/icons-react';
 import { RmUserDetailView } from '@/components/rm/rm-user-detail-view';
 import { authService } from '@/services/auth.service';
@@ -205,6 +206,16 @@ export default function RmUserProfilePage() {
                 {openIssuesCount}
               </span>
             )}
+          </Link>
+
+          <Link
+            href="/rm?tab=reports"
+            className="w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs sm:text-sm font-medium hover:bg-[#3A0A18] text-white/80 transition-all"
+          >
+            <div className="flex items-center gap-3">
+              <IconFlag className="h-4.5 w-4.5 shrink-0" />
+              <span>User Reports</span>
+            </div>
           </Link>
         </nav>
 

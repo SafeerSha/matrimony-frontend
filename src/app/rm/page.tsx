@@ -11,28 +11,34 @@ import {
   IconUserCheck,
   IconLoader2,
   IconLogout,
+  IconFlag,
 } from '@tabler/icons-react';
 import { RmUserDirectory } from '@/components/rm/rm-user-directory';
 import { RmFeedbackTracker } from '@/components/rm/rm-feedback-tracker';
+import { ReportModeration } from '@/components/admin/report-moderation';
 import { authService } from '@/services/auth.service';
 import { rmService } from '@/services/rm.service';
+import { reportService } from '@/services/report.service';
 import { toast } from '@/lib/toast';
 
-type RmTab = 'users' | 'feedback';
+type RmTab = 'users' | 'feedback' | 'reports';
 
 function RMDashboardContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const initialTab = searchParams.get('tab') === 'feedback' ? 'feedback' : 'users';
+  const paramTab = searchParams.get('tab');
+  const initialTab: RmTab =
+    paramTab === 'feedback' || paramTab === 'reports' ? paramTab : 'users';
   const [isAuthorized, setIsAuthorized] = useState<boolean | null>(null);
   const [tab, setTab] = useState<RmTab>(initialTab);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [openIssuesCount, setOpenIssuesCount] = useState<number>(0);
+  const [openReportsCount, setOpenReportsCount] = useState<number>(0);
 
   useEffect(() => {
-    const paramTab = searchParams.get('tab');
-    if (paramTab === 'feedback' || paramTab === 'users') {
-      setTab(paramTab);
+    const pTab = searchParams.get('tab');
+    if (pTab === 'feedback' || pTab === 'users' || pTab === 'reports') {
+      setTab(pTab as RmTab);
     }
   }, [searchParams]);
 
@@ -86,6 +92,12 @@ function RMDashboardContent() {
       .getFeedbackStats(controller.signal)
       .then((res) => setOpenIssuesCount(res.openCount || 0))
       .catch(() => {});
+
+    reportService
+      .getReportsAdmin({ status: 'PENDING', limit: 1 }, controller.signal)
+      .then((res) => setOpenReportsCount(res.meta?.total || 0))
+      .catch(() => {});
+
     return () => controller.abort();
   }, [isAuthorized]);
 
@@ -230,6 +242,25 @@ function RMDashboardContent() {
               </span>
             )}
           </button>
+
+          <button
+            onClick={() => handleSelectTab('reports')}
+            className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs sm:text-sm font-medium transition-all cursor-pointer ${
+              tab === 'reports'
+                ? 'bg-[var(--primary)] text-white shadow-sm font-semibold'
+                : 'hover:bg-[#3A0A18] text-white/80'
+            }`}
+          >
+            <div className="flex items-center gap-3">
+              <IconFlag className="h-4.5 w-4.5 shrink-0" />
+              <span>User Reports</span>
+            </div>
+            {openReportsCount > 0 && (
+              <span className="rounded-full bg-rose-500 px-2 py-0.5 text-[10px] font-bold text-white">
+                {openReportsCount}
+              </span>
+            )}
+          </button>
         </nav>
 
         {/* Sidebar Footer */}
@@ -275,6 +306,9 @@ function RMDashboardContent() {
 
         {tab === 'users' && <RmUserDirectory />}
         {tab === 'feedback' && <RmFeedbackTracker onOpenCountChange={setOpenIssuesCount} />}
+        {tab === 'reports' && (
+          <ReportModeration portal="rm" onPendingCountChange={setOpenReportsCount} />
+        )}
       </main>
     </div>
   );
