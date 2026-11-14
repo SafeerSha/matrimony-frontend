@@ -16,6 +16,7 @@ import {
   IconCreditCard,
   IconMessageReport,
   IconCurrencyRupee,
+  IconAdjustments,
 } from '@tabler/icons-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -23,13 +24,14 @@ import { PlatformOverview } from '@/components/admin/platform-overview';
 import { RevenueManagement } from '@/components/admin/revenue-management';
 import { UserManagement } from '@/components/admin/user-management';
 import { PlanManagement } from '@/components/admin/plan-management';
+import { PlatformSettings } from '@/components/admin/platform-settings';
 import { RmFeedbackTracker } from '@/components/rm/rm-feedback-tracker';
 import { RmUserDetailView } from '@/components/rm/rm-user-detail-view';
 import { authService } from '@/services/auth.service';
 import { rmService } from '@/services/rm.service';
 import { toast } from '@/lib/toast';
 
-type AdminTab = 'analytics' | 'revenue' | 'users' | 'plans' | 'feedback' | 'moderation' | 'rm-management';
+type AdminTab = 'analytics' | 'revenue' | 'users' | 'plans' | 'feedback' | 'moderation' | 'rm-management' | 'settings';
 
 export default function AdminDashboard() {
   const router = useRouter();
@@ -279,6 +281,17 @@ export default function AdminDashboard() {
             )}
           </button>
 
+          <button
+            onClick={() => handleSelectTab('settings')}
+            className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs sm:text-sm font-medium transition-all ${tab === 'settings'
+              ? 'bg-[var(--primary)] text-white shadow-sm font-semibold'
+              : 'hover:bg-[#3A0A18] text-white/80'
+              }`}
+          >
+            <IconAdjustments className="h-4.5 w-4.5 shrink-0" />
+            <span>Platform Settings</span>
+          </button>
+
           {/* <button
             onClick={() => handleSelectTab('moderation')}
             className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs sm:text-sm font-medium transition-all ${tab === 'moderation'
@@ -390,6 +403,9 @@ export default function AdminDashboard() {
               onViewUserProfile={(uid) => setInspectedFeedbackUserId(uid)}
             />
           ))}
+
+        {/* TAB: PLATFORM SETTINGS & CONTROLS */}
+        {tab === 'settings' && <PlatformSettings />}
 
         {/* TAB 3: PROFILE MODERATION QUEUE (Labeled Mock Prototype) */}
         {tab === 'moderation' && (
