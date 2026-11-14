@@ -24,6 +24,7 @@ import {
   IconEye,
   IconEyeOff,
   IconShieldCheck,
+  IconShieldOff,
   IconKey,
   IconPencil,
   IconTrash,
@@ -1438,6 +1439,42 @@ export function UserManagement() {
   const [resetPasswordUser, setResetPasswordUser] = useState<AdminUserListItem | null>(null);
   const [deletingRmUser, setDeletingRmUser] = useState<AdminUserListItem | null>(null);
 
+  // Platform cooling period quick toggle
+  const [coolingPeriodEnabled, setCoolingPeriodEnabled] = useState<boolean | null>(null);
+  const [isTogglingCooling, setIsTogglingCooling] = useState(false);
+
+  useEffect(() => {
+    adminService
+      .getCoolingPeriodSetting()
+      .then((res) => setCoolingPeriodEnabled(res.enabled))
+      .catch(() => {});
+  }, []);
+
+  const handleToggleCoolingPeriod = async () => {
+    if (coolingPeriodEnabled === null || isTogglingCooling) return;
+    const nextState = !coolingPeriodEnabled;
+    setIsTogglingCooling(true);
+    setCoolingPeriodEnabled(nextState);
+    try {
+      const res = await adminService.updateCoolingPeriodSetting({ enabled: nextState });
+      setCoolingPeriodEnabled(res.enabled);
+      toast.dismissAll();
+      toast.flash(
+        'success',
+        nextState ? 'Cooling-Off Period Enabled' : 'Cooling-Off Period Disabled',
+        nextState
+          ? '30-day cooling period active. Deleted users must wait before rejoining.'
+          : 'Cooling period turned OFF. Deleted users can recreate profile immediately.'
+      );
+    } catch (err: any) {
+      setCoolingPeriodEnabled(!nextState);
+      toast.dismissAll();
+      toast.flash('error', 'Update Failed', err?.message || 'Could not update cooling period.');
+    } finally {
+      setIsTogglingCooling(false);
+    }
+  };
+
   const handleRmUpdated = (updatedUser: AdminUserListItem) => {
     setUsers((prev) =>
       prev.map((u) => (u.id === updatedUser.id ? { ...u, ...updatedUser } : u))
@@ -1729,6 +1766,34 @@ export function UserManagement() {
               <IconRefresh className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} aria-hidden="true" />
               Refresh
             </Button>
+
+            {coolingPeriodEnabled !== null && (
+              <button
+                type="button"
+                onClick={handleToggleCoolingPeriod}
+                disabled={isTogglingCooling}
+                title={
+                  coolingPeriodEnabled
+                    ? 'Rejoin cooling period is ON (30-day block). Click to turn OFF for testing.'
+                    : 'Rejoin cooling period is OFF (Instant rejoin allowed). Click to turn ON.'
+                }
+                className={cn(
+                  'px-2.5 py-1 rounded-lg text-xs font-semibold border flex items-center gap-1.5 transition-all cursor-pointer shadow-xs',
+                  coolingPeriodEnabled
+                    ? 'bg-emerald-50 text-emerald-800 border-emerald-200/90 hover:bg-emerald-100'
+                    : 'bg-amber-50 text-amber-900 border-amber-300 hover:bg-amber-100 ring-1 ring-amber-300/60'
+                )}
+              >
+                {isTogglingCooling ? (
+                  <IconLoader2 className="h-3.5 w-3.5 animate-spin text-[var(--primary)]" />
+                ) : coolingPeriodEnabled ? (
+                  <IconShieldCheck className="h-3.5 w-3.5 text-emerald-600" />
+                ) : (
+                  <IconShieldOff className="h-3.5 w-3.5 text-amber-600" />
+                )}
+                <span>Rejoin Cooling: {coolingPeriodEnabled ? 'ON' : 'OFF (Instant)'}</span>
+              </button>
+            )}
           </div>
         </div>
 

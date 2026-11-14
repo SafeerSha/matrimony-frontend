@@ -39,6 +39,15 @@ import type { AnalyticsOverview, DateRangeInput } from "@/types/analytics";
 import type { AdminUserListItem, AdminUserListResponse, AdminUserQueryFilters } from "@/types/admin-user";
 import { analyticsOverviewSchema, analyticsTimeSeriesResponseSchema } from "@/lib/validation/analytics";
 
+export interface CoolingPeriodSetting {
+  enabled: boolean;
+  days: number;
+  updatedAt: string;
+  updatedBy: string | null;
+  message?: string;
+  success?: boolean;
+}
+
 export interface CreateAdminUserInput {
   firstName: string;
   lastName?: string;
@@ -280,5 +289,19 @@ export const adminService = {
     }
 
     return parsed.data;
+  },
+
+  getCoolingPeriodSetting: (signal?: AbortSignal) => {
+    return apiFetch<CoolingPeriodSetting>('/admin/settings/cooling-period', {
+      method: 'GET',
+      signal,
+    });
+  },
+
+  updateCoolingPeriodSetting: (data: { enabled: boolean; days?: number }) => {
+    return apiFetch<CoolingPeriodSetting>('/admin/settings/cooling-period', {
+      method: 'PATCH',
+      body: JSON.stringify(data),
+    });
   },
 };
