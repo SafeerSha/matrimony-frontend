@@ -17,6 +17,7 @@ import {
   IconMessageReport,
   IconCurrencyRupee,
   IconAdjustments,
+  IconUserCheck,
 } from '@tabler/icons-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -26,6 +27,9 @@ import { UserManagement } from '@/components/admin/user-management';
 import { PlanManagement } from '@/components/admin/plan-management';
 import { PlatformSettings } from '@/components/admin/platform-settings';
 import { ReportModeration } from '@/components/admin/report-moderation';
+import { ProfileModeration } from '@/components/admin/profile-moderation';
+import { ImageModeration } from '@/components/admin/image-moderation';
+import { RmManagement } from '@/components/admin/rm-management';
 import { RmFeedbackTracker } from '@/components/rm/rm-feedback-tracker';
 import { RmUserDetailView } from '@/components/rm/rm-user-detail-view';
 import { authService } from '@/services/auth.service';
@@ -33,7 +37,17 @@ import { rmService } from '@/services/rm.service';
 import { reportService } from '@/services/report.service';
 import { toast } from '@/lib/toast';
 
-type AdminTab = 'analytics' | 'revenue' | 'users' | 'plans' | 'feedback' | 'moderation' | 'rm-management' | 'settings';
+type AdminTab =
+  | 'analytics'
+  | 'revenue'
+  | 'users'
+  | 'profile-approvals'
+  | 'photo-moderation'
+  | 'rm-management'
+  | 'plans'
+  | 'feedback'
+  | 'moderation'
+  | 'settings';
 
 export default function AdminDashboard() {
   const router = useRouter();
@@ -262,6 +276,39 @@ export default function AdminDashboard() {
           </button>
 
           <button
+            onClick={() => handleSelectTab('profile-approvals')}
+            className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs sm:text-sm font-medium transition-all ${tab === 'profile-approvals'
+              ? 'bg-[var(--primary)] text-white shadow-sm font-semibold'
+              : 'hover:bg-[#3A0A18] text-white/80'
+              }`}
+          >
+            <IconUserCheck className="h-4.5 w-4.5 shrink-0" />
+            <span>Profile Approvals</span>
+          </button>
+
+          <button
+            onClick={() => handleSelectTab('photo-moderation')}
+            className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs sm:text-sm font-medium transition-all ${tab === 'photo-moderation'
+              ? 'bg-[var(--primary)] text-white shadow-sm font-semibold'
+              : 'hover:bg-[#3A0A18] text-white/80'
+              }`}
+          >
+            <IconShield className="h-4.5 w-4.5 shrink-0" />
+            <span>Photo Moderation</span>
+          </button>
+
+          <button
+            onClick={() => handleSelectTab('rm-management')}
+            className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs sm:text-sm font-medium transition-all ${tab === 'rm-management'
+              ? 'bg-[var(--primary)] text-white shadow-sm font-semibold'
+              : 'hover:bg-[#3A0A18] text-white/80'
+              }`}
+          >
+            <IconUsers className="h-4.5 w-4.5 shrink-0" />
+            <span>RM Management</span>
+          </button>
+
+          <button
             onClick={() => handleSelectTab('plans')}
             className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs sm:text-sm font-medium transition-all ${tab === 'plans'
               ? 'bg-[var(--primary)] text-white shadow-sm font-semibold'
@@ -318,20 +365,6 @@ export default function AdminDashboard() {
               </span>
             )}
           </button>
-
-          {/* <button
-            onClick={() => handleSelectTab('rm-management')}
-            className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs sm:text-sm font-medium transition-all ${tab === 'rm-management'
-                ? 'bg-[var(--primary)] text-white shadow-sm font-semibold'
-                : 'hover:bg-[#3A0A18] text-white/80'
-              }`}
-          >
-            <div className="flex items-center gap-3">
-              <IconUsers className="h-4.5 w-4.5 shrink-0" />
-              <span>RM Management</span>
-            </div>
-            <span className="text-[10px] bg-white/10 px-1.5 py-0.5 rounded text-white/60">Mock</span>
-          </button> */}
         </nav>
 
         {/* Sidebar Footer with Logout */}
@@ -399,6 +432,15 @@ export default function AdminDashboard() {
         {/* TAB 2: USER MANAGEMENT */}
         {tab === 'users' && <UserManagement />}
 
+        {/* TAB: PROFILE APPROVALS & MODERATION */}
+        {tab === 'profile-approvals' && <ProfileModeration />}
+
+        {/* TAB: IMAGE MODERATION */}
+        {tab === 'photo-moderation' && <ImageModeration />}
+
+        {/* TAB: RELATIONSHIP MANAGER MANAGEMENT */}
+        {tab === 'rm-management' && <RmManagement />}
+
         {/* TAB: PLAN CONFIGURATION */}
         {tab === 'plans' && <PlanManagement />}
 
@@ -423,66 +465,6 @@ export default function AdminDashboard() {
         {/* TAB: USER REPORTS & MODERATION */}
         {tab === 'moderation' && (
           <ReportModeration portal="admin" onPendingCountChange={setOpenReportsCount} />
-        )}
-
-        {/* TAB 4: RM MANAGEMENT (Labeled Mock Prototype) */}
-        {tab === 'rm-management' && (
-          <div className="space-y-6 animate-in fade-in slide-in-from-bottom-3 duration-300">
-            <header className="mb-6 sm:mb-8 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-              <div>
-                <div className="flex items-center gap-2">
-                  <h1 className="text-xl sm:text-2xl font-bold text-[var(--foreground)] tracking-tight">
-                    RM Management
-                  </h1>
-                  <Badge tone="default" size="sm" className="bg-amber-100 text-amber-800">
-                    Mock Prototype
-                  </Badge>
-                </div>
-                <p className="text-xs sm:text-sm text-[var(--muted)] mt-1">
-                  Manage staff, assign VIP clients, and track performance.
-                </p>
-              </div>
-              <Button className="bg-[var(--primary)] text-white hover:bg-[#5E142E] self-start sm:self-auto text-xs" size="sm">
-                <IconUserPlus className="mr-1.5 h-3.5 w-3.5" /> Add RM
-              </Button>
-            </header>
-
-            <div className="bg-white rounded-xl border border-[var(--border)] shadow-sm overflow-hidden overflow-x-auto">
-              <table className="w-full text-left text-xs sm:text-sm min-w-[620px]">
-                <thead className="bg-[#FAF3EC] border-b border-[#E9DDE0] text-[#7A1835]">
-                  <tr>
-                    <th className="p-3.5 sm:p-4 font-semibold">Staff Name</th>
-                    <th className="p-3.5 sm:p-4 font-semibold">Assigned Clients</th>
-                    <th className="p-3.5 sm:p-4 font-semibold">Success Rate</th>
-                    <th className="p-3.5 sm:p-4 font-semibold">Status</th>
-                    <th className="p-3.5 sm:p-4 font-semibold text-right sm:text-left">Actions</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-[var(--border)]">
-                  {[
-                    { name: 'Sarah Jenkins', clients: 24, rate: '82%', status: 'Active' },
-                    { name: 'Michael Chen', clients: 18, rate: '76%', status: 'Active' },
-                    { name: 'Priya Sharma', clients: 31, rate: '88%', status: 'Active' },
-                  ].map((rm, i) => (
-                    <tr key={i} className="hover:bg-[var(--surface)] transition-colors">
-                      <td className="p-3.5 sm:p-4 font-bold flex items-center gap-3">
-                        <div className="h-8 w-8 rounded-full bg-[var(--primary-light)] text-[var(--primary)] flex items-center justify-center shrink-0">
-                          {rm.name.charAt(0)}
-                        </div>
-                        <span className="truncate">{rm.name}</span>
-                      </td>
-                      <td className="p-3.5 sm:p-4 font-medium">{rm.clients} VIPs</td>
-                      <td className="p-3.5 sm:p-4 text-green-600 font-semibold">{rm.rate}</td>
-                      <td className="p-3.5 sm:p-4"><Badge tone="success">{rm.status}</Badge></td>
-                      <td className="p-3.5 sm:p-4 text-right sm:text-left">
-                        <Button variant="secondary" size="sm" className="text-xs">Manage Staff</Button>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </div>
         )}
       </main>
     </div>

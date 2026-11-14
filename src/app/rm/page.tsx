@@ -12,7 +12,13 @@ import {
   IconLoader2,
   IconLogout,
   IconFlag,
+  IconCalendarEvent,
+  IconAddressBook,
+  IconUserHeart,
 } from '@tabler/icons-react';
+import { RmDashboardView } from '@/components/rm/rm-dashboard-view';
+import { RmClientWorkspace } from '@/components/rm/rm-client-workspace';
+import { RmFollowUpAgenda } from '@/components/rm/rm-follow-up-agenda';
 import { RmUserDirectory } from '@/components/rm/rm-user-directory';
 import { RmFeedbackTracker } from '@/components/rm/rm-feedback-tracker';
 import { ReportModeration } from '@/components/admin/report-moderation';
@@ -21,24 +27,42 @@ import { rmService } from '@/services/rm.service';
 import { reportService } from '@/services/report.service';
 import { toast } from '@/lib/toast';
 
-type RmTab = 'users' | 'feedback' | 'reports';
+type RmTab = 'clients' | 'follow-ups' | 'users' | 'feedback' | 'reports';
 
 function RMDashboardContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const paramTab = searchParams.get('tab');
   const initialTab: RmTab =
-    paramTab === 'feedback' || paramTab === 'reports' ? paramTab : 'users';
+    paramTab === 'feedback' ||
+    paramTab === 'reports' ||
+    paramTab === 'follow-ups' ||
+    paramTab === 'users'
+      ? (paramTab as RmTab)
+      : 'clients';
   const [isAuthorized, setIsAuthorized] = useState<boolean | null>(null);
   const [tab, setTab] = useState<RmTab>(initialTab);
+  const [selectedClientId, setSelectedClientId] = useState<string | null>(
+    searchParams.get('clientId') || null
+  );
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [openIssuesCount, setOpenIssuesCount] = useState<number>(0);
   const [openReportsCount, setOpenReportsCount] = useState<number>(0);
 
   useEffect(() => {
     const pTab = searchParams.get('tab');
-    if (pTab === 'feedback' || pTab === 'users' || pTab === 'reports') {
+    if (
+      pTab === 'clients' ||
+      pTab === 'follow-ups' ||
+      pTab === 'users' ||
+      pTab === 'feedback' ||
+      pTab === 'reports'
+    ) {
       setTab(pTab as RmTab);
+    }
+    const pClient = searchParams.get('clientId');
+    if (pClient) {
+      setSelectedClientId(pClient);
     }
   }, [searchParams]);
 
@@ -103,6 +127,7 @@ function RMDashboardContent() {
 
   const handleSelectTab = (newTab: RmTab) => {
     setTab(newTab);
+    setSelectedClientId(null);
     setMobileMenuOpen(false);
   };
 
@@ -213,21 +238,45 @@ function RMDashboardContent() {
         {/* Navigation Links */}
         <nav className="flex-1 p-4 space-y-1.5 overflow-y-auto" aria-label="RM Navigation">
           <button
-            onClick={() => handleSelectTab('users')}
+            onClick={() => handleSelectTab('clients')}
             className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs sm:text-sm font-medium transition-all cursor-pointer ${
-              tab === 'users'
+              tab === 'clients' && !selectedClientId
                 ? 'bg-[var(--primary)] text-white shadow-sm font-semibold'
                 : 'hover:bg-[#3A0A18] text-white/80'
             }`}
           >
-            <IconUsers className="h-4.5 w-4.5 shrink-0" />
-            <span>User Directory</span>
+            <IconUserHeart className="h-4.5 w-4.5 shrink-0" />
+            <span>My Assigned Clients</span>
+          </button>
+
+          <button
+            onClick={() => handleSelectTab('follow-ups')}
+            className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs sm:text-sm font-medium transition-all cursor-pointer ${
+              tab === 'follow-ups' && !selectedClientId
+                ? 'bg-[var(--primary)] text-white shadow-sm font-semibold'
+                : 'hover:bg-[#3A0A18] text-white/80'
+            }`}
+          >
+            <IconCalendarEvent className="h-4.5 w-4.5 shrink-0" />
+            <span>Follow-up Agenda</span>
+          </button>
+
+          <button
+            onClick={() => handleSelectTab('users')}
+            className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs sm:text-sm font-medium transition-all cursor-pointer ${
+              tab === 'users' && !selectedClientId
+                ? 'bg-[var(--primary)] text-white shadow-sm font-semibold'
+                : 'hover:bg-[#3A0A18] text-white/80'
+            }`}
+          >
+            <IconAddressBook className="h-4.5 w-4.5 shrink-0" />
+            <span>All Profiles Directory</span>
           </button>
 
           <button
             onClick={() => handleSelectTab('feedback')}
             className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs sm:text-sm font-medium transition-all cursor-pointer ${
-              tab === 'feedback'
+              tab === 'feedback' && !selectedClientId
                 ? 'bg-[var(--primary)] text-white shadow-sm font-semibold'
                 : 'hover:bg-[#3A0A18] text-white/80'
             }`}
@@ -246,7 +295,7 @@ function RMDashboardContent() {
           <button
             onClick={() => handleSelectTab('reports')}
             className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs sm:text-sm font-medium transition-all cursor-pointer ${
-              tab === 'reports'
+              tab === 'reports' && !selectedClientId
                 ? 'bg-[var(--primary)] text-white shadow-sm font-semibold'
                 : 'hover:bg-[#3A0A18] text-white/80'
             }`}
@@ -304,10 +353,29 @@ function RMDashboardContent() {
           </div>
         </header>
 
-        {tab === 'users' && <RmUserDirectory />}
-        {tab === 'feedback' && <RmFeedbackTracker onOpenCountChange={setOpenIssuesCount} />}
-        {tab === 'reports' && (
-          <ReportModeration portal="rm" onPendingCountChange={setOpenReportsCount} />
+        {selectedClientId ? (
+          <RmClientWorkspace
+            clientId={selectedClientId}
+            onBack={() => setSelectedClientId(null)}
+          />
+        ) : (
+          <>
+            {tab === 'clients' && (
+              <RmDashboardView onSelectClient={(id) => setSelectedClientId(id)} />
+            )}
+            {tab === 'follow-ups' && (
+              <RmFollowUpAgenda
+                onSelectClient={(id) => {
+                  setSelectedClientId(id);
+                }}
+              />
+            )}
+            {tab === 'users' && <RmUserDirectory />}
+            {tab === 'feedback' && <RmFeedbackTracker onOpenCountChange={setOpenIssuesCount} />}
+            {tab === 'reports' && (
+              <ReportModeration portal="rm" onPendingCountChange={setOpenReportsCount} />
+            )}
+          </>
         )}
       </main>
     </div>
