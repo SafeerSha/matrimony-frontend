@@ -456,21 +456,18 @@ export function ChatWindow({
     }
   };
 
-  // Reliable scroll-to-bottom helper that controls both the container and end anchor
+  // Reliable scroll-to-bottom helper that safely locks horizontal scroll to 0
   const scrollToBottom = (behavior: ScrollBehavior = 'auto') => {
     if (messagesContainerRef.current) {
       const container = messagesContainerRef.current;
       container.scrollTop = container.scrollHeight;
+      container.scrollLeft = 0;
       try {
         container.scrollTo({
           top: container.scrollHeight,
+          left: 0,
           behavior,
         });
-      } catch {}
-    }
-    if (messagesEndRef.current) {
-      try {
-        messagesEndRef.current.scrollIntoView({ behavior, block: 'end' });
       } catch {}
     }
   };
@@ -698,7 +695,7 @@ export function ChatWindow({
   };
 
   return (
-    <div className={cn('flex flex-col h-full bg-[#FFFDFB] text-[#211B1E] min-w-0 relative', className)}>
+    <div className={cn('flex flex-col h-full bg-[#FFFDFB] text-[#211B1E] min-w-0 w-full overflow-hidden relative', className)}>
       {/* ======================================================== */}
       {/* 1. ELEGANT GLASS CHAT HEADER                             */}
       {/* ======================================================== */}
@@ -883,7 +880,7 @@ export function ChatWindow({
         </div>
       ) : (
         /* SUBSCRIBED ACTIVE CHAT STREAM */
-        <div className="flex-1 flex flex-col min-h-0 relative">
+        <div className="flex-1 flex flex-col min-h-0 w-full overflow-hidden relative">
           {/* Subtle Romantic Wallpaper Pattern & Ambient Glows */}
           <div
             className="absolute inset-0 pointer-events-none opacity-[0.035]"
@@ -899,10 +896,10 @@ export function ChatWindow({
           {/* Messages Scroll Area */}
           <div
             ref={messagesContainerRef}
-            className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-4 bg-gradient-to-b from-[#FFFDFB] via-[#FFF9F6]/80 to-[#FAF4EE]/90 relative z-10"
+            className="flex-1 overflow-y-auto overflow-x-hidden p-3 sm:p-6 space-y-4 bg-gradient-to-b from-[#FFFDFB] via-[#FFF9F6]/80 to-[#FAF4EE]/90 relative z-10 w-full overscroll-contain"
           >
             {/* Celebratory Mutual Connection Card */}
-            <div className="mx-auto max-w-sm my-2 p-5 sm:p-6 rounded-3xl border border-[#EAD8C7]/90 bg-gradient-to-b from-white/95 via-[#FFFDFB]/95 to-[#FAF3EC]/90 backdrop-blur-xl shadow-[0_12px_36px_rgba(122,24,53,0.07)] text-center relative overflow-hidden group">
+            <div className="mx-auto w-full max-w-sm my-2 p-5 sm:p-6 rounded-3xl border border-[#EAD8C7]/90 bg-gradient-to-b from-white/95 via-[#FFFDFB]/95 to-[#FAF3EC]/90 backdrop-blur-xl shadow-[0_12px_36px_rgba(122,24,53,0.07)] text-center relative overflow-hidden group">
               {/* Soft decorative glow */}
               <div className="absolute -top-10 -right-10 h-28 w-28 rounded-full bg-[radial-gradient(circle,rgba(216,178,140,0.25)_0%,transparent_70%)] blur-xl pointer-events-none" />
               <div className="absolute -bottom-10 -left-10 h-28 w-28 rounded-full bg-[radial-gradient(circle,rgba(122,24,53,0.15)_0%,transparent_70%)] blur-xl pointer-events-none" />
@@ -1050,7 +1047,7 @@ export function ChatWindow({
                     onTouchMove={(e) => handleTouchMove(e, msgKey)}
                     onTouchEnd={() => handleTouchEnd(m, isOurs)}
                     className={cn(
-                      'flex flex-col group relative animate-chat-message transition-all duration-300',
+                      'flex flex-col group relative animate-chat-message transition-all duration-300 w-full min-w-0',
                       isOurs ? 'items-end' : 'items-start',
                       isHighlighted && 'ring-2 ring-[#7A1835] ring-offset-2 rounded-2xl bg-[#7A1835]/5 p-1'
                     )}
@@ -1058,7 +1055,10 @@ export function ChatWindow({
                     {/* Mobile Swipe-to-Reply Floating Indicator */}
                     {isSwiped && (
                       <div
-                        className="absolute left-1 top-1/2 -translate-y-1/2 flex items-center justify-center pointer-events-none z-10 transition-transform"
+                        className={cn(
+                          "absolute top-1/2 -translate-y-1/2 flex items-center justify-center pointer-events-none z-10 transition-transform",
+                          isOurs ? "right-1" : "left-1"
+                        )}
                         style={{
                           opacity: Math.min(1, swipeOffset / 20),
                           transform: `translateY(-50%) scale(${Math.min(1.15, 0.6 + swipeOffset / 50)})`,
@@ -1073,8 +1073,8 @@ export function ChatWindow({
                     {/* Hover Reaction & Desktop Reply Toolbar */}
                     <div
                       className={cn(
-                        'absolute -top-7 z-20 flex items-center gap-1 rounded-full border border-[#EAD8C7] bg-white/95 backdrop-blur-md px-2 py-0.5 shadow-md transition-all duration-200',
-                        isHovered ? 'opacity-100 scale-100 pointer-events-auto' : 'opacity-0 scale-90 pointer-events-none',
+                        'absolute -top-7 z-20 items-center gap-1 rounded-full border border-[#EAD8C7] bg-white/95 backdrop-blur-md px-2 py-0.5 shadow-md transition-all duration-200',
+                        isHovered ? 'flex opacity-100 scale-100 pointer-events-auto' : 'hidden opacity-0 scale-90 pointer-events-none',
                         isOurs ? 'right-2' : 'left-9'
                       )}
                     >
@@ -1102,9 +1102,9 @@ export function ChatWindow({
                     </div>
 
                     <div
-                      className="flex items-end gap-2 max-w-[85%] sm:max-w-[72%] transition-transform duration-100 ease-out"
+                      className="flex items-end gap-2 max-w-[85%] sm:max-w-[72%] transition-transform duration-100 ease-out min-w-0"
                       style={{
-                        transform: isSwiped ? `translateX(${swipeOffset}px)` : 'none',
+                        transform: isSwiped ? `translateX(${isOurs ? -swipeOffset : swipeOffset}px)` : 'none',
                       }}
                     >
                       {/* Received message avatar */}

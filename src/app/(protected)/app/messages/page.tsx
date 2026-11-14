@@ -528,7 +528,7 @@ function MessagesContent() {
       className={cn(
         'transition-all',
         mobileView === 'chat'
-          ? 'fixed inset-0 z-[100] bg-[#FFFDFB] m-0 p-0 flex flex-col h-[100dvh] w-screen md:relative md:inset-auto md:z-auto md:h-auto md:w-auto md:space-y-6 md:pb-6 md:bg-transparent'
+          ? 'fixed inset-0 z-[100] bg-[#FFFDFB] m-0 p-0 flex flex-col h-[100dvh] w-full max-w-full overflow-hidden md:relative md:inset-auto md:z-auto md:h-auto md:w-auto md:space-y-6 md:pb-6 md:bg-transparent'
           : 'space-y-4 sm:space-y-6 pb-6'
       )}
     >
@@ -610,7 +610,7 @@ function MessagesContent() {
           onTouchEnd={handleTouchEnd}
           onTouchCancel={handleTouchCancel}
           className={cn(
-            'flex-1 flex flex-col min-w-0 bg-[#FFFDFB] relative',
+            'flex-1 flex flex-col min-w-0 bg-[#FFFDFB] relative w-full overflow-hidden',
             mobileView === 'list' ? 'hidden md:flex' : 'flex'
           )}
         >
